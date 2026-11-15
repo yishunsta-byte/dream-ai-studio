@@ -9,7 +9,7 @@
 4. `docs/DESIGN.md`, `docs/design/` — 제품 디자인 (P0-1 이후 생성). `docs/dev-plan.html`·`plan.html`의 CSS는 제품 디자인이 아니다
 
 ## 역할
-- 플래너 **Claude(design)**: 기준 문서·menus.json·디자인 (`PLAN.md`, `DESIGN.md`, `docs/design/`, `docs/spec/`)
+- 플래너 **Claude Code**: 기준 문서·menus.json·디자인 (`PLAN.md`, `DESIGN.md`, `docs/design/`, `docs/spec/`)
 - 검수 담당(Codex): 검수·테스트 (`REVIEW.md`). 필수 수정은 여기서 나온다
 - 구현 담당(당신): 코드, `PROGRESS.md`, `QUESTIONS.md`
 - 최종 결정: 은영님
