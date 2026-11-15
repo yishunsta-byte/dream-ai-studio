@@ -1,6 +1,13 @@
 import "server-only";
 import { openDatabase } from "./connection";
 import { verifyMigrations } from "./migrate";
+import type { DatabaseHandle } from "./connection";
+
+export function withDatabase<T>(operation:(handle:DatabaseHandle)=>T):T {
+  const handle=openDatabase(undefined,{fileMustExist:true});
+  try {verifyMigrations(handle.sqlite);return operation(handle);}
+  finally {handle.close();}
+}
 
 export function checkDatabase() {
   try {

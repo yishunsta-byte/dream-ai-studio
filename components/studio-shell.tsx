@@ -7,6 +7,7 @@ import type { MenuConfig } from "@/lib/menus/schema";
 import { Icon, type IconName } from "./ui/Icon";
 import { PhaseChip, StatusPill } from "./ui/primitives";
 import styles from "./studio-shell.module.css";
+import { BreadcrumbContext, type BreadcrumbValue } from "./breadcrumb";
 
 export type NavigationData = {
   groups: MenuConfig["groups"];
@@ -19,6 +20,7 @@ export function StudioShell({ navigation, sampleMode, children }: { navigation: 
   const drawer = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
+  const [breadcrumb,setBreadcrumb]=useState<BreadcrumbValue>(null);
   useEffect(() => { drawer.current?.close(); }, [pathname]);
   useEffect(() => {
     const media = matchMedia("(min-width:1024px)");
@@ -30,7 +32,7 @@ export function StudioShell({ navigation, sampleMode, children }: { navigation: 
   const names: Record<string, string> = { "/": "작업실", "/jobs": "작업 대기열", "/library": "자료·캐릭터", "/settings": "설정", "/setup": "시작 점검" };
   const currentMenu = navigation.menus.find((menu) => pathname.startsWith(`/menus/${menu.id}`));
   const currentWorkspace = navigation.workspaces.find((workspace) => pathname === `/workspaces/${workspace.id}`);
-  const title = currentMenu?.label ?? currentWorkspace?.label ?? names[pathname] ?? "작업실";
+  const title = breadcrumb?.title ?? currentMenu?.label ?? currentWorkspace?.label ?? names[pathname] ?? "작업실";
   const navLink = (href: string, label: string, extra?: ReactNode, dim = false, icon?: IconName) => <Link key={href} href={href} onClick={close} className={`${styles.navLink} ${dim ? styles.dim : ""}`} aria-current={pathname === href || (href.startsWith("/menus/") && pathname.startsWith(href + "/")) ? "page" : undefined}>{icon && <Icon name={icon} />}<span>{label}</span>{extra}</Link>;
   const links = <><Link href="/" className={styles.brand} onClick={close}><span className={styles.mark}>D</span><span><strong>Dream AI Studio</strong><small>나만의 콘텐츠 작업실</small></span></Link>
     <nav aria-label="주 메뉴" className={styles.nav}>
@@ -40,7 +42,7 @@ export function StudioShell({ navigation, sampleMode, children }: { navigation: 
       <div className={styles.divider} /><div className={styles.groupLabel}>업무공간 · 별도 개발</div>{navigation.workspaces.map((workspace) => navLink(`/workspaces/${workspace.id}`, workspace.label, <span className={styles.separate}>P8</span>, true, "lock"))}
       <div className={styles.divider} />{navLink("/setup", "시작 점검", undefined, false, "check")}{navLink("/settings", "설정", undefined, false, "settings")}
     </nav></>;
-  return <div className={styles.shell}><a href="#main-content" className={styles.skip}>본문으로 건너뛰기</a>
+  return <BreadcrumbContext.Provider value={setBreadcrumb}><div className={styles.shell}><a href="#main-content" className={styles.skip}>본문으로 건너뛰기</a>
     <aside className={styles.desktop}>{links}</aside>
     <dialog ref={drawer} className={styles.drawer} aria-label="탐색 메뉴" onClose={() => { setOpen(false); trigger.current?.focus(); }} onCancel={(event) => { event.preventDefault(); close(); }} onClick={(event) => { if (event.target === event.currentTarget) close(); }} onKeyDown={(event) => {
       if (event.key !== "Tab") return;
@@ -48,6 +50,6 @@ export function StudioShell({ navigation, sampleMode, children }: { navigation: 
       if (event.shiftKey && document.activeElement === items[0]) { event.preventDefault(); items.at(-1)?.focus(); }
       else if (!event.shiftKey && document.activeElement === items.at(-1)) { event.preventDefault(); items[0]?.focus(); }
     }}><div className={styles.drawerInner}><button type="button" aria-label="메뉴 닫기" className={styles.closeButton} onClick={close}><Icon name="close" /></button>{links}</div></dialog>
-    <div className={styles.main}><header className={styles.topbar}><button type="button" ref={trigger} className={styles.menuButton} aria-label="메뉴 열기" aria-expanded={open} onClick={() => { drawer.current?.showModal(); setOpen(true); }}><Icon name="menu" /></button><div className={styles.crumb}><span className={styles.crumbRoot}>작업실 / </span><strong>{title}</strong></div>{sampleMode && <StatusPill status="sample">샘플 모드</StatusPill>}</header><main id="main-content" tabIndex={-1} className="content">{children}</main></div>
-  </div>;
+    <div className={styles.main}><header className={styles.topbar}><button type="button" ref={trigger} className={styles.menuButton} aria-label="메뉴 열기" aria-expanded={open} onClick={() => { drawer.current?.showModal(); setOpen(true); }}><Icon name="menu" /></button><div className={styles.crumb}><span className={styles.crumbRoot}>{breadcrumb?.parent??"작업실"} / </span><strong>{title}</strong></div>{sampleMode && <StatusPill status="sample">샘플 모드</StatusPill>}</header><main id="main-content" tabIndex={-1} className="content">{children}</main></div>
+  </div></BreadcrumbContext.Provider>;
 }

@@ -42,7 +42,7 @@ export function nextVersion(current:number[]):number {
   if(!Number.isSafeInteger(version))throw new WorkflowError("INVALID_VERSION","새 버전 번호를 만들 수 없어요.");
   return version;
 }
-export function projectDisplayState(states:StageState[],jobs:string[]) {
+export function projectDisplayState(states:StageState[],jobs:string[]):"warning"|"running"|"approval"|"done"|"queued" {
   if(jobs.includes("failed")||states.some((state)=>state.status==="failed"))return "warning";
   if(jobs.includes("running"))return "running";
   if(states.some((state)=>state.status==="needs_approval"))return "approval";
