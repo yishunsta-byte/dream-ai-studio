@@ -22,4 +22,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 팀 협업 (은영님 지시, 2026-11-15)
 
-Claude Code와 Codex는 한 팀이다. 위험하거나 은영님 결정이 필요한 일이 아니면, 상대가 할 일은 `docs/TEAM.md`에 보고서로 남기고 Orca로 바로 요청한다(`orca orchestration send --to <상대 터미널> ...`). 상대 요청이 오면 그에 맞춰 진행하고 같은 항목에 회신한다. 터미널 번호와 절차는 `docs/TEAM.md`.
+Claude(design)(플래너·디자인)와 Codex는 한 팀이다. 플래너를 부를 때는 "Claude(design)"이라고 쓴다. 위험하거나 은영님 결정이 필요한 일이 아니면, 상대가 할 일은 `docs/TEAM.md`에 보고서로 남기고 Orca로 바로 요청한다(`orca orchestration send --to <상대 터미널> ...`). 상대 요청이 오면 그에 맞춰 진행하고 같은 항목에 회신한다. 터미널 번호와 절차는 `docs/TEAM.md`.
