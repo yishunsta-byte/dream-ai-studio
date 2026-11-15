@@ -1,30 +1,130 @@
 {
-  "specVersion": "2026-11-15.1",
+  "specVersion": "2026-11-15.2",
   "owner": "planner",
   "note": "P2 영상 글자에 쓸 수 있는 글꼴 목록(T-5). 여기 없는 글꼴은 글자 편집 화면 목록에 나오지 않는다. 모두 SIL Open Font License 1.1 — 상업 이용·영상 삽입 가능, 글꼴 파일을 묶어 줄 때는 라이선스 파일을 함께 넣는다.",
   "installRule": [
-    "글꼴 파일은 공식 배포처에서 받아 public/fonts/<폴더>/에 둔다. 각 폴더에 배포본에 들어 있는 라이선스 파일(OFL.txt 등)을 그대로 넣는다.",
-    "설치 시 라이선스 파일 첫 줄·본문에 'SIL Open Font License'와 'Version 1.1'이 있는지 검사하고, 없으면 그 글꼴을 목록에서 뺀다(자동 검사 테스트).",
-    "편집용 묶음(ZIP)에 글꼴을 넣을 때 LICENSES/<글꼴>.txt를 함께 넣는다(PLAN 12장).",
+    "P1에서 쓰는 Pretendard와 그 OFL 파일은 지금 경로(public/fonts/ 바로 아래)를 그대로 둔다 — 앱 화면과 내보내기가 이 경로를 쓴다. P2에서 새로 넣는 글꼴만 public/fonts/<folder>/에 둔다.",
+    "글꼴은 공식 배포처에서 받고, 배포본의 라이선스 파일(OFL.txt·LICENSE)을 고치지 않고 그대로 함께 둔다(저작권 줄·Reserved Font Name 포함). 받은 배포 커밋 또는 파일 해시를 기록한다.",
+    "설치 검사: 라이선스 파일 **전체 본문**을 공백·줄바꿈·대소문자를 정리한 뒤 \"SIL Open Font License\"와 \"Version 1.1\"이 모두 있는지 확인한다. 첫 줄 위치는 보지 않는다(정식 배포본은 저작권 줄로 시작). 없으면 그 글꼴을 목록에서 뺀다(자동 테스트).",
+    "편집용 묶음(ZIP)에 글꼴을 넣을 때 LICENSES/<글꼴>.txt를 함께 넣는다(PLAN 11.3 T-5, 13장).",
     "글꼴 파일 이름만 바꿔 팔거나 글꼴 자체를 단독 배포하지 않는다(OFL 조건)."
   ],
   "fonts": [
-    { "family": "Pretendard", "folder": "pretendard", "weights": [400, 600, 700, 800], "license": "OFL-1.1",
-      "source": "https://github.com/orioncactus/pretendard", "usedBy": ["subtitle", "emphasis", "title", "ending", "brand", "disclosure", "앱 화면"], "role": "기본" },
-    { "family": "Noto Sans KR", "folder": "noto-sans-kr", "weights": [400, 700, 900], "license": "OFL-1.1",
-      "source": "https://fonts.google.com/noto/specimen/Noto+Sans+KR", "usedBy": ["대체 글꼴"], "role": "보조" },
-    { "family": "Noto Serif KR", "folder": "noto-serif-kr", "weights": [400, 600, 700], "license": "OFL-1.1",
-      "source": "https://fonts.google.com/noto/specimen/Noto+Serif+KR", "usedBy": ["lyric"], "role": "명조" },
-    { "family": "Black Han Sans", "folder": "black-han-sans", "weights": [400], "license": "OFL-1.1",
-      "source": "https://fonts.google.com/specimen/Black+Han+Sans", "usedBy": ["hook"], "role": "굵은 제목" },
-    { "family": "Do Hyeon", "folder": "do-hyeon", "weights": [400], "license": "OFL-1.1",
-      "source": "https://fonts.google.com/specimen/Do+Hyeon", "usedBy": [], "role": "선택 — 깔끔한 제목" },
-    { "family": "Jua", "folder": "jua", "weights": [400], "license": "OFL-1.1",
-      "source": "https://fonts.google.com/specimen/Jua", "usedBy": [], "role": "선택 — 둥근 귀여운 느낌" },
-    { "family": "Gowun Dodum", "folder": "gowun-dodum", "weights": [400], "license": "OFL-1.1",
-      "source": "https://fonts.google.com/specimen/Gowun+Dodum", "usedBy": [], "role": "선택 — 부드러운 본문" },
-    { "family": "Nanum Pen Script", "folder": "nanum-pen-script", "weights": [400], "license": "OFL-1.1",
-      "source": "https://fonts.google.com/specimen/Nanum+Pen+Script", "usedBy": [], "role": "선택 — 손글씨" }
+    {
+      "family": "Pretendard",
+      "folder": "",
+      "weights": [
+        400,
+        600,
+        700,
+        800
+      ],
+      "license": "OFL-1.1",
+      "source": "https://github.com/orioncactus/pretendard",
+      "usedBy": [
+        "subtitle",
+        "emphasis",
+        "title",
+        "ending",
+        "brand",
+        "disclosure",
+        "앱 화면"
+      ],
+      "role": "기본",
+      "folderNote": "P1 경로 유지: public/fonts/ 바로 아래"
+    },
+    {
+      "family": "Noto Sans KR",
+      "folder": "noto-sans-kr",
+      "weights": [
+        400,
+        700,
+        900
+      ],
+      "license": "OFL-1.1",
+      "source": "https://fonts.google.com/noto/specimen/Noto+Sans+KR",
+      "usedBy": [
+        "대체 글꼴"
+      ],
+      "role": "보조"
+    },
+    {
+      "family": "Noto Serif KR",
+      "folder": "noto-serif-kr",
+      "weights": [
+        400,
+        600,
+        700
+      ],
+      "license": "OFL-1.1",
+      "source": "https://fonts.google.com/noto/specimen/Noto+Serif+KR",
+      "usedBy": [
+        "lyric"
+      ],
+      "role": "명조"
+    },
+    {
+      "family": "Black Han Sans",
+      "folder": "black-han-sans",
+      "weights": [
+        400
+      ],
+      "license": "OFL-1.1",
+      "source": "https://fonts.google.com/specimen/Black+Han+Sans",
+      "usedBy": [
+        "hook"
+      ],
+      "role": "굵은 제목"
+    },
+    {
+      "family": "Do Hyeon",
+      "folder": "do-hyeon",
+      "weights": [
+        400
+      ],
+      "license": "OFL-1.1",
+      "source": "https://fonts.google.com/specimen/Do+Hyeon",
+      "usedBy": [],
+      "role": "선택 — 깔끔한 제목"
+    },
+    {
+      "family": "Jua",
+      "folder": "jua",
+      "weights": [
+        400
+      ],
+      "license": "OFL-1.1",
+      "source": "https://fonts.google.com/specimen/Jua",
+      "usedBy": [],
+      "role": "선택 — 둥근 귀여운 느낌"
+    },
+    {
+      "family": "Gowun Dodum",
+      "folder": "gowun-dodum",
+      "weights": [
+        400
+      ],
+      "license": "OFL-1.1",
+      "source": "https://fonts.google.com/specimen/Gowun+Dodum",
+      "usedBy": [],
+      "role": "선택 — 부드러운 본문"
+    },
+    {
+      "family": "Nanum Pen Script",
+      "folder": "nanum-pen-script",
+      "weights": [
+        400
+      ],
+      "license": "OFL-1.1",
+      "source": "https://fonts.google.com/specimen/Nanum+Pen+Script",
+      "usedBy": [],
+      "role": "선택 — 손글씨"
+    }
   ],
-  "notAllowed": "무료라도 OFL이 아닌 글꼴(회사 전용 무료 글꼴 등)은 영상 삽입·묶음 배포 조건이 제각각이라 목록에 넣지 않는다. 넣으려면 플래너가 라이선스를 확인해 이 파일에 추가한다."
+  "notAllowed": "무료라도 OFL이 아닌 글꼴(회사 전용 무료 글꼴 등)은 영상 삽입·묶음 배포 조건이 제각각이라 목록에 넣지 않는다. 넣으려면 플래너가 라이선스를 확인해 이 파일에 추가한다.",
+  "verified": {
+    "date": "2026-11-15",
+    "by": "Codex T-005",
+    "what": "공식 배포처 라이선스 원문에서 OFL 1.1 명시 확인. 글꼴 파일·굵기·렌더링 검증은 설치 때"
+  }
 }
