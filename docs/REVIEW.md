@@ -195,3 +195,9 @@ P1-1 진행 가능. DB/워커 등 후속 기능의 통과를 의미하지 않는
 - `tokens.css` v1.1 (Q-003): `--accent` 민트 600→700(흰 글자 3.28→4.87:1), `--accent-hover` 800, `--accent-press` 900(신설), `--accent-bar` 민트 600(신설·글자 없는 곳만), `--phase-0` 남색 500. 앱이 이 파일을 직접 import하므로 **즉시 반영됨**.
 - **구현 후속 1건**: 임시 `var(--accent-hover)` 사용처(`ui.module.css .primary`, `globals.css .action-link`, `studio-shell.module.css .mark`)를 `var(--accent)`로, `primitives.tsx` phase 0 특례를 `var(--phase-0)`으로 되돌릴 것.
 - `DESIGN.md` v1.2: 위 토큰 역할, 작업 대기열 경로 `/jobs` 확정(Q-004).
+
+---
+
+## 알림 · PLAN v2.4 연속 진행 방식 (2026-11-15, 플래너)
+
+판정 아님 — 기준 변경 알림. 은영님이 직접 지시를 확인해 PLAN 20.1과 CLAUDE.md에 반영했다. 마일스톤마다 자체 검수 기록 후 계속 진행, 작은 질문은 사후 답변, R1~R10에 걸리는 것만 멈춤. P1 종료 판정은 18장 표 그대로(검수 담당 흐름 검수 + 은영님 확인).
