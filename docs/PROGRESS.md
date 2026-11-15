@@ -1,5 +1,16 @@
 # 진행 기록
 
+## P1-4 · 자료·캐릭터 보관함 (2026-11-15)
+
+- 변경: lib/media/{tools,inspect,range}.ts, lib/storage/upload.ts·paths.ts, lib/repo/library.ts, lib/services/library.ts·http-error.ts, 자료 업로드/링크/미리보기/캐릭터/보관 API, LibraryBrowser·CSS, 공통 확인 패널 처리 중 표시, 미디어 설치 스크립트·문서·환경 예시·추적 제외, tests/media-storage.test.ts·library.test.ts. file-type22.3.0/Sharp0.35.5 고정.
+- 저장: 원문 요청 본문을 임시 파일로 스트리밍하면서 크기 한도(기본2GB)와SHA256 측정. 실제 서명과 확장자를 대조하고 이미지는 Sharp 전체 디코딩(4천만 화소 제한)·해상도, 오디오/영상은 ffprobe 실제 길이·해상도 확인. 검증 후 UUID 경로로 배타적 hard-link 확정, DB/활동 기록 트랜잭션 성공 뒤 임시 파일 제거. 검증/DB/취소 실패는 임시·미확정 파일 정리, 기존 파일 덮어쓰기 없음.
+- 경로/제공: 실제 realpath 기준 storage 내부만 허용하여 junction 우회 거부. 자료는 public에 없음. UUID 검증·파일 크기 확인 뒤 스트리밍, Range206/416·Content-Disposition·nosniff 적용. 문서는 attachment로 제공. 링크는 제목/주소/출처·권리 메모만 저장하며 네트워크 요청 없음.
+- UI:7개 종류 탭·검색, PC4/태블릿3/휴대폰2열, 파일별 진행/검사/완료/거절, 이미지·음성·영상 미리보기, 출처·권리 메모/미확인·원본·샘플 표시. 캐릭터6개 고정 설정+참조+확인 상태 저장. 보관은 원본/프로젝트 참조 유지, 같은 화면에서 되살리기 제공. 확인 패널에 처리 중 중복 클릭 차단 추가.
+- 도구: 공식 FFmpeg 페이지가 안내한 Gyan9.0.2 Windows ZIP을 게시 SHA256으로 검증하고 .tools/ffmpeg에 로컬 설치. 라이선스 동봉. PowerShell은 해당 프로세스에서만 Bypass로 실행했고 전역 정책/PATH는 변경하지 않았다. 바이너리·런타임 자료의 Next 추적 제외 및 자동 검사 통과. 상세 docs/MEDIA_TOOLS.md.
+- 검증: 테스트12파일·75건 통과(이 PC에서 AV 테스트도 실제 실행). 스트림 크기 초과·취소·DB 실패 정리, 원본 비덮어쓰기, 실제 PNG/MP3/MP4, 가짜 확장자/실행 파일·UTF-8 검증, 경로/junction 차단, 범위 읽기, 링크 무요청, 캐릭터 참조·잠금, 보관/복원 참조 유지. lint/typecheck/build 통과, 운영감사0/개발moderate7.
+- 실제 운영 브라우저: 격리 폴더에 PNG/MP3/MP4 업로드 성공, 가짜jpg 실행 파일 거절. 이미지96px 디코딩, MP4(160×284)·MP3 각0.5초 실제 재생(currentTime>0), 전체 내려받기 원본 바이트/SHA256 일치, Range20610바이트/불가능 범위416/nosniff/attachment 확인. 링크와 얼굴 고정 캐릭터 생성 확인. 사용 중 원본 보관 후에도GET200과 참조 유지, UI 되살리기 확인.1280/390 넘침 없음, tmp/p14-media-grid-*.png·p14-character-1280.png 등 증거. PC/모바일 자료 카드 육안 확인.
+- 제한:2GB 크기의 실제 파일 전체 전송 부하 시험은 하지 않았으며 작은 한도 주입으로 동일 스트림 차단을 검증했다. 외부 다운로드 없음. AV 검사 도구가 없는 환경은 명확한 설치 안내로 거부한다. 현재 이미지 검사와AV 메타데이터 검사에 서로 맞는 도구를 사용한다. 자체 검수R-010 후 P1-5로 진행.
+
 ## P1-3 · 프로젝트 등록·작업실 DB 연결 (2026-11-15)
 
 - 변경: lib/menus/inputs.ts, lib/repo/projects.ts, lib/services/projects.ts, withDatabase 경계, components/project-form.tsx·breadcrumb.tsx, 프로젝트 등록 API/단계 화면, 작업실·분야 프로젝트 목록·스타일, tests/projects.test.ts. 기존 단계 상태 반환 타입을 명시했다.

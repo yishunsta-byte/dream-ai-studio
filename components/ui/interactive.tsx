@@ -34,7 +34,7 @@ export function Tabs({ items, activeKey }: { items: { key: string; label: string
     {locked.map((item) => <p className={styles.help} key={item.key}>{item.label}: {item.lockedReason}</p>)}
   </div>;
 }
-export function ConfirmPanel({ open, onDismiss, onConfirm, title, description, confirmLabel, tone = "default" }: { open: boolean; onDismiss: () => void; onConfirm: () => void; title: string; description: ReactNode; confirmLabel: string; tone?: "default" | "danger" }) {
+export function ConfirmPanel({ open, onDismiss, onConfirm, title, description, confirmLabel, tone = "default", confirming=false }: { open: boolean; onDismiss: () => void; onConfirm: () => void; title: string; description: ReactNode; confirmLabel: string; tone?: "default" | "danger"; confirming?: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const cancel = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -54,7 +54,7 @@ export function ConfirmPanel({ open, onDismiss, onConfirm, title, description, c
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
   }} onClick={(event) => { if (event.target === event.currentTarget) onDismiss(); }}>
-    <div className={styles.panel}><h2 id={`${id}-title`}>{title}</h2><div id={`${id}-description`}>{description}</div><div className={styles.actions}><button type="button" ref={cancel} className={`${styles.button} ${styles.secondary} ${styles.md}`} onClick={onDismiss}>취소</button><Button variant={tone === "danger" ? "danger" : "primary"} onClick={onConfirm}>{confirmLabel}</Button></div></div>
+    <div className={styles.panel}><h2 id={`${id}-title`}>{title}</h2><div id={`${id}-description`}>{description}</div><div className={styles.actions}><button type="button" ref={cancel} className={`${styles.button} ${styles.secondary} ${styles.md}`} onClick={onDismiss}>취소</button><Button variant={tone === "danger" ? "danger" : "primary"} loading={confirming} loadingLabel="처리 중" onClick={onConfirm}>{confirmLabel}</Button></div></div>
   </dialog>;
 }
 type Notice = { id: number; tone: "success" | "error"; message: string; undo?: () => void };

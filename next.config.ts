@@ -4,7 +4,7 @@ const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   outputFileTracingExcludes: {
-    "/*": ["./data/**/*", "./storage/**/*", "./backups/**/*", "./tmp/**/*", "./.env*"],
+    "/*": ["./data/**/*", "./storage/**/*", "./backups/**/*", "./tmp/**/*", "./.tools/**/*", "./.env*"],
   },
 };
 

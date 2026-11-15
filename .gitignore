@@ -10,5 +10,6 @@ coverage/
 /storage/
 /backups/
 /tmp/
+/.tools/
 *.log
 .DS_Store

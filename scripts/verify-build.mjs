@@ -10,7 +10,7 @@ for (const filename of readdirSync(server, { recursive:true })) {
   const manifest = join(server,filename);
   for (const file of JSON.parse(readFileSync(manifest,"utf8")).files ?? []) {
     const path = relative(root,resolve(dirname(manifest),file)).replaceAll("\\","/");
-    if (/^(?:data|storage|backups|tmp)\//.test(path) || /^\.env/.test(path)) {
+    if (/^(?:data|storage|backups|tmp|\.tools)\//.test(path) || /^\.env/.test(path)) {
       throw new Error("운영 빌드 파일 목록에 로컬 데이터나 비밀 설정이 포함되어 중단했어요.");
     }
   }
