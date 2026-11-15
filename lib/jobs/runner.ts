@@ -8,11 +8,13 @@ import { ProviderFailure, type Provider } from "@/lib/providers/types";
 import { receiveUpload } from "@/lib/storage/upload";
 import { MediaError } from "@/lib/media/inspect";
 import { WorkflowError } from "@/lib/domain/stages";
+import { runClaimedExport } from "@/lib/services/exports";
 const outputSchema=z.strictObject({type:z.literal("media"),files:z.array(z.object({bytes:z.instanceof(Uint8Array),mime:z.enum(["image/png","video/mp4","audio/wav"])})).length(1),usage:z.object({costMicros:z.literal(0),currency:z.literal("KRW")}).optional()});
 export async function runNextJob(handle:DatabaseHandle,options:{now?:()=>number;sleep?:(ms:number)=>Promise<void>;provider?:(input:ReturnType<typeof generationInputSchema.parse>,version:number,attempt:number)=>Provider}={}){
  const now=options.now??Date.now,sleep=options.sleep??(ms=>new Promise(resolve=>setTimeout(resolve,ms))),service=jobsService(handle,now);service.heartbeatWorker();const job=service.claim();if(!job)return false;
  let lost=false;const heartbeat=setInterval(()=>{try{service.heartbeat(job.id,job.attempts);service.heartbeatWorker();}catch{lost=true;}},20000);
  try {
+  if(job.kind==="export"){await runClaimedExport(handle,job,now);return true;}
   const input=generationInputSchema.parse(JSON.parse(job.inputSnapshotJson)),provider=options.provider?.(input,job.version,job.attempts)??createMockProvider(input,job.version,job.attempts,now);
   let providerId=job.providerJobId;if(!providerId){const submitted=await provider.submit({capability:input.kind,model:input.model,prompt:input.description,params:{aspect:input.aspect,durationSec:input.durationSec}},job.idempotencyKey);if(!submitted.providerJobId)throw new ProviderFailure("UNKNOWN","샘플 제공자의 작업 번호가 없어요.");providerId=submitted.providerJobId;service.providerStarted(job.id,job.attempts,providerId);}
   let pollWait=5000;const started=Date.parse(job.startedAt);if(!job.providerJobId)await sleep(750);
@@ -27,7 +29,7 @@ export async function runNextJob(handle:DatabaseHandle,options:{now?:()=>number;
     service.finish(job.id,job.attempts,{id:asset.id,kind:asset.kind,title:asset.title,role:"intermediate",origin:"generated",filePath:asset.filePath,mime:asset.mime,sizeBytes:asset.sizeBytes,sha256:asset.sha256,width:asset.width,height:asset.height,durationMs:asset.durationMs,generationId:job.generationId,isMock:true,rightsNote:input.kind==="video"&&file.mime==="image/png"?"샘플 · 영상 도구가 없어 이미지로 대체했어요.":"시험용 샘플 · 실제 생성 결과가 아니에요."});
    },undefined,input.projectId);break;
   }
- }catch(error){if(error instanceof WorkflowError&&error.code==="CONFLICT")return true;const code=error instanceof ProviderFailure?error.code:error instanceof MediaError?"STORAGE_FAILED":"UNKNOWN";const message=error instanceof ProviderFailure||error instanceof MediaError?error.message:"샘플 결과를 처리하지 못했어요. 입력과 저장 공간을 확인해 주세요.";try{service.fail(job.id,job.attempts,code,message);}catch(failure){if(!(failure instanceof WorkflowError&&failure.code==="CONFLICT"))throw failure;}}
+ }catch(error){if(error instanceof WorkflowError&&error.code==="CONFLICT"){try{service.assertClaim(job.id,job.attempts);}catch{return true;}}const code=error instanceof ProviderFailure||error instanceof WorkflowError?error.code:error instanceof MediaError?error.code==="DISK_FULL"?"STORAGE_FAILED":error.code:"UNKNOWN";const message=error instanceof ProviderFailure||error instanceof MediaError||error instanceof WorkflowError?error.message:"결과를 처리하지 못했어요. 입력과 저장 공간을 확인해 주세요.";try{service.fail(job.id,job.attempts,code,message);}catch(failure){if(!(failure instanceof WorkflowError&&failure.code==="CONFLICT"))throw failure;}}
  finally{clearInterval(heartbeat);}
  return true;
 }

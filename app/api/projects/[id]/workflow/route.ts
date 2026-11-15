@@ -16,7 +16,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   return Response.json({result});
  }catch(error){
   if(error instanceof WorkflowError)return Response.json({error:error.message},{status:error.status});
-  if(error instanceof z.ZodError||error instanceof SyntaxError)return Response.json({error:"대본과 각 장면의 제목·설명·길이를 확인해 주세요. 길이는 1~600초예요."},{status:400});
+  if(error instanceof z.ZodError||error instanceof SyntaxError)return Response.json({error:"대본과 각 장면의 제목·설명을 확인해 주세요. 장면은 1~600초, 합계는 7,200초 이하여야 해요."},{status:400});
   return Response.json({error:"저장하지 못했어요. 시작 점검을 확인하고 다시 시도해 주세요."},{status:503});
  }
 }

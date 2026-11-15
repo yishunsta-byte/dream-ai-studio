@@ -1,0 +1,22 @@
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
+import { createHash } from "node:crypto";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve, sep } from "node:path";
+import { pipeline } from "node:stream/promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { v7 } from "uuid";
+import { openPromise } from "yauzl";
+vi.mock("server-only",()=>({}));
+import { safeArchivePath, verifyZip, writeZip } from "@/lib/export/zip";
+import type { BundleManifest } from "@/lib/export/schema";
+let root:string;const bytes=Buffer.from("샘플 ZIP 내용 · SAMPLE","utf8"),path="scenes/01_SAMPLE.txt";
+const manifest=():BundleManifest=>({manifestVersion:1,project:{id:v7(),title:"ZIP 검증 샘플",aspect:"9:16",lengthSec:3},menu:{id:"shopping-shorts",label:"쇼핑 샘플"},templateVersion:"test",contentRevision:1,planId:v7(),exportedAt:new Date().toISOString(),isMock:true,kind:"editing-bundle",files:[{path,sha256:createHash("sha256").update(bytes).digest("hex"),sizeBytes:bytes.length,mime:"text/plain"}]});
+beforeEach(async()=>{root=await mkdtemp(join(tmpdir(),"dream-ai-zip-"));});
+afterEach(async()=>{if(!resolve(root).startsWith(resolve(tmpdir())+sep))throw new Error("임시 경로 오류");await rm(root,{recursive:true,force:true});});
+describe("스트리밍 ZIP64·독립 파일 검증",()=>{
+ it("실제 새 폴더에 풀어 manifest 전 파일과 해시·크기를 대조한다",async()=>{const expected=manifest(),filename=join(root,"bundle.zip");await writeZip(filename,[{path,bytes}],expected);const buffer=await readFile(filename);expect(buffer.includes(Buffer.from([0x50,0x4b,0x06,0x06]))).toBe(true);const extracted=join(root,"extracted"),archive=await openPromise(filename,{lazyEntries:true,strictFileNames:true,validateEntrySizes:true,autoClose:false});try{for await(const entry of archive.eachEntry()){expect(safeArchivePath(entry.fileName)).toBe(true);const target=resolve(extracted,entry.fileName);expect(target.startsWith(resolve(extracted)+sep)).toBe(true);await mkdir(dirname(target),{recursive:true});await pipeline(await archive.openReadStreamPromise(entry),createWriteStream(target,{flags:"wx"}));}}finally{archive.close();}const saved=JSON.parse(await readFile(join(extracted,"manifest.json"),"utf8"));for(const file of saved.files){const actual=await readFile(join(extracted,file.path));expect(actual.length).toBe(file.sizeBytes);expect(createHash("sha256").update(actual).digest("hex")).toBe(file.sha256);}expect(saved).toEqual(expected);});
+ it("같은 이름 중복·미등록 파일·누락 파일을 거절한다",async()=>{const expected=manifest();for(const [index,sources] of [[{path,bytes},{path,bytes}],[{path,bytes},{path:"extra.txt",bytes}],[]].entries()){const filename=join(root,`invalid-${index}.zip`);await writeZip(filename,sources,expected);await expect(verifyZip(filename,expected)).rejects.toThrow();}});
+ it("내용이 변조되거나 manifest가 바뀌면 성공 검증하지 않는다",async()=>{const expected=manifest(),filename=join(root,"tampered.zip");await writeZip(filename,[{path,bytes}],expected);const buffer=await readFile(filename),offset=buffer.indexOf(bytes);expect(offset).toBeGreaterThan(0);buffer[offset]^=1;await writeFile(filename,buffer);await expect(verifyZip(filename,expected)).rejects.toThrow();const second=join(root,"manifest.zip");await writeZip(second,[{path,bytes}],{...expected,contentRevision:2});await expect(verifyZip(second,expected)).rejects.toThrow();});
+ it("절대경로·경로 탈출·Windows 드라이브·구분자 우회를 막고 기존 ZIP은 덮어쓰지 않는다",async()=>{for(const name of ["../escape.txt","/absolute.txt","C:/secret.txt","a\\b.txt","a/../b.txt","a//b.txt"])expect(safeArchivePath(name)).toBe(false);const filename=join(root,"preserved.zip");await writeFile(filename,"original fixture");await expect(writeZip(filename,[{path,bytes}],manifest())).rejects.toThrow();expect(await readFile(filename,"utf8")).toBe("original fixture");});
+});

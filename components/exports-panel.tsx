@@ -1,0 +1,11 @@
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { ExportsData } from "@/lib/services/exports";
+import { Badge, Button, Card, Callout, EmptyState, SampleBadge, StatusPill } from "./ui/primitives";
+import { finishingRequest } from "./editing-panel";
+export function ExportsPanel({data}:{data:ExportsData}){const [pending,setPending]=useState(false),[error,setError]=useState("");const router=useRouter();const working=data.rows.some(row=>["running","queued"].includes(row.jobStatus??""));useEffect(()=>{if(!working)return;const timer=setInterval(()=>router.refresh(),2000);return()=>clearInterval(timer);},[working,router]);
+ async function create(){setPending(true);setError("");try{await finishingRequest(data.projectId,data.revision,"export");router.refresh();}catch(error){setError((error as Error).message);}finally{setPending(false);}}
+ return <div className="stack"><Callout title="편집용 묶음이에요. 완성 영상은 포함하지 않아요.">현재 승인 기획과 검수·선택 결과를 다시 확인해요. ZIP을 만든 뒤 모든 파일·크기·해시를 재검증해야 내려받을 수 있어요. 기존 묶음은 이후 수정해도 그대로 남아요.</Callout>{error&&<p role="alert">{error}</p>}<Button loading={pending} disabledReason={!data.canCreate?"현재 내용의 검수 승인이 필요해요.":undefined} onClick={()=>void create()}>현재 내용 r{data.revision} · 편집용 묶음 만들기</Button><Link href="/jobs">작업 대기열·처리기 상태 보기 →</Link>{!data.rows.length&&<EmptyState icon="folder" title="아직 만든 묶음이 없어요" description="검수를 승인한 뒤 편집용 묶음을 만들어 주세요."/>}{data.rows.map(row=><Card key={row.id}><div className="stack"><h2>내용 r{row.revision} · 편집용 묶음</h2><div className="cluster"><StatusPill status={row.status==="succeeded"?"done":row.jobStatus==="canceled"?"canceled":row.jobStatus==="queued"?"queued":row.status==="failed"?"failed":"running"}/>{row.isMock&&<SampleBadge/>}{row.revision!==data.revision&&<Badge>이전 내용</Badge>}</div><p>{new Date(row.createdAt).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"})} · 파일 {row.fileCount}개</p>{row.error&&<p>{row.error}</p>}{row.status==="succeeded"&&!row.available&&<Callout title="내보낸 파일이 없어요." tone="warning">저장 위치를 확인해 주세요. 완료 기록만으로 내려받을 수는 없어요.</Callout>}{row.available&&<><a className="action-link" href={`/api/exports/${row.id}`}>편집용 묶음 내려받기{row.isMock?" · 샘플 포함":""}</a><p className="muted">검증된 SHA256: {row.sha256}</p></>}</div></Card>)}</div>;
+}

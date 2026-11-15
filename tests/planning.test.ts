@@ -10,7 +10,7 @@ import { migrateDatabase } from "@/lib/db/migrate";
 import { assets, plans, scenes, projects, activityLog } from "@/lib/db/schema";
 import { parseMenuConfig } from "@/lib/menus/parse";
 import { projectService } from "@/lib/services/projects";
-import { planningService } from "@/lib/services/planning";
+import { planningInputSchema, planningService } from "@/lib/services/planning";
 import { workflowService } from "@/lib/services/workflow";
 const parsed=parseMenuConfig(readFileSync(new URL("../docs/spec/menus.json",import.meta.url),"utf8"));if(!parsed.ok)throw new Error("메뉴 오류");const config=parsed.config;
 let handle:DatabaseHandle,root:string,id:string,assetId:string;
@@ -22,6 +22,7 @@ beforeEach(()=>{
 });
 afterEach(()=>{vi.restoreAllMocks();handle.close();if(!resolve(root).startsWith(resolve(tmpdir())+sep))throw new Error("임시 경로 오류");rmSync(root,{recursive:true,force:true});});
 describe("요구 확인·기획 승인",()=>{
+ it("편집 시간 범위를 넘는 전체 장면 길이를 저장하지 않는다",()=>{const source=input().scenes[0];expect(planningInputSchema.safeParse({script:"샘플",scenes:Array.from({length:13},()=>({...source,durationSec:600}))}).success).toBe(false);expect(planningInputSchema.safeParse({script:"샘플",scenes:Array.from({length:12},()=>({...source,durationSec:600}))}).success).toBe(true);});
  it("확인 전 저장과 확인란 없는 완료를 거부한다",()=>{
   const service=planningService(handle,config);expect(service.get(id).issues.length).toBeGreaterThan(0);expect(()=>service.confirmBrief(id,1,false)).toThrow();expect(()=>service.save(id,1,input())).toThrow();expect(handle.db.select().from(plans).all()).toHaveLength(0);
  });

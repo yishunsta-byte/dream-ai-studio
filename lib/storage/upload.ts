@@ -10,7 +10,7 @@ import { z } from "zod";
 import { inspectMedia, MediaError } from "@/lib/media/inspect";
 
 export function uploadLimit() {const configured=Number(process.env.MAX_UPLOAD_BYTES);return Number.isSafeInteger(configured)&&configured>0?configured:2*1024**3;}
-async function directory(name:string) {
+export async function storageDirectory(name:string) {
  const base=await realpath(join(process.cwd(),"storage"));let actual=base;
  for(const part of name.split("/")){
   if(!part||part==="."||part===".."||part.includes("\\")||part.includes(":"))throw new MediaError("STORAGE_FAILED","자료 폴더의 경로를 확인해 주세요.",503);
@@ -24,7 +24,7 @@ export async function receiveUpload(body:ReadableStream<Uint8Array>,filename:str
  if(!title||title.length>255)throw new MediaError("INVALID_INPUT","파일 이름은 255자 이하로 적어 주세요.");
  const destination=projectId?`projects/${z.uuidv7().parse(projectId)}/assets`:"library";
  const limit=uploadLimit();let tmpDir:string,library:string;
- try{tmpDir=await directory("tmp");library=await directory(destination);}catch(error){if(error instanceof MediaError)throw error;throw new MediaError("STORAGE_FAILED","자료 폴더에 쓸 수 없어요. 저장 경로와 권한을 확인해 주세요.",503);}
+ try{tmpDir=await storageDirectory("tmp");library=await storageDirectory(destination);}catch(error){if(error instanceof MediaError)throw error;throw new MediaError("STORAGE_FAILED","자료 폴더에 쓸 수 없어요. 저장 경로와 권한을 확인해 주세요.",503);}
  const space=await statfs(tmpDir);if(space.bavail*space.bsize<1024*1024)throw new MediaError("DISK_FULL","디스크 공간이 부족해요. 저장 공간을 확보해 주세요.",507);
  const temp=join(tmpDir,`${id}.part`);let created=false,final:string|undefined,committed=false;
  try {
