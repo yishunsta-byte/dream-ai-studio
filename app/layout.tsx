@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { appConfig } from "@/lib/config/app";
 import { getMenuConfigState } from "@/lib/menus/server";
+import localFont from "next/font/local";
+import { ToastProvider } from "@/components/ui/interactive";
+import "./globals.css";
+
+const pretendard = localFont({ src: "../public/fonts/PretendardVariable.woff2", weight: "45 920", display: "swap", variable: "--font-pretendard" });
 
 export const metadata: Metadata = {
   title: appConfig.name,
@@ -15,12 +20,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   const state = getMenuConfigState();
   if (!state.ok) {
     return (
-      <html lang="ko"><body><main>
+      <html lang="ko" className={pretendard.variable}><body><main className="content">
         <h1>메뉴 설정을 확인해 주세요</h1>
         <p>설정 오류로 작업실을 시작할 수 없습니다. 아래 항목을 수정한 뒤 서버를 다시 시작해 주세요.</p>
         <ul style={{ overflowWrap: "anywhere" }}>{state.issues.map((issue, index) => <li key={index}><code>{issue.path}</code>: {issue.message}</li>)}</ul>
       </main></body></html>
     );
   }
-  return <html lang="ko"><body>{children}</body></html>;
+  return <html lang="ko" className={pretendard.variable}><body><ToastProvider>{children}</ToastProvider></body></html>;
 }

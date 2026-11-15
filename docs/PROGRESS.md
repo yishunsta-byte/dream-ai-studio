@@ -1,5 +1,16 @@
 # 진행 기록
 
+## P0-4 · 공통 UI (2026-11-15)
+
+- 기준: PLAN v2.3, DESIGN v1.1 4·7·10장. 최신 사용자 지시에 따라 현재 담당이 구현과 자체 검수를 연속 수행한다.
+- 변경: components/ui/{Icon.tsx,primitives.tsx,interactive.tsx,ui.module.css}, lib/ui/status.ts, app/globals.css·layout.tsx, app/dev/ui/, public/fonts/, tests/ui-status.test.ts. 글꼴은 공식 Pretendard 저장소의 고정 리비전에서 받은 원본 woff2와 OFL 라이선스이며 SOURCE.md 동봉.
+- 구현: Button/IconButton/Card/Badge/StatusPill/SampleBadge/PhaseChip/Stepper/Tabs/PageHeader/Field/FormErrorSummary/Callout/Toast/ConfirmPanel/EmptyState. 토큰 전역 적용, next/font/local. 개발 전용 부품 모음 /dev/ui, 운영 404. SceneCard·ReviewItem은 후속 단계.
+- 검증: build/lint/typecheck 통과, 테스트 4파일·15건 통과. components에서 색상 코드 정규식 검색 0건. 운영 감사 0, 개발 moderate 7건 유지. eslint-plugin-jsx-a11y가 ESLint 10 미지원이므로 Q-002에 기록, 강제 설치하지 않음. 실제 브라우저로 접근성 검증.
+- 브라우저: ego-browser 1280·390에서 가로 넘침 없음(scrollWidth <= innerWidth; PC는 세로 스크롤바 폭 제외). 스크린샷 tmp/p04-ui-1280.png, p04-ui-390.png, p04-ui-200percent.png. 640 CSS px(1280 화면의 200% 확대에 해당하는 가용 폭)에서도 넘침 없음. Pretendard 적용 확인.
+- 상호작용: ConfirmPanel 취소 초기 포커스, Tab/Shift+Tab 가둠, Esc·바깥 클릭 닫기, 연 버튼 복귀 확인. 네이티브 dialog의 역방향 Tab이 body로 빠지는 결함을 발견하여 명시적 Tab 순환으로 수정 후 재검증. 오류 요약→첫 입력 포커스·aria-invalid 확인. 성공 Toast 5초 자동 닫힘, 실패 수동 닫기 확인. Tabs 방향키, reduced-motion에서 animation:none 확인. 운영 /dev/ui HTTP 404 확인.
+- Q-003: 흰색/민트600 대비 3.28:1 문제를 발견해 기존 민트700 토큰(4.87:1)으로 주 버튼 보완, P0 칩도 기존 남색 토큰으로 보완. 기준 토큰 원본은 유지했다.
+- 자체 검수 통과(R-005). 별도 담당의 독립 검수 아님. 다음 P0-5로 진행.
+
 ## P0-3 · 메뉴 설정 로더·시작 검증 (2026-11-15)
 
 - 기준: PLAN v2.3 6.1 M-1~M-5, 18장 P0-3. 선행 검수 R-003 통과 확인. 사용자의 계속 진행 지시에 따라 이번 단계 구현을 수행했다. PLAN·menus.json·디자인 기준은 변경하지 않았다.
