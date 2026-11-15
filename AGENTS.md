@@ -19,3 +19,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 상대 담당자가 REVIEW.md에 남긴 필수 수정은 수정 위치와 재검증 결과로 회신한다. 검수 통과 전 다음 마일스톤으로 진행하지 않는다.
 - 문서 작성·메시지 초안·실제 전송·수신 확인을 구분한다. 직접 전송할 수 없으면 복사용 메시지를 제공하고 전송했다고 주장하지 않는다.
 - 기준·디자인·템플릿을 변경할 필요가 있으면 QUESTIONS.md에 기록하고 관련 부분을 조율한다. 독립적으로 가능한 작업은 계속한다.
+
+## 팀 협업 (은영님 지시, 2026-11-15)
+
+Claude Code와 Codex는 한 팀이다. 위험하거나 은영님 결정이 필요한 일이 아니면, 상대가 할 일은 `docs/TEAM.md`에 보고서로 남기고 Orca로 바로 요청한다(`orca orchestration send --to <상대 터미널> ...`). 상대 요청이 오면 그에 맞춰 진행하고 같은 항목에 회신한다. 터미널 번호와 절차는 `docs/TEAM.md`.
