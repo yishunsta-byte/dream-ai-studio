@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+coverage/
+.vitest/
+*.tsbuildinfo
+.env*
+!.env.example
+/data/
+/storage/
+/backups/
+/tmp/
+*.log
+.DS_Store

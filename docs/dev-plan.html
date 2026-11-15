@@ -1,0 +1,515 @@
+<title>Dream AI Studio 개발 플랜</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 문서형 단일 칼럼(최대 1120px) + 상단 고정 목차. 표는 각자 가로 스크롤. */
+:root{
+  --bg:#FAF8F3; --surface:#FFFFFF; --sunk:#F1EEE6; --line:#E2DDD1;
+  --ink:#1B2836; --muted:#5B6878; --navy:#243B53; --mint:#0E9F94; --mint-soft:#DDF2EF;
+  --p0:#6B7A8F; --p1:#0E9F94; --p2:#2F7FC1; --p3:#7A5BC4; --p4:#C27A1A; --p5:#C2456B; --p6:#4E7A3A; --p7:#36506E; --p8:#8A5A44;
+  --ok:#1F7A4D; --ok-bg:#E2F3EA; --warn:#9A5B00; --warn-bg:#FBEFD9; --bad:#A3322B; --bad-bg:#F8E3E1;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121A23; --surface:#18222D; --sunk:#1E2A36; --line:#2C3A48;
+  --ink:#E7ECF1; --muted:#9AA8B6; --navy:#A9C1DA; --mint:#3CC4B7; --mint-soft:#163A39;
+  --p0:#9AA8B6; --p1:#3CC4B7; --p2:#6AAEE6; --p3:#A88BE8; --p4:#E2A14A; --p5:#E57A9B; --p6:#8DBE6E; --p7:#8FB0D3; --p8:#C99A84;
+  --ok:#6FD3A0; --ok-bg:#16352A; --warn:#F0B866; --warn-bg:#3A2C14; --bad:#F09089; --bad-bg:#3D1F1D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121A23; --surface:#18222D; --sunk:#1E2A36; --line:#2C3A48;
+  --ink:#E7ECF1; --muted:#9AA8B6; --navy:#A9C1DA; --mint:#3CC4B7; --mint-soft:#163A39;
+  --p0:#9AA8B6; --p1:#3CC4B7; --p2:#6AAEE6; --p3:#A88BE8; --p4:#E2A14A; --p5:#E57A9B; --p6:#8DBE6E; --p7:#8FB0D3; --p8:#C99A84;
+  --ok:#6FD3A0; --ok-bg:#16352A; --warn:#F0B866; --warn-bg:#3A2C14; --bad:#F09089; --bad-bg:#3D1F1D; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{color:var(--navy);text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:clamp(26px,4vw,36px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:700}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+a{color:var(--mint)}
+code,.mono{font-family:var(--f-mono);font-size:.88em}
+code{background:var(--sunk);padding:1px 5px;border-radius:4px}
+
+/* top nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;gap:4px;overflow-x:auto;padding-block:8px;scrollbar-width:thin}
+.nav a{flex:0 0 auto;text-decoration:none;color:var(--muted);font-size:13px;font-weight:500;padding:6px 10px;border-radius:6px;white-space:nowrap}
+.nav a:hover,.nav a:focus-visible{background:var(--sunk);color:var(--ink);outline:none}
+
+header.hero{padding-block:40px 28px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mint);font-weight:600}
+.hero .lead{margin-top:12px;max-width:68ch;color:var(--muted);font-size:16px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:16px;font-size:13px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+
+section{padding-block:28px;border-top:1px solid var(--line)}
+section > .head{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+section > .head p{color:var(--muted);max-width:72ch}
+.stack{display:flex;flex-direction:column;gap:16px}
+
+/* decision cards */
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card .k{font-size:12px;color:var(--muted);font-weight:500}
+.card .v{font-weight:600;margin-top:2px}
+.card .d{font-size:13.5px;color:var(--muted);margin-top:6px}
+
+/* pipeline */
+.pipe{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+.pipe .st{flex:1 1 120px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.pipe .st .n{font-family:var(--f-mono);font-size:11px;color:var(--mint)}
+.pipe .st .t{font-weight:600}
+.pipe .st .s{font-size:12.5px;color:var(--muted)}
+.pipe .st.gate{border-color:var(--mint);background:var(--mint-soft)}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:760px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{background:var(--sunk);color:var(--navy);font-weight:600;font-size:12.5px;position:sticky;top:0;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.nm{font-weight:600;white-space:nowrap}
+td ul{margin:0;padding-left:16px}
+td li+li{margin-top:2px}
+.small{font-size:12.5px;color:var(--muted)}
+
+/* chips */
+.ph{display:inline-block;font-family:var(--f-mono);font-size:11.5px;font-weight:500;padding:2px 7px;border-radius:999px;color:var(--surface);white-space:nowrap}
+.ph0{background:var(--p0)}.ph1{background:var(--p1)}.ph2{background:var(--p2)}.ph3{background:var(--p3)}.ph4{background:var(--p4)}.ph5{background:var(--p5)}.ph6{background:var(--p6)}.ph7{background:var(--p7)}.ph8{background:var(--p8)}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.ok{background:var(--ok-bg);color:var(--ok)}.warn{background:var(--warn-bg);color:var(--warn)}.bad{background:var(--bad-bg);color:var(--bad)}
+
+/* phase blocks */
+details.phase{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+details.phase+details.phase{margin-top:10px}
+details.phase summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:14px 16px}
+details.phase summary::-webkit-details-marker{display:none}
+details.phase summary:focus-visible{outline:2px solid var(--mint);outline-offset:-2px}
+details.phase summary .ttl{font-weight:600;font-size:16px;color:var(--navy)}
+details.phase summary .gl{color:var(--muted);font-size:13.5px;flex-basis:100%}
+details.phase summary .chev{margin-left:auto;color:var(--muted);font-size:12px}
+details.phase[open] summary .chev{transform:rotate(180deg)}
+details.phase .body{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
+details.phase .body .tbl{border-radius:8px}
+details.phase .body table{min-width:680px}
+.done{font-size:13.5px;background:var(--sunk);border-radius:8px;padding:10px 12px}
+.done b{color:var(--navy)}
+
+.note{border-left:3px solid var(--mint);padding:8px 12px;background:var(--surface);border-radius:0 8px 8px 0;font-size:14px;color:var(--muted)}
+footer{padding-block:28px 48px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+html{scroll-behavior:smooth;scroll-padding-top:56px}
+</style>
+
+<nav class="nav" aria-label="목차"><div class="wrap">
+  <a href="#summary">요약</a>
+  <a href="#gaps">보강할 부분</a>
+  <a href="#roadmap">단계 로드맵</a>
+  <a href="#phases">단계별 상세</a>
+  <a href="#services">외부 서비스 조사</a>
+  <a href="#menus">분야별 템플릿</a>
+  <a href="#screens">화면</a>
+  <a href="#data">데이터</a>
+  <a href="#qa">검수 방법</a>
+  <a href="#decide">결정 필요</a>
+</div></nav>
+
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">Dream AI Studio · 개발 플랜 v2</div>
+  <h1>은영 AI 콘텐츠 작업실 단계별 개발 플랜</h1>
+  <p class="lead">기획서 「(이은영)드림 AI바이브.xlsx」 13개 시트와 2026년 11월 기준 외부 서비스 조사를 바탕으로, 비어 있는 부분을 보강하고 기능을 9단계로 나눠 순서대로 쌓아 올리는 계획입니다.</p>
+  <div class="meta">
+    <span>작성 <b>2026-11-15</b></span>
+    <span>역할 <b>플랜·디자인: 플래너(Claude)</b> / <b>검수·테스트: Codex</b> / <b>코딩: 구현 담당 에이전트</b></span>
+    <span>상태 <b>로드맵 요약 · 기준은 <a href="https://claude.ai/artifact/2TMMsv4jSB6j5BKAiNnJsJ">개발 기준 문서 v2.2</a></b></span>
+  </div>
+</header>
+
+<!-- SUMMARY -->
+<section id="summary">
+  <div class="head"><h2>한눈에 보기</h2>
+    <p>모든 분야가 같은 제작 흐름을 쓰고, 분야별 차이는 템플릿 설정으로만 둡니다. 첫 단계는 내 PC에서 계정 없이 돌아가는 작업실을 만들고, 실제 AI 연결은 흐름이 검증된 뒤에 붙입니다.</p></div>
+  <div class="stack">
+    <div class="grid">
+      <div class="card"><div class="k">첫 버전 범위</div><div class="v">전체 메뉴 뼈대 + 공통 흐름</div><div class="d">모든 분야 메뉴를 먼저 만들고, 쇼핑숏츠 템플릿으로 흐름 전체를 검증합니다.</div></div>
+      <div class="card"><div class="k">AI 연결</div><div class="v">샘플 결과로 먼저</div><div class="d">모의 제공자(mock)로 흐름을 완성한 뒤 3단계에서 실제 도구를 하나씩 연결합니다.</div></div>
+      <div class="card"><div class="k">저장</div><div class="v">내 PC → Supabase</div><div class="d">SQLite와 로컬 폴더로 시작하고, 7단계에서 Supabase로 옮깁니다.</div></div>
+      <div class="card"><div class="k">전문 업무</div><div class="v">완전히 분리</div><div class="d">법무·세무·재가센터는 별도 프로젝트(8단계)로, 보안 설계와 전문가 검토 후 시작합니다.</div></div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:10px">모든 분야 공통 제작 흐름</h3>
+      <div class="pipe" role="list">
+        <div class="st" role="listitem"><div class="n">1</div><div class="t">등록</div><div class="s">분야·목표·자료</div></div>
+        <div class="st" role="listitem"><div class="n">2</div><div class="t">요구 확인</div><div class="s">조건·규격·누락 표시</div></div>
+        <div class="st gate" role="listitem"><div class="n">3 · 승인</div><div class="t">기획</div><div class="s">훅·구성·대본·장면표</div></div>
+        <div class="st" role="listitem"><div class="n">4</div><div class="t">장면 제작</div><div class="s">샷 1개 = 클립 1개</div></div>
+        <div class="st" role="listitem"><div class="n">5</div><div class="t">수정·버전</div><div class="s">부분 재생성·복원</div></div>
+        <div class="st gate" role="listitem"><div class="n">6 · 승인</div><div class="t">검수</div><div class="s">체크리스트 통과</div></div>
+        <div class="st" role="listitem"><div class="n">7</div><div class="t">내보내기</div><div class="s">파일 묶음·증빙</div></div>
+      </div>
+      <p class="small" style="margin-top:8px">초록 칸은 사람이 승인해야 다음으로 넘어가는 단계입니다. 원본은 절대 덮어쓰지 않고, 수정은 항상 새 버전으로 저장합니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- GAPS -->
+<section id="gaps">
+  <div class="head"><h2>기획서에서 보강할 부분</h2>
+    <p>기획서는 무엇을 원하는지는 잘 정리돼 있지만, 어떻게 만들지는 비어 있는 곳이 있습니다. 조사 결과로 채운 보강안입니다.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>항목</th><th>기획서 현재 상태</th><th>부족한 점 / 조사로 확인된 사실</th><th>보강안</th><th>단계</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">영상 조립·미리보기</td><td>"영상 렌더링은 별도 설계"</td><td>장면 클립·음성·자막을 합쳐 MP4로 만드는 방법이 없음</td><td>Remotion으로 JSON 타임라인 하나에서 브라우저 미리보기와 MP4 렌더를 같이 처리. 개인·3인 이하 무료</td><td><span class="ph ph2">P2</span></td></tr>
+      <tr><td class="nm">글자 레이어</td><td>11번 시트에 상세 규격</td><td>글자를 영상에 구워 넣으면 수정 때마다 재생성 필요</td><td>글자는 영상과 분리된 레이어 데이터로 저장. 문구·색·위치·시간만 바꾸면 다시 렌더만 하면 됨</td><td><span class="ph ph2">P2</span></td></tr>
+      <tr><td class="nm">부분 수정 단위</td><td>"원하는 부분만 수정"</td><td>AI 영상의 일부만 고치는 건 API로 결과가 불안정함</td><td><b>샷 1개 = 클립 1개</b> 원칙. 고칠 땐 해당 샷만 다시 만들고 이어 붙임</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">작업 대기열·실패</td><td>"실패를 완료로 표시하지 않음"</td><td>오래 걸리는 생성 작업을 관리하는 구조가 없음</td><td>작업 테이블 + 별도 워커. 재시도·취소·오류 문구 저장. PC에서는 제공사 상태를 주기적으로 확인(폴링)</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">결과 파일 보존</td><td>"원본 보존"</td><td>Replicate는 결과를 1시간 뒤 삭제, fal도 모델이 수시로 종료됨</td><td>생성 직후 결과 파일을 내 저장소로 즉시 복사. 외부 주소에 의존하지 않음</td><td><span class="ph ph3">P3</span></td></tr>
+      <tr><td class="nm">캐릭터 일관성</td><td>"같은 얼굴·옷·목소리 유지"</td><td>참조 이미지(최대 3~6장)로 도움은 되지만 <b>완전한 보장은 현재 API로 불가</b></td><td>캐릭터 기준시트(정면·45도·측면·전신) + 샷별 생성 + 사람 검수. 화면에 "보장 아님, 검수 필요" 표시</td><td><span class="ph ph3">P3</span></td></tr>
+      <tr><td class="nm">실제 인물 얼굴</td><td>본인·실존 인물 참조 사용 가능성</td><td>Seedance는 실사 얼굴 참조 차단, Gemini는 유명인 제한</td><td>도구별 거절을 실패 사유로 분리 표시. 가상 캐릭터 사용을 기본으로 안내</td><td><span class="ph ph3">P3</span></td></tr>
+      <tr><td class="nm">비용 관리</td><td>없음</td><td>영상은 초당 약 $0.04~0.60, 반복 재생성 시 비용이 빠르게 늘어남</td><td>실행 전 예상 비용 표시, 월 한도 설정, 프로젝트별 사용액 기록, 한도 초과 시 정지</td><td><span class="ph ph3">P3</span></td></tr>
+      <tr><td class="nm">AI 표시·광고 표기</td><td>"광고 표기 검수"</td><td>YouTube·TikTok·Meta 모두 실사형 AI 콘텐츠 표시 요구. 공정위 지침상 "광고"는 제목이나 앞부분에 한글로 표기해야 함. AI 가상인물 표기 개정(2026, 원문 확인 필요)</td><td>검수 체크리스트에 채널별 AI 라벨, 광고·협찬 표기 위치, 가상인물 표기를 자동으로 포함</td><td><span class="ph ph1">P1</span> <span class="ph ph5">P5</span></td></tr>
+      <tr><td class="nm">음악 권리</td><td>"승인 음원·권리 확인"</td><td>Suno는 공식 API 없음(초대제 파트너만), 유료 플랜 다운로드 곡만 상업 이용. Udio는 다운로드 중단</td><td>Suno 곡은 직접 받아서 가져오기 + 플랜·생성일·권리 메모 필수 입력. API 생성은 ElevenLabs Music 시험 후 결정</td><td><span class="ph ph4">P4</span></td></tr>
+      <tr><td class="nm">브랜드커넥트</td><td>"캠페인·링크·광고 표기 관리"</td><td>네이버 브랜드커넥트·쇼핑커넥트 공개 API 없음</td><td>수동 입력 트래커: 캠페인 조건, 링크, 마감, 필수 문구, 정산 메모</td><td><span class="ph ph4">P4</span></td></tr>
+      <tr><td class="nm">공모전 정보</td><td>"포스터 한 장으로 조건 정리"</td><td>씽굿·링커리어·위비티·콘테스트코리아 모두 API·RSS 없음. 대량 수집은 약관 확인 전 금지</td><td>포스터·공고문 업로드 또는 보고 있는 페이지 주소 붙여넣기 → Claude가 조건표 추출 → 원문 대조 표시</td><td><span class="ph ph4">P4</span></td></tr>
+      <tr><td class="nm">작업 재현 기록</td><td>"프롬프트 보관"</td><td>어떤 모델·설정으로 만들었는지 남지 않으면 같은 결과 재현이 어려움</td><td>모든 생성 기록에 제공사·모델 ID·프롬프트·참조 파일·시드·비용·일시 저장</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">백업</td><td>없음</td><td>로컬 저장은 PC 고장 시 전부 사라짐</td><td>DB와 저장 폴더를 하루 1회 압축 백업(외장·클라우드 폴더 선택), 복원 메뉴</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">비밀 키 관리</td><td>"키를 문서에 적지 않음"</td><td>설정 화면에 키를 그대로 보여주면 위험</td><td>키는 <code>.env.local</code>에만 저장. 화면엔 "연결됨 / 끝 4자리"만 표시, 연결 시험 버튼</td><td><span class="ph ph3">P3</span></td></tr>
+      <tr><td class="nm">클라우드 이전</td><td>Next.js + Supabase + Vercel</td><td>Supabase 무료는 파일당 50MB 한도. Vercel 함수는 최대 300~800초라 렌더링 불가</td><td>영상 저장은 Supabase Pro + 대용량 이어올리기(TUS). 렌더링·생성 대기는 PC 또는 별도 워커에서</td><td><span class="ph ph7">P7</span></td></tr>
+      <tr><td class="nm">CapCut 연동</td><td>"CapCut × Codex" 참고</td><td>ChatGPT 앱 안의 플러그인일 뿐 공개 API 없음. 프로젝트 파일 형식은 암호화됨</td><td>연동하지 않음. 대신 자막(SRT)·클립·음원을 묶어 CapCut에서 불러오기 쉬운 ZIP으로 내보내기</td><td><span class="ph ph2">P2</span></td></tr>
+      <tr><td class="nm">Sora·Midjourney</td><td>참고 자료에 등장</td><td>OpenAI Sora API는 2026-09-24 종료. Midjourney는 공식 API 없음</td><td>연결 대상에서 제외</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+  <div class="head"><h2>단계 로드맵</h2>
+    <p>앞 단계의 완료 기준을 통과해야 다음 단계로 갑니다. 각 단계는 다시 작은 작업(마일스톤)으로 나뉘며, 마일스톤마다 검수를 거칩니다.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>단계</th><th>목표</th><th>핵심 결과물</th><th>외부 연결</th><th>먼저 필요한 것</th></tr></thead>
+    <tbody>
+      <tr><td><span class="ph ph0">P0</span></td><td><b>기반·디자인·전체 메뉴 뼈대</b></td><td>사이드바에 모든 분야 메뉴, 분야 소개 화면, 디자인 시스템</td><td>없음</td><td>없음</td></tr>
+      <tr><td><span class="ph ph1">P1</span></td><td><b>공통 제작 흐름 (샘플 결과)</b></td><td>등록 → 기획 승인 → 장면 → 버전 → 검수 → ZIP 내보내기. 쇼핑숏츠로 검증</td><td>없음 (mock)</td><td>P0</td></tr>
+      <tr><td><span class="ph ph2">P2</span></td><td><b>영상 조립·글자 레이어</b></td><td>브라우저 미리보기, MP4 렌더(9:16·16:9), 자막 편집, SRT·CapCut용 ZIP</td><td>Remotion, ffmpeg (모두 PC 내부)</td><td>P1</td></tr>
+      <tr><td><span class="ph ph3">P3</span></td><td><b>실제 AI 연결 1차</b></td><td>Claude 기획·대본, 이미지, 영상, 음성 실제 생성. 비용 관리</td><td>Claude API, fal.ai, Kling, Gemini, ElevenLabs</td><td>P2, API 키, 월 예산</td></tr>
+      <tr><td><span class="ph ph4">P4</span></td><td><b>분야 확장 A</b></td><td>여행숏츠, 브랜드커넥트 트래커, 플레이리스트, 공모전 분석</td><td>STT(가사 싱크), ffmpeg 음량·전환</td><td>P3, 박대리 원본 링크</td></tr>
+      <tr><td><span class="ph ph5">P5</span></td><td><b>채널 패키지·게시·홍보 홈페이지</b></td><td>5개 채널용 묶음 → YouTube → Meta → TikTok 순 게시 연결, 포트폴리오 페이지</td><td>YouTube Data API, Instagram·Threads·Facebook API, TikTok</td><td>P2, 채널 계정</td></tr>
+      <tr><td><span class="ph ph6">P6</span></td><td><b>고난도 분야</b></td><td>뮤직비디오·춤, AI 드라마·영화, 야담 롱폼, 애니·GIF, 2D 모션그래픽</td><td>립싱크, 동작 전이, 다화자 음성</td><td>P3, 캐릭터 기준시트</td></tr>
+      <tr><td><span class="ph ph7">P7</span></td><td><b>클라우드 이전·협업</b></td><td>Supabase 이전, 로그인, 협업자·수강생 권한, 온라인 접속</td><td>Supabase Pro, Vercel, 렌더 워커</td><td>P1~P3 안정화</td></tr>
+      <tr><td><span class="ph ph8">P8</span></td><td><b>전문 업무 공간 (별도 프로젝트)</b></td><td>법무·부동산·세무 보조, 재가센터 업무</td><td>없음 (보안 설계 우선)</td><td>실제 양식, 전문가·책임자 지정</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- PHASE DETAIL -->
+<section id="phases">
+  <div class="head"><h2>단계별 상세 작업</h2>
+    <p>각 단계를 눌러 마일스톤과 완료 기준을 확인하세요. 마일스톤 번호는 개발용 Claude Code에게 작업을 넘길 때 그대로 씁니다.</p></div>
+
+  <details class="phase" open>
+    <summary><span class="ph ph0">P0</span><span class="ttl">기반·디자인·전체 메뉴 뼈대</span><span class="chev">▼</span><span class="gl">눌러 볼 수 있는 빈 집을 먼저 짓습니다. 모든 메뉴가 열리고 디자인이 통일된 상태.</span></summary>
+    <div class="body">
+      <div class="tbl"><table>
+        <thead><tr><th>마일스톤</th><th>작업</th><th>담당</th></tr></thead>
+        <tbody>
+          <tr><td class="nm">P0-1 디자인 시스템</td><td>색·글꼴·간격 토큰, 버튼·카드·상태 배지·단계 표시·빈 화면 등 공통 부품, 화면 시안</td><td>Claude(디자인)</td></tr>
+          <tr><td class="nm">P0-2 프로젝트 기반</td><td>Next.js + TypeScript, 폴더 구조(화면 / 업무 로직 / DB / AI 어댑터 분리), 린트·테스트 설정</td><td>코더</td></tr>
+          <tr><td class="nm">P0-3 메뉴 설정 파일</td><td>분야 16개 + 업무공간 2개의 입력 항목·기획 순서·수정 메뉴·검수 항목·결과물을 담은 <code>menus.json</code> (작성 완료, 7·9·10·11번 시트 대조)</td><td>플래너 작성 → 코더 로더 구현</td></tr>
+          <tr><td class="nm">P0-4 화면 틀</td><td>사이드바(설정 파일에서 자동 생성), 상단바, 분야 소개 화면, 업무공간 "준비 중" 화면</td><td>코더</td></tr>
+        </tbody>
+      </table></div>
+      <div class="done"><b>완료 기준</b> · 모든 메뉴 클릭 시 오류 화면 없음 · PC(1280px)와 휴대폰(390px) 폭에서 가로 스크롤 없음 · 빌드·린트 통과 · 시안과 화면 비교 검수 통과</div>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary><span class="ph ph1">P1</span><span class="ttl">공통 제작 흐름 (샘플 결과)</span><span class="chev">▼</span><span class="gl">기획서 1차 필수 기능 5개를 모두 구현. AI 대신 샘플 결과로 흐름이 끝까지 돌아가는지 확인합니다.</span></summary>
+    <div class="body">
+      <div class="tbl"><table>
+        <thead><tr><th>마일스톤</th><th>작업</th><th>기획서 근거</th></tr></thead>
+        <tbody>
+          <tr><td class="nm">P1-1 저장소</td><td>SQLite + Drizzle, 나중에 Postgres로 옮기기 쉬운 스키마(문자열 ID, JSON 검증), 가상 데이터 시드</td><td>4_데이터</td></tr>
+          <tr><td class="nm">P1-2 작업실·프로젝트 등록</td><td>작업실(이번 주 우선, 제작 중, 검수 필요, 실패, 최근 최종본), 분야 선택 → 필수 입력 → 저장</td><td>기능 01, 화면 02·03</td></tr>
+          <tr><td class="nm">P1-3 자료·캐릭터 보관함</td><td>파일·링크 등록, 출처·권리 메모, 원본/중간/선택/최종 구분, 캐릭터 잠금 항목(얼굴·의상·목소리·헤어·소품)</td><td>화면 04, 10번 시트</td></tr>
+          <tr><td class="nm">P1-4 기획·장면표</td><td>분야별 기획 순서대로 입력칸, "AI 초안"(샘플), 장면 추가·순서 변경, <b>승인해야 다음 단계 열림</b>, 기획 버전 비교</td><td>기능 02, 화면 05</td></tr>
+          <tr><td class="nm">P1-5 작업 대기열</td><td>작업 테이블 + 워커: 대기 → 실행 → 완료/실패/취소, 재시도, 중복 방지, 재시작 복구, 취소. 샘플 제공자는 기본 항상 성공하고, 실패·지연·늦은 결과는 시나리오로 재현</td><td>기능 03, 데이터 04</td></tr>
+          <tr><td class="nm">P1-6 장면 제작·버전</td><td>장면 카드마다 만들기·다시 만들기·이 버전 선택·이전 버전 복원. 한 장면을 고쳐도 다른 장면은 그대로</td><td>기능 04, 화면 06·07</td></tr>
+          <tr><td class="nm">P1-7 검수·내보내기</td><td>분야별 + 공통 체크리스트(광고·AI 표기 포함), 모두 통과해야 내보내기 활성화. 결과 파일·대본·자막·설정·목록(manifest)을 ZIP으로</td><td>기능 05, 화면 08</td></tr>
+          <tr><td class="nm">P1-8 기록·백업</td><td>수정 이력, 생성 기록(제공사·모델·프롬프트·비용), 하루 1회 자동 백업과 복원</td><td>데이터 04·08</td></tr>
+        </tbody>
+      </table></div>
+      <div class="done"><b>완료 기준</b> · 쇼핑숏츠 샘플 프로젝트 1건을 등록부터 ZIP까지 끝냄 · 서버를 껐다 켜도 데이터 유지 · 장면 3개 중 1개만 다시 만들었을 때 나머지 버전 그대로 · ZIP 안의 모든 파일이 실제로 열림 · 실패한 작업이 "완료"로 보이지 않음</div>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary><span class="ph ph2">P2</span><span class="ttl">영상 조립·글자 레이어</span><span class="chev">▼</span><span class="gl">장면 클립을 이어 붙여 실제 MP4를 만들고, 글자를 따로 고칠 수 있게 합니다. 모두 PC 안에서 처리합니다.</span></summary>
+    <div class="body">
+      <div class="tbl"><table>
+        <thead><tr><th>마일스톤</th><th>작업</th><th>도구</th></tr></thead>
+        <tbody>
+          <tr><td class="nm">P2-1 타임라인 데이터</td><td>프로젝트마다 JSON 타임라인 하나: 클립 순서·길이, 음성·음악 트랙, 글자 레이어. 이게 미리보기와 렌더의 유일한 기준</td><td>—</td></tr>
+          <tr><td class="nm">P2-2 미리보기</td><td>브라우저 안에서 재생·일시정지·구간 이동, 9:16 ↔ 16:9 전환 시 안전영역 재배치</td><td>Remotion Player</td></tr>
+          <tr><td class="nm">P2-3 글자 레이어 편집기</td><td>자막·후킹·강조·제목·엔딩·가사 레이어: 문구, 글꼴, 크기, 색, 외곽선, 위치, 시작·끝 시간, 등장·퇴장 효과. 프리셋 저장</td><td>Remotion 컴포넌트</td></tr>
+          <tr><td class="nm">P2-4 MP4 렌더</td><td>렌더 작업을 대기열로 실행, 진행률 표시, 1080×1920 / 1920×1080, H.264 + AAC</td><td>Remotion 렌더(PC)</td></tr>
+          <tr><td class="nm">P2-5 오디오 처리</td><td>음량 맞춤(유튜브 기준 약 -14 LUFS), 페이드, 곡 사이 크로스페이드, 썸네일 추출</td><td>ffmpeg</td></tr>
+          <tr><td class="nm">P2-6 자막 파일·편집용 ZIP</td><td>SRT/VTT 내보내기, CapCut 등에서 다시 편집할 수 있게 클립·음원·자막을 묶은 ZIP</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <div class="done"><b>완료 기준</b> · 글자 문구만 바꾸고 다시 렌더했을 때 영상 클립은 재생성되지 않음 · 렌더된 MP4가 휴대폰에서 재생됨 · 자막 시간이 음성과 0.2초 이내로 맞음 · 글꼴은 무료 상업 이용 가능한 OFL 글꼴만 사용(Pretendard, Noto Sans KR)</div>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary><span class="ph ph3">P3</span><span class="ttl">실제 AI 연결 1차</span><span class="chev">▼</span><span class="gl">샘플 제공자 자리에 실제 도구를 하나씩 끼웁니다. 화면과 흐름은 바꾸지 않습니다.</span></summary>
+    <div class="body">
+      <div class="tbl"><table>
+        <thead><tr><th>마일스톤</th><th>작업</th><th>1순위 도구</th><th>대안</th></tr></thead>
+        <tbody>
+          <tr><td class="nm">P3-1 설정·비용</td><td>API 키 연결 상태(끝 4자리만 표시), 연결 시험, 실행 전 예상 비용, 월 한도·프로젝트별 사용액</td><td>—</td><td>—</td></tr>
+          <tr><td class="nm">P3-2 기획·대본</td><td>훅·구성·대본·장면표 초안, 과장 문구 검사, 공고·상품 정보 추출</td><td>Claude API (Sonnet 5.5, 어려운 기획은 Opus 5.5)</td><td>—</td></tr>
+          <tr><td class="nm">P3-3 이미지·캐릭터 시트</td><td>참조 이미지 기반 캐릭터 기준시트, 장면 시작 그림</td><td>Gemini Nano Banana 2.1</td><td>FLUX Kontext (fal), gpt-image-2</td></tr>
+          <tr><td class="nm">P3-4 영상 생성</td><td>시작 그림 → 영상, 시작·끝 프레임, 9:16·16:9, 샷 단위 생성</td><td>Kling 공식 API (초당 약 $0.04~0.42)</td><td>Gemini Omni Flash, fal.ai 경유 모델</td></tr>
+          <tr><td class="nm">P3-5 음성</td><td>캐릭터별 고정 목소리, 한국어 대사, 남녀 대화</td><td>ElevenLabs v4 대화 API</td><td>Gemini TTS (2인 장면, 저렴)</td></tr>
+          <tr><td class="nm">P3-6 결과 보관</td><td>생성 직후 결과를 내 저장소로 복사, 제공사 거절 사유(실사 얼굴 등) 구분 표시</td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note">통합 창구는 fal.ai를 기본으로 둡니다. 키 하나로 Kling·Gemini·Wan·립싱크 모델을 쓸 수 있고, 작업 대기·완료 알림 방식이 가장 잘 정리돼 있습니다. MuAPI는 "필터 없음"을 내세워 계정·정책 위험이 있어 기본에서 제외합니다.</div>
+      <div class="done"><b>완료 기준</b> · 실제 상품 자료 1건으로 쇼핑숏츠 1편 완성(기획서 성공 기준) · 기존 작업 시간과 비교 기록 · 월 한도를 넘으면 실행이 막힘 · 제공사가 거절하면 이유가 보임 · 예상 비용은 먼저 예약하고 실제 청구 기준으로 정산·반환 기록</div>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary><span class="ph ph4">P4</span><span class="ttl">분야 확장 A</span><span class="chev">▼</span><span class="gl">쇼핑숏츠 템플릿을 넓히고, 이미 운영 중인 채널에 바로 쓸 분야를 붙입니다.</span></summary>
+    <div class="body">
+      <div class="tbl"><table>
+        <thead><tr><th>마일스톤</th><th>작업</th><th>핵심 검수</th></tr></thead>
+        <tbody>
+          <tr><td class="nm">P4-1 여행숏츠·여행 쇼핑숏츠</td><td>정보 사실표(확인 날짜 포함), 고정 진행자, 장소별 장면. 박대리 방식은 원본 확인 전까지 "미확정" 표시</td><td>장소·운영정보 사실, 광고 표기</td></tr>
+          <tr><td class="nm">P4-2 브랜드커넥트 트래커</td><td>캠페인 조건·링크·마감·필수 문구 수동 입력, 쇼핑숏츠 프로젝트와 연결, 납품 체크</td><td>공정위 표기 위치, 수익 추정 금지</td></tr>
+          <tr><td class="nm">P4-3 플레이리스트</td><td>Suno 곡 가져오기(권리 메모 필수), 곡 순서·길이, 크로스페이드, 챕터, 루프 배경·LP/이퀄라이저 레이어</td><td>실제 청취, 틱틱음·허밍·추임새, 곡 끝 페이드</td></tr>
+          <tr><td class="nm">P4-4 가사 자막 싱크</td><td>음원에서 단어 단위 시간 추출 → 가사 자막 자동 배치 → 수동 미세 조정</td><td>가사 누락·반복, 파트별 가수</td></tr>
+          <tr><td class="nm">P4-5 공모전 분석</td><td>포스터·공고 업로드 또는 주소 붙여넣기 → 자격·마감·규격·AI 허용·권리 조건표 → 원문 대조·불명확 항목 표시 → 공모전 프로젝트 생성</td><td>마감 시간대, AI 허용 여부, 자동 제출 없음</td></tr>
+        </tbody>
+      </table></div>
+      <div class="done"><b>도구</b> · 가사 싱크: ElevenLabs Scribe v3(시간당 $0.20) 또는 PC에서 무료 faster-whisper(엔비디아 그래픽카드 필요) · 음악 API 생성은 ElevenLabs Music으로 한국어 보컬을 시험한 뒤 결정</div>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary><span class="ph ph5">P5</span><span class="ttl">채널 패키지·게시·홍보 홈페이지</span><span class="chev">▼</span><span class="gl">한 작품을 5개 채널용으로 묶고, 승인한 것만 게시합니다. 처음엔 손으로, 그다음 하나씩 자동화합니다.</span></summary>
+    <div class="body">
+      <div class="tbl"><table>
+        <thead><tr><th>마일스톤</th><th>채널</th><th>방식</th><th>알아둘 제한</th></tr></thead>
+        <tbody>
+          <tr><td class="nm">P5-1 수동 패키지</td><td>5개 전부</td><td>9:16 원본 1개(90초 이하, 1080×1920) + 채널별 제목·설명·해시태그·표지 파일</td><td>Threads 500자·주제 태그 1개, 인스타 해시태그 30개 이하, 페이스북 릴스 3~90초</td></tr>
+          <tr><td class="nm">P5-2 YouTube 게시</td><td>YouTube·Shorts</td><td>공식 API로 비공개 또는 예약 업로드 → 확인 후 공개</td><td>하루 100건. 3분 이하 세로 영상은 자동으로 Shorts. AI 표시 항목 설정</td></tr>
+          <tr><td class="nm">P5-3 Meta 게시</td><td>인스타·스레드·페이스북</td><td>본인 계정에 공식 API 연결</td><td>인스타는 프로페셔널 계정, 페이스북은 페이지만 가능</td></tr>
+          <tr><td class="nm">P5-4 TikTok</td><td>TikTok</td><td>앱 보관함으로 보내고 앱에서 직접 게시 마무리</td><td>심사 전 앱의 직접 게시는 나만 보기로 제한. 하루 대기 5건</td></tr>
+          <tr><td class="nm">P5-5 반응 보기</td><td>전체</td><td>조회수·좋아요 등 기본 지표 읽기</td><td>관리가 부담되면 Buffer 같은 예약 서비스로 대체</td></tr>
+          <tr><td class="nm">P5-6 홍보 홈페이지</td><td>공개 웹</td><td>소개·작품·서비스·문의. 공개 승인한 작품만 노출</td><td>개인정보처리방침·문의 수신자·도메인 결정 필요</td></tr>
+        </tbody>
+      </table></div>
+      <div class="done"><b>완료 기준</b> · 승인 버튼을 누르기 전에는 어떤 채널에도 공개되지 않음 · 광고 영상은 제목 또는 첫 줄에 "광고" 또는 "유료 광고 포함" 자동 삽입 · 실사형 AI 영상은 채널별 AI 표시 켜짐</div>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary><span class="ph ph6">P6</span><span class="ttl">고난도 분야</span><span class="chev">▼</span><span class="gl">인물 연속성·립싱크·동작 전이가 필요한 분야. 짧은 시험(5초) 후 확장하는 방식을 지킵니다.</span></summary>
+    <div class="body">
+      <div class="tbl"><table>
+        <thead><tr><th>마일스톤</th><th>분야</th><th>추가되는 기능</th><th>도구 후보</th></tr></thead>
+        <tbody>
+          <tr><td class="nm">P6-1</td><td>뮤직비디오·춤</td><td>파트·비트표, 동작 참조 영상 → 캐릭터 춤, 박자 컷, 립싱크</td><td>Kling Motion Control, Runway Act-Two, Wan Animate, sync.so</td></tr>
+          <tr><td class="nm">P6-2</td><td>AI 드라마</td><td>고정 남녀 인물, 다화자 대사, 남성 대사 누락 검사, 립싱크</td><td>ElevenLabs 대화, Hedra, sync.so</td></tr>
+          <tr><td class="nm">P6-3</td><td>AI 영화</td><td>로그라인 → 씬·컷 리스트, 컷별 시작·끝 그림, 카메라·공간 연속성 기록</td><td>Kling, Gemini Omni, Runway</td></tr>
+          <tr><td class="nm">P6-4</td><td>야담 롱폼</td><td>장 단위 대본·내레이션, 복선·회수 목록, 사료/창작 구분 표시, 챕터</td><td>Claude, ElevenLabs</td></tr>
+          <tr><td class="nm">P6-5</td><td>애니메이션·GIF</td><td>그림체 기준시트, 부분 움직임, 루프 이음새 검사, GIF 용량 최적화</td><td>이미지 모델 + ffmpeg</td></tr>
+          <tr><td class="nm">P6-6</td><td>2D 모션그래픽 V3.1</td><td>10초 템플릿(훅 → 모핑 → 비트 가속 → 피날레), 키네틱 타이포</td><td>Remotion 템플릿 (AI 생성 없이 코드로)</td></tr>
+          <tr><td class="nm">P6-7</td><td>제품 변환·3D 글자·FOOH</td><td>재료 변환 단계표, 액체 수위·개수 인과 검수 항목</td><td>Kling·Gemini 시작/끝 프레임</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary><span class="ph ph7">P7</span><span class="ttl">클라우드 이전·협업</span><span class="chev">▼</span><span class="gl">PC 밖에서도 접속하고 협업자·수강생을 초대할 수 있게 합니다.</span></summary>
+    <div class="body">
+      <div class="tbl"><table>
+        <thead><tr><th>마일스톤</th><th>작업</th><th>메모</th></tr></thead>
+        <tbody>
+          <tr><td class="nm">P7-1 DB 이전</td><td>SQLite → Supabase Postgres, 데이터 이전 스크립트와 검증</td><td>Drizzle 그대로 사용</td></tr>
+          <tr><td class="nm">P7-2 파일 이전</td><td>로컬 폴더 → Supabase Storage, 브라우저에서 바로 올리기(이어올리기)</td><td>무료 50MB 한도 → Pro 필요</td></tr>
+          <tr><td class="nm">P7-3 로그인·권한</td><td>본인(전체), 협업자(배정 프로젝트), 수강생(본인 공간), 방문자(공개물만). 행 단위 보안 규칙</td><td>기획서 사용자 권한 그대로</td></tr>
+          <tr><td class="nm">P7-4 작업 대기열 이전</td><td>자체 작업 테이블 → pg-boss, 렌더·생성 워커는 PC 또는 별도 서버</td><td>Vercel은 화면만 담당</td></tr>
+          <tr><td class="nm">P7-5 배포</td><td>Vercel 비공개 테스트 주소 → 도메인 연결</td><td>도메인 미정</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note">Remotion은 함께 쓰는 사람이 4명 이상인 회사가 되면 유료(월 최소 $100)입니다. 협업자·수강생을 늘리기 전에 라이선스를 다시 확인합니다.</div>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary><span class="ph ph8">P8</span><span class="ttl">전문 업무 공간 (별도 프로젝트)</span><span class="chev">▼</span><span class="gl">콘텐츠 작업실과 코드·데이터를 완전히 분리합니다. 보안 설계와 책임자 지정 전에는 시작하지 않습니다.</span></summary>
+    <div class="body">
+      <div class="tbl"><table>
+        <thead><tr><th>업무</th><th>1차 범위</th><th>하지 않는 것</th><th>시작 조건</th></tr></thead>
+        <tbody>
+          <tr><td class="nm">법무사사무실·부동산</td><td>사건 접수, 물건·담당자, 서류 체크, 기한 알림, 검토 기록</td><td>법률 판단, 자동 제출</td><td>실제 양식, 담당 권한, 법무 전문가 확인</td></tr>
+          <tr><td class="nm">상속·증여·양도세 보조</td><td>입력 항목, 필요 서류, 기준일·근거가 있는 검토용 계산, 전문가 확인란</td><td>세액 확정, 신고</td><td>세무 전문가, 검증 사례, 세법 갱신 담당</td></tr>
+          <tr><td class="nm">재가센터</td><td>상담, 이용자·담당자, 방문 일정, 업무·서류 기록, 운영 현황</td><td>의료 판단, 자동 청구</td><td>기관 양식, 보관 기준, 민감정보 최소화 설계</td></tr>
+        </tbody>
+      </table></div>
+      <div class="done"><b>공통 원칙</b> · 테스트는 가상 데이터만 · 열람 기록 · 역할별 접근 · 콘텐츠 작업실 데이터와 같은 DB를 쓰지 않음</div>
+    </div>
+  </details>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="head"><h2>외부 서비스 조사 결과</h2>
+    <p>2026-11-15 기준. 가격은 자주 바뀌니 연결 직전에 다시 확인합니다. "어려운 것"은 현재 API로는 믿을 만하게 되지 않는 부분입니다.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>분야</th><th>1순위</th><th>대안</th><th>되는 것</th><th>어려운 것</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">기획·대본</td><td>Claude API</td><td>—</td><td>장면표·대본·조건표 추출, 공고 이미지 읽기</td><td>사실 확인은 사람 검수 필요</td></tr>
+      <tr><td class="nm">이미지</td><td>Gemini Nano Banana 2.1</td><td>FLUX Kontext, gpt-image-2, Ideogram Character</td><td>참조 이미지로 캐릭터 유지, 부분 편집</td><td>여러 장면에서 완벽히 같은 얼굴</td></tr>
+      <tr><td class="nm">영상</td><td>Kling 공식</td><td>Gemini Omni Flash, Veo 3.1(기업용), Runway, MiniMax</td><td>이미지 → 영상, 시작·끝 프레임, 9:16·16:9, 최대 15초(연장 30초)</td><td>끝 프레임 정확히 맞추기, 클립 일부만 수정, 실사 얼굴 참조</td></tr>
+      <tr><td class="nm">통합 창구</td><td>fal.ai</td><td>Runway API, Replicate</td><td>키 하나로 여러 모델, 완료 알림</td><td>모델이 수시로 종료됨 → 모델 ID는 설정값으로</td></tr>
+      <tr><td class="nm">립싱크·동작</td><td>sync.so, Kling Motion Control</td><td>Hedra, Runway Act-Two, Wan Animate</td><td>주어진 음성에 입 맞추기, 춤 동작 옮기기</td><td>빠른 전신 춤 품질은 시험 필요</td></tr>
+      <tr><td class="nm">음성</td><td>ElevenLabs v4</td><td>Gemini TTS, Typecast</td><td>한국어, 캐릭터별 고정 목소리, 다화자 대화, 본인 목소리 복제(동의)</td><td>OpenAI TTS 구형 모델은 2027-01 종료</td></tr>
+      <tr><td class="nm">음악</td><td>Suno 수동 가져오기</td><td>ElevenLabs Music, Google Lyria 3.5</td><td>보컬·가사 곡 생성(API는 ElevenLabs·Lyria)</td><td>Suno·Udio 공식 API 없음. ElevenLabs Music 한국어 보컬 미확인</td></tr>
+      <tr><td class="nm">자막·가사 시간</td><td>ElevenLabs Scribe v3</td><td>faster-whisper(PC 무료), Deepgram</td><td>한국어 단어 단위 시간</td><td>OpenAI 신형 모델은 단어 시간 미지원</td></tr>
+      <tr><td class="nm">영상 조립</td><td>Remotion</td><td>Shotstack·Creatomate(클라우드, 분당 과금)</td><td>미리보기·렌더 같은 코드, 글자 레이어</td><td>4인 이상 회사는 유료</td></tr>
+      <tr><td class="nm">오디오 처리</td><td>ffmpeg</td><td>Demucs(음원 분리)</td><td>음량 맞춤, 페이드, 크로스페이드, 잡음 줄이기</td><td>잡음 필터가 노래 목소리를 망가뜨릴 수 있음 → 전후 비교 청취</td></tr>
+      <tr><td class="nm">게시</td><td>각 채널 공식 API</td><td>Buffer API, Zernio</td><td>YouTube·인스타·스레드·페이스북 게시</td><td>TikTok 직접 게시는 심사 전 비공개만</td></tr>
+      <tr><td class="nm">브랜드커넥트·공모전</td><td>수동 입력</td><td>—</td><td>트래커, 공고 붙여넣기 분석</td><td>공개 API 없음, 대량 수집은 약관 확인 필요</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- MENUS -->
+<section id="menus">
+  <div class="head"><h2>분야별 템플릿</h2>
+    <p>9번 시트 「메뉴별 제작 매뉴얼」을 설정 파일 형태로 정리한 것입니다. 화면은 하나이고, 이 표의 값만 바뀝니다.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>분야</th><th>단계</th><th>시작 자료</th><th>기획 순서</th><th>필수 검수</th><th>결과물</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">쇼핑숏츠·제품 광고</td><td><span class="ph ph1">P1</span></td><td>제품 원본, 브랜드, 확인된 장점, 링크, 사용권</td><td>문제·변화 훅 → 작동 단계 → 효익 근거 → 완성 제품 컷 → 안내</td><td>효과 과장 금지, 실제 성능과 연출 구분, 사용하지 않은 후기 금지</td><td>MP4, 원본·중간본, 프롬프트, 광고 문구</td></tr>
+      <tr><td class="nm">여행숏츠</td><td><span class="ph ph4">P4</span></td><td>여행지, 목적, 참조 링크, 진행자 원본, 사실 출처</td><td>사실표 → 첫 장면 질문 → 방문·체험 → 핵심 정보 → 다음 행동</td><td>장소 사실, 발음, 인물·의상 연속성, 광고 표기</td><td>세로 MP4, 대본, 자막, 출처, 썸네일</td></tr>
+      <tr><td class="nm">브랜드커넥트</td><td><span class="ph ph4">P4</span></td><td>캠페인 공고, 상품, 조건, 기한, 필수 표기</td><td>조건표 → 상황·상품 역할 → 대본 승인 → 제작 → 납품 체크</td><td>캠페인 조건, 제휴 표시, 권리</td><td>납품 파일, 체크리스트, 문구·링크 묶음</td></tr>
+      <tr><td class="nm">플레이리스트</td><td><span class="ph ph4">P4</span></td><td>승인 곡, 곡 순서, 가사, 커버, 음원 권리</td><td>실제 청취 → 순서·길이 → 배경·모션 레이어 → 연결·챕터 → 출력 검수</td><td>허밍·추임새·틱틱음, 말미 목소리, 과한 잡음 필터, 페이드</td><td>플리 MP4, 챕터, 음원 목록, 커버</td></tr>
+      <tr><td class="nm">공모전</td><td><span class="ph ph4">P4</span></td><td>공고 포스터, 공식 규정, 마감, 제출 규격</td><td>조건표·누락 확인 → 독창 기획 → 스토리보드 → 작품 → 설명·증빙</td><td>마감 시간대, AI 허용, 저작권, 해상도·길이</td><td>작품, 포스터, 작품 설명, 증빙 ZIP</td></tr>
+      <tr><td class="nm">SNS 5채널</td><td><span class="ph ph5">P5</span></td><td>승인 완성본, 브랜드, 채널</td><td>공개 범위 → 비율·커버 → 제목·설명 → 미리보기 → 승인 후 게시</td><td>권리·초상, 수치 사실, 광고·AI 표기, 깨진 링크</td><td>채널별 패키지</td></tr>
+      <tr><td class="nm">뮤직비디오·춤</td><td><span class="ph ph6">P6</span></td><td>승인 음원, 가사, 파트표, 캐릭터, 동작 참조</td><td>파트·비트표 → 군무 배치 → 전신 시작 그림 → 5초 시험 → 확장</td><td>손발 변형, 인물 겹침, 화자·박자·가사 오류</td><td>MV MP4, 샷·파트표</td></tr>
+      <tr><td class="nm">AI 드라마</td><td><span class="ph ph6">P6</span></td><td>인물 시트, 사건, 장르, 화자·음성</td><td>인물 욕구 → 첫 갈등 → 오해·행동 → 진실·반전 → 결말</td><td>남성 대사 누락, 목소리 파트, 얼굴, 결말</td><td>MP4, 장면표, 대본, 자막</td></tr>
+      <tr><td class="nm">AI 영화</td><td><span class="ph ph6">P6</span></td><td>주·조연 기준시트, 사건, 러닝타임, 장르</td><td>로그라인 → 욕구·갈등 → 기승전결 → 씬·컷 리스트 → 연출 승인</td><td>인물·의상·목소리, 공간·시간 연속성, 결말 회수</td><td>영화 MP4, 스토리보드, 컷 클립</td></tr>
+      <tr><td class="nm">야담 롱폼</td><td><span class="ph ph6">P6</span></td><td>사료/창작 구분, 시대, 인물, 장별 목표</td><td>자료·출처 → 갈등·결말 설계 → 장별 대본 → 내레이션 → 장면 편집</td><td>역사 사실/창작 구분, 장 간 중복, 복선 일치</td><td>롱폼 MP4, 챕터, 원고</td></tr>
+      <tr><td class="nm">애니메이션·GIF</td><td><span class="ph ph6">P6</span></td><td>캐릭터·그림체 시트, 배경, 동작</td><td>기준시트 → 핵심 포즈 → 작은 움직임 시험 → 루프 → 출력</td><td>캐릭터 변형, 루프 튐, 깜박임, 용량</td><td>GIF·MP4, 기준시트</td></tr>
+      <tr><td class="nm">자막 모션</td><td><span class="ph ph2">P2</span></td><td>영상, 대본, 글꼴·색, 강조 구간</td><td>대사 분절 → 타임코드 → 강조 효과 → 안전영역 → 읽기 시험</td><td>오탈자, 잘림, 읽기 속도, 음성 일치</td><td>자막 MP4 + SRT</td></tr>
+      <tr><td class="nm">2D 모션그래픽</td><td><span class="ph ph6">P6</span></td><td>주제, 핵심 문구, 캐릭터, 색, 비율</td><td>첫 1초 훅 → 2~5초 모핑 → 5~8초 비트 가속 → 마지막 2초 피날레</td><td>외형 고정, 실사 혼입 금지, 음성 구간 음악 낮춤</td><td>MP4, 타임라인 설정</td></tr>
+      <tr><td class="nm">홍보 홈페이지</td><td><span class="ph ph5">P5</span></td><td>공개 승인 작품, 소개글</td><td>소개 → 작품 → 서비스 → 문의</td><td>개인정보, 실적·후기 지어내기 금지</td><td>공개 페이지</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- SCREENS -->
+<section id="screens">
+  <div class="head"><h2>화면 목록</h2><p>3번 시트의 14개 화면에 보강한 화면을 더했습니다.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>화면</th><th>들어갈 내용</th><th>주요 이동</th><th>단계</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">작업실</td><td>이번 주 우선 작업, 제작 중, 검수 필요, 실패, 최근 최종본, 이번 달 사용액</td><td>새 프로젝트, 각 카드 → 프로젝트</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">분야 소개</td><td>분야 설명, 시작 자료, 결과물, 이 분야 프로젝트 목록</td><td>새 프로젝트</td><td><span class="ph ph0">P0</span></td></tr>
+      <tr><td class="nm">프로젝트 등록</td><td>분야, 제목, 목표, 타깃, 규격, 길이, 분야별 필수 입력</td><td>저장 → 프로젝트</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">프로젝트 (단계 탭)</td><td>위쪽에 7단계 진행 표시, 단계별 탭: 요구 확인 / 기획 / 장면 / 미리보기 / 검수 / 내보내기</td><td>승인 → 다음 단계</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">자료·캐릭터 보관함</td><td>원본·출처·권리·역할, 캐릭터 기준시트와 잠금 항목, 목소리 연결</td><td>프로젝트에 연결</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">장면 제작</td><td>장면 카드(결과·상태·버전), 도구 선택, 예상 비용</td><td>만들기, 다시 만들기, 복원</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">미리보기·글자 편집</td><td>플레이어, 타임라인, 글자 레이어 속성</td><td>렌더</td><td><span class="ph ph2">P2</span></td></tr>
+      <tr><td class="nm">검수·내보내기</td><td>체크리스트, 실제 파일 확인, ZIP 구성</td><td>내려받기 → 완료 기록</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">작업 대기열</td><td>전체 생성·렌더 작업, 실패 사유, 재시도·취소</td><td>프로젝트로 이동</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm">설정</td><td>도구 연결 상태(키 일부만), 월 한도, 백업, 저장 위치</td><td>연결 시험</td><td><span class="ph ph3">P3</span></td></tr>
+      <tr><td class="nm">공모전 분석</td><td>공고 원문, 추출 조건, 마감, 불명확 항목</td><td>공모전 프로젝트 만들기</td><td><span class="ph ph4">P4</span></td></tr>
+      <tr><td class="nm">캠페인 트래커</td><td>브랜드커넥트 캠페인, 조건, 링크, 마감, 납품 상태</td><td>쇼핑숏츠 프로젝트 연결</td><td><span class="ph ph4">P4</span></td></tr>
+      <tr><td class="nm">채널 패키지</td><td>5개 채널 미리보기, 문구, 표기, 게시 상태</td><td>내려받기 / 승인 후 게시</td><td><span class="ph ph5">P5</span></td></tr>
+      <tr><td class="nm">공개 홈페이지</td><td>소개, 포트폴리오, 문의</td><td>작품 보기, 문의</td><td><span class="ph ph5">P5</span></td></tr>
+      <tr><td class="nm">로그인·멤버 관리</td><td>계정, 초대, 역할, 배정 프로젝트</td><td>—</td><td><span class="ph ph7">P7</span></td></tr>
+      <tr><td class="nm">전문 업무 작업실</td><td>(별도 프로젝트)</td><td>—</td><td><span class="ph ph8">P8</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- DATA -->
+<section id="data">
+  <div class="head"><h2>데이터 구조</h2><p>4번 시트의 8개 묶음을 실제 테이블로 나눴습니다. 굵은 글씨는 보강으로 추가된 것입니다.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>테이블</th><th>담는 것</th><th>상태 값</th><th>단계</th></tr></thead>
+    <tbody>
+      <tr><td class="nm mono">projects</td><td>분야, 제목, 목표, 타깃, 규격(9:16/16:9/1:1), 길이, 현재 단계</td><td>초안 / 승인 / 제작 / 검수 / 완료 / 실패</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm mono">stage_states</td><td>단계별 상태, 승인 일시, 메모</td><td>할 일 / 진행 / 승인 대기 / 승인 / 실패</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm mono">assets</td><td>파일·링크, 출처, 권리 메모, 저장 위치, 해상도·길이</td><td>원본 / 중간 / 선택 / 최종</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm mono">characters</td><td>이름, 설명, 잠금 항목, 참조 이미지, <b>목소리 ID</b></td><td>확정 / 미확정</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm mono">plans</td><td>버전, 훅, 구성, 대본</td><td>초안 / 승인</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm mono">scenes · scene_versions</td><td>장면 순서·대사·인물·길이, 버전별 결과·선택 여부</td><td>대기 / 실행 / 완료 / 실패 / 취소</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm mono"><b>jobs</b></td><td>작업 종류, 제공사 작업 ID, 시도 횟수, 다음 실행 시각, 오류</td><td>대기 / 실행 / 완료 / 실패 / 취소</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm mono"><b>generations</b></td><td>제공사, 모델 ID, 프롬프트, 참조 파일, 시드, <b>비용</b>, 일시</td><td>—</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm mono">review_items · exports</td><td>체크 항목·결과, 내보낸 파일 목록</td><td>미확인 / 통과 / 보류</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm mono">activity_log</td><td>누가 언제 무엇을 바꿨는지</td><td>—</td><td><span class="ph ph1">P1</span></td></tr>
+      <tr><td class="nm mono"><b>timelines · text_layers</b></td><td>클립·트랙 배치, 글자 레이어 속성·시간</td><td>—</td><td><span class="ph ph2">P2</span></td></tr>
+      <tr><td class="nm mono"><b>budgets</b></td><td>월 한도, 제공사별 사용액</td><td>—</td><td><span class="ph ph3">P3</span></td></tr>
+      <tr><td class="nm mono">campaigns · contests</td><td>캠페인 조건·링크·마감, 공고 원문·조건표</td><td>확인 전 / 검토 / 준비 / 제출 확인</td><td><span class="ph ph4">P4</span></td></tr>
+      <tr><td class="nm mono">channel_packages · posts</td><td>채널별 문구·파일, 게시 기록</td><td>비공개 / 검수 중 / 승인 / 공개</td><td><span class="ph ph5">P5</span></td></tr>
+      <tr><td class="nm mono">users · project_members</td><td>역할, 배정 프로젝트</td><td>초대 / 활성 / 정지</td><td><span class="ph ph7">P7</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- QA -->
+<section id="qa">
+  <div class="head"><h2>검수·테스트 방법</h2><p>구현 담당이 마일스톤을 끝내면 진행 기록을 남기고 멈춥니다. 검수 담당(Codex)이 아래 순서로 확인한 뒤 결과를 검수 기록에 적습니다. 기준·디자인 문제가 나오면 플래너가 문서를 고칩니다.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>확인</th><th>방법</th><th>통과 기준</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">빌드·코드 검사</td><td>빌드, 린트, 타입 검사 실행</td><td>오류 0</td></tr>
+      <tr><td class="nm">자동 테스트</td><td>업무 로직 테스트(승인 게이트, 버전 복원, 작업 상태 전이, 비용 한도)</td><td>전부 통과, 새 기능마다 테스트 추가</td></tr>
+      <tr><td class="nm">화면 검수</td><td>실제 브라우저로 클릭, PC·휴대폰 폭 스크린샷, 디자인 시안과 비교</td><td>가로 스크롤 없음, 글자 잘림 없음, 시안과 일치</td></tr>
+      <tr><td class="nm">흐름 검수</td><td>샘플 프로젝트 1건을 등록부터 내보내기까지 직접 진행</td><td>막히는 단계 없음, 실패가 실패로 보임</td></tr>
+      <tr><td class="nm">파일 검수</td><td>내보낸 ZIP 풀어서 파일 존재·재생·해상도·길이 확인</td><td>목록의 모든 파일이 실제로 열림</td></tr>
+      <tr><td class="nm">원칙 검수</td><td>원본 덮어쓰기, 승인 없는 게시, 키 노출, 실제 개인정보 사용 여부</td><td>하나도 없음</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note" style="margin-top:12px">검수 결과는 "필수 수정 / 권장 / 확인"으로 나눠 적고, 필수 수정이 모두 해결돼야 다음 마일스톤으로 넘어갑니다.</div>
+</section>
+
+<!-- DECIDE -->
+<section id="decide">
+  <div class="head"><h2>대표님 결정이 필요한 것</h2><p>단계가 시작되기 전까지만 정해지면 됩니다. 앞 단계 개발은 이 결정 없이 진행할 수 있습니다.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>결정</th><th>필요한 시점</th><th>추천</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">서비스 이름</td><td><span class="ph ph0">P0</span> 화면 제목</td><td>가칭 "Dream AI Studio"로 시작, 나중에 변경</td><td><span class="tag warn">미정</span></td></tr>
+      <tr><td class="nm">AI 도구 월 예산</td><td><span class="ph ph3">P3</span> 시작 전</td><td>시험 기간 월 $30~50 한도로 시작</td><td><span class="tag warn">미정</span></td></tr>
+      <tr><td class="nm">API 계정 준비</td><td><span class="ph ph3">P3</span> 시작 전</td><td>Anthropic, fal.ai, Kling, Google AI, ElevenLabs 순</td><td><span class="tag warn">확인 필요</span></td></tr>
+      <tr><td class="nm">첫 실제 쇼핑숏츠 상품</td><td><span class="ph ph3">P3</span> 완료 기준</td><td>권리가 확실한 상품 1개</td><td><span class="tag warn">미정</span></td></tr>
+      <tr><td class="nm">박대리 여행숏츠 원본 링크</td><td><span class="ph ph4">P4</span></td><td>원본 확인 전까지 "미확정"으로 개발</td><td><span class="tag bad">원본 없음</span></td></tr>
+      <tr><td class="nm">Suno 플랜·곡 권리</td><td><span class="ph ph4">P4</span></td><td>Pro 이상에서 받은 곡만 사용</td><td><span class="tag warn">확인 필요</span></td></tr>
+      <tr><td class="nm">채널 계정 종류</td><td><span class="ph ph5">P5</span></td><td>인스타 프로페셔널 계정, 페이스북 페이지</td><td><span class="tag warn">확인 필요</span></td></tr>
+      <tr><td class="nm">도메인·공개 범위</td><td><span class="ph ph5">P5</span> <span class="ph ph7">P7</span></td><td>공개 홈페이지 만들 때 결정</td><td><span class="tag warn">미정</span></td></tr>
+      <tr><td class="nm">협업자·수강생 인원</td><td><span class="ph ph7">P7</span></td><td>4명 이상이면 Remotion 유료 검토</td><td><span class="tag warn">미정</span></td></tr>
+      <tr><td class="nm">전문 업무 책임자</td><td><span class="ph ph8">P8</span></td><td>법무·세무·재가 각각 검토 책임자 지정</td><td><span class="tag bad">미정</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer>
+  근거: 「(이은영)드림 AI바이브.xlsx」 0~11번 시트, 외부 서비스 조사(2026-11-15, 각 제공사 공식 문서 우선, 일부 가격은 2차 자료). 이 문서는 제안이며 확정된 개발 일정이나 수익 예측이 아닙니다.
+</footer>
+</div>

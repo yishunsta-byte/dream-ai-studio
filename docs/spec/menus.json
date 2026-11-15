@@ -1,0 +1,650 @@
+{
+  "schemaVersion": 1,
+  "templateVersion": "2026-11-15.1",
+  "source": "D:/starwork/(이은영)드림 AI바이브.xlsx — 7_전체업무_상세요구, 9_메뉴별_제작매뉴얼, 10_화풍캐릭터규격, 11_글자모션규격. 대조표: PLAN.md 6.2",
+  "stages": [
+    { "id": "intake",  "label": "등록",      "gate": false },
+    { "id": "brief",   "label": "요구 확인", "gate": false },
+    { "id": "plan",    "label": "기획",      "gate": true  },
+    { "id": "produce", "label": "장면 제작", "gate": false },
+    { "id": "edit",    "label": "수정·조립", "gate": false },
+    { "id": "review",  "label": "검수",      "gate": true  },
+    { "id": "export",  "label": "내보내기",  "gate": false }
+  ],
+  "inputTypes": ["text", "textarea", "url", "number", "select", "multiselect", "date", "datetime", "checkbox", "assets", "characters"],
+  "commonInputs": [
+    { "id": "title",     "label": "제목",            "type": "text",     "required": true,  "maxLength": 80 },
+    { "id": "goal",      "label": "목표",            "type": "textarea", "required": true,  "maxLength": 500, "help": "이 작품으로 이루고 싶은 것 한두 문장" },
+    { "id": "target",    "label": "보는 사람(타깃)", "type": "text",     "required": true,  "maxLength": 120 },
+    { "id": "aspect",    "label": "화면 비율",       "type": "select",   "required": true,  "options": ["9:16", "16:9", "1:1"] },
+    { "id": "lengthSec", "label": "목표 길이(초)",   "type": "number",   "required": true,  "min": 3, "max": 7200 },
+    { "id": "isAd",      "label": "광고·협찬 포함",  "type": "checkbox", "required": false, "help": "켜면 광고 표기 검수 항목이 추가됩니다" },
+    { "id": "realisticAi", "label": "실사형 AI 장면 포함", "type": "checkbox", "required": false, "help": "켜면 채널 AI 표시 검수 항목이 추가됩니다" },
+    { "id": "virtualHumanEndorsement", "label": "AI 가상인물이 상품을 추천", "type": "checkbox", "required": false },
+    { "id": "usesMusic", "label": "음악 사용",       "type": "checkbox", "required": false }
+  ],
+  "commonReview": [
+    { "id": "c.files-exist",       "label": "결과 파일이 실제로 존재하고 열린다", "required": true, "auto": "ffprobe" },
+    { "id": "c.spec-match",        "label": "비율·해상도·길이가 규격과 맞다", "required": true, "auto": "ffprobe" },
+    { "id": "c.no-mock-final",     "label": "샘플 결과가 최종본으로 표시되지 않았다", "required": true, "auto": "is_mock" },
+    { "id": "c.typos",             "label": "자막·대사 오탈자, 글자 잘림 없음", "required": true },
+    { "id": "c.sync",              "label": "음성과 자막 시간이 맞다", "required": true },
+    { "id": "c.rights",            "label": "사용한 원본·음원에 출처·권리 메모가 있다", "required": true, "auto": "db" },
+    { "id": "c.no-personal-data",  "label": "실제 개인정보가 들어가지 않았다", "required": true },
+    { "id": "c.no-fabrication",    "label": "확인 안 된 사실·후기·수치를 넣지 않았다", "required": true }
+  ],
+  "conditionalReview": [
+    { "id": "x.ad-disclosure",  "when": "isAd",                    "label": "제목 또는 시작에 한글 \"광고\"/\"유료 광고 포함\", 시작·끝·상품 언급 시 표기", "required": true },
+    { "id": "x.ai-label",       "when": "realisticAi",             "label": "게시 채널의 AI 표시 항목을 켠다", "required": true },
+    { "id": "x.virtual-human",  "when": "virtualHumanEndorsement", "label": "가상인물 등장 중 \"가상인물\" 표기 (공정위 원문 확인 필요)", "required": true },
+    { "id": "x.music-rights",   "when": "usesMusic",               "label": "곡별 플랜·생성일·라이선스가 기록돼 있다", "required": true }
+  ],
+  "groups": [
+    { "id": "shortform", "label": "숏폼·광고",       "order": 1 },
+    { "id": "music",     "label": "음악",            "order": 2 },
+    { "id": "story",     "label": "스토리",          "order": 3 },
+    { "id": "motion",    "label": "애니·모션",       "order": 4 },
+    { "id": "publish",   "label": "공모전·채널·홍보", "order": 5 }
+  ],
+  "menus": [
+    {
+      "id": "shopping-shorts",
+      "label": "쇼핑숏츠·제품 광고",
+      "group": "shortform",
+      "phase": "P1",
+      "availability": "active",
+      "description": "상품 사진과 확인된 장점으로 짧은 제품 소개 영상을 만듭니다. 전체 흐름을 처음 검증하는 분야입니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 쇼핑숏츠 / 제품 광고", "7_전체업무_상세요구: 쇼핑숏츠", "6_우선순위: 1"],
+      "defaultAspect": "9:16",
+      "defaultLengthSec": 30,
+      "inputs": [
+        { "id": "productName",  "label": "상품명",               "type": "text",     "required": true,  "maxLength": 80 },
+        { "id": "brand",        "label": "브랜드",               "type": "text",     "required": false, "maxLength": 80 },
+        { "id": "productAssets","label": "제품 원본 사진·영상",  "type": "assets",   "required": true,  "accept": ["image", "video"], "min": 1 },
+        { "id": "facts",        "label": "확인된 장점 (최대 3개)", "type": "textarea", "required": true,  "maxLength": 600, "help": "출처가 있는 사실만 적어 주세요" },
+        { "id": "factSources",  "label": "장점 출처",            "type": "textarea", "required": false, "maxLength": 600 },
+        { "id": "customerProblem", "label": "고객 문제",         "type": "textarea", "required": false, "maxLength": 300 },
+        { "id": "productLink",  "label": "상품·제휴 링크",       "type": "url",      "required": false },
+        { "id": "usageRights",  "label": "제품 이미지 사용권",    "type": "select",   "required": true,  "options": ["직접 촬영", "브랜드 제공", "공식 홍보물(허락 받음)", "확인 필요"] },
+        { "id": "technique",    "label": "연출 기법",            "type": "select",   "required": false, "options": ["기본 제품 소개", "재료 변환", "3D 글자 채움", "FOOH(현실 공간 광고)"], "help": "제품에 맞는 하나만 고릅니다" },
+        { "id": "characters",   "label": "등장 캐릭터",          "type": "characters", "required": false }
+      ],
+      "planSteps": [
+        { "id": "hook",    "label": "문제·변화 훅", "help": "첫 1~3초" },
+        { "id": "process", "label": "작동·변환 단계" },
+        { "id": "proof",   "label": "효익 근거",    "help": "확인된 사실만" },
+        { "id": "hero",    "label": "완성 제품 컷" },
+        { "id": "cta",     "label": "안내·행동 유도" }
+      ],
+      "reviseOptions": [
+        { "id": "material", "label": "재료" }, { "id": "product", "label": "제품" }, { "id": "order", "label": "변환 순서" },
+        { "id": "timing", "label": "초 단위 시간" }, { "id": "camera", "label": "카메라" }, { "id": "copy", "label": "문구" }
+      ],
+      "review": [
+        { "id": "shop.no-exaggeration", "label": "전후 효과를 과장하지 않았다", "required": true },
+        { "id": "shop.real-vs-staged",  "label": "실제 성능과 시각적 연출이 구분된다", "required": true },
+        { "id": "shop.no-fake-review",  "label": "사용하지 않은 제품을 실제 후기처럼 꾸미지 않았다", "required": true },
+        { "id": "shop.brand-intact",    "label": "제품 색·형태·로고가 왜곡되지 않았다", "required": true }
+      ],
+      "outputs": [
+        { "id": "video",  "label": "MP4 (P2부터 완성 영상)", "format": "mp4" },
+        { "id": "scenes", "label": "원본·중간본·선택 장면" },
+        { "id": "prompts","label": "프롬프트·생성 기록" },
+        { "id": "adcopy", "label": "광고 문구" }
+      ],
+      "unconfirmed": []
+    },
+    {
+      "id": "travel-shorts",
+      "label": "여행숏츠",
+      "group": "shortform",
+      "phase": "P4",
+      "availability": "skeleton",
+      "description": "고정 진행자와 실제 여행 정보로 세로 여행 영상을 만듭니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 여행숏츠", "7_전체업무_상세요구: 여행숏츠 (박대리 방식)"],
+      "defaultAspect": "9:16",
+      "defaultLengthSec": 45,
+      "inputs": [
+        { "id": "destination", "label": "여행지",          "type": "text",     "required": true },
+        { "id": "purpose",     "label": "여행 목적",       "type": "textarea", "required": true },
+        { "id": "references",  "label": "참조 링크",       "type": "textarea", "required": false },
+        { "id": "host",        "label": "진행자",          "type": "characters", "required": true },
+        { "id": "factSources", "label": "사실 정보 출처",  "type": "textarea", "required": true, "help": "운영시간·가격 등은 확인 날짜와 함께" }
+      ],
+      "planSteps": [
+        { "id": "factsheet", "label": "정보 사실표" },
+        { "id": "hook",      "label": "첫 장면 질문" },
+        { "id": "visit",     "label": "방문·체험 장면" },
+        { "id": "keyinfo",   "label": "핵심 정보" },
+        { "id": "next",      "label": "결말·다음 행동" }
+      ],
+      "reviseOptions": [
+        { "id": "host", "label": "진행자" }, { "id": "tone", "label": "말투" }, { "id": "place", "label": "장소" },
+        { "id": "copy", "label": "문구" }, { "id": "length", "label": "길이" }
+      ],
+      "review": [
+        { "id": "travel.facts-dated",  "label": "장소·운영정보에 확인 날짜가 있다", "required": true },
+        { "id": "travel.pronunciation","label": "지명·상호 발음이 맞다", "required": true },
+        { "id": "travel.continuity",   "label": "진행자 얼굴·의상이 이어진다", "required": true }
+      ],
+      "outputs": [
+        { "id": "video", "label": "세로 MP4" }, { "id": "script", "label": "대본·자막" },
+        { "id": "sources", "label": "출처 목록" }, { "id": "thumb", "label": "썸네일" }
+      ],
+      "unconfirmed": ["박대리 여행숏츠 원본·말투·색감·구성 — 원본 링크 확인 전까지 특징을 만들지 않음"]
+    },
+    {
+      "id": "travel-shopping-shorts",
+      "label": "여행 쇼핑숏츠",
+      "group": "shortform",
+      "phase": "P4",
+      "availability": "skeleton",
+      "description": "여행 경험과 관련 상품을 자연스럽게 연결한 숏츠입니다. 일반 여행숏츠와 별도 유형입니다.",
+      "source": ["7_전체업무_상세요구: 여행 쇼핑숏츠"],
+      "defaultAspect": "9:16",
+      "defaultLengthSec": 40,
+      "inputs": [
+        { "id": "destination", "label": "여행지",         "type": "text",     "required": true },
+        { "id": "productName", "label": "연결할 상품",    "type": "text",     "required": true },
+        { "id": "facts",       "label": "상품 확인 사실", "type": "textarea", "required": true },
+        { "id": "affiliateLink","label": "제휴 링크",     "type": "url",      "required": false },
+        { "id": "host",        "label": "진행자",         "type": "characters", "required": false }
+      ],
+      "planSteps": [
+        { "id": "situation", "label": "여행 상황" },
+        { "id": "need",      "label": "상품이 필요한 순간" },
+        { "id": "use",       "label": "사용 장면" },
+        { "id": "proof",     "label": "확인된 장점" },
+        { "id": "cta",       "label": "안내·제휴 표기" }
+      ],
+      "reviseOptions": [
+        { "id": "link", "label": "여행지와 상품 연결" }, { "id": "affiliateCopy", "label": "제휴 문구" }
+      ],
+      "review": [
+        { "id": "tshop.facts",  "label": "상품 사실과 여행 정보가 확인됐다", "required": true },
+        { "id": "tshop.ad",     "label": "제휴·광고 표기가 있다", "required": true }
+      ],
+      "outputs": [ { "id": "video", "label": "세로 MP4" }, { "id": "copy", "label": "설명·제휴 문구" } ],
+      "unconfirmed": ["범위 구분은 플래너 제안"]
+    },
+    {
+      "id": "brand-connect",
+      "label": "네이버 브랜드커넥트",
+      "group": "shortform",
+      "phase": "P4",
+      "availability": "skeleton",
+      "description": "캠페인 조건·링크·마감·필수 문구를 관리하고 쇼핑숏츠 제작과 연결합니다. 공개 API가 없어 직접 입력합니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 네이버 브랜드커넥트", "REFERENCES.md 4장"],
+      "defaultAspect": "9:16",
+      "defaultLengthSec": 30,
+      "inputs": [
+        { "id": "campaignName", "label": "캠페인 이름",      "type": "text",     "required": true },
+        { "id": "terms",        "label": "캠페인 조건 원문", "type": "textarea", "required": true },
+        { "id": "deadline",     "label": "마감",             "type": "datetime", "required": true },
+        { "id": "requiredPhrases", "label": "필수·금지 문구", "type": "textarea", "required": false },
+        { "id": "link",         "label": "제휴 링크",        "type": "url",      "required": true },
+        { "id": "approver",     "label": "승인 담당자",      "type": "text",     "required": false }
+      ],
+      "planSteps": [
+        { "id": "conditions", "label": "조건표" },
+        { "id": "situation",  "label": "독창적 상황·상품 역할" },
+        { "id": "script",     "label": "대본 (승인)" },
+        { "id": "produce",    "label": "제작" },
+        { "id": "delivery",   "label": "납품 체크" }
+      ],
+      "reviseOptions": [
+        { "id": "campaign", "label": "캠페인 변경" }, { "id": "body", "label": "본문·표지" }, { "id": "link", "label": "링크" }, { "id": "deliverable", "label": "납품본" }
+      ],
+      "review": [
+        { "id": "bc.terms",   "label": "캠페인 조건을 정확히 지켰다", "required": true },
+        { "id": "bc.ad",      "label": "제휴 표시가 있다", "required": true },
+        { "id": "bc.rights",  "label": "권리·원문 승인 여부를 확인했다", "required": true },
+        { "id": "bc.no-revenue-claim", "label": "수익·가입 상태를 추정해 쓰지 않았다", "required": true }
+      ],
+      "outputs": [ { "id": "files", "label": "납품 파일" }, { "id": "checklist", "label": "체크리스트" }, { "id": "bundle", "label": "문구·링크 묶음" } ],
+      "unconfirmed": ["계정 참여 상태·대상 상품"]
+    },
+    {
+      "id": "playlist",
+      "label": "플레이리스트",
+      "group": "music",
+      "phase": "P4",
+      "availability": "skeleton",
+      "description": "권리를 확인한 곡으로 곡 순서·전환·챕터·배경 영상을 갖춘 플레이리스트 영상을 만듭니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 플레이리스트", "10_화풍캐릭터규격: 플레이리스트 / 러기드비츠", "7_전체업무_상세요구: 모션 LP·이퀄라이저·GIF"],
+      "defaultAspect": "16:9",
+      "defaultLengthSec": 1800,
+      "inputs": [
+        { "id": "tracks",     "label": "승인 곡 (WAV·MP3)", "type": "assets", "required": true, "accept": ["audio"], "min": 1 },
+        { "id": "trackRights","label": "곡별 권리 (플랜·생성일)", "type": "textarea", "required": true, "help": "Suno는 Pro 이상에서 받은 곡만 상업 이용" },
+        { "id": "lyrics",     "label": "가사",              "type": "textarea", "required": false },
+        { "id": "cover",      "label": "커버 이미지",        "type": "assets", "required": false, "accept": ["image"] },
+        { "id": "channel",    "label": "채널",              "type": "select", "required": false, "options": ["러기드비츠", "기타"] },
+        { "id": "characters", "label": "채널 캐릭터",        "type": "characters", "required": false }
+      ],
+      "planSteps": [
+        { "id": "listen",   "label": "음원 실제 청취" },
+        { "id": "order",    "label": "곡 순서·길이" },
+        { "id": "layers",   "label": "배경·모션 레이어 (LP·이퀄라이저)" },
+        { "id": "chapters", "label": "연결·챕터" },
+        { "id": "output",   "label": "출력 검수" }
+      ],
+      "reviseOptions": [
+        { "id": "order", "label": "곡 순서" }, { "id": "track", "label": "트랙 추가·삭제" }, { "id": "length", "label": "길이" },
+        { "id": "background", "label": "배경" }, { "id": "loop", "label": "루프" }, { "id": "captions", "label": "자막" }, { "id": "fade", "label": "페이드·음량" }
+      ],
+      "review": [
+        { "id": "pl.artifacts", "label": "허밍·추임새·금속성 틱틱음이 없다", "required": true },
+        { "id": "pl.tail",      "label": "곡 끝 목소리·페이드아웃이 자연스럽다", "required": true },
+        { "id": "pl.denoise",   "label": "잡음 필터가 보컬을 손상하지 않았다 (전후 비교 청취)", "required": true },
+        { "id": "pl.no-regen-vocal", "label": "승인된 곡의 보컬을 다시 생성하지 않았다", "required": true }
+      ],
+      "outputs": [ { "id": "video", "label": "플리 MP4" }, { "id": "chapters", "label": "챕터" }, { "id": "tracklist", "label": "음원 목록" }, { "id": "cover", "label": "커버" } ],
+      "unconfirmed": ["플레이리스트 우선순위는 제안 단계 (기획서 6번)"]
+    },
+    {
+      "id": "music-video",
+      "label": "뮤직비디오·춤",
+      "group": "music",
+      "phase": "P6",
+      "availability": "planned",
+      "description": "승인 음원과 고정 멤버로 파트·박자에 맞춘 뮤직비디오와 춤 영상을 만듭니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 뮤직비디오 / 춤", "10_화풍캐릭터규격: 뮤직비디오 / 춤, 건곤감리 / 한복 MV", "8_벤치마킹: S2 Drive It Out"],
+      "defaultAspect": "16:9",
+      "defaultLengthSec": 180,
+      "inputs": [
+        { "id": "track",     "label": "승인 음원",       "type": "assets", "required": true, "accept": ["audio"], "min": 1 },
+        { "id": "lyrics",    "label": "가사",            "type": "textarea", "required": true },
+        { "id": "parts",     "label": "파트표 (가수별)",  "type": "textarea", "required": true },
+        { "id": "members",   "label": "멤버 캐릭터",      "type": "characters", "required": true },
+        { "id": "motionRef", "label": "동작 참조 영상",   "type": "assets", "required": false, "accept": ["video"], "help": "이용권이 확인된 것만" }
+      ],
+      "planSteps": [
+        { "id": "beats",    "label": "파트·비트표" },
+        { "id": "staging",  "label": "군무·서사 배치" },
+        { "id": "keyframe", "label": "전신 시작 그림" },
+        { "id": "test",     "label": "5초 시험" },
+        { "id": "expand",   "label": "확장·편집" }
+      ],
+      "reviseOptions": [
+        { "id": "section", "label": "동작 구간" }, { "id": "speed", "label": "속도" }, { "id": "position", "label": "멤버 위치" },
+        { "id": "part", "label": "파트" }, { "id": "lipsync", "label": "립싱크" }, { "id": "background", "label": "배경" }
+      ],
+      "review": [
+        { "id": "mv.body",    "label": "손발·몸 변형, 인물 겹침이 없다", "required": true },
+        { "id": "mv.speaker", "label": "화면 인물과 노래 파트가 일치한다", "required": true },
+        { "id": "mv.beat",    "label": "박자·가사 싱크가 맞다", "required": true },
+        { "id": "mv.resolution", "label": "실제 해상도를 확인했다 (업스케일 여부 구분)", "required": true }
+      ],
+      "outputs": [ { "id": "video", "label": "MV MP4" }, { "id": "shotlist", "label": "샷·파트표" }, { "id": "rights", "label": "참조 권리 기록" } ],
+      "unconfirmed": ["건곤감리 멤버별 한복 색·형태 — 인스타 원본 확인 전 배정하지 않음", "곤 여성 솔로 정정 포함 역할표 재확인"]
+    },
+    {
+      "id": "ai-drama",
+      "label": "AI 드라마",
+      "group": "story",
+      "phase": "P6",
+      "availability": "planned",
+      "description": "고정 남녀 캐릭터로 갈등·반전·결말이 있는 짧은 드라마를 만듭니다.",
+      "source": ["9_메뉴별_제작매뉴얼: AI 드라마", "10_화풍캐릭터규격: 남녀 AI 드라마"],
+      "defaultAspect": "9:16",
+      "defaultLengthSec": 90,
+      "inputs": [
+        { "id": "characters", "label": "확정 인물",     "type": "characters", "required": true },
+        { "id": "incident",   "label": "사건",          "type": "textarea", "required": true },
+        { "id": "genre",      "label": "장르",          "type": "text", "required": true },
+        { "id": "voices",     "label": "인물별 목소리", "type": "textarea", "required": true }
+      ],
+      "planSteps": [
+        { "id": "desire",   "label": "인물 욕구" },
+        { "id": "conflict", "label": "첫 갈등" },
+        { "id": "action",   "label": "오해·행동" },
+        { "id": "twist",    "label": "진실·반전" },
+        { "id": "ending",   "label": "행동으로 끝맺기" }
+      ],
+      "reviseOptions": [
+        { "id": "dialogue", "label": "남녀 대사·감정" }, { "id": "twist", "label": "반전" }, { "id": "ending", "label": "결말" },
+        { "id": "camera", "label": "카메라" }, { "id": "outfit", "label": "의상" }
+      ],
+      "review": [
+        { "id": "dr.male-lines", "label": "남성 대사가 빠지지 않았다", "required": true },
+        { "id": "dr.voice",      "label": "각 인물 목소리가 바뀌지 않았다", "required": true },
+        { "id": "dr.face",       "label": "얼굴·공간·시간이 이어진다", "required": true },
+        { "id": "dr.ending",     "label": "결말이 있다", "required": true }
+      ],
+      "outputs": [ { "id": "video", "label": "MP4" }, { "id": "scenes", "label": "장면표" }, { "id": "script", "label": "대본·자막" }, { "id": "refs", "label": "인물 참조" } ],
+      "unconfirmed": ["지난 파스텔 남녀 캐릭터 원본 파일 재연결 필요 — 찾기 전 확정 시트 완료로 표시하지 않음"]
+    },
+    {
+      "id": "ai-film",
+      "label": "AI 영화",
+      "group": "story",
+      "phase": "P6",
+      "availability": "planned",
+      "description": "로그라인부터 씬·컷 리스트, 컷별 영상, 대사·음성, 편집까지 영화 전용 흐름으로 만듭니다.",
+      "source": ["9_메뉴별_제작매뉴얼: AI 영화", "10_화풍캐릭터규격: AI 영화", "8_벤치마킹: S6"],
+      "defaultAspect": "16:9",
+      "defaultLengthSec": 300,
+      "inputs": [
+        { "id": "characters", "label": "주·조연 기준시트", "type": "characters", "required": true },
+        { "id": "incident",   "label": "사건",             "type": "textarea", "required": true },
+        { "id": "runtime",    "label": "러닝타임(분)",      "type": "number", "required": true, "min": 1, "max": 120 },
+        { "id": "genre",      "label": "장르",             "type": "text", "required": true },
+        { "id": "style",      "label": "화풍",             "type": "select", "required": true, "options": ["실사", "애니", "혼합"] }
+      ],
+      "planSteps": [
+        { "id": "logline",  "label": "로그라인" },
+        { "id": "conflict", "label": "인물 욕구·갈등" },
+        { "id": "arc",      "label": "기승전결·결말" },
+        { "id": "shots",    "label": "씬·컷 리스트" },
+        { "id": "direction","label": "연출 승인" }
+      ],
+      "reviseOptions": [
+        { "id": "character", "label": "캐릭터" }, { "id": "story", "label": "이야기" }, { "id": "ending", "label": "결말" },
+        { "id": "shot", "label": "컷 이미지" }, { "id": "motion", "label": "움직임" }, { "id": "dialogue", "label": "대사" },
+        { "id": "voice", "label": "목소리" }, { "id": "captions", "label": "자막" }, { "id": "edit", "label": "편집" }
+      ],
+      "review": [
+        { "id": "film.continuity", "label": "인물·의상·목소리, 공간·시간이 이어진다", "required": true },
+        { "id": "film.payoff",     "label": "서사가 회수되고 결말이 있다", "required": true },
+        { "id": "film.sync",       "label": "대사 싱크·음질·규격이 맞다", "required": true }
+      ],
+      "outputs": [ { "id": "video", "label": "영화 MP4" }, { "id": "script", "label": "대본" }, { "id": "storyboard", "label": "스토리보드" }, { "id": "clips", "label": "컷 이미지·클립" }, { "id": "history", "label": "수정 이력" } ],
+      "unconfirmed": ["작품별 화풍·캐릭터는 확정 전"]
+    },
+    {
+      "id": "yadam-longform",
+      "label": "야담 롱폼",
+      "group": "story",
+      "phase": "P6",
+      "availability": "planned",
+      "description": "장 단위 대본과 내레이션으로 긴 이야기 영상을 만듭니다. 사료와 창작을 구분합니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 야담 롱폼", "10_화풍캐릭터규격: 야담 롱폼"],
+      "defaultAspect": "16:9",
+      "defaultLengthSec": 1200,
+      "inputs": [
+        { "id": "sourceType", "label": "사료 / 창작",   "type": "select", "required": true, "options": ["사료 기반", "창작", "혼합"] },
+        { "id": "era",        "label": "시대·배경",     "type": "text", "required": true },
+        { "id": "characters", "label": "등장인물",      "type": "characters", "required": true },
+        { "id": "chapters",   "label": "장별 목표",     "type": "textarea", "required": true },
+        { "id": "sources",    "label": "자료 출처",     "type": "textarea", "required": false }
+      ],
+      "planSteps": [
+        { "id": "research", "label": "자료·출처" },
+        { "id": "design",   "label": "갈등과 결말 설계" },
+        { "id": "chapters", "label": "장별 대본" },
+        { "id": "narration","label": "내레이션" },
+        { "id": "edit",     "label": "장면·편집" }
+      ],
+      "reviseOptions": [
+        { "id": "chapter", "label": "장" }, { "id": "narrator", "label": "화자" }, { "id": "pronunciation", "label": "발음" },
+        { "id": "scene", "label": "장면" }, { "id": "ending", "label": "결말" }
+      ],
+      "review": [
+        { "id": "yd.fact",     "label": "역사 사실과 창작이 구분 표시됐다", "required": true },
+        { "id": "yd.dup",      "label": "장 사이 중복이 없다", "required": true },
+        { "id": "yd.foreshadow","label": "어조·이름·복선이 일치하고 회수됐다", "required": true }
+      ],
+      "outputs": [ { "id": "video", "label": "롱폼 MP4" }, { "id": "chapters", "label": "챕터" }, { "id": "thumb", "label": "썸네일" }, { "id": "manuscript", "label": "원고·출처" } ],
+      "unconfirmed": ["특정 화풍 미확정", "야담 전용 참고 원본 링크 미확인"]
+    },
+    {
+      "id": "animation-gif",
+      "label": "애니메이션·GIF",
+      "group": "motion",
+      "phase": "P6",
+      "availability": "planned",
+      "description": "그림체를 고정한 캐릭터의 작은 움직임, 루프, GIF를 만듭니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 애니메이션 / GIF", "10_화풍캐릭터규격: 애니메이션 / 일상", "8_벤치마킹: S7"],
+      "defaultAspect": "16:9",
+      "defaultLengthSec": 6,
+      "inputs": [
+        { "id": "styleSheet", "label": "캐릭터·그림체 시트", "type": "assets", "required": true, "accept": ["image"] },
+        { "id": "background", "label": "배경",              "type": "assets", "required": false, "accept": ["image"] },
+        { "id": "motion",     "label": "움직일 부위·동작",   "type": "textarea", "required": true },
+        { "id": "loopSec",    "label": "반복 길이(초)",      "type": "number", "required": false, "min": 1, "max": 30 }
+      ],
+      "planSteps": [
+        { "id": "sheet",  "label": "기준시트" },
+        { "id": "poses",  "label": "핵심 포즈" },
+        { "id": "test",   "label": "작은 움직임 시험" },
+        { "id": "loop",   "label": "장면·루프" },
+        { "id": "output", "label": "출력" }
+      ],
+      "reviseOptions": [
+        { "id": "part", "label": "움직일 부위" }, { "id": "speed", "label": "속도" }, { "id": "repeat", "label": "반복" },
+        { "id": "expression", "label": "표정" }, { "id": "background", "label": "배경" }
+      ],
+      "review": [
+        { "id": "an.shape",  "label": "캐릭터 변형·비율 문제가 없다", "required": true },
+        { "id": "an.loop",   "label": "루프 이음새가 튀지 않고 깜박임이 없다", "required": true },
+        { "id": "an.size",   "label": "GIF 용량·재생을 확인했다", "required": true }
+      ],
+      "outputs": [ { "id": "gif", "label": "GIF·MP4" }, { "id": "sheet", "label": "기준시트" }, { "id": "layers", "label": "부분 레이어·버전" } ],
+      "unconfirmed": ["일상 애니 예시(갈색머리 여성·태비 고양이) 설정은 해당 작품 한정"]
+    },
+    {
+      "id": "caption-motion",
+      "label": "자막 모션",
+      "group": "motion",
+      "phase": "P2",
+      "availability": "skeleton",
+      "description": "영상에 예능·강조 자막과 움직이는 글자를 입힙니다. 글자는 영상과 분리된 레이어로 언제든 고칩니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 자막 모션", "11_글자모션규격", "8_벤치마킹: S1"],
+      "defaultAspect": "9:16",
+      "defaultLengthSec": 30,
+      "inputs": [
+        { "id": "video",    "label": "영상",              "type": "assets", "required": true, "accept": ["video"], "min": 1 },
+        { "id": "script",   "label": "대본·받아쓰기",      "type": "textarea", "required": false },
+        { "id": "fontColor","label": "글꼴·색",           "type": "text", "required": false },
+        { "id": "emphasis", "label": "강조 구간",          "type": "textarea", "required": false }
+      ],
+      "planSteps": [
+        { "id": "split",    "label": "대사 분절" },
+        { "id": "timecode", "label": "타임코드" },
+        { "id": "effects",  "label": "강조·효과 선택" },
+        { "id": "safe",     "label": "안전영역" },
+        { "id": "read",     "label": "실제 읽기 시험" }
+      ],
+      "reviseOptions": [
+        { "id": "copy", "label": "문구" }, { "id": "timing", "label": "타이밍" }, { "id": "color", "label": "색" },
+        { "id": "font", "label": "글꼴" }, { "id": "position", "label": "위치" }, { "id": "effect", "label": "효과" }, { "id": "speed", "label": "속도" }
+      ],
+      "review": [
+        { "id": "cap.clip",  "label": "글자가 잘리지 않고 안전영역 안에 있다", "required": true },
+        { "id": "cap.speed", "label": "읽을 수 있는 속도다", "required": true },
+        { "id": "cap.overuse","label": "효과가 과하지 않다", "required": false }
+      ],
+      "outputs": [ { "id": "video", "label": "자막 포함 MP4" }, { "id": "srt", "label": "SRT·편집 설정" } ],
+      "unconfirmed": ["S1 자막 모션 스킬의 실제 효과는 미검증 — 검증된 효과만 목록에"]
+    },
+    {
+      "id": "motion-graphics-2d",
+      "label": "2D 모션그래픽 V3.1",
+      "group": "motion",
+      "phase": "P6",
+      "availability": "planned",
+      "description": "Warm Cream 2D 플랫 벡터 스타일의 10초 모션그래픽을 코드 템플릿으로 만듭니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 2D 모션그래픽 (V3.1)", "10_화풍캐릭터규격: 2D 모션그래픽", "8_벤치마킹: S9"],
+      "defaultAspect": "16:9",
+      "defaultLengthSec": 10,
+      "inputs": [
+        { "id": "topic",     "label": "주제",          "type": "text", "required": true },
+        { "id": "keyCopy",   "label": "핵심 문구",      "type": "textarea", "required": true },
+        { "id": "character", "label": "기준 캐릭터",    "type": "characters", "required": false },
+        { "id": "palette",   "label": "색",            "type": "text", "required": false },
+        { "id": "vo",        "label": "영문 VO·화면 문구", "type": "textarea", "required": false }
+      ],
+      "planSteps": [
+        { "id": "hook",    "label": "첫 1초 훅" },
+        { "id": "morph",   "label": "2~5초 연속 모핑" },
+        { "id": "accel",   "label": "5~8초 비트싱크 가속" },
+        { "id": "finale",  "label": "마지막 2초 피날레" }
+      ],
+      "reviseOptions": [
+        { "id": "intense", "label": "강렬" }, { "id": "minimal", "label": "미니멀" }, { "id": "morph", "label": "모핑 강화" },
+        { "id": "type", "label": "타이포 강화" }, { "id": "vertical", "label": "세로 전환" }
+      ],
+      "review": [
+        { "id": "mg.shape",    "label": "캐릭터 외형 고정, 실사 혼입 없음", "required": true },
+        { "id": "mg.ducking",  "label": "VO 구간에 음악이 낮아진다", "required": true }
+      ],
+      "outputs": [ { "id": "video", "label": "MP4" }, { "id": "timeline", "label": "타임라인·설정" } ],
+      "unconfirmed": ["러기드비츠 음악 제작의 악기 금지 규칙과 별도 템플릿"]
+    },
+    {
+      "id": "product-transform",
+      "label": "제품 변환·3D 글자·FOOH",
+      "group": "motion",
+      "phase": "P6",
+      "availability": "planned",
+      "description": "원재료 변환, 투명 글자 채움, 현실 공간 광고(FOOH) 같은 제품 연출 영상을 만듭니다.",
+      "source": ["7_전체업무_상세요구: 모션 제품 변환·3D·FOOH", "10_화풍캐릭터규격: 제품 변환 / 3D 타이포 광고, 공모전 / 햇반 참고", "8_벤치마킹: S3, S4, S5"],
+      "defaultAspect": "9:16",
+      "defaultLengthSec": 15,
+      "inputs": [
+        { "id": "product",   "label": "제품 참조",      "type": "assets", "required": true, "accept": ["image"], "min": 1 },
+        { "id": "preset",    "label": "프리셋",         "type": "select", "required": true, "options": ["재료 변환 (S3)", "3D 글자 채움 (S4)", "FOOH 전후 변화 (S5)"], "help": "프리셋끼리 배경·카메라·소리 조건을 섞지 않습니다" },
+        { "id": "materials", "label": "재료·단계 (개수 포함)", "type": "textarea", "required": true },
+        { "id": "brand",     "label": "브랜드·글자",    "type": "text", "required": false }
+      ],
+      "planSteps": [
+        { "id": "start",  "label": "시작 프레임" },
+        { "id": "steps",  "label": "단계별 변환" },
+        { "id": "physics","label": "인과·수위·소모 규칙" },
+        { "id": "hero",   "label": "히어로 컷" }
+      ],
+      "reviseOptions": [
+        { "id": "material", "label": "재료" }, { "id": "brand", "label": "브랜드" }, { "id": "camera", "label": "카메라" }, { "id": "stepTime", "label": "단계 시간" }
+      ],
+      "review": [
+        { "id": "pt.causality", "label": "재료 개수·원인과 결과·소모가 맞다", "required": true },
+        { "id": "pt.liquid",    "label": "액체 순간이동·넘침이 없고 수위가 이어진다", "required": true },
+        { "id": "pt.brand",     "label": "철자·서체·브랜드가 고정됐다", "required": true }
+      ],
+      "outputs": [ { "id": "video", "label": "MP4" }, { "id": "frames", "label": "시작·끝 프레임" }, { "id": "settings", "label": "설정·참조" } ],
+      "unconfirmed": ["S3~S5는 텍스트 기획 확인만, 실제 영상 품질 미검증"]
+    },
+    {
+      "id": "contest",
+      "label": "공모전",
+      "group": "publish",
+      "phase": "P4",
+      "availability": "skeleton",
+      "description": "공고 포스터·규정을 올리면 조건표를 만들고, 기획부터 작품·설명·증빙까지 준비합니다. 제출은 직접 합니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 공모전 제작", "7_전체업무_상세요구: 공모전 원스톱 제작", "2_기능 목록: 09"],
+      "defaultAspect": "16:9",
+      "defaultLengthSec": 60,
+      "inputs": [
+        { "id": "notice",     "label": "공고 포스터·안내문", "type": "assets", "required": true, "accept": ["image", "doc"], "min": 1 },
+        { "id": "noticeUrl",  "label": "공고 주소",          "type": "url", "required": false, "help": "보고 있는 페이지 주소만. 사이트 전체를 수집하지 않습니다" },
+        { "id": "deadline",   "label": "마감 (시간대 포함)", "type": "datetime", "required": true },
+        { "id": "aiAllowed",  "label": "AI 사용 허용",       "type": "select", "required": true, "options": ["허용", "불허", "불명확"] },
+        { "id": "spec",       "label": "제출 규격",          "type": "textarea", "required": true }
+      ],
+      "planSteps": [
+        { "id": "conditions", "label": "조건표·누락 확인" },
+        { "id": "concept",    "label": "독창적 기획" },
+        { "id": "storyboard", "label": "스토리보드" },
+        { "id": "works",      "label": "이미지·영상·포스터" },
+        { "id": "statement",  "label": "작품 설명·증빙" }
+      ],
+      "reviseOptions": [
+        { "id": "plan", "label": "기획" }, { "id": "scene", "label": "장면" }, { "id": "product", "label": "제품" },
+        { "id": "poster", "label": "포스터" }, { "id": "statement", "label": "설명" }
+      ],
+      "review": [
+        { "id": "ct.source-match", "label": "조건표가 공고 원문과 일치한다 (포스터만으로 확정했다고 주장하지 않음)", "required": true },
+        { "id": "ct.deadline",     "label": "마감 시각·시간대를 확인했다", "required": true },
+        { "id": "ct.ai",           "label": "AI 사용 허용 조건을 지켰다", "required": true },
+        { "id": "ct.spec",         "label": "해상도·길이·글자·로고 규칙을 지켰다 (4K는 실제 치수 확인 후만)", "required": true },
+        { "id": "ct.no-autosubmit","label": "자동 제출하지 않았다", "required": true }
+      ],
+      "outputs": [ { "id": "works", "label": "영상·이미지·포스터" }, { "id": "statement", "label": "작품 설명" }, { "id": "evidence", "label": "프롬프트·중간결과 증빙 ZIP" } ],
+      "unconfirmed": ["마감 임박 공모전은 단계와 관계없이 우선 처리 가능 (6번 시트)"]
+    },
+    {
+      "id": "sns-channels",
+      "label": "SNS 5채널 패키지",
+      "group": "publish",
+      "phase": "P5",
+      "availability": "planned",
+      "description": "완성 작품 하나를 인스타·스레드·유튜브·틱톡·페이스북용 파일과 문구로 묶습니다. 게시는 승인 후에만.",
+      "source": ["9_메뉴별_제작매뉴얼: 5개 SNS 채널", "3_화면 목록: 11", "REFERENCES.md 4장"],
+      "defaultAspect": "9:16",
+      "defaultLengthSec": 60,
+      "inputs": [
+        { "id": "master",   "label": "승인 완성본",   "type": "assets", "required": true, "accept": ["video"], "min": 1 },
+        { "id": "channels", "label": "채널",         "type": "multiselect", "required": true, "options": ["Instagram", "Threads", "YouTube", "TikTok", "Facebook"] },
+        { "id": "visibility","label": "공개 범위",    "type": "select", "required": true, "options": ["비공개 준비", "예약", "공개(승인 후)"] }
+      ],
+      "planSteps": [
+        { "id": "scope",   "label": "공개 범위" },
+        { "id": "format",  "label": "채널별 비율·커버" },
+        { "id": "copy",    "label": "제목·설명" },
+        { "id": "preview", "label": "미리보기" },
+        { "id": "approve", "label": "승인 후 게시" }
+      ],
+      "reviseOptions": [
+        { "id": "copy", "label": "문구" }, { "id": "thumb", "label": "썸네일" }, { "id": "ratio", "label": "비율" }
+      ],
+      "review": [
+        { "id": "sns.limits", "label": "채널 제한을 지켰다 (Threads 500자·주제 태그 1개, 인스타 해시태그 30개 이하, 페이스북 릴스 3~90초)", "required": true },
+        { "id": "sns.labels", "label": "AI 표시·광고 표기가 채널별로 설정됐다", "required": true },
+        { "id": "sns.links",  "label": "깨진 링크가 없다", "required": true }
+      ],
+      "outputs": [ { "id": "packages", "label": "채널별 파일·문구 묶음" } ],
+      "unconfirmed": ["채널 계정 종류(인스타 프로페셔널, 페이스북 페이지)"]
+    },
+    {
+      "id": "promo-site",
+      "label": "홍보 홈페이지",
+      "group": "publish",
+      "phase": "P5",
+      "availability": "planned",
+      "description": "공개 승인한 작품만 보여주는 소개·포트폴리오·문의 페이지입니다. 내부 작업실과 분리됩니다.",
+      "source": ["9_메뉴별_제작매뉴얼: 홍보 홈페이지", "3_화면 목록: 12"],
+      "defaultAspect": "16:9",
+      "defaultLengthSec": 0,
+      "inputs": [
+        { "id": "works",   "label": "공개 승인 작품", "type": "assets", "required": true, "accept": ["video", "image"] },
+        { "id": "intro",   "label": "소개글",        "type": "textarea", "required": true },
+        { "id": "contact", "label": "문의 방법",     "type": "text", "required": true }
+      ],
+      "planSteps": [
+        { "id": "intro",    "label": "소개" },
+        { "id": "works",    "label": "작품" },
+        { "id": "services", "label": "서비스" },
+        { "id": "contact",  "label": "문의" }
+      ],
+      "reviseOptions": [
+        { "id": "color", "label": "색·서체" }, { "id": "cover", "label": "표지" }, { "id": "intro", "label": "소개" }, { "id": "list", "label": "작품 목록" }
+      ],
+      "review": [
+        { "id": "ps.private", "label": "비공개·민감 자료가 노출되지 않았다", "required": true },
+        { "id": "ps.claims",  "label": "실적·후기·통계를 지어내지 않았다", "required": true },
+        { "id": "ps.policy",  "label": "개인정보 안내·연락처가 있다", "required": true }
+      ],
+      "outputs": [ { "id": "site", "label": "공개 페이지" } ],
+      "unconfirmed": ["도메인·운영자·문의 수신자 미정"]
+    }
+  ],
+  "workspaces": [
+    {
+      "id": "legal-tax",
+      "label": "법무·부동산·세무",
+      "phase": "P8",
+      "availability": "separate-project",
+      "description": "사건 접수·서류·기한 관리와 세금 검토 보조. 보안 설계와 전문가 지정 후 별도 프로젝트로 개발합니다.",
+      "notDoing": ["법률 판단", "세액 확정·신고", "실제 개인정보로 시험"]
+    },
+    {
+      "id": "home-care",
+      "label": "재가센터",
+      "phase": "P8",
+      "availability": "separate-project",
+      "description": "상담·일정·방문 기록·운영 현황 관리. 기관 양식과 권한 기준 확인 후 별도 프로젝트로 개발합니다.",
+      "notDoing": ["의료·요양 판단", "자동 청구", "건강정보 과다 수집"]
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+/* Dream AI Studio — 디자인 토큰 v1 (2026-11-15)
+ * 제품 화면은 이 파일의 변수만 사용한다. 컴포넌트에 색상 코드·px 값을 직접 쓰지 않는다.
+ * 기준: docs/DESIGN.md. 기획서 색 제안(남색 #243B53 · 민트 #0E9F94 · 크림 #FAF8F3) 반영.
+ * 1차는 밝은 화면만 지원한다(color-scheme: light). 어두운 화면은 [data-theme="dark"]로 이후 추가.
+ */
+:root {
+  color-scheme: light;
+
+  /* ── 브랜드 ─────────────────────────────── */
+  --c-navy-900: #172636;
+  --c-navy-800: #1D3044;
+  --c-navy-700: #243B53;   /* 주색: 제목, 사이드바, 주요 글자 */
+  --c-navy-500: #486581;
+  --c-navy-300: #9FB3C8;
+  --c-navy-100: #DCE5EE;
+  --c-navy-50:  #EEF2F6;
+
+  --c-mint-800: #07675F;
+  --c-mint-700: #0A7F76;   /* 강조 글자·링크 (흰 배경 대비 4.9:1) */
+  --c-mint-600: #0E9F94;   /* 강조: 주 버튼, 선택, 진행 표시 */
+  --c-mint-200: #A6E3DD;
+  --c-mint-100: #D5F2EF;
+  --c-mint-50:  #ECF9F7;
+
+  --c-cream-50:  #FFFDF9;
+  --c-cream-100: #FAF8F3;  /* 앱 배경 */
+  --c-cream-200: #F2EEE5;  /* 눌린 칸, 표 머리 */
+  --c-cream-300: #E6E0D3;  /* 선 */
+  --c-cream-400: #D3CBBA;  /* 진한 선, 입력 테두리 */
+
+  /* ── 역할 색 (컴포넌트는 이것만 쓴다) ──────── */
+  --bg-app:        var(--c-cream-100);
+  --bg-surface:    #FFFFFF;
+  --bg-sunken:     var(--c-cream-200);
+  --bg-sidebar:    var(--c-navy-700);
+  --bg-sidebar-hover: var(--c-navy-800);
+  --bg-sidebar-active: rgba(14, 159, 148, 0.22);
+  --bg-accent-soft: var(--c-mint-50);
+  --bg-overlay:    rgba(23, 38, 54, 0.45);
+
+  --fg-strong:     var(--c-navy-900);   /* 제목 */
+  --fg-default:    #2A3644;             /* 본문 (크림 위 11.9:1) */
+  --fg-muted:      #5C6878;             /* 보조 (크림 위 5.4:1) */
+  --fg-subtle:     #7B8594;             /* 비활성·자리표시 (4.0:1, 15px 이상만) */
+  --fg-on-accent:  #FFFFFF;
+  --fg-on-sidebar: #E8EEF4;
+  --fg-on-sidebar-muted: #A9BACB;
+  --fg-accent:     var(--c-mint-700);
+  --fg-link:       var(--c-mint-700);
+
+  --line:          var(--c-cream-300);
+  --line-strong:   var(--c-cream-400);
+  --line-focus:    var(--c-mint-600);
+
+  --accent:        var(--c-mint-600);
+  --accent-hover:  var(--c-mint-700);
+  --accent-press:  var(--c-mint-800);
+
+  /* ── 상태 색 (색 + 아이콘 + 글자를 항상 함께) ── */
+  --st-success-fg: #1E6B43;  --st-success-bg: #E3F4EA;  --st-success-line: #A8D9BC;
+  --st-warning-fg: #8A5300;  --st-warning-bg: #FCF0D9;  --st-warning-line: #EDCB8A;
+  --st-danger-fg:  #A12F27;  --st-danger-bg:  #FBE5E2;  --st-danger-line:  #EDB0A8;
+  --st-running-fg: #1D5F99;  --st-running-bg: #E2EEF9;  --st-running-line: #A9C8E6;
+  --st-approval-fg: var(--c-mint-800); --st-approval-bg: var(--c-mint-50); --st-approval-line: var(--c-mint-200);
+  --st-locked-fg:  #6B7380;  --st-locked-bg:  #EEEDEA;  --st-locked-line:  #D9D6CF;
+  --st-sample-fg:  #6A4BA8;  --st-sample-bg:  #F0EBFA;  --st-sample-line:  #CDBDEB;  /* mock 결과 전용 */
+
+  /* 단계 칩 (로드맵 Pn 표기) */
+  --phase-0: #6B7A8F; --phase-1: #0A7F76; --phase-2: #2F6FAE; --phase-3: #6B4FB3;
+  --phase-4: #A9650F; --phase-5: #B03C60; --phase-6: #42693A; --phase-7: #36506E; --phase-8: #7D4F3B;
+
+  /* ── 글자 ─────────────────────────────── */
+  --font-sans: "Pretendard Variable", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "D2Coding", ui-monospace, Consolas, monospace;
+
+  --text-xs:   13px;  /* 칩·배지·메타 정보 전용. 문장 금지 */
+  --text-sm:   14px;  /* 표 셀, 도움말 */
+  --text-md:   15px;  /* 본문 기본 (최소) */
+  --text-lg:   17px;  /* 카드 제목, 강조 본문 */
+  --text-xl:   20px;  /* 섹션 제목 */
+  --text-2xl:  24px;  /* 페이지 제목 */
+  --text-3xl:  30px;  /* 작업실 인사말 등 드물게 */
+
+  --lh-tight: 1.3;
+  --lh-normal: 1.6;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --tracking-label: 0.02em;
+
+  /* ── 간격 (4px 단위) ───────────────────── */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+
+  /* ── 모양 ─────────────────────────────── */
+  --radius-sm: 6px;    /* 입력, 버튼, 칩 */
+  --radius-md: 10px;   /* 카드, 패널 */
+  --radius-lg: 14px;   /* 확인 패널, 큰 미디어 */
+  --radius-pill: 999px;
+
+  --shadow-1: 0 1px 2px rgba(23, 38, 54, 0.06);
+  --shadow-2: 0 4px 16px rgba(23, 38, 54, 0.10);
+  --shadow-3: 0 12px 40px rgba(23, 38, 54, 0.18);  /* 확인 패널·토스트 */
+
+  --focus-ring: 0 0 0 3px rgba(14, 159, 148, 0.35);
+
+  /* ── 크기 ─────────────────────────────── */
+  --control-h-sm: 32px;
+  --control-h-md: 40px;   /* 기본 버튼·입력 */
+  --control-h-lg: 48px;   /* 휴대폰 주 버튼 */
+  --touch-min: 44px;
+
+  --sidebar-w: 248px;
+  --topbar-h: 56px;
+  --content-max: 1200px;
+  --form-max: 720px;
+
+  /* ── 움직임 ───────────────────────────── */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ── 반응형 기준 (참고용, CSS 변수는 미디어쿼리에 못 씀) ──
+   * 휴대폰 < 640px · 태블릿 640~1023px · PC ≥ 1024px
+   */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; }
+}
