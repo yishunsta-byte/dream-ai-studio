@@ -19,7 +19,7 @@ p { margin-top:0; }
 .muted { color:var(--fg-muted); }
 .form-width { width:100%; max-width:var(--form-max); }
 .clean-list { margin:0; padding-left:var(--sp-5); }
-.action-link { display:inline-flex; align-items:center; justify-content:center; min-height:var(--control-h-lg); padding:var(--sp-2) var(--sp-4); border-radius:var(--radius-sm); color:var(--fg-on-accent); background:var(--accent-hover); text-decoration:none; font-weight:var(--weight-semibold); }
+.action-link { display:inline-flex; align-items:center; justify-content:center; min-height:var(--control-h-lg); padding:var(--sp-2) var(--sp-4); border-radius:var(--radius-sm); color:var(--fg-on-accent); background:var(--accent); text-decoration:none; font-weight:var(--weight-semibold); }
 .action-link:hover { background:var(--accent-press); }
 .project-inputs { display:grid; gap:var(--sp-4); margin:0; }
 .project-inputs dt { font-weight:var(--weight-semibold); color:var(--fg-strong); }

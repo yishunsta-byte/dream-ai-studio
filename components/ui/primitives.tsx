@@ -22,7 +22,7 @@ export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "acce
   return <span className={`${styles.badge} ${tone === "accent" ? styles.accentBadge : ""}`}>{children}</span>;
 }
 export function PhaseChip({ phase }: { phase: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 }) {
-  return <span className={styles.phase} style={{ background: phase === 0 ? "var(--c-navy-500)" : `var(--phase-${phase})` }}>P{phase}</span>;
+  return <span className={styles.phase} style={{ background: `var(--phase-${phase})` }}>P{phase}</span>;
 }
 export function StatusPill({ status, children }: { status: Status; children?: ReactNode }) {
   const state = statusDisplay[status];

@@ -37,12 +37,13 @@ export function workflowService(handle:DatabaseHandle) {
   const service = {
     requireApprovedPlan:(projectId:string,planId:string)=>atomic(()=>requirePlan(projectId,planId)),
     requireApprovedReview:(projectId:string)=>atomic(()=>requireReview(projectId)),
-    createPlanDraft:(projectId:string,expectedRevision:number,input:unknown):{id:string;version:number;revision:number}=>atomic(()=>{
+    createPlanDraft:(projectId:string,expectedRevision:number,input:unknown,prepareScenes?:()=>unknown[]):{id:string;version:number;revision:number}=>atomic(()=>{
       const draft=draftSchema.parse(input);
       const id=v7();
       const version=nextVersion(repo.planVersions(projectId));
       const revision=service.changeContent(projectId,expectedRevision,"plan","plan.draft",()=>{
-        repo.insertPlan({id,projectId,version,stepsJson:encodeJson(jsonArray,draft.steps),script:draft.script,status:"draft"});
+        const steps=prepareScenes?prepareScenes():draft.steps;
+        repo.insertPlan({id,projectId,version,stepsJson:encodeJson(jsonArray,steps),script:draft.script,status:"draft"});
       });
       return {id,version,revision};
     }),
@@ -72,6 +73,7 @@ export function workflowService(handle:DatabaseHandle) {
       const {project,states}=context(projectId);assertRevision(expectedRevision,project.contentRevision);
       const plan=repo.plan(planId);
       if(!plan || plan.projectId!==projectId || plan.status!=="draft")throw new WorkflowError("PLAN_NOT_APPROVED","승인할 기획 초안을 확인해 주세요.");
+      if(plan.version!==Math.max(...repo.planVersions(projectId)))throw new WorkflowError("PLAN_NOT_APPROVED","가장 최근 초안을 승인해 주세요. 예전 내용은 새 초안으로 불러올 수 있어요.");
       const active=repo.scenes(projectId);
       if(!plan.script.trim() || !decodeJson(jsonArray,plan.stepsJson).length || !active.length)throw new WorkflowError("STAGE_LOCKED","대본과 기획 순서, 장면표를 먼저 완성해 주세요.");
       const status=transitionStage("plan",states.find((item)=>item.stage==="plan")!.status,"approve",states,"user");

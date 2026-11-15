@@ -1,6 +1,6 @@
 .button { display:inline-flex; align-items:center; justify-content:center; gap:var(--sp-2); border:1px solid transparent; border-radius:var(--radius-sm); padding:0 var(--sp-4); font-weight:var(--weight-semibold); font-size:var(--text-sm); cursor:pointer; text-decoration:none; transition:background var(--dur-fast) var(--ease-out); min-width:0; }
-.primary { background:var(--accent-hover); color:var(--fg-on-accent); }
-.primary:hover { background:var(--accent-press); }
+.primary { background:var(--accent); color:var(--fg-on-accent); }
+.primary:hover { background:var(--accent-hover); }
 .primary:active { background:var(--accent-press); }
 .secondary { background:var(--bg-surface); color:var(--fg-strong); border-color:var(--line-strong); }
 .secondary:hover { background:var(--bg-sunken); }

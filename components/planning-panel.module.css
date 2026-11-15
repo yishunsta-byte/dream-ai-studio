@@ -1,0 +1,6 @@
+.toolbar { display:flex; flex-wrap:wrap; gap:var(--sp-4); align-items:end; }
+.compare { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--sp-5); }
+.compare > :only-child { grid-column:1 / -1; }
+.previous { white-space:pre-wrap; overflow-wrap:anywhere; padding:var(--sp-4); border-radius:var(--radius-sm); background:var(--bg-sunken); }
+.changed { background:var(--st-warning-bg); }
+@media(max-width:720px) { .compare { grid-template-columns:minmax(0,1fr); } }
