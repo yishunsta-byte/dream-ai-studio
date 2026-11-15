@@ -8,6 +8,23 @@
 
 ## 연락 방법
 
+### 최신 운영 등록 · 2026-11-16 Asia/Seoul
+
+공통지침 `../AI_TEAM_RULES.md`, 역할지침 `team/CODEX_MASTER.md`·`team/CLAUDE_ROLES.md` 적용. 사용자 최신정정: Claude Code=코딩, Claude design=디자인, 새 Claude=데이터, Codex Master=총괄/통합/테스트. 공용 배정/상태는 Master 단일 작성; 담당자는 고유 보고서+Orca로 반환한다. 파일 점유는 조정 정보이며 기술적 lock이 아니다.
+
+| ID | 플랫폼/실제 연결 | 역할·작업 | 확인 상태 |
+|---|---|---|---|
+| CX-MASTER-01 | Codex CLI / term_3831c608-dc70-4b7f-aaba-742095a2481e | Master, T-012 운영구성/통합검증 | busy, 이 세션 |
+| CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, T-013 디자인 대조 | running, 수락 msg_60f92eac5736 |
+| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터 전담, T-014 | running, 수락 msg_2fb6c6de8f77 |
+| CX-REVIEW-01 | Codex / dispatch ctx_fa91b94b9d65 | 독립검수, 격리 child worktree | returned, 제품 FAIL/F0161·2/V13부분 |
+
+위 세션의 실행 환경은 Orca executionHostId=local/Windows다. Master·디자인·데이터의 Orca 작업공간 D:/starwork, 실제 Git 저장소 D:/starwork/dream-ai-studio(master). 검수는 C:/Users/Administrator/orca/workspaces/dream-ai-studio/p1-independent-review의 p1-independent-review 브랜치. CLI `codex --help`·`claude --help` 실행 확인, Orca 전송/수락/결과회수 확인. CLI 경로: Codex=C:/Users/Administrator/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe, Claude=C:/Users/Administrator/.local/bin/claude.exe. 각 세션의 구체적 미디어 입출력/권한은 배정별 확인하며 추정하지 않는다. Antigravity·dev-requests는 현재 PATH 미검출/미연결, 여러 장비 동기화도 미연결이다. 원격/유료 연동을 추가하지 않았다.
+
+전달: Orca live terminal mailbox는 종료 뒤 내구성을 보장하지 않는다. 영수증만으로 수락을 주장하지 않으며 이후 메시지를 회수한다. 새 supervised 작업은 dispatch ID로 추적한다. 설치된 Orca skill에 따라 wake 시 check, worker 시작 후 턴 종료, 실패 복구/정리를 수행한다. 상시 실행 자체 스케줄러는 새로 설치하지 않는다.
+
+작업 수명은 ready/running/ready_review/done 등 AI_TEAM_RULES 상태를 사용하며 전달상태 prepared/queued/delivered/acknowledged/returned/integrated와 구분한다. 과거 T-001~011 상태는 당시 기록으로 보존한다.
+
 | 누구 | Orca 터미널 | 맡은 일 |
 |---|---|---|
 | **Claude design** — 플래너·디자인 | `term_00718d24-27e9-4cd8-9f27-49e1064016d2` | 기준 문서·디자인·검수 안내서 |
@@ -22,6 +39,31 @@
 4. 터미널 번호가 바뀌면 `orca terminal list --json`으로 찾아 이 표를 고친다.
 
 ## 요청 기록
+
+### T-012 · 공통 지침·운영 초기 구성 (Master, parent=P1 종료) — running
+
+- 담당 CX-MASTER-01. 허용: AI_TEAM_RULES.md, docs/team/, AGENTS/CLAUDE 안내줄, TEAM 운영/배정, 독립검수 보고 취합. 제품코드/데이터 변경 없음.
+- 완료조건: 실제 세션/도구 확인, 최신 역할 등록, 실제 읽기점검 전달·수락 근거, 결과/충돌 관리 및 다음 작업 배정. 사용자 v1.0의 프로젝트 적용본을 저장했고 도구권한 확대 없음.
+- 검사: repo master, 구현기준 dee2d0b·문서HEAD c4072b9, 기존 미커밋 사용자 변경 없음 확인 후 시작. 실행/테스트는 README/package.json 기존명령 유지. dev-requests/Antigravity 미연결. 디자인/데이터 모두 실제수락 확인.
+
+### T-013 · 현재 플랜·디자인 누락 분석 (parent=P1 종료, priority=P1) — running
+
+- 담당 CC-DESIGN-01, 요청 CX-MASTER-01. 입력 PLAN/DESIGN/PROGRESS/R016/현재코드. 목적: 요구-구현 누락과 F0161/2 화면 수정명세·후속우선순위 제시.
+- 유일 허용파일 docs/handoffs/T-013-CC-DESIGN-01.md. 제품코드/기준문서 변경금지. 완료조건: 근거대조·상태문구/다음행동·1280/390 명세·필수/권장·필요결정/한계. Master가 취합/검증한다.
+- 전송 msg_c2074134f687, 수락 msg_60f92eac5736. 예상차단 없음. 공식 제품코드 수정은 T-015로 분리한다.
+
+### T-014 · 현재 플랜·데이터 정합성 분석 (parent=P1 종료, priority=P1) — running
+
+- 담당 CC-DATA-01, 요청 CX-MASTER-01. 입력 PLAN7/8/14/18/19·스키마/마이그레이션·백업/복원/기록/작업서비스·관련테스트. 허용파일 docs/handoffs/T-014-CC-DATA-01.md만.
+- 완료조건: 기준-코드대조·불변/참조/중복누락/단위·읽은범위/건수·실제검증/추정/한계·심각도/추천·사용자결정필요여부. 실제data/storage/backups 접근금지, 재현은 메모리/임시가상fixture만. Master 취합/검증.
+- 전송 msg_d67f28a43286, 수락 msg_2fb6c6de8f77. 기존 공용문서 역할 오수정은 c4072b9에서 정리된 것으로 담당자가 회신. 현재 다른 작업자의 변경을 건드리지 않는다.
+
+### T-015 · 독립 검수 필수수정 구현 (parent=P1 종료, priority=P1) — ready
+
+- 책임 역할 CC-ENG-01(Claude Code 코딩), 실제 새 연결 배정 예정. F0161 장면실패 안내·대기오표시, F0162 export 미리보기/이름/크기. 입력 R016·독립인계·T013 디자인명세. 해당코드/DTO/관련테스트만 수정, planner/공용상태/데이터 변경금지.
+- 완료조건: 두결함 수정+회귀검사·build/lint/typecheck/관련테스트·diff/보고 제출(ready_review). Master가 결과 통합·테스트 후 기존 독립검수자에게 F0161/2와 V13잔여 재검수 요청. P2 진입은 별도 사용자게이트 유지.
+
+- T-001 반환 취합: msg_4d19a795baa2 보고의 R016·독립인계를 원문으로 통합했다. 제품 FAIL, 필수수정2건·V13 부분검증을 유지한다. T004 캡처11개는 tmp/p1-review에 회수됐으며 사용자확인 완료로 처리하지 않는다.
 
 - P1-9 최종 회신(Codex): T-007~T-010 결과를 취합하고 실제 UI/복원본 대조까지 확인했다. T-011 worker는 업데이트 안내로 시작 실패·코드 미실행 후 안전 release했고 coordinator가 추적 주석을 보완했다. 최종 build 경고0/사적추적0·lint/typecheck·191검사·운영감사0, 전체moderate7/high0/critical0. R-015·P1-9 인계 기록. 다음 T-001은 새 구현 미참여 Codex가 깨끗한 커밋의 격리본에서 수행한다. T-004 캡처도 그 흐름에서 촬영한다.
 

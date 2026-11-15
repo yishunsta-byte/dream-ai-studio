@@ -1,5 +1,43 @@
 # 검수 기록
 
+## R-016 · P1 종료 독립 검수 (2026-11-16, 새 Codex)
+
+대상 커밋: `dee2d0b1b2d78c565f28317542befbf9493db5da`. 시작 git status clean 및 HEAD 일치 확인. 구현에 참여하지 않은 검수자가 Orca 격리 child worktree에서 실행했으며 **자체 검수 아님**.
+
+**제품 판정: 불통과. 열린 필수 수정 2건(F-016-1, F-016-2). V13은 부분검증으로 전체 통과를 주장하지 않는다.** 실행 근거·V1~V13/R1~R10·설계 대조·재현 절차·캡처별 설명은 [독립 검수 인계](handoffs/P1-END-INDEPENDENT-REVIEW.md)에 기록했다.
+
+| 검사 | 이번 검수자의 실제 결과 |
+|---|---|
+| npm.cmd ci / db:migrate / db:seed | 각각 종료0, 새 DB 마이그레이션4개/가상 시드1개 |
+| build / lint / typecheck | 모두 종료0, build 경고0·사적자료 추적0 |
+| test | 최초190통과/1건너뜀 → FFmpeg/FFprobe 환경 지정 후 **23파일191통과/건너뜀0** |
+| audit --omit=dev / 전체 | 운영0, 전체moderate7·high0·critical0(Q-001 유지) |
+| 새 UI 흐름 | 가상 민트컵 등록·PNG2개 업로드/가짜jpg거절·요구확인·기획승인·장면5개생성/선택·광고잠금/자막시간검증·13개검수/보류사유·승인·ZIP 실제다운로드 수행 |
+| ZIP | 실제 새 폴더에 풀어 manifest15/15 hash/size 일치, PNG5개1080×1920·_SAMPLE·isMock, .env/키/PC절대경로0 |
+| V1~V12 | 직접 API/실제worker/격리fixture로 실행, 통과(장애 주입·실패복원 범위는 인계에 제한 명시) |
+| V13 | 주요14화면×2폭 가로 넘침0/h1하나, 오류포커스·PC/모바일ConfirmPanel·편집→다운로드 키보드 동작 확인. 작성가능 검수표390px 및 등록부터 단일 연속 키보드 전흐름은 미검증이므로 부분검증 |
+
+V6는 실제 지연 생성 중 자신의 worker PID47132 강제종료·재시작 후 실제60초 lease 만료를 기다렸고, 동일 provider_job_id·pollOnly=true·시도2 성공을 확인했다(DB시각 조작 없음). V8은 worktree 폴더/파일 충돌로 STORAGE_FAILED를 만들고 /jobs 원인 문구·저장 재시도/동일providerID·generation1개를 확인했다. V10 디스크 부족은 별도 Node 프로세스에서 statfs만0으로 주입한 격리 fixture이며 실제 사용자 권한/디스크 변경이 아니다.
+
+V12는 새로 만든 실제 백업을 OS임시 새 폴더에 복원하고3027서버에서 열었다. 프로젝트2/자료11/기획2/생성10/내보내기1, 자료hash정상·integrity ok/FK0/pending0·백업경로 분리. 원본8업무테이블hash·11자료파일hash 보존. 목적지에 sentinel을 넣어 실제복원거절400·source/sentinel보존·부분data없음 확인, 재검사 후 새ticket복원200. 관리ticket/활동로그는 추가되므로 원본DB전체 바이트hash동일을 주장하지 않는다.
+
+### 열린 필수 수정
+
+- [ ] **F-016-1 · 장면 실패 사유/다음 행동 누락·대기 문구 오표시.** `lib/services/production.ts:20`, `components/production-panel.tsx:19`, `components/result-preview.tsx:7`. fail:CONTENT_REJECTED의 실제 jobs는 failed/attempts1인데 /produce 버전비교는 빨간실패와 “결과를 기다리고 있어요.”를 함께 표시하며 원인·수정안내를 누락. DESIGN D6/5.2 및 PLAN A-4 불충족. 증거 flow-fail.png, api-evidence.json.failure, round28/29.log. 수정 후 거절/저장실패 장면 화면의 원인·다음행동·선택보존 재검수 필요.
+- [ ] **F-016-2 · 내보내기 정보 누락.** `components/exports-panel.tsx:9`, `lib/services/exports.ts:32`. DESIGN6.2의 생성전 폴더나무/예상크기, 완료행 실제ZIP파일명/크기가 없다. 다운로드15파일·해시는 정상이나 화면에는 날짜/파일수/SHA/범용다운로드문구만 존재. 증거 flow-08.png, flow-m-export.png, round25/26/36.log. 수정 후1280/390에서 파일명·크기·샘플·revision과 다운로드 실제값 일치 재검수 필요.
+
+R1~R4/R6~R10은 이번 가상실행 범위에서 위반 발견 없음. R5는 실패/샘플 핵심 상태 구분은 지켰지만 장면 실패 안내 F-016-1이 열려 있어 디자인 전체 통과가 아니다. 토큰외 색상검색0·Pretendard/OFL·16분야/2업무route200·운영/dev/ui404·queue호환 확인. 실브라우저200% 전화면/보조기기/실대용량/실디스크고갈/전원차단/동일권한 적대적 폴더교체는 미검증으로 남긴다.
+
+T-004 원본 캡처11장은 worktree `tmp/p1-review/`와 허가된 `D:/starwork/dream-ai-studio/tmp/p1-review/`에 있다. flow-01~08 및 flow-fail은1280×960, flow-m-scenes/export는390×844. 개인정보·키·절대경로없음 육안확인, 양쪽SHA11/11동일. 각 설명은 인계표 참조. source의 실제data/storage/backups에는 접근하지 않았다.
+
+코드/플래너기준/TEAM/PROGRESS 수정·커밋·푸시·배포·P2구현 없음. 자신의 서버3026/3027와 worker 종료·포트해제, ego-browser taskSpace13종료. 보고서 작성과 coordinator전송/플래너수신은 구분한다. TEAM T-001/T-004 취합·구현담당 수정요청은 coordinator에게 회신한다.
+
+**다음 조건: F-016-1/2 수정 재검수와 V13 남은 범위 검증 → 최종 독립검수 통과 → 은영님 흐름확인. 그 전 P2금지, 디자인승인도 대기.**
+
+**플래너 전달용 복사문:** T-001/T-004 독립검수를 대상 dee2d0b의 격리본에서 실행했습니다. build/lint/typecheck·23파일191검사·운영감사0, 새 가상 UI흐름/ZIP15파일해시·실제worker중단복구·새폴더복원/원본보존을 확인했습니다. 제품은 불통과이며 F-016-1 장면실패안내, F-016-2 내보내기정보누락 2건이 열려 있고 V13 전체연속키보드/검수표390px은 미검증입니다. 보고는 REVIEW R-016 및 handoffs/P1-END-INDEPENDENT-REVIEW.md, 원본캡처11장은 D:/starwork/dream-ai-studio/tmp/p1-review입니다. 수정 후 해당항목과 V13 재검수를 요청하고, 독립검수통과+은영님흐름확인 전 P2로 넘어가지 마세요. 디자인승인도 대기입니다.
+
+
+
 ## R-015 · P1-9 자체 검수 (2026-11-16)
 
 자체 검수(독립 검수 아님). T-007~T-010 구현 협업 포함. SQLite WAL backup API·인벤토리/ZIP·DB참조·신규 staging/ticket/정규화/rename/replay, 불변 감사/백업과 REPLACE 보호, 설정·읽기기록·큐·경로 DTO·외부 빌드 추적을 대조했다. 필수수정 F-007-1~3은 회귀 검사와 함께 닫았다. build 경고0/사적추적0·lint/typecheck·191검사·운영감사0. 실제 fixture에서 자동/수동백업→검사→새폴더복원→별도서버열기, 양쪽14파일해시/13asset2plan9generation 보존·pending0/분리경로/integrity ok/FK0 확인.1280/390 설정·기록 넘침0. 현재 사용자 DB 교체/초기화 없음. 상세 handoffs/P1-9.md와 T-007~T-010. 실다GB/디스크고갈/전원차단 및 적대적 동일권한 Windows 경합 한계는 남는다. 최종 독립검수와 사용자 흐름·디자인 확인은 대기이며 P2 금지.

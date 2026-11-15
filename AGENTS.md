@@ -8,6 +8,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## 자동운영 팀 지침 · 2026-11-16
+
+`AI_TEAM_RULES.md`와 `docs/team/`의 역할 지침, `docs/TEAM.md`의 최신 배정을 먼저 읽는다. Codex Master(CX-MASTER-01)가 총괄·통합·테스트한다. Claude Code는 코딩, Claude design은 디자인, CC-DATA-01은 데이터 전담이다. 공용 배정/상태는 Master가 갱신하고 작업자는 배정된 고유 파일로 결과를 반환한다. 기존 코드·사용자 변경을 보호한다. P1 독립검수 F-016-1/2와 V13잔여 검증을 우선하며 사용자 흐름/디자인 확인 게이트는 유지한다.
+
 ## 협업·인수인계 필수 지침 (사용자 지정, 2026-11-15)
 
 - 최신 사용자 지시(2026-11-15): 단계마다 확인을 묻거나 인계 대기만 하며 멈추지 말고, 구현·검증·검수 기록 후 다음 단계로 계속 진행한다. 사용자의 결정이 실제로 필요한 사항만 질문한다. 현재 담당이 구현과 검수를 함께 수행하면 자체 검수임을 명시하고 별도 담당 검수로 표현하지 않는다.

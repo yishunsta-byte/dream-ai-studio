@@ -2,6 +2,8 @@
 
 이 저장소에서 코드를 쓰는 에이전트는 매 세션 시작 시 이 파일을 읽고 아래 순서를 따른다.
 
+공통 운영은 `AI_TEAM_RULES.md`, 담당별 업무는 `docs/team/CLAUDE_ROLES.md`, 실제 세션/배정은 `docs/TEAM.md`를 먼저 확인한다. Codex Master가 배정·통합·테스트하며 Claude Code(코딩), Claude design(디자인), CC-DATA-01(데이터)을 구분한다. 기존 제품 기준·원본 보호·사용자 승인 게이트를 유지한다. 공용 배정과 상태는 Master가 관리하고 담당자는 자기 작업의 고유 보고서에 회신한다.
+
 ## 읽는 순서
 1. `docs/PLAN.md` — 최상위 개발 기준 (v2.4). 다른 어떤 문서보다 우선
 2. `docs/REVIEW.md` — 열려 있는 **필수 수정**부터 처리
