@@ -459,6 +459,21 @@ tr.chg td{background:var(--st-warning-bg)}
   .ph .act{width:100%}.ph .act .btn{flex:1}
   .crumb .hide-m{display:none}
 }
+/* P3 예산·비용 (v1.4) */
+.bnum{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--sp-2)}
+.bnum b{font-size:var(--text-2xl);color:var(--fg-strong);font-weight:var(--weight-bold);line-height:var(--lh-tight)}
+.bmeter{min-width:0;flex:none}
+.bmeter .track{height:10px}
+.rsv{background:repeating-linear-gradient(135deg,var(--st-warning-line) 0 3px,var(--st-warning-bg) 3px 6px)}
+.legend{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-5);color:var(--fg-default)}
+.legend>span{display:inline-flex;align-items:center;gap:6px}
+.legend .sw{display:inline-block;width:12px;height:12px;border-radius:3px;flex:none}
+.money{display:flex;align-items:center;gap:var(--sp-2);max-width:220px}
+.money>span{color:var(--fg-muted);font-weight:var(--weight-semibold)}
+.budgetbar{padding:var(--sp-3) var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-2)}
+.budgetbar .bmeter{display:flex}
+.demo-dialog{background:var(--bg-overlay);border-radius:var(--radius-lg);padding:var(--sp-6) var(--sp-4);display:grid;place-items:center}
+@media (max-width:639px){ .demo-dialog{padding:var(--sp-4) var(--sp-3)} .demo-dialog .dialog{padding:var(--sp-4)} }
 </style>
 
 <!-- 아이콘 -->
@@ -509,6 +524,9 @@ tr.chg td{background:var(--st-warning-bg)}
   <span class="sep" aria-hidden="true">|</span>
   <a href="#p2-edit">P2 영상 편집</a>
   <a href="#p2-render">P2 영상 만들기</a>
+  <span class="sep" aria-hidden="true">|</span>
+  <a href="#p3-budget">P3 예산</a>
+  <a href="#p3-cost">P3 실제 AI 제작</a>
   <span class="sep" aria-hidden="true">|</span>
   <a href="#components">부품 모음</a>
   <span class="note"><label><input type="checkbox" id="anno-toggle" checked> 주석 보기</label> · 예시 데이터</span>
@@ -1258,6 +1276,155 @@ tr.chg td{background:var(--st-warning-bg)}
 </section>
 
 
+<!-- ═════════ P3 예산 (P3-1, B-2·B-3·B-4·B-6) ═════════ -->
+<section class="view" data-view="p3-budget" hidden>
+  <div class="ph"><div class="tx"><div class="chips"><span class="badge">P3 화면</span><span class="badge">설정</span></div><h1>예산</h1><div class="d">실제 AI로 만들 때 드는 돈을 달마다 관리해요.</div></div></div>
+
+  <div class="callout warn"><svg class="i"><use href="#i-alert"/></svg><div class="tx"><b>이번 달 한도의 80%를 넘으면 이렇게 알려 드려요.</b> 작업은 막지 않아요. 한도를 넘는 작업만 시작하지 않아요. <span class="muted">(시안: 지금은 35%라 실제로는 보이지 않음)</span></div></div>
+
+  <div class="card">
+    <div class="set"><div><h3>이번 달</h3><div class="d">11월 1일~30일 · 매달 1일 0시(한국 시간)에 새로 시작</div></div>
+      <div class="c">
+        <div class="bnum"><span class="muted small">남은 예산</span><b class="num">$25.96</b><span class="muted small num">/ 한도 $40.00</span></div>
+        <div class="meter bmeter"><span class="track" role="img" aria-label="사용 32%, 예약 3%, 남음 65%"><i style="width:32.1%;background:var(--accent-bar)"></i><i class="rsv" style="width:3%"></i></span></div>
+        <div class="legend small">
+          <span><i class="sw" style="background:var(--accent-bar)"></i>사용 <b class="num">$12.84</b> <span class="muted">· 그중 추정 $0.62</span></span>
+          <span><i class="sw rsv"></i>예약 <b class="num">$1.20</b> <span class="muted">· 진행 중 작업 3개</span></span>
+          <span><i class="sw" style="background:var(--bg-sunken);border:1px solid var(--line-strong)"></i>남음 <b class="num">$25.96</b></span>
+        </div>
+      </div></div>
+    <div class="set"><div><h3>한도</h3><div class="d">정하지 않으면 실제 AI 작업을 시작하지 않아요</div></div>
+      <div class="c">
+        <div class="field"><label for="bg-lim">월 한도 (미국 달러)</label><div class="money"><span aria-hidden="true">$</span><input class="inp num" id="bg-lim" inputmode="decimal" value="40.00"></div><div class="help">사용액 + 예약액 + 이번 작업 예상 비용이 한도를 넘으면 그 작업은 시작하지 않아요.</div></div>
+        <div class="field"><label for="bg-cf">한 번 더 확인받을 금액</label><div class="money"><span aria-hidden="true">$</span><input class="inp num" id="bg-cf" inputmode="decimal" value="1.00"></div><div class="help">한 번에 이 금액 이상 드는 작업은 시작 전에 확인 창을 띄워요.</div></div>
+        <div><button class="btn pri">저장</button></div>
+      </div></div>
+    <div class="set"><div><h3>제공사별</h3><div class="d">이번 달</div></div>
+      <div class="c"><div class="tblw"><table class="t" style="min-width:420px"><thead><tr><th>쓰임</th><th>사용</th><th>예약</th><th>작업</th></tr></thead><tbody>
+        <tr><td>기획·대본 <span class="muted">· Anthropic</span></td><td class="num">$1.92</td><td class="num">$0.00</td><td class="num">41개</td></tr>
+        <tr><td>이미지 <span class="muted">· 이미지 제공사</span></td><td class="num">$3.40 <span class="pill warning">추정 $0.62</span></td><td class="num">$0.40</td><td class="num">34개</td></tr>
+        <tr><td>영상 <span class="muted">· 영상 제공사</span></td><td class="num">$6.80</td><td class="num">$0.80</td><td class="num">17개</td></tr>
+        <tr><td>음성 <span class="muted">· 음성 제공사</span></td><td class="num">$0.72</td><td class="num">$0.00</td><td class="num">12개</td></tr>
+      </tbody></table></div></div></div>
+    <div class="set"><div><h3>프로젝트별</h3><div class="d">이번 달 · 많이 쓴 순</div></div>
+      <div class="c"><div class="tblw"><table class="t" style="min-width:420px"><thead><tr><th>프로젝트</th><th>사용</th><th>예약</th></tr></thead><tbody>
+        <tr><td><a href="#p3-cost">보온 텀블러 30초 소개</a></td><td class="num">$7.46</td><td class="num">$1.20</td></tr>
+        <tr><td><a href="#p3-cost">핸드크림 3종 비교</a></td><td class="num">$4.18</td><td class="num">$0.00</td></tr>
+        <tr><td><a href="#p3-cost">캠핑 랜턴 20초 소개</a></td><td class="num">$1.20</td><td class="num">$0.00</td></tr>
+      </tbody></table></div></div></div>
+    <div class="set"><div><h3>최근 청구</h3><div class="d">작업이 끝나면 제공사 청구 기준으로 정산해요</div></div>
+      <div class="c"><div class="tblw"><table class="t" style="min-width:520px"><thead><tr><th>시각</th><th>작업</th><th>예약</th><th>실제</th><th>상태</th></tr></thead><tbody>
+        <tr><td class="num">14:20</td><td>텀블러 · 장면 3 영상</td><td class="num">$0.40</td><td class="num">—</td><td><span class="pill running"><svg class="i sm"><use href="#i-clock"/></svg>만드는 중 · 예약</span></td></tr>
+        <tr><td class="num">14:02</td><td>텀블러 · 장면 1 영상</td><td class="num">$0.40</td><td class="num">$0.38</td><td><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>정산됨</span></td></tr>
+        <tr><td class="num">13:58</td><td>텀블러 · 장면 4 영상</td><td class="num">$0.40</td><td class="num">$0.12</td><td><span class="pill danger"><svg class="i sm"><use href="#i-alert"/></svg>실패 · 일부 청구</span></td></tr>
+        <tr><td class="num">13:40</td><td>핸드크림 · 장면 2 이미지</td><td class="num">$0.08</td><td class="num">$0.00</td><td><span class="pill locked"><svg class="i sm"><use href="#i-undo"/></svg>취소 · 반환됨</span></td></tr>
+        <tr><td class="num">13:31</td><td>핸드크림 · 장면 1 이미지</td><td class="num">$0.08</td><td class="num">$0.08</td><td><span class="pill warning">추정</span></td></tr>
+      </tbody></table></div>
+      <div class="small muted">"추정"은 제공사 응답에 실제 금액이 없어 예상 비용으로 적은 거예요. 제공사 청구서와 다를 수 있어요.</div></div></div>
+  </div>
+
+  <h2 class="sec">예산을 정하지 않았을 때</h2>
+  <div class="card">
+    <div class="set"><div><h3>이번 달</h3><div class="d">한도 없음</div></div>
+      <div class="c">
+        <div class="callout warn"><svg class="i"><use href="#i-lock"/></svg><div class="tx"><b>월 한도를 정해야 실제 AI로 만들 수 있어요.</b> 샘플 모드는 그대로 쓸 수 있어요.</div></div>
+        <div class="field"><label for="bg-lim0">월 한도 (미국 달러)</label><div class="money"><span aria-hidden="true">$</span><input class="inp num" id="bg-lim0" inputmode="decimal" placeholder="예: 40.00"></div><div class="help">시험 기간 권장 범위는 달마다 $30~50이에요.</div></div>
+        <div><button class="btn pri">한도 정하기</button></div>
+      </div></div>
+  </div>
+  <div class="anno">금액은 제공사가 청구하는 통화(미국 달러) 그대로 보여 준다 — 환율을 곱한 원화 금액은 틀릴 수 있어 쓰지 않는다. 저장은 정수 마이크로 단위(7장). 막대는 색만으로 구분하지 않고 바로 아래 글자로 금액을 함께 적는다. 예약 = 빗금. 실패여도 제공사가 청구하면 그 금액을 정산한다 (B-4). 키·청구 계정 정보는 이 화면에 없다.</div>
+</section>
+
+<!-- ═════════ P3 실제 AI 장면 제작 (B-1·B-3·B-5) ═════════ -->
+<section class="view" data-view="p3-cost" hidden>
+  <div class="ph">
+    <div class="tx">
+      <div class="chips"><span class="badge">P3 화면</span><span class="badge">쇼핑숏츠·제품 광고</span><span class="badge num">9:16 · 30초</span></div>
+      <h1>보온 텀블러 30초 소개</h1>
+    </div>
+  </div>
+  <div class="tabs" data-tabs="scenes" data-locked="edit,export" role="tablist" aria-label="프로젝트 단계"></div>
+
+  <div class="budgetbar card">
+    <div class="ln"><span class="small"><b>실제 AI로 만들어요</b> <span class="muted">· 영상 제공사</span></span><a class="small" href="#p3-budget">예산 보기</a></div>
+    <div class="meter bmeter"><span class="small num" style="white-space:nowrap">남은 예산 <b>$25.96</b> / $40.00</span><span class="track" aria-hidden="true"><i style="width:32.1%;background:var(--accent-bar)"></i><i class="rsv" style="width:3%"></i></span></div>
+  </div>
+
+  <div class="scenebar">
+    <div class="chips small"><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>선택 1</span><span class="pill running"><svg class="i sm"><use href="#i-clock"/></svg>만드는 중 1</span><span class="pill locked">결과 없음 4</span></div>
+    <button class="btn pri" data-open="costcf"><svg class="i"><use href="#i-redo"/></svg>결과 없는 장면만 만들기 · <span class="num">예상 $1.60</span></button>
+  </div>
+  <div class="anno">예상 비용이 "한 번 더 확인받을 금액"(기본 $1) 이상이면 확인 창을 띄운다 (B-5). 그보다 적으면 바로 시작하고, 버튼에 예상 비용을 적어 둔다 (B-1).</div>
+
+  <div class="scenes">
+    <div class="card scene">
+      <div class="no">01</div>
+      <div class="thumb s1"><span class="cap">출근길 지하철, 식은 커피를 보는 손</span></div>
+      <div class="body">
+        <div class="tl"><b>문제·변화 훅</b><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>v1 선택됨</span></div>
+        <div class="desc">아침에 담은 커피가 점심 전에 식어 버린 순간. 3초.</div>
+        <div class="small muted num">영상 5초 · 실제 $0.38 (예약 $0.40에서 정산) · 14:02</div>
+      </div>
+      <div class="acts"><button class="btn sec sm"><svg class="i sm"><use href="#i-redo"/></svg>다시 만들기 · <span class="num">$0.40</span></button></div>
+    </div>
+
+    <div class="card scene">
+      <div class="no">02</div>
+      <div class="thumb s2"><svg class="i" style="width:28px;height:28px"><use href="#i-img"/></svg></div>
+      <div class="body">
+        <div class="tl"><b>작동·변환 단계</b><span class="pill locked">결과 없음</span></div>
+        <div class="desc">이중 진공 구조를 단면 그래픽으로. 7초.</div>
+      </div>
+      <div class="acts"><button class="btn pri sm">만들기 · <span class="num">예상 $0.40</span></button></div>
+    </div>
+
+    <div class="card scene">
+      <div class="no">03</div>
+      <div class="thumb s3"><svg class="i spin" style="width:28px;height:28px"><use href="#i-spin"/></svg></div>
+      <div class="body">
+        <div class="tl"><b>효익 근거</b><span class="pill running"><svg class="i sm"><use href="#i-clock"/></svg>만드는 중</span></div>
+        <div class="desc">12시간 뒤에도 김이 나는 장면. 8초.</div>
+        <div class="small muted num">$0.40 예약됨 · 끝나면 실제 청구로 정산해요</div>
+      </div>
+      <div class="acts"><button class="btn sec sm"><svg class="i sm"><use href="#i-x"/></svg>취소</button></div>
+    </div>
+
+    <div class="card scene failed">
+      <div class="no">04</div>
+      <div class="thumb"><svg class="i" style="width:28px;height:28px;color:var(--st-danger-fg)"><use href="#i-alert"/></svg></div>
+      <div class="body">
+        <div class="tl"><b>완성 제품 컷</b><span class="pill danger"><svg class="i sm"><use href="#i-alert"/></svg>실패</span></div>
+        <div class="err"><b>영상 제공사가 중간에 멈췄어요.</b> 같은 내용으로 한 번 더 시도해 보세요. 계속 실패하면 장면 설명을 짧게 줄여 주세요.<br><span class="small muted num">코드 PROVIDER_DOWN · 제공사 청구 $0.12 (예약 $0.40 중 $0.28 반환)</span></div>
+      </div>
+      <div class="acts"><button class="btn pri sm">다시 시도 · <span class="num">예상 $0.40</span></button></div>
+    </div>
+  </div>
+  <div class="anno">장면 카드 금액 규칙: 시작 전 = "예상", 진행 중 = "예약됨", 끝난 뒤 = "실제"(정산) 또는 "추정"(제공사가 금액을 안 알려 줌). 실패해도 청구가 있으면 그대로 적는다 — "실패 = 0원"으로 쓰지 않는다 (B-4).</div>
+
+  <h2 class="sec">확인 창 (예상 비용이 확인 금액 이상일 때)</h2>
+  <div class="demo-dialog">
+    <div class="dialog" role="group" aria-labelledby="cc-t0">
+      <h2 id="cc-t0">실제 AI로 장면 4개를 만들까요?</h2>
+      <dl class="kv"><dt>예상 비용</dt><dd class="num"><b>$1.60</b> · 장면당 약 $0.40 (영상 5초)</dd><dt>이번 달 남은 예산</dt><dd class="num">$25.96 → <b>$24.36</b></dd><dt>시작하면</dt><dd>$1.60을 먼저 예약하고, 끝나면 실제 청구로 정산해요</dd></dl>
+      <p class="small muted" style="margin:0">실제 청구는 제공사 기준이라 조금 다를 수 있어요. 실패해도 제공사가 청구하면 그 금액은 빠져요.</p>
+      <div class="bar"><button class="btn sec">취소</button><button class="btn pri">$1.60 예약하고 만들기</button></div>
+    </div>
+  </div>
+
+  <h2 class="sec">시작할 수 없을 때</h2>
+  <div class="card scene">
+    <div class="no">02</div>
+    <div class="thumb s2"><svg class="i" style="width:28px;height:28px"><use href="#i-lock"/></svg></div>
+    <div class="body">
+      <div class="tl"><b>예산을 정하지 않았을 때</b></div>
+      <div class="small">월 한도를 정해야 실제 AI로 만들 수 있어요. <a href="#p3-budget">설정 &gt; 예산</a></div>
+    </div>
+    <div class="acts"><button class="btn pri sm" disabled>만들기</button></div>
+  </div>
+  <div class="callout bad"><svg class="i"><use href="#i-alert"/></svg><div class="tx"><b>이번 달 예산을 넘어 시작하지 않았어요.</b> 남은 예산 <span class="num">$0.30</span> · 이번 작업 예상 <span class="num">$0.40</span>. 한도를 올리거나 다음 달에 다시 시도해 주세요. <a href="#p3-budget">설정 &gt; 예산</a><br><span class="small muted">코드 BUDGET_EXCEEDED · 예약하지 않았고 청구 없음</span></div></div>
+  <div class="anno">한도 확인과 예약은 서버에서 한 번에 처리한다 (B-3). 두 작업을 동시에 눌러도 한도를 넘지 않는다. 화면의 남은 예산은 참고용이고, 막는 기준은 서버 계산이다.</div>
+</section>
+
 <!-- ═════════ P2 영상 편집 (P2-1·2·3·5) ═════════ -->
 <section class="view" data-view="p2-edit" hidden>
   <div class="ph"><div class="tx">
@@ -1401,9 +1568,18 @@ tr.chg td{background:var(--st-warning-bg)}
   </div>
 </div>
 
+<div class="scrim" id="costcf" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="cc-t" aria-describedby="cc-d">
+    <h2 id="cc-t">실제 AI로 장면 4개를 만들까요?</h2>
+    <dl class="kv"><dt>예상 비용</dt><dd class="num"><b>$1.60</b> · 장면당 약 $0.40 (영상 5초)</dd><dt>이번 달 남은 예산</dt><dd class="num">$25.96 → <b>$24.36</b></dd><dt>시작하면</dt><dd>$1.60을 먼저 예약하고, 끝나면 실제 청구로 정산해요</dd></dl>
+    <p id="cc-d" class="small muted" style="margin:0">실제 청구는 제공사 기준이라 조금 다를 수 있어요. 실패해도 제공사가 청구하면 그 금액은 빠져요.</p>
+    <div class="bar"><button class="btn sec" data-close>취소</button><button class="btn pri" data-close>$1.60 예약하고 만들기</button></div>
+  </div>
+</div>
+
 <script>
 (function(){
-  var views = ['dashboard','menu','menu-locked','workspace','health','new','library','brief','plan','scenes','queue','edit','review','export','settings','p2-edit','p2-render','components'];
+  var views = ['dashboard','menu','menu-locked','workspace','health','new','library','brief','plan','scenes','queue','edit','review','export','settings','p2-edit','p2-render','p3-budget','p3-cost','components'];
   var crumbs = {
     dashboard:'<b>작업실</b>',
     menu:'<span class="hide-m">숏폼·광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>쇼핑숏츠·제품 광고</b>',
@@ -1419,12 +1595,14 @@ tr.chg td{background:var(--st-warning-bg)}
     library:'<b>자료·캐릭터</b>',
     queue:'<b>작업 대기열</b>',
     settings:'<b>설정</b>',
+    'p3-budget':'<span class="hide-m">설정</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>예산</b>',
+    'p3-cost':'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>보온 텀블러 30초 소개</b>',
     brief:'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>캠핑 랜턴 20초 소개</b>',
     plan:'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>제주 감귤청 첫 장면 훅</b>',
     edit:'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>핸드크림 3종 비교</b>',
     'export':'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>핸드크림 3종 비교</b>'
   };
-  var navKey = {dashboard:'dashboard',menu:'menu','new':'menu',scenes:'menu',review:'menu',brief:'menu',plan:'menu',edit:'menu','export':'menu','menu-locked':'menu-locked',workspace:'workspace',library:'library',queue:'queue',settings:'settings','p2-edit':'menu','p2-render':'menu'};
+  var navKey = {dashboard:'dashboard',menu:'menu','new':'menu',scenes:'menu',review:'menu',brief:'menu',plan:'menu',edit:'menu','export':'menu','menu-locked':'menu-locked',workspace:'workspace',library:'library',queue:'queue',settings:'settings','p2-edit':'menu','p2-render':'menu','p3-budget':'settings','p3-cost':'menu'};
 
   // 단계 표시·단계 탭 생성 (시안 전용 — 제품은 Stepper·Tabs 부품)
   var STG = [['등록',0],['요구 확인',0],['기획',1],['장면 제작',0],['수정·조립',0],['검수',1],['내보내기',0]];
@@ -1474,6 +1652,18 @@ tr.chg td{background:var(--st-warning-bg)}
   document.getElementById('cf-cancel').addEventListener('click', closeCf);
   document.getElementById('cf-ok').addEventListener('click', closeCf);
   cf.addEventListener('click', function(e){ if (e.target === cf) closeCf(); });
+  // data-open 확인 창 (P3 비용 확인 등)
+  var dlg = null, dOpener = null;
+  function closeDlg(){ if(!dlg) return; dlg.hidden = true; dlg = null; if (dOpener) dOpener.focus(); }
+  document.querySelectorAll('[data-open]').forEach(function(b){ b.addEventListener('click', function(){ dOpener = b; dlg = document.getElementById(b.getAttribute('data-open')); dlg.hidden = false; dlg.querySelector('button').focus(); }); });
+  document.querySelectorAll('.scrim [data-close]').forEach(function(b){ b.addEventListener('click', closeDlg); });
+  document.querySelectorAll('.scrim').forEach(function(s){ if (s.id !== 'confirm') s.addEventListener('click', function(e){ if (e.target === s) closeDlg(); }); });
+  document.addEventListener('keydown', function(e){
+    if (!dlg) return;
+    if (e.key === 'Escape') closeDlg();
+    if (e.key === 'Tab') { var f = dlg.querySelectorAll('button'), first = f[0], last = f[f.length-1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }
+  });
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape' && !cf.hidden) closeCf();
     if (e.key === 'Tab' && !cf.hidden) { var f = cf.querySelectorAll('button'); var first = f[0], last = f[f.length-1];
