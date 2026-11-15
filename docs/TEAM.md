@@ -17,6 +17,7 @@
 | CX-MASTER-01 | Codex CLI / term_3831c608-dc70-4b7f-aaba-742095a2481e | Master, T-012 운영구성/통합검증 | busy, 이 세션 |
 | CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, T-013 디자인 대조 | running, 수락 msg_60f92eac5736 |
 | CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터 전담, T-014 | running, 수락 msg_2fb6c6de8f77 |
+| CC-ENG-01 | Claude CLI acceptEdits / term_cc667bc2-39ee-4648-bc6b-3bb000a9ab47 | 코딩, T-015 | 세션 tui-idle 확인, 작업 재전달 예정 |
 | CX-REVIEW-01 | Codex / dispatch ctx_fa91b94b9d65 | 독립검수, 격리 child worktree | returned, 제품 FAIL/F0161·2/V13부분 |
 
 위 세션의 실행 환경은 Orca executionHostId=local/Windows다. Master·디자인·데이터의 Orca 작업공간 D:/starwork, 실제 Git 저장소 D:/starwork/dream-ai-studio(master). 검수는 C:/Users/Administrator/orca/workspaces/dream-ai-studio/p1-independent-review의 p1-independent-review 브랜치. CLI `codex --help`·`claude --help` 실행 확인, Orca 전송/수락/결과회수 확인. CLI 경로: Codex=C:/Users/Administrator/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe, Claude=C:/Users/Administrator/.local/bin/claude.exe. 각 세션의 구체적 미디어 입출력/권한은 배정별 확인하며 추정하지 않는다. Antigravity·dev-requests는 현재 PATH 미검출/미연결, 여러 장비 동기화도 미연결이다. 원격/유료 연동을 추가하지 않았다.
@@ -48,6 +49,8 @@
 
 ### T-013 · 현재 플랜·디자인 누락 분석 (parent=P1 종료, priority=P1) — running
 
+- 결과 회수 msg_ac4a047d089e, 보고서 커밋7bfb3fb. 상태 ready_review→Master 문서 대조 완료. 두필수수정 명세를 T015 구현입력으로 채택한다. lib/ui/errors.ts 공통문구 파일 추가를 T015 허용범위에 포함한다. 코드/브라우저 실행 없는 명세검토이며 실제UI통과로 처리하지 않는다. 권장사항은 필수수정과 분리하고 사용자결정 필요 없음.
+
 - 담당 CC-DESIGN-01, 요청 CX-MASTER-01. 입력 PLAN/DESIGN/PROGRESS/R016/현재코드. 목적: 요구-구현 누락과 F0161/2 화면 수정명세·후속우선순위 제시.
 - 유일 허용파일 docs/handoffs/T-013-CC-DESIGN-01.md. 제품코드/기준문서 변경금지. 완료조건: 근거대조·상태문구/다음행동·1280/390 명세·필수/권장·필요결정/한계. Master가 취합/검증한다.
 - 전송 msg_c2074134f687, 수락 msg_60f92eac5736. 예상차단 없음. 공식 제품코드 수정은 T-015로 분리한다.
@@ -59,6 +62,8 @@
 - 전송 msg_d67f28a43286, 수락 msg_2fb6c6de8f77. 기존 공용문서 역할 오수정은 c4072b9에서 정리된 것으로 담당자가 회신. 현재 다른 작업자의 변경을 건드리지 않는다.
 
 ### T-015 · 독립 검수 필수수정 구현 (parent=P1 종료, priority=P1) — ready
+
+- 최초 dispatch ctx_a019178ecfd8는 시작 권한우회 확인창으로 코드미실행 실패. 해당창을 수락하지 않고 worker-release로 종료확인. 같은 task_697cf7068236를 유지하고 격리작업공간의 일반 acceptEdits Claude 터미널 term_cc667bc2-39ee-4648-bc6b-3bb000a9ab47를 생성, tui-idle 확인했다. 코딩범위는 product DTO/panel·errors.ts/관련테스트/고유인계이며 디자인/데이터보고 파일과 겹치지 않는다. 재배정 수락은 별도영수증으로 확인한다.
 
 - 책임 역할 CC-ENG-01(Claude Code 코딩), 실제 새 연결 배정 예정. F0161 장면실패 안내·대기오표시, F0162 export 미리보기/이름/크기. 입력 R016·독립인계·T013 디자인명세. 해당코드/DTO/관련테스트만 수정, planner/공용상태/데이터 변경금지.
 - 완료조건: 두결함 수정+회귀검사·build/lint/typecheck/관련테스트·diff/보고 제출(ready_review). Master가 결과 통합·테스트 후 기존 독립검수자에게 F0161/2와 V13잔여 재검수 요청. P2 진입은 별도 사용자게이트 유지.
