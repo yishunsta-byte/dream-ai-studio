@@ -15,9 +15,9 @@
 | ID | 플랫폼/실제 연결 | 역할·작업 | 확인 상태 |
 |---|---|---|---|
 | CX-MASTER-01 | Codex CLI / term_3831c608-dc70-4b7f-aaba-742095a2481e | Master, T-012 운영구성/통합검증 | busy, 이 세션 |
-| CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, T-013 디자인 대조 | running, 수락 msg_60f92eac5736 |
-| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터 전담, T-014 | running, 수락 msg_2fb6c6de8f77 |
-| CC-ENG-01 | Claude CLI acceptEdits / term_cc667bc2-39ee-4648-bc6b-3bb000a9ab47 | 코딩, T-015 | 세션 tui-idle 확인, 작업 재전달 예정 |
+| CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, T-013 디자인 대조 | returned, 명세 회수·채택 |
+| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터 전담, T-014 | ready_review, msg_6c30b4c5e18c 회수 |
+| CC-ENG-01 | Claude CLI acceptEdits / term_cc667bc2-39ee-4648-bc6b-3bb000a9ab47 | 코딩, T-015 | blocked, 최초 PowerShell 명령의 사람 승인 대기 |
 | CX-REVIEW-01 | Codex / dispatch ctx_fa91b94b9d65 | 독립검수, 격리 child worktree | returned, 제품 FAIL/F0161·2/V13부분 |
 
 위 세션의 실행 환경은 Orca executionHostId=local/Windows다. Master·디자인·데이터의 Orca 작업공간 D:/starwork, 실제 Git 저장소 D:/starwork/dream-ai-studio(master). 검수는 C:/Users/Administrator/orca/workspaces/dream-ai-studio/p1-independent-review의 p1-independent-review 브랜치. CLI `codex --help`·`claude --help` 실행 확인, Orca 전송/수락/결과회수 확인. CLI 경로: Codex=C:/Users/Administrator/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe, Claude=C:/Users/Administrator/.local/bin/claude.exe. 각 세션의 구체적 미디어 입출력/권한은 배정별 확인하며 추정하지 않는다. Antigravity·dev-requests는 현재 PATH 미검출/미연결, 여러 장비 동기화도 미연결이다. 원격/유료 연동을 추가하지 않았다.
@@ -41,6 +41,17 @@
 
 ## 요청 기록
 
+### T-016 · 데이터 보고 검토 후 복원 안내·자동 기록 수정 (parent=P1 종료, priority=P1) — done
+
+- 통합검증: Master가T014보고를확인해수정, 관련46검사·전체193검사/build/lint/typecheck/빌드경고0·사적추적0. 실제가상복원본1280/390 출처/중단/시각표시·가로넘침0 확인. 이력상태위조없음. 인계T-016-CX-MASTER-01.md. 제품전체독립통과는아니며재검수포함.
+
+- 담당 CX-MASTER-01, T014 결과 msg_6c30b4c5e18c를 읽고 D1/D2를 범위 내 수정으로 채택. 백업 시점 실행중이던 이력을 성공으로 바꾸지 않고 출처 안내를 분리한다. 복원중단 오류가 사용자취소로 가려지는 우선순위와 자동등록 actor를 수정한다. 허용: services/backups.ts, settings page/panel, 관련데이터tests. T015 production/export 범위와 겹치지 않는다.
+- 완료조건: 복원본 출처/중단 설명·현재백업실패와 구분, 정상수동취소유지·자동actor worker, 원본/완료백업불변·관련검사/빌드. 데이터담당의 96검사·재현3건은 타담당 증거로 구분하며 Master가 변경 후 재검증한다.
+
+### T-017 · 다음 스키마 확장 전 백업 호환 준비 명세 (parent=P1 종료, priority=P2) — queued
+
+- 담당 CC-DESIGN-01, 전송 msg_397f187b3f4c. 허용 docs/handoffs/T-017-CC-DESIGN-01.md만. 알려진 migration prefix/hash만 staging업그레이드, 원본백업불변·미래/변조거부·이관전스냅샷·회귀검사를 차기진입준비명세로 제시. P2코드 구현/사용자게이트해제 아님. 복원출처 설명명세 포함. 일반호환성판단은 Master가 처리, 새비용/권한/삭제없음.
+
 ### T-012 · 공통 지침·운영 초기 구성 (Master, parent=P1 종료) — running
 
 - 담당 CX-MASTER-01. 허용: AI_TEAM_RULES.md, docs/team/, AGENTS/CLAUDE 안내줄, TEAM 운영/배정, 독립검수 보고 취합. 제품코드/데이터 변경 없음.
@@ -61,7 +72,9 @@
 - 완료조건: 기준-코드대조·불변/참조/중복누락/단위·읽은범위/건수·실제검증/추정/한계·심각도/추천·사용자결정필요여부. 실제data/storage/backups 접근금지, 재현은 메모리/임시가상fixture만. Master 취합/검증.
 - 전송 msg_d67f28a43286, 수락 msg_2fb6c6de8f77. 기존 공용문서 역할 오수정은 c4072b9에서 정리된 것으로 담당자가 회신. 현재 다른 작업자의 변경을 건드리지 않는다.
 
-### T-015 · 독립 검수 필수수정 구현 (parent=P1 종료, priority=P1) — ready
+### T-015 · 독립 검수 필수수정 구현 (parent=P1 종료, priority=P1) — blocked
+
+- 실제 원인 확인: dispatch ctx_c624062de24d는 input_accepted/live이나 첫 PowerShell `$env:ORCA_CLI_COMMAND; orca skills get orchestration` 실행 승인에 대기한다. 도구가 사람이 해당 창에서 승인해야 한다고 명시했다. acceptEdits는 셸 자동 승인을 뜻하지 않는다. 코딩 착수/실제 수정 완료로 보고하지 않는다. 메시지추가전송은 이 승인에 응답하지 못하고 queued로 남는다. 해결주체는 해당 Claude 창의 사용자 승인, 이후 동일dispatch 재개/검증. Master는 별도 디자인·데이터 결과 검토를 진행한다.
 
 - 최초 dispatch ctx_a019178ecfd8는 시작 권한우회 확인창으로 코드미실행 실패. 해당창을 수락하지 않고 worker-release로 종료확인. 같은 task_697cf7068236를 유지하고 격리작업공간의 일반 acceptEdits Claude 터미널 term_cc667bc2-39ee-4648-bc6b-3bb000a9ab47를 생성, tui-idle 확인했다. 코딩범위는 product DTO/panel·errors.ts/관련테스트/고유인계이며 디자인/데이터보고 파일과 겹치지 않는다. 재배정 수락은 별도영수증으로 확인한다.
 
