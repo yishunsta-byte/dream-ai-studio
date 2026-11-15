@@ -66,7 +66,9 @@
 - 유일 허용파일 docs/handoffs/T-013-CC-DESIGN-01.md. 제품코드/기준문서 변경금지. 완료조건: 근거대조·상태문구/다음행동·1280/390 명세·필수/권장·필요결정/한계. Master가 취합/검증한다.
 - 전송 msg_c2074134f687, 수락 msg_60f92eac5736. 예상차단 없음. 공식 제품코드 수정은 T-015로 분리한다.
 
-### T-014 · 현재 플랜·데이터 정합성 분석 (parent=P1 종료, priority=P1) — running
+### T-014 · 현재 플랜·데이터 정합성 분석 (parent=P1 종료, priority=P1) — done
+
+- 후속 결과 msg_d7291459a744: 데이터 담당이500cd9d에서 OS임시 재현을 다시 실행해D1/D2 수정확인. 원래출처백업행failed/RESTORE_INTERRUPTED 보존, lastFailure제외·중단설명우선, 자동actor worker 확인. 새결함없음. 출처백업만존재하면lastSuccess=null인사실은화면restore.info안내와함께해석하며성공이력위조금지. 작성범위·재현근거를Master가확인하고분석작업완료로처리한다. P1제품전체통과는아님.
 
 - 담당 CC-DATA-01, 요청 CX-MASTER-01. 입력 PLAN7/8/14/18/19·스키마/마이그레이션·백업/복원/기록/작업서비스·관련테스트. 허용파일 docs/handoffs/T-014-CC-DATA-01.md만.
 - 완료조건: 기준-코드대조·불변/참조/중복누락/단위·읽은범위/건수·실제검증/추정/한계·심각도/추천·사용자결정필요여부. 실제data/storage/backups 접근금지, 재현은 메모리/임시가상fixture만. Master 취합/검증.
