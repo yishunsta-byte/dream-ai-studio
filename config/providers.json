@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "mock": { "image": "sample-image-v1", "video": "sample-video-v1", "speech": "sample-speech-v1", "text": "sample-text-v1" },
+  "manualQa": { "randomFailureEnabled": false, "failureRate": 0.1 }
+}

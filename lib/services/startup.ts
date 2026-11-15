@@ -4,6 +4,12 @@ import { mkdirSync, openSync, closeSync, unlinkSync, statfsSync } from "node:fs"
 import { join } from "node:path";
 import { canStart, type StartupCheck } from "@/lib/domain/startup";
 import { checkDatabase } from "@/lib/db/server";
+import { providerConfig } from "@/lib/providers/config";
+
+export function checkProviderStartup():StartupCheck {
+ try{providerConfig();return {id:"providers",label:"샘플 제공자 설정",status:"pass",message:"샘플 모델과 시험 설정이 정상이에요."};}
+ catch{return {id:"providers",label:"샘플 제공자 설정",status:"fail",message:"config/providers.json 파일과 모델 이름·시험 설정을 확인해 주세요."};}
+}
 
 export function checkStorageStartup() {
   const directories = [
@@ -42,6 +48,6 @@ export function checkStartup() {
   const storage = checkStorageStartup();
   // 쓰기 실패 중에는 DB 파일에 접근하지 않는다.
   const database = storage.canStart ? checkDatabase() : {ok:false,message:"저장 폴더를 확인한 뒤 데이터베이스를 점검해요."};
-  const checks: StartupCheck[] = [...storage.checks, { id:"database",label:"데이터베이스·마이그레이션",status:database.ok ? "pass" : "fail",message:database.ok ? "적용된 버전과 데이터 참조가 정상이에요." : database.message }];
+  const checks: StartupCheck[] = [...storage.checks, { id:"database",label:"데이터베이스·마이그레이션",status:database.ok ? "pass" : "fail",message:database.ok ? "적용된 버전과 데이터 참조가 정상이에요." : database.message },checkProviderStartup()];
   return { checks, canStart:canStart(checks) };
 }

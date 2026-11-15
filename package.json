@@ -15,7 +15,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "worker": "node scripts/pending.mjs worker",
+    "worker": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx worker/main.ts",
     "dev:all": "concurrently --kill-others --success all --names web,worker \"npm run dev\" \"npm run worker\"",
     "db:migrate": "node --conditions=react-server --import tsx scripts/db.ts migrate",
     "db:seed": "node --conditions=react-server --import tsx scripts/db.ts seed"

@@ -21,6 +21,8 @@ export function StudioShell({ navigation, sampleMode, children }: { navigation: 
   const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [breadcrumb,setBreadcrumb]=useState<BreadcrumbValue>(null);
+  const [counts,setCounts]=useState<{running:number;queued:number;failed:number}|null>(null);
+  useEffect(()=>{let disposed=false;async function poll(){try{const response=await fetch("/api/jobs",{cache:"no-store"});if(!response.ok)return;const data:{jobs:{status:string}[]}=await response.json();if(!disposed)setCounts({running:data.jobs.filter(job=>job.status==="running").length,queued:data.jobs.filter(job=>job.status==="queued").length,failed:data.jobs.filter(job=>job.status==="failed").length});}catch{/* 다음 폴링에서 다시 확인한다. */}}void poll();const timer=setInterval(()=>void poll(),2000);return()=>{disposed=true;clearInterval(timer);};},[]);
   useEffect(() => { drawer.current?.close(); }, [pathname]);
   useEffect(() => {
     const media = matchMedia("(min-width:1024px)");
@@ -36,7 +38,7 @@ export function StudioShell({ navigation, sampleMode, children }: { navigation: 
   const navLink = (href: string, label: string, extra?: ReactNode, dim = false, icon?: IconName) => <Link key={href} href={href} onClick={close} className={`${styles.navLink} ${dim ? styles.dim : ""}`} aria-current={pathname === href || (href.startsWith("/menus/") && pathname.startsWith(href + "/")) ? "page" : undefined}>{icon && <Icon name={icon} />}<span>{label}</span>{extra}</Link>;
   const links = <><Link href="/" className={styles.brand} onClick={close}><span className={styles.mark}>D</span><span><strong>Dream AI Studio</strong><small>나만의 콘텐츠 작업실</small></span></Link>
     <nav aria-label="주 메뉴" className={styles.nav}>
-      {navLink("/", "작업실", undefined, false, "home")}{navLink("/jobs", "작업 대기열", undefined, false, "clock")}{navLink("/library", "자료·캐릭터", undefined, false, "folder")}
+      {navLink("/", "작업실", undefined, false, "home")}{navLink("/jobs", "작업 대기열", counts&&counts.running+counts.queued>0?<span>{counts.running+counts.queued}</span>:undefined, false, "clock")}{navLink("/library", "자료·캐릭터", undefined, false, "folder")}
       <div className={styles.divider} />
       {[...navigation.groups].sort((a,b) => a.order-b.order).map((group) => <div key={group.id}><div className={styles.groupLabel}>{group.label}</div>{navigation.menus.filter((menu) => menu.group === group.id).map((menu) => navLink(`/menus/${menu.id}`, menu.label, menu.availability !== "active" ? <PhaseChip phase={Number(menu.phase.slice(1)) as 0|1|2|3|4|5|6|7|8} /> : undefined, menu.availability !== "active"))}</div>)}
       <div className={styles.divider} /><div className={styles.groupLabel}>업무공간 · 별도 개발</div>{navigation.workspaces.map((workspace) => navLink(`/workspaces/${workspace.id}`, workspace.label, <span className={styles.separate}>P8</span>, true, "lock"))}
@@ -50,6 +52,6 @@ export function StudioShell({ navigation, sampleMode, children }: { navigation: 
       if (event.shiftKey && document.activeElement === items[0]) { event.preventDefault(); items.at(-1)?.focus(); }
       else if (!event.shiftKey && document.activeElement === items.at(-1)) { event.preventDefault(); items[0]?.focus(); }
     }}><div className={styles.drawerInner}><button type="button" aria-label="메뉴 닫기" className={styles.closeButton} onClick={close}><Icon name="close" /></button>{links}</div></dialog>
-    <div className={styles.main}><header className={styles.topbar}><button type="button" ref={trigger} className={styles.menuButton} aria-label="메뉴 열기" aria-expanded={open} onClick={() => { drawer.current?.showModal(); setOpen(true); }}><Icon name="menu" /></button><div className={styles.crumb}><span className={styles.crumbRoot}>{breadcrumb?.parent??"작업실"} / </span><strong>{title}</strong></div>{sampleMode && <StatusPill status="sample">샘플 모드</StatusPill>}</header><main id="main-content" tabIndex={-1} className="content">{children}</main></div>
+    <div className={styles.main}><header className={styles.topbar}><button type="button" ref={trigger} className={styles.menuButton} aria-label="메뉴 열기" aria-expanded={open} onClick={() => { drawer.current?.showModal(); setOpen(true); }}><Icon name="menu" /></button><div className={styles.crumb}><span className={styles.crumbRoot}>{breadcrumb?.parent??"작업실"} / </span><strong>{title}</strong></div>{counts&&counts.running+counts.queued>0&&<Link href="/jobs" className={styles.queueCount}>진행 {counts.running} · 대기 {counts.queued}</Link>}{sampleMode && <StatusPill status="sample">샘플 모드</StatusPill>}</header><main id="main-content" tabIndex={-1} className="content">{children}</main></div>
   </div></BreadcrumbContext.Provider>;
 }

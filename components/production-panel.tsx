@@ -1,0 +1,14 @@
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { ProductionData } from "@/lib/services/production";
+import { Button, Card, Callout, SampleBadge, StatusPill } from "./ui/primitives";
+import { Field, useToast } from "./ui/interactive";
+export function ProductionPanel({data}:{data:ProductionData}){
+ const [scenario,setScenario]=useState("success"),[busy,setBusy]=useState(""),[error,setError]=useState("");const router=useRouter(),notify=useToast();
+ const pending=data.scenes.some(scene=>scene.versions.some(version=>["queued","running"].includes(version.status)));
+ useEffect(()=>{if(!pending)return;const timer=setInterval(()=>router.refresh(),2000);return()=>clearInterval(timer);},[pending,router]);
+ async function enqueue(sceneId:string,kind:string){setBusy(sceneId);setError("");try{const response=await fetch("/api/jobs",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({projectId:data.projectId,sceneId,revision:data.revision,kind,scenario})});const result=await response.json();if(!response.ok)throw new Error(result.error);notify({tone:"success",message:result.duplicate?"이미 대기 중인 같은 작업을 보여드려요.":"샘플 작업을 등록했어요."});router.refresh();}catch(error){setError(error instanceof Error?error.message:"등록하지 못했어요.");}finally{setBusy("");}}
+ return <div className="stack"><Callout title="승인한 기획으로 샘플을 만들어요.">실제 AI 호출과 비용은 없어요. 첫 결과만 자동 선택하며 새 결과는 버전으로 남겨요. 참조 이미지로 최대한 유지 · 검수 필요.</Callout><Field label="시험 시나리오"><select value={scenario} onChange={event=>setScenario(event.target.value)}><option value="success">기본 · 항상 성공</option><option value="fail:CONTENT_REJECTED">콘텐츠 거절 · 재시도 안 함</option><option value="fail:PROVIDER_DOWN">일시 중단 · 재시도 후 성공</option><option value="delay:10s">10초 지연</option><option value="cancel-late">취소 후 늦게 결과 도착</option></select></Field>{error&&<p role="alert">{error}</p>}{data.scenes.map(scene=><Card key={scene.id}><div className="stack"><h2>{scene.title}</h2><p>{scene.description} · {scene.durationSec}초</p><SampleBadge/><p>결과 {scene.versions.length}개 · {scene.selectedVersionId?"선택한 결과 있음":"선택한 결과 없음"}</p>{scene.versions.map(version=><p key={version.id}>v{version.version} · {version.kind==="image"?"이미지":version.kind==="video"?"영상":"음성"} <StatusPill status={version.status==="running"?"running":version.status==="queued"?"queued":version.status==="succeeded"?"done":version.status==="canceled"?"canceled":"failed"}/></p>)}<div><Button loading={busy===scene.id} disabledReason={!data.approved?"기획을 먼저 승인해 주세요.":undefined} onClick={()=>void enqueue(scene.id,"image")}>샘플 이미지 만들기</Button> <Button variant="secondary" disabled={busy!==""} onClick={()=>void enqueue(scene.id,"video")}>샘플 영상 만들기</Button> <Button variant="secondary" disabled={busy!==""} onClick={()=>void enqueue(scene.id,"speech")}>무음 샘플 만들기</Button></div></div></Card>)}<Link href="/jobs">작업 대기열 보기 →</Link></div>;
+}

@@ -6,19 +6,25 @@ import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 import { v7 } from "uuid";
+import { z } from "zod";
 import { inspectMedia, MediaError } from "@/lib/media/inspect";
 
 export function uploadLimit() {const configured=Number(process.env.MAX_UPLOAD_BYTES);return Number.isSafeInteger(configured)&&configured>0?configured:2*1024**3;}
-async function directory(name:"tmp"|"library") {
- const base=await realpath(join(process.cwd(),"storage"));const target=join(base,name);await mkdir(target,{recursive:true});
- const actual=await realpath(target);const inside=relative(base,actual);
- if(inside===".."||inside.startsWith(`..${sep}`)||isAbsolute(inside))throw new MediaError("STORAGE_FAILED","자료 폴더의 경로를 확인해 주세요.",503);
+async function directory(name:string) {
+ const base=await realpath(join(process.cwd(),"storage"));let actual=base;
+ for(const part of name.split("/")){
+  if(!part||part==="."||part===".."||part.includes("\\")||part.includes(":"))throw new MediaError("STORAGE_FAILED","자료 폴더의 경로를 확인해 주세요.",503);
+  const target=join(actual,part);await mkdir(target,{recursive:true});actual=await realpath(target);const inside=relative(base,actual);
+  if(inside===".."||inside.startsWith(`..${sep}`)||isAbsolute(inside))throw new MediaError("STORAGE_FAILED","자료 폴더의 경로를 확인해 주세요.",503);
+ }
  return actual;
 }
-export async function receiveUpload(body:ReadableStream<Uint8Array>,filename:string,save:(data:{id:string;title:string;filePath:string;sizeBytes:number;sha256:string}&Awaited<ReturnType<typeof inspectMedia>>)=>void,signal?:AbortSignal) {
+export async function receiveUpload(body:ReadableStream<Uint8Array>,filename:string,save:(data:{id:string;title:string;filePath:string;sizeBytes:number;sha256:string}&Awaited<ReturnType<typeof inspectMedia>>)=>void,signal?:AbortSignal,projectId?:string) {
  const id=v7();const title=basename(filename.replaceAll("\\","/")).normalize("NFC").trim();
  if(!title||title.length>255)throw new MediaError("INVALID_INPUT","파일 이름은 255자 이하로 적어 주세요.");
- const limit=uploadLimit();const tmpDir=await directory("tmp");const library=await directory("library");
+ const destination=projectId?`projects/${z.uuidv7().parse(projectId)}/assets`:"library";
+ const limit=uploadLimit();let tmpDir:string,library:string;
+ try{tmpDir=await directory("tmp");library=await directory(destination);}catch(error){if(error instanceof MediaError)throw error;throw new MediaError("STORAGE_FAILED","자료 폴더에 쓸 수 없어요. 저장 경로와 권한을 확인해 주세요.",503);}
  const space=await statfs(tmpDir);if(space.bavail*space.bsize<1024*1024)throw new MediaError("DISK_FULL","디스크 공간이 부족해요. 저장 공간을 확보해 주세요.",507);
  const temp=join(tmpDir,`${id}.part`);let created=false,final:string|undefined,committed=false;
  try {
@@ -33,7 +39,7 @@ export async function receiveUpload(body:ReadableStream<Uint8Array>,filename:str
   const target=join(/*turbopackIgnore: true*/ library,`${id}.${metadata.extension}`);
   await link(temp,target);final=target;
   if(signal?.aborted)throw new MediaError("UPLOAD_CANCELED","파일 올리기를 취소했어요.",499);
-  save({id,title,filePath:`library/${id}.${metadata.extension}`,sizeBytes,sha256,...metadata});committed=true;
+  save({id,title,filePath:`${destination}/${id}.${metadata.extension}`,sizeBytes,sha256,...metadata});committed=true;
   return id;
  } catch(error) {
   if(error instanceof MediaError)throw error;

@@ -1,0 +1,4 @@
+import { z } from "zod";
+export const scenarioSchema=z.enum(["success","fail:CONTENT_REJECTED","fail:PROVIDER_DOWN","delay:10s","cancel-late"]);
+export const generationInputSchema=z.strictObject({schemaVersion:z.literal(1),projectId:z.uuidv7(),planId:z.uuidv7(),planVersion:z.number().int().positive(),sceneId:z.uuidv7(),title:z.string().max(120),description:z.string().max(2000),dialogue:z.string().max(4000),aspect:z.enum(["9:16","16:9","1:1"]),durationSec:z.number().int().min(1).max(600),kind:z.enum(["image","video","speech"]),model:z.string().min(1),scenario:scenarioSchema,refs:z.array(z.object({id:z.uuidv7(),sha256:z.string().nullable(),rightsNote:z.string().nullable()})),characters:z.array(z.object({id:z.uuidv7(),lockedJson:z.string(),refAssetIdsJson:z.string(),voiceProfileJson:z.string()}))});
+export type GenerationInput=z.infer<typeof generationInputSchema>;

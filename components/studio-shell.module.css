@@ -27,3 +27,4 @@
 .skip:focus { transform:translateY(0); }
 @media(max-width:1023px) { .shell { display:block; } .desktop { display:none; } .menuButton { display:grid; } .topbar { padding-inline:var(--sp-4); } }
 @media(max-width:639px) { .crumbRoot { display:none; } }
+.queueCount { font-size:var(--text-sm); color:var(--fg-link); white-space:nowrap; }
