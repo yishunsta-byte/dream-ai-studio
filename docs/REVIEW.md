@@ -1,10 +1,14 @@
 # 검수 기록
 
+### R-007 후속 · 파일 추적 필수 수정 완료
+
+최초 .nft.json 검사에서는 로컬 data/app.db가11개 라우트에 포함되어 있었다. 결과 확인 이전 "없음"으로 남긴 문구를 정정했다. next.config.ts outputFileTracingExcludes 적용 후 재빌드와 전체 경로 정규화 검사에서 data/storage/backups/tmp/.env* 항목0건. build에 scripts/verify-build.mjs 자동 차단 검사를 추가했다. 외부 배포 없음. 이 수정까지 포함해 P1-1 자체 검수 통과.
+
 ## R-007 · P1-1 자체 검수 (2026-11-15)
 
 판정: 자체 검수 통과(독립 검수 아님). 대상 PROGRESS P1-1 파일. PLAN7.1의16개 테이블·칼럼을 ORM/실DB로 대조. foreign_keys/WAL, UUIDv7·UTC 기본값, 상태·중복·JSON·정수금액·참조·소유권·불변 제약 테스트. 체크섬 mismatch 거부와 중간 적용 롤백·기존 테이블 보존, DB재연결 데이터 유지 확인.
 
-별도 CLI프로세스에서 migrate2개→seed1개→재seed0개, 사용자 제목 수정 보존 확인. 빈DB 운영화면은 시작점검으로 차단하고 마이그레이션 후 통과.1280/390 넘침없음. build/lint/typecheck/test30건 통과, 운영감사0/개발moderate7. Next 추적에 런타임DB·.env.local 없음. 원격 작업·유료API·실제 개인정보 없음. 다음 P1-2 진행.
+별도 CLI프로세스에서 migrate2개→seed1개→재seed0개, 사용자 제목 수정 보존 확인. 빈DB 운영화면은 시작점검으로 차단하고 마이그레이션 후 통과.1280/390 넘침없음. build/lint/typecheck/test30건 통과, 운영감사0/개발moderate7. 후속 산출물 검사에서 DB 추적 항목을 발견해 next.config.ts의 outputFileTracingExcludes로 data/storage/backups/tmp/.env를 제외한다. 실제 재빌드 결과로 확인 후 P1-2 진행. 원격 작업·유료API·실제 개인정보 없음.
 
 ## R-006 · P0-5 자체 검수 (2026-11-15)
 

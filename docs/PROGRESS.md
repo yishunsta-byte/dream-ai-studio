@@ -1,5 +1,11 @@
 # 진행 기록
 
+### P1-1 후속 · 운영 빌드 파일 추적 보완
+
+- 첫 추적 검사 실제 결과는 data/app.db가11개 라우트의 .nft.json에 포함되어 있었다. 최초 R-007의 "없음" 문구는 검사 결과를 반영하지 못한 기록 오류여서 즉시 정정했다. 외부 배포·전송은 없었다.
+- next.config.ts에 data/storage/backups/tmp/.env* 추적 제외 추가. 재빌드 후 모든 .nft.json의 경로를 실제 프로젝트 기준으로 해석하여 해당 파일0건 확인. scripts/verify-build.mjs를 build에 연결하여 이후 포함되면 빌드가 실패하도록 보완했다.
+- 기존 DB나 마이그레이션은 변경하지 않았다. 자체 검수의 필수 수정으로 처리했고 아래 P1-1의 완료 상태는 이 보완을 포함한다.
+
 ## P1-1 · SQLite·마이그레이션·비파괴 시드 (2026-11-15)
 
 - 기준 PLAN v2.3 7.1의16테이블. 변경: lib/db/{schema,connection,migrate,json,seed,server}.ts, migrations/0001_initial.sql·0002_ownership.sql, scripts/db.ts, package/lock, .gitattributes, startup 서비스·화면, 테스트·README. better-sqlite3 13.2.0/Drizzle0.45.4/uuid14.0.3/tsx4.23.15/타입9.6.0 고정, npm ls 정상. 네이티브·esbuild 설치 스크립트는 해당 고정 버전만 로컬 allowScripts로 허용했다.
