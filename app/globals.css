@@ -37,3 +37,8 @@ p { margin-top:0; }
 @media(max-width:639px) { .project-columns { grid-template-columns:1fr; } }
 @media(max-width:1023px) { .grid { grid-template-columns:1fr; } }
 @media(max-width:639px) { .content { padding:var(--sp-5) var(--sp-4); } .action-link { width:100%; } }
+.maintenance-list { list-style:none; padding:0; margin:0; display:grid; gap:var(--sp-4); }
+.maintenance-list li { border-top:1px solid var(--line); padding-top:var(--sp-3); min-width:0; }
+.maintenance-code { white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; max-width:100%; background:var(--bg-app); padding:var(--sp-3); border-radius:var(--radius-sm); }
+.stack > input,.stack > select { width:100%; min-width:0; min-height:var(--control-h-lg); padding:var(--sp-2) var(--sp-3); border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--bg-app); }
+.cluster > select { max-width:100%; min-width:0; min-height:var(--control-h-lg); border:1px solid var(--line); background:var(--bg-app); padding:var(--sp-2); border-radius:var(--radius-sm); }

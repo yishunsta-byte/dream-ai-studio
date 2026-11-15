@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { WorkflowError } from "@/lib/domain/stages";
 import { enqueueGeneration, listJobs, updateJob } from "@/lib/services/jobs";
+import { checkStartup } from "@/lib/services/startup";
 export const runtime="nodejs";
-export function GET(){return Response.json(listJobs(),{headers:{"cache-control":"no-store"}});}
+export function GET(){try{if(!checkStartup().canStart)throw new WorkflowError("STAGE_LOCKED","시작 점검을 확인해 주세요.",503);return Response.json(listJobs(),{headers:{"cache-control":"no-store"}});}catch(error){return failure(error);}}
 const actionSchema=z.strictObject({id:z.uuidv7(),action:z.enum(["cancel","retry"])});
 export async function POST(request:Request){try{return Response.json(enqueueGeneration(await request.json()),{status:202});}catch(error){return failure(error);}}
 export async function PATCH(request:Request){try{const body=actionSchema.parse(await request.json());updateJob(body.id,body.action);return Response.json({ok:true});}catch(error){return failure(error);}}

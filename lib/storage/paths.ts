@@ -1,11 +1,12 @@
 import "server-only";
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { runtimeRoot } from "@/lib/config/runtime";
 
 export function resolveStoredFile(filePath:string|null):string|null {
   if(!filePath || isAbsolute(filePath) || filePath.includes("\\") || filePath.includes(":") || filePath.split("/").some((part)=>!part||part===".."||part==="."))return null;
   try {
-    const base=realpathSync(join(process.cwd(),"storage"));
+    const base=realpathSync(join(runtimeRoot(),"storage"));
     const candidate=resolve(base,filePath);
     if(!existsSync(candidate))return null;
     const actual=realpathSync(candidate);

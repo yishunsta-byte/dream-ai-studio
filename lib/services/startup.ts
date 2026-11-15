@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { canStart, type StartupCheck } from "@/lib/domain/startup";
 import { checkDatabase } from "@/lib/db/server";
 import { providerConfig } from "@/lib/providers/config";
+import { runtimeRoot } from "@/lib/config/runtime";
 
 export function checkProviderStartup():StartupCheck {
  try{providerConfig();return {id:"providers",label:"샘플 제공자 설정",status:"pass",message:"샘플 모델과 시험 설정이 정상이에요."};}
@@ -13,9 +14,9 @@ export function checkProviderStartup():StartupCheck {
 
 export function checkStorageStartup() {
   const directories = [
-    { folder: "data", directory: join(process.cwd(), "data") },
-    { folder: "storage", directory: join(process.cwd(), "storage") },
-    { folder: "backups", directory: join(process.cwd(), "backups") },
+    { folder: "data", directory: join(runtimeRoot(), "data") },
+    { folder: "storage", directory: join(runtimeRoot(), "storage") },
+    { folder: "backups", directory: join(runtimeRoot(), "backups") },
   ];
   const checks: StartupCheck[] = directories.map(({ folder, directory }) => {
     const probe = join(directory, `.write-check-${randomUUID()}`);
@@ -35,7 +36,7 @@ export function checkStorageStartup() {
     }
   });
   try {
-    const disk = statfsSync(process.cwd());
+    const disk = statfsSync(runtimeRoot());
     const available = disk.bavail * disk.bsize;
     checks.push({ id: "disk", label: "남은 저장 공간", status: available < 5 * 1024 ** 3 ? "warning" : "pass", message: `약 ${Math.floor(available / 1024 ** 3)}GB 남았어요.${available < 5 * 1024 ** 3 ? " 5GB 미만이므로 공간을 확보해 주세요." : ""}` });
   } catch {

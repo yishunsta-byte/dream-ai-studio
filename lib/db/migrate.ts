@@ -8,7 +8,8 @@ function migrationList() {
   const first = readFileSync(join(process.cwd(), "lib/db/migrations/0001_initial.sql"), "utf8").replace(/\r\n/g,"\n");
   const second = readFileSync(join(process.cwd(), "lib/db/migrations/0002_ownership.sql"), "utf8").replace(/\r\n/g,"\n");
   const third = readFileSync(join(process.cwd(), "lib/db/migrations/0003_edit_snapshots.sql"), "utf8").replace(/\r\n/g,"\n");
-  return [{version:1,name:"0001_initial.sql",sql:first},{version:2,name:"0002_ownership.sql",sql:second},{version:3,name:"0003_edit_snapshots.sql",sql:third}].map((migration)=>({...migration,sha256:createHash("sha256").update(migration.sql).digest("hex")}));
+  const fourth = readFileSync(join(process.cwd(), "lib/db/migrations/0004_audit_backups.sql"), "utf8").replace(/\r\n/g,"\n");
+  return [{version:1,name:"0001_initial.sql",sql:first},{version:2,name:"0002_ownership.sql",sql:second},{version:3,name:"0003_edit_snapshots.sql",sql:third},{version:4,name:"0004_audit_backups.sql",sql:fourth}].map((migration)=>({...migration,sha256:createHash("sha256").update(migration.sql).digest("hex")}));
 }
 type AppliedMigration = { version:number; name:string; sha256:string };
 export function verifyMigrations(sqlite: Database.Database) {

@@ -4,13 +4,14 @@ import { openDatabase } from "../lib/db/connection";
 import { migrateDatabase, verifyMigrations } from "../lib/db/migrate";
 import { seedDatabase } from "../lib/db/seed";
 import { getMenuConfig } from "../lib/menus/server";
+import { runtimeRoot } from "../lib/config/runtime";
 
 const command=process.argv[2];
 if(!["migrate","seed"].includes(command)) { console.error("migrate 또는 seed 명령이 필요해요.");process.exitCode=1; }
 else {
   let handle:ReturnType<typeof openDatabase>|undefined;
   try {
-    mkdirSync(join(process.cwd(),"data"),{recursive:true});
+    mkdirSync(join(runtimeRoot(),"data"),{recursive:true});
     handle=openDatabase();
     if(command==="migrate")console.log(`데이터베이스 준비 완료: 새 마이그레이션 ${migrateDatabase(handle.sqlite)}개`);
     else {verifyMigrations(handle.sqlite);console.log(seedDatabase(handle,getMenuConfig()));}

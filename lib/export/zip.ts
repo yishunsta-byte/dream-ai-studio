@@ -10,15 +10,16 @@ import { manifestSchema, type BundleManifest } from "./schema";
 export function safeArchivePath(name:string){return name.length>0&&name.length<=255&&!name.startsWith("/")&&!name.includes("\\")&&!name.includes(":")&&!name.includes("\0")&&name.split("/").every(part=>part!==""&&part!=="."&&part!=="..");}
 export async function fileDigest(filename:string,signal?:AbortSignal){const hash=createHash("sha256");let sizeBytes=0;await pipeline(createReadStream(filename),new Writable({write(chunk:Buffer,_encoding,done){hash.update(chunk);sizeBytes+=chunk.length;done();}}),{signal});return {sha256:hash.digest("hex"),sizeBytes};}
 export type BundleSource={path:string;bytes?:Buffer;filename?:string};
-export async function writeZip(filename:string,sources:BundleSource[],manifest:BundleManifest,signal?:AbortSignal){
+export async function writeArchive(filename:string,sources:BundleSource[],signal?:AbortSignal){
  const zip=new ZipStream({forceZip64:true,store:true});const output=createWriteStream(filename,{flags:"wx",mode:0o600});let created=false;output.once("open",()=>{created=true;});const completion=pipeline(zip,output,{signal});void completion.catch(()=>{});
- try {for(const source of [...sources,{path:"manifest.json",bytes:Buffer.from(JSON.stringify(manifest,null,2))}]){
+ try {for(const source of sources){
    if(!safeArchivePath(source.path)||(!source.bytes&&!source.filename))throw new Error("Unsafe bundle entry");
    const stream=source.bytes?Readable.from([source.bytes]):createReadStream(source.filename!);stream.on("error",error=>zip.destroy(error));
    await new Promise<void>((resolve,reject)=>{const onError=(error:Error)=>reject(error);zip.once("error",onError);zip.entry(stream,{name:source.path,store:true},error=>{zip.off("error",onError);if(error)reject(error);else resolve();});});
   }zip.finalize();await completion;
  }catch(error){zip.destroy();output.destroy();await completion.catch(()=>{});if(created)await unlink(filename).catch(()=>{});throw error;}
 }
+export function writeZip(filename:string,sources:BundleSource[],manifest:BundleManifest,signal?:AbortSignal){return writeArchive(filename,[...sources,{path:"manifest.json",bytes:Buffer.from(JSON.stringify(manifest,null,2))}],signal);}
 export async function verifyZip(filename:string,expected:BundleManifest,signal?:AbortSignal){
  const manifest=manifestSchema.parse(expected);const expectedFiles=new Map(manifest.files.map(file=>[file.path,file]));if(expectedFiles.size!==manifest.files.length||[...expectedFiles.keys()].some(path=>!safeArchivePath(path)||path==="manifest.json"))throw new Error("Invalid manifest paths");
  const zip=await openPromise(filename,{lazyEntries:true,validateEntrySizes:true,strictFileNames:true,autoClose:false});const seen=new Set<string>();let manifestRead=false;

@@ -1,19 +1,8 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
-
-const root = process.cwd();
-const server = join(root, ".next/server");
-let traces = 0;
-for (const filename of readdirSync(server, { recursive:true })) {
-  if (!filename.endsWith(".nft.json")) continue;
-  traces++;
-  const manifest = join(server,filename);
-  for (const file of JSON.parse(readFileSync(manifest,"utf8")).files ?? []) {
-    const path = relative(root,resolve(dirname(manifest),file)).replaceAll("\\","/");
-    if (/^(?:data|storage|backups|tmp|\.tools)\//.test(path) || /^\.env/.test(path)) {
-      throw new Error("운영 빌드 파일 목록에 로컬 데이터나 비밀 설정이 포함되어 중단했어요.");
-    }
-  }
-}
-if (!traces) throw new Error("운영 빌드의 파일 목록을 확인할 수 없어요.");
-console.log("운영 빌드 확인: 로컬 데이터·비밀 설정 추적 없음");
+﻿import { readdirSync, readFileSync, realpathSync } from "node:fs";
+import { dirname, join, relative, resolve, isAbsolute, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+function inside(parent,child){const value=relative(parent,child);return value===""||value!==".."&&!value.startsWith(`..${sep}`)&&!isAbsolute(value);}
+function canonical(path){try{return realpathSync(path);}catch{return resolve(path);}}
+export function privateTrace(project,file,runtime=project){const target=resolve(file),actual=canonical(target);for(const base of new Set([resolve(project),canonical(project),resolve(runtime),canonical(runtime)])){for(const name of ["data","storage","backups","tmp",".tools"]){const folder=join(base,name);if(inside(folder,target)||inside(canonical(folder),actual))return true;}const local=relative(base,target).replaceAll("\\","/");if(/^\.env(?:[./]|$)/i.test(local)||/^\.env(?:[./]|$)/i.test(relative(base,actual).replaceAll("\\","/")))return true;}return false;}
+export function verifyBuild(project=process.cwd(),runtime=process.env.DREAM_DATA_ROOT?.trim()||project){const root=resolve(project),server=join(root,".next/server");let traces=0;for(const filename of readdirSync(server,{recursive:true})){if(!filename.endsWith(".nft.json"))continue;traces++;const manifest=join(server,filename);for(const file of JSON.parse(readFileSync(manifest,"utf8")).files??[]){if(privateTrace(root,resolve(dirname(manifest),file),resolve(runtime)))throw new Error("빌드 파일 목록에 로컬 데이터나 비밀 설정이 포함되어 중단했어요.");}}if(!traces)throw new Error("빌드의 파일 목록을 확인할 수 없어요.");return traces;}
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){verifyBuild();console.log("운영 빌드 확인: 로컬 데이터·비밀 설정 추적 없음");}

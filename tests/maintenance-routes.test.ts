@@ -1,0 +1,25 @@
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
+import { v7 } from "uuid";
+vi.mock("server-only",()=>({}));
+vi.mock("@/lib/services/backups",()=>({readBackups:vi.fn(()=>({rows:[],lastSuccess:null,lastFailure:null})),requestBackup:vi.fn(()=>({id:"queued",jobId:"job",duplicate:false})),configureBackupDirectory:vi.fn(async(directory:string)=>({directory})),readBackupConfiguration:vi.fn(()=>({directory:"fixture only"}))}));
+vi.mock("@/lib/services/restore",()=>({inspectRestore:vi.fn(async()=>({ticketId:v7()})),finishRestore:vi.fn(async(ticketId:string)=>({ticketId}))}));
+vi.mock("@/lib/services/jobs",()=>({listJobs:vi.fn(()=>({workerOnline:true,jobs:[]}))}));
+vi.mock("@/lib/services/startup",()=>({checkStartup:vi.fn(()=>({canStart:true,checks:[]}))}));
+import * as backups from "@/lib/services/backups";
+import * as restore from "@/lib/services/restore";
+import { checkStartup } from "@/lib/services/startup";
+import { GET, POST } from "@/app/api/backups/route";
+import { PATCH } from "@/app/api/backups/configuration/route";
+import { POST as inspect } from "@/app/api/restore/inspect/route";
+import { POST as finish } from "@/app/api/restore/finish/route";
+import { MediaError } from "@/lib/media/inspect";
+const request=(body:unknown)=>new Request("http://127.0.0.1/fixture",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+beforeEach(()=>vi.clearAllMocks());
+describe("maintenance HTTP boundaries",()=>{
+ it("enqueues only an empty manual body and keeps no-store safe status DTO",async()=>{expect((await POST(request({}))).status).toBe(202);expect((await POST(request({path:"D:/private/archive.zip"}))).status).toBe(400);expect(backups.requestBackup).toHaveBeenCalledTimes(1);const response=GET();expect(response.headers.get("cache-control")).toBe("no-store");expect(await response.json()).toEqual({rows:[],lastSuccess:null,lastFailure:null,workerOnline:true});});
+ it("allows only the explicit directory setting",async()=>{expect((await PATCH(request({directory:"D:/fixture"}))).status).toBe(200);for(const body of [{directory:"",key:"secret"},{directory:"D:/fixture",settings:{}},{key:"backup.directory",value:"D:/fixture"}])expect((await PATCH(request(body))).status).toBe(400);expect(backups.configureBackupDirectory).toHaveBeenCalledTimes(1);});
+ it("accepts backup id and destination but no archive path or manifest",async()=>{const body={backupId:v7(),destination:"D:/new-fixture"};expect((await inspect(request(body))).status).toBe(200);for(const extra of [{archivePath:"D:/private.zip"},{manifest:{}},{staging:"D:/unsafe"}])expect((await inspect(request({...body,...extra}))).status).toBe(400);expect(restore.inspectRestore).toHaveBeenCalledTimes(1);});
+ it("finishes only the retained ticket and preserves expiry error code",async()=>{const ticketId=v7();expect((await finish(request({ticketId}))).status).toBe(200);expect((await finish(request({ticketId,destination:"D:/unsafe"}))).status).toBe(400);vi.mocked(restore.finishRestore).mockRejectedValueOnce(new MediaError("RESTORE_EXPIRED","다시 검사해 주세요.",409));const expired=await finish(request({ticketId}));expect(expired.status).toBe(409);expect(await expired.json()).toEqual({error:"다시 검사해 주세요.",code:"RESTORE_EXPIRED"});});
+ it("returns startup failure without reading any backup rows",async()=>{vi.mocked(checkStartup).mockReturnValueOnce({canStart:false,checks:[]});expect(GET().status).toBe(503);expect(backups.readBackups).not.toHaveBeenCalled();});
+ it("handles malformed JSON with a Korean input error",async()=>{const response=await POST(new Request("http://127.0.0.1/fixture",{method:"POST",body:"{"}));expect(response.status).toBe(400);expect((await response.json()).error).toMatch(/입력|항목/);});
+});

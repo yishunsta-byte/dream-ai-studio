@@ -8,10 +8,11 @@ import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 import { v7 } from "uuid";
 import { z } from "zod";
 import { inspectMedia, MediaError } from "@/lib/media/inspect";
+import { runtimeRoot } from "@/lib/config/runtime";
 
 export function uploadLimit() {const configured=Number(process.env.MAX_UPLOAD_BYTES);return Number.isSafeInteger(configured)&&configured>0?configured:2*1024**3;}
 export async function storageDirectory(name:string) {
- const base=await realpath(join(process.cwd(),"storage"));let actual=base;
+ const base=await realpath(join(runtimeRoot(),"storage"));let actual=base;
  for(const part of name.split("/")){
   if(!part||part==="."||part===".."||part.includes("\\")||part.includes(":"))throw new MediaError("STORAGE_FAILED","자료 폴더의 경로를 확인해 주세요.",503);
   const target=join(actual,part);await mkdir(target,{recursive:true});actual=await realpath(target);const inside=relative(base,actual);

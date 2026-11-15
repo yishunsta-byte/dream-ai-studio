@@ -1,0 +1,10 @@
+import { z } from "zod";
+export const inventoryFileSchema=z.strictObject({path:z.string().min(1).max(255),sha256:z.string().regex(/^[a-f0-9]{64}$/),sizeBytes:z.number().int().nonnegative().safe()});
+export const backupManifestSchema=z.strictObject({schemaVersion:z.literal(1),backupId:z.uuidv7(),appVersion:z.literal("0.1.0"),createdAt:z.iso.datetime(),database:inventoryFileSchema,files:z.array(inventoryFileSchema).max(10000),inventorySha256:z.string().regex(/^[a-f0-9]{64}$/),migrations:z.array(z.strictObject({version:z.number().int().positive(),name:z.string(),sha256:z.string().regex(/^[a-f0-9]{64}$/)})).min(1).max(100)});
+export const backupJobSchema=z.strictObject({schemaVersion:z.literal(1),backupId:z.uuidv7(),kind:z.enum(["auto","manual"])});
+export const backupMetaSchema=z.strictObject({zipSha256:z.string().regex(/^[a-f0-9]{64}$/),sizeBytes:z.number().int().nonnegative().safe(),fileCount:z.number().int().nonnegative(),verifiedAt:z.iso.datetime()});
+export type BackupManifest=z.infer<typeof backupManifestSchema>;
+export const restoreTicketSchema=z.strictObject({id:z.uuidv7(),backupId:z.uuidv7(),destination:z.string(),staging:z.string(),expiresAt:z.iso.datetime(),manifest:backupManifestSchema,status:z.enum(["ready","finishing","prepared","completed","failed"]),pendingJobs:z.number().int().nonnegative(),projects:z.number().int().nonnegative(),assets:z.number().int().nonnegative(),claim:z.uuidv7().nullable().default(null),leaseUntil:z.iso.datetime().nullable().default(null),normalizedDatabase:inventoryFileSchema.optional(),completedAt:z.iso.datetime().optional()});
+export type RestoreTicket=z.infer<typeof restoreTicketSchema>;
+export const restoreInfoSchema=z.strictObject({schemaVersion:z.literal(1),ticketId:z.uuidv7(),backupId:z.uuidv7(),destination:z.string(),backupCreatedAt:z.iso.datetime(),restoredAt:z.iso.datetime(),sourceDatabaseSha256:z.string().regex(/^[a-f0-9]{64}$/),database:inventoryFileSchema});
+export type RestoreInfo=z.infer<typeof restoreInfoSchema>;

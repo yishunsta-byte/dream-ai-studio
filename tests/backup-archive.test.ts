@@ -1,0 +1,34 @@
+import { createHash } from "node:crypto";
+import { mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { v7 } from "uuid";
+vi.mock("server-only",()=>({}));
+import { inventoryHash, readBackupManifest, storageInventory, verifyBackupArchive, verifyStagingFiles } from "@/lib/backup/archive";
+import { writeArchive } from "@/lib/export/zip";
+import type { BackupManifest } from "@/lib/backup/schema";
+let root:string;
+const db=Buffer.from("database fixture"),asset=Buffer.from("immutable sample asset");
+function entry(path:string,bytes:Buffer){return {path,sha256:createHash("sha256").update(bytes).digest("hex"),sizeBytes:bytes.length};}
+function manifest():BackupManifest{const files=[entry("storage/assets/sample.txt",asset)];return {schemaVersion:1,backupId:v7(),appVersion:"0.1.0",createdAt:new Date().toISOString(),database:entry("data/app.db",db),files,inventorySha256:inventoryHash(files),migrations:[{version:1,name:"fixture",sha256:"a".repeat(64)}]};}
+function sources(m:BackupManifest){return [{path:m.database.path,bytes:db},{path:m.files[0].path,bytes:asset},{path:"backup-manifest.json",bytes:Buffer.from(JSON.stringify(m))}];}
+beforeEach(async()=>{root=await realpath(await mkdtemp(join(tmpdir(),"dream-ai-backup-test-")));});
+afterEach(async()=>{if(dirname(await realpath(root))!==await realpath(tmpdir()))throw new Error("Temporary boundary rejected");await rm(root,{recursive:true,force:true});});
+describe("백업 ZIP 인벤토리와 격리 추출",()=>{
+ it("실제 ZIP을 재열어 모든 파일을 검증하고 새 위치에 원본 바이트를 추출한다",async()=>{const m=manifest(),zip=join(root,"backup.zip"),destination=join(root,"restored");await writeArchive(zip,sources(m));expect(await readBackupManifest(zip)).toEqual(m);await verifyBackupArchive(zip,m,destination);expect(await readFile(join(destination,m.database.path))).toEqual(db);expect(await readFile(join(destination,m.files[0].path))).toEqual(asset);});
+ it("중복·누락·미등록 파일을 성공 백업으로 인정하지 않는다",async()=>{const m=manifest(),base=sources(m);for(const [index,list] of [[...base,base[0]],base.slice(1),[...base,{path:"extra.txt",bytes:asset}]].entries()){const zip=join(root,`invalid-${index}.zip`);await writeArchive(zip,list);await expect(verifyBackupArchive(zip,m)).rejects.toThrow();}});
+ it("인벤토리 해시·파일 내용·매니페스트 변조를 거부한다",async()=>{const m=manifest(),zip=join(root,"changed.zip");await writeArchive(zip,sources(m));await expect(verifyBackupArchive(zip,{...m,inventorySha256:"0".repeat(64)})).rejects.toThrow();await expect(verifyBackupArchive(zip,{...m,backupId:v7()})).rejects.toThrow();const changed=sources(m);changed[1]={...changed[1],bytes:Buffer.from("wrong")};const second=join(root,"bytes.zip");await writeArchive(second,changed);await expect(verifyBackupArchive(second,m)).rejects.toThrow();});
+ it("환경 파일·임시 파일을 목록에서 제외하고 연결된 폴더를 거부한다",async()=>{const storage=join(root,"storage");await mkdir(join(storage,"tmp"),{recursive:true});await writeFile(join(storage,"tmp","partial"),"partial");await writeFile(join(storage,".env.local"),"fixture only");await writeFile(join(storage,"sample.txt"),asset);expect(await storageInventory(storage)).toEqual([entry("storage/sample.txt",asset)]);const outside=join(root,"outside");await mkdir(outside);await symlink(outside,join(storage,"linked"),"junction");await expect(storageInventory(storage)).rejects.toThrow();});
+ it("검사 후 임시 자료가 외부 연결로 바뀌면 재검증에서 거부한다",async()=>{const folder=join(root,"stage"),outside=join(root,"outside"),m=manifest();await mkdir(join(folder,"data"),{recursive:true});await writeFile(join(folder,"data/app.db"),db);await mkdir(join(folder,"storage"));await mkdir(outside);await writeFile(join(outside,"sample.txt"),asset);await symlink(outside,join(folder,"storage/assets"),"junction");await expect(verifyStagingFiles(folder,m)).rejects.toThrow("link rejected");});
+});
+
+describe("exclusive restore staging",()=>{
+ it("rejects existing junction trees before extracting any file",async()=>{const m=manifest(),zip=join(root,"a.zip"),dest=join(root,"stage"),outside=join(root,"outside");await mkdir(dest);await mkdir(outside);await symlink(outside,join(dest,"storage"),"junction");await writeFile(join(outside,"original"),asset);await writeArchive(zip,sources(m));await expect(verifyBackupArchive(zip,m,dest)).rejects.toThrow();await expect(readFile(join(dest,"data/app.db"))).rejects.toThrow();await expect(readFile(join(outside,"assets/sample.txt"))).rejects.toThrow();expect(await readFile(join(outside,"original"))).toEqual(asset);});
+ it("rejects a root junction and a preexisting empty destination",async()=>{const m=manifest(),zip=join(root,"a.zip"),outside=join(root,"outside"),link=join(root,"link");await mkdir(outside);await symlink(outside,link,"junction");await writeArchive(zip,sources(m));for(const dest of [link,outside])await expect(verifyBackupArchive(zip,m,dest)).rejects.toThrow();await expect(readFile(join(outside,"data/app.db"))).rejects.toThrow();});
+ it("preflights corrupt contents before creating staging",async()=>{const m=manifest(),zip=join(root,"bad.zip"),dest=join(root,"new");const list=sources(m);list[1]={...list[1],bytes:Buffer.from("changed")};await writeArchive(zip,list);await expect(verifyBackupArchive(zip,m,dest)).rejects.toThrow();await expect(realpath(dest)).rejects.toThrow();});
+ it("rejects Windows device, trailing-dot and short-alias inventory names",async()=>{for(const name of ["storage/NUL.txt","storage/file.","storage/LONGNA~1.txt"]){const m=manifest();m.files=[entry(name,asset)];m.inventorySha256=inventoryHash(m.files);const zip=join(root,`bad-${m.backupId}.zip`);await writeArchive(zip,sources(m));await expect(verifyBackupArchive(zip,m)).rejects.toThrow("Invalid backup inventory");}});
+});
+
+it("rejects case aliases before creating an extraction tree",async()=>{const m=manifest();m.files=[entry("storage/File.txt",asset),entry("storage/file.txt",asset)];m.inventorySha256=inventoryHash(m.files);const zip=join(root,"case.zip"),dest=join(root,"case-stage");await writeArchive(zip,[{path:m.database.path,bytes:db},...m.files.map(file=>({path:file.path,bytes:asset})),{path:"backup-manifest.json",bytes:Buffer.from(JSON.stringify(m))}]);await expect(verifyBackupArchive(zip,m,dest)).rejects.toThrow("Aliased backup inventory");await expect(realpath(dest)).rejects.toThrow();});
+it("allows only one concurrent extraction to claim a destination",async()=>{const m=manifest(),zip=join(root,"concurrent.zip"),dest=join(root,"claimed");await writeArchive(zip,sources(m));const results=await Promise.allSettled([verifyBackupArchive(zip,m,dest),verifyBackupArchive(zip,m,dest)]);expect(results.filter(result=>result.status==="fulfilled")).toHaveLength(1);expect(await readFile(join(dest,m.files[0].path))).toEqual(asset);});
