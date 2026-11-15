@@ -194,3 +194,14 @@
 - 읽음: Master 지시, `T-014-CC-DATA-01.md` 전체, `lib/backup/schema.ts` 전체, `lib/backup/archive.ts` `verifyRestoredDatabase` 부분, `lib/db/migrate.ts` 앞 40줄(`migrationList`·`verifyMigrations`·`migrateDatabase`), `lib/services/restore.ts` `normalize`·`normalized`·`finish` 부분, `lib/services/backups.ts` `request`·`list` 부분, `lib/services/history.ts` `restoreInformation`, `app/(studio)/settings/page.tsx`.
 - 하지 않음: 앱 실행, 실제 복원 재현(T-014 R1 결과를 근거로 씀), `scripts/db.ts`·`settings-panel` 화면 코드·테스트 코드 읽기. 실제 사용자 data/storage/backups 접근 없음.
 - 3.4의 "결정적 ID" 방법과 고정 백업 생성 절차는 구현 담당(CC-ENG-01)·데이터 담당(CC-DATA-01)이 정확히 정해야 한다. 이 문서는 기준만 정했다.
+
+---
+
+## 9. 반영 기록 (T-018, 2026-11-16)
+
+- Master `msg_42f513b70a5b`가 D-3 준비 기준을 채택했다. `docs/PLAN.md` 14장 **K-6**, 18장 P2-1 시작 전 준비 기준, 변경 이력에 반영했다. 아직 미구현이다.
+- PLAN 반영 때 이 문서와 달라진 점(PLAN이 우선):
+  - 3.5의 스냅샷 방법은 `VACUUM INTO`로 정하지 않는다. 백업 API든 `VACUUM INTO`든 **일관된 스냅샷 · 앱·워커와 동시 접근 조정 · 새 파일로만 만들기(기존 파일 덮지 않음) · 실패하면 이관 시작 안 함**을 지키면 되고, 방법은 코딩 단계에서 검증해 정한다.
+  - 3.5 4번의 "설정 > 보관함 정리 규칙으로 지우기"는 넣지 않는다. 스냅샷은 **자동으로 지우지 않고**, 정리·삭제 승인 흐름도 이번 기준에 없다.
+- PLAN에 넣지 않고 **후속 권장**으로 남긴 것: 5장 날짜 함수 전역 정리, 4.4 "복원본" 칩·앱 정보 Callout·작업실 알림. 이것들은 T-016 완료 판정에 영향을 주지 않는다.
+- P1 게이트(F-016-1/2·V13 필수 수정, 독립 재검수, 사용자 흐름 확인, 디자인 시안 승인)는 그대로다.
