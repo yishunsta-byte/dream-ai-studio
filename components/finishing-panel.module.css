@@ -9,4 +9,5 @@
 .buttons { display:flex; gap:var(--sp-2); flex-wrap:wrap; }
 .reviewItem { display:flex; flex-direction:column; gap:var(--sp-3); padding:var(--sp-4); border:1px solid var(--line); border-radius:var(--radius-md); }
 .progress { width:100%; accent-color:var(--accent-bar); }
+.srt { white-space:pre-wrap; overflow-wrap:anywhere; font-family:var(--font-mono); font-size:var(--text-sm); }
 @media(max-width:1023px) { .editor { grid-template-columns:minmax(0,1fr); } }
