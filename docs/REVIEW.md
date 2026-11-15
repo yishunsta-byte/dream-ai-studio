@@ -59,7 +59,7 @@
 **판정: 통과** (아래 필수 수정 1건은 P0-3 시작 전에 처리)
 
 **필수 수정**
-- [ ] **F-001 git 저장소 없음.** PLAN 20.4는 마일스톤 단위 커밋을 요구한다. `git init` → 현재 상태를 `P0-2: 프로젝트 기본 설정`으로 첫 커밋. `tmp/`, `*.tsbuildinfo`가 제외되는지 `git status`로 확인 후 커밋. 원격 저장소 연결·푸시는 하지 않는다(은영님 결정 전).
+- [x] **F-001 git 저장소 없음.** PLAN 20.4는 마일스톤 단위 커밋을 요구한다. `git init` → 현재 상태를 `P0-2: 프로젝트 기본 설정`으로 첫 커밋. `tmp/`, `*.tsbuildinfo`가 제외되는지 `git status`로 확인 후 커밋. 원격 저장소 연결·푸시는 하지 않는다(은영님 결정 전). → R-003에서 현재 커밋과 제외 규칙 확인, 닫힘.
 
 **권장**
 - `README.md`에 PowerShell에서는 `npm.cmd`를 쓰는 이유 한 줄 유지(이미 PROGRESS에 있음 — README에도 있으면 됨).
@@ -99,3 +99,30 @@
 - 다음 검수(F-001 커밋, P0-3, P0-4·P0-5)부터 R-003 번호로 검수 담당이 작성한다.
 - P0-4·P0-5 디자인 대조 기준: `docs/DESIGN.md` 10장 + 시안 https://claude.ai/artifact/JQZB34seWCmC43HZitfztt (로컬: `docs/design/prototype.html`)
 - 기준·디자인이 틀렸으면 "플래너 확인 필요" + QUESTIONS.md (PLAN 20.1 7번).
+
+---
+
+## R-003 · F-001 첫 커밋 후속 검수 (2026-11-15, Codex)
+
+**대상:** `220bb3d P0-2: 프로젝트 기본 설정`, `2581232 docs: F-001 첫 커밋 기록`. 작성자 정보 정정으로 이전 인계 시점의 커밋 ID가 바뀌어 현재 로그 기준으로 재확인했다. 기준 PLAN v2.3.
+
+**판정: 통과. F-001 닫힘. 구현 담당은 P0-3 진행 가능.**
+
+| 재현 절차 | 기대 / 실제 |
+|---|---|
+| `git log -3 --oneline`, 첫 커밋 파일 목록 확인 | P0-2 첫 커밋과 후속 기록 존재 / 일치 |
+| `git check-ignore tmp/check.txt data/check.db storage/check.bin backups/check.zip check.tsbuildinfo .env.local` | 모두 제외 / 6개 경로 모두 일치 |
+| `git ls-files -- tmp data storage backups '*.tsbuildinfo' '.env' '.env.local'` | 추적 파일 없음 / 없음 |
+| `git ls-files lib/storage` | 소스 폴더는 추적 / `.gitkeep` 추적 확인 |
+| `git remote -v` | 원격 미연결 / 출력 없음 |
+| `npm.cmd run lint` | 오류·경고 0 / 종료 0 |
+| `npm.cmd test` | 기존 기본 설정 검사 통과 / 1파일·3건 통과 |
+| `npm.cmd run build` | 빌드 성공 / 종료 0, `/`·not-found 생성 |
+| 빌드 후 `npm.cmd run typecheck` | Next 타입 생성·strict tsc 통과 / 종료 0 |
+| `npm.cmd audit --omit=dev`, `npm.cmd audit` | Q-001 수용 범위 유지 / 운영 0, 개발 moderate 7, high·critical 0 |
+
+필수 수정 없음. 개발 도구 감사 7건은 Q-001의 기존 추적 규칙을 유지한다. 이번 검수는 Git 후속 조치와 기본 검사에 한정하며 화면·P0-3·미구현 DB·워커 통과를 의미하지 않는다. 작업 시작 시 이미 수정 중이던 `docs/DESIGN.md`는 본 검수에서 변경하거나 승인하지 않았다.
+
+**다음:** 구현 담당이 P0-3(menus.json 로더·zod 스키마·시작 시 검증) 하나만 구현하고 PROGRESS와 인계 문서를 작성한다. 해당 구현 검수 전 P0-4로 진행하지 않는다.
+
+**복사용 전달 메시지:** F-001 검수를 완료했습니다. 현재 커밋 `220bb3d`, 후속 기록 `2581232`와 제외 규칙을 확인했고 build·lint·typecheck·테스트 3건을 통과했습니다. REVIEW R-003에서 F-001을 닫았습니다. 구현 담당은 PLAN v2.3 기준 P0-3 하나만 진행하고 PROGRESS와 단계별 인계 문서를 남겨 주세요. 운영 감사 0건, 개발 moderate 7건은 기존 Q-001대로 추적합니다. 이 메시지는 전달용 초안이며 별도 전송하지 않았습니다.
