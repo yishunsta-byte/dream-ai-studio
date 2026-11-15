@@ -1,5 +1,16 @@
 # 진행 기록
 
+## P0-5 · 앱 셸·전체 메뉴·시작 점검 (2026-11-15)
+
+- 기준 PLAN v2.3 / DESIGN v1.1. P0-4 자체 검수 후 연속 진행.
+- 변경: components/studio-{shell,layout} 및 셸 CSS, setup-report, studio/workspace 레이아웃, 작업실·분야 소개·업무공간·시작 점검·jobs/library/settings 준비 화면·404, lib/services/startup.ts, lib/domain/startup.ts 및 테스트. RootLayout에서 폴더 실패 시 모든 하위 화면 차단.
+- 구성: 메뉴 JSON에서 그룹 순서대로 16개 분야+2개 업무공간 생성, 준비 단계 칩·흐린 표시, 현재 위치, 모바일 모달 서랍·키보드 포커스·경로 이동 시 닫기. MOCK_MODE 기본 true이며 false이면 샘플 모드 표시 숨김. 작업실은 실제 프로젝트가 없는 빈 상태. 준비 분야는 만들기 링크 없음, /new 직접 접근도 404. 활성 분야 등록 페이지는 아직 저장 기능 없는 준비 안내.
+- 시작 점검: data/storage/backups 폴더를 준비하고 고유한 새 검사 파일로 쓰기 확인 후 정리. 기존 파일 덮어쓰기 없음. 디스크 5GB 미만 또는 용량 조회 불가는 경고로 시작 허용, 쓰기 실패는 차단. 마이그레이션은 P1-1 후속.
+- 검증: build 경고 0/lint/typecheck 종료 0, 테스트 6파일·19건 통과. 운영 감사 0, 전체 moderate 7(Q-001 유지). 빌드 중 전체 프로젝트 파일 추적 경고를 발견해 점검 경로를 정적 data/storage/backups 하위 경로로 한정, 재빌드에서 해결.
+- 운영 브라우저: 전체 분야 16+업무공간 2+고정 화면 5=23개, 각각 1280/390 총46회 넘침·h1 확인 통과, HTTP200. 없는 분야/업무공간·준비 분야 /new·운영 /dev/ui는404. /queue→/jobs 이동 확인(Q-004). MOCK_MODE=false 별도 서버에서 샘플 모드 숨김 확인. 별도 격리 실행 폴더의 data 위치에 파일을 둔 실패 사례에서 시작 점검으로 차단하고 기존 파일 내용 보존.
+- 화면 증거: tmp/p05-home-{1280,390}.png, p05-drawer-390.png, p05-shopping-shorts-*.png, p05-travel-shorts-*.png, p05-legal-tax-*.png, p05-setup-*.png, p05-startup-blocked-390.png. 작업실 PC/모바일, 분야 PC, 오류 모바일 육안 확인. 서랍 열기·aria-expanded·Esc·바깥 클릭·이동 시 닫기·포커스 복귀 확인.
+- 제한: 프로젝트 DB/저장/워커 미구현. 고정 jobs/library/settings는 준비 안내. 원본 메뉴·디자인 기준은 수정하지 않음. 사용자 연속 진행 지시대로 자체 검수(R-006) 후 P1-1로 진행.
+
 ## P0-4 · 공통 UI (2026-11-15)
 
 - 기준: PLAN v2.3, DESIGN v1.1 4·7·10장. 최신 사용자 지시에 따라 현재 담당이 구현과 자체 검수를 연속 수행한다.
