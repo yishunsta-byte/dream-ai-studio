@@ -180,3 +180,12 @@ P1-1 진행 가능. DB/워커 등 후속 기능의 통과를 의미하지 않는
 - `prototype.html` 16화면: 준비 단계 분야·업무공간·시작 점검(P0-5), 자료·요구 확인·기획·작업 대기열·수정·조립·내보내기·설정(P1) 추가. 열람: https://claude.ai/artifact/JQZB34seWCmC43HZitfztt
 - 시안 자체 결함 수정(제품에 옮기지 말 것): 시안 띠 높이와 위 띠 고정 위치 불일치, 아이콘 회전 표시 오류, 장면 3 "만드는 중" → "대기"(동시 실행 1과 모순이었음).
 - 플래너 확인: 16화면 × 1280·390 가로 넘침 0, 화면마다 h1 1개, 13px 미만 글자는 미리보기 안 글자만.
+
+---
+
+## 알림 · 디자인 v1.2 · 토큰 v1.1 (2026-11-15, 플래너)
+
+판정 아님 — 기준 변경 알림. Q-002·Q-003·Q-004 답변 완료(QUESTIONS.md).
+- `tokens.css` v1.1 (Q-003): `--accent` 민트 600→700(흰 글자 3.28→4.87:1), `--accent-hover` 800, `--accent-press` 900(신설), `--accent-bar` 민트 600(신설·글자 없는 곳만), `--phase-0` 남색 500. 앱이 이 파일을 직접 import하므로 **즉시 반영됨**.
+- **구현 후속 1건**: 임시 `var(--accent-hover)` 사용처(`ui.module.css .primary`, `globals.css .action-link`, `studio-shell.module.css .mark`)를 `var(--accent)`로, `primitives.tsx` phase 0 특례를 `var(--phase-0)`으로 되돌릴 것.
+- `DESIGN.md` v1.2: 위 토큰 역할, 작업 대기열 경로 `/jobs` 확정(Q-004).

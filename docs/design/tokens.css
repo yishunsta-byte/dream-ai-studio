@@ -1,4 +1,4 @@
-/* Dream AI Studio — 디자인 토큰 v1 (2026-11-15)
+/* Dream AI Studio — 디자인 토큰 v1.1 (2026-11-15) — v1.1: 흰 글자 대비 4.5:1 맞춤 (Q-003)
  * 제품 화면은 이 파일의 변수만 사용한다. 컴포넌트에 색상 코드·px 값을 직접 쓰지 않는다.
  * 기준: docs/DESIGN.md. 기획서 색 제안(남색 #243B53 · 민트 #0E9F94 · 크림 #FAF8F3) 반영.
  * 1차는 밝은 화면만 지원한다(color-scheme: light). 어두운 화면은 [data-theme="dark"]로 이후 추가.
@@ -15,9 +15,10 @@
   --c-navy-100: #DCE5EE;
   --c-navy-50:  #EEF2F6;
 
+  --c-mint-900: #054E48;
   --c-mint-800: #07675F;
-  --c-mint-700: #0A7F76;   /* 강조 글자·링크 (흰 배경 대비 4.9:1) */
-  --c-mint-600: #0E9F94;   /* 강조: 주 버튼, 선택, 진행 표시 */
+  --c-mint-700: #0A7F76;   /* 주 버튼 배경(흰 글자 4.87:1), 강조 글자·링크 */
+  --c-mint-600: #0E9F94;   /* 글자 없는 강조만: 진행 막대, 선택 막대, 포커스. 흰 글자 금지(3.28:1) */
   --c-mint-200: #A6E3DD;
   --c-mint-100: #D5F2EF;
   --c-mint-50:  #ECF9F7;
@@ -52,9 +53,10 @@
   --line-strong:   var(--c-cream-400);
   --line-focus:    var(--c-mint-600);
 
-  --accent:        var(--c-mint-600);
-  --accent-hover:  var(--c-mint-700);
-  --accent-press:  var(--c-mint-800);
+  --accent:        var(--c-mint-700);   /* 흰 글자를 올리는 강조 배경 */
+  --accent-hover:  var(--c-mint-800);
+  --accent-press:  var(--c-mint-900);
+  --accent-bar:    var(--c-mint-600);   /* 진행 막대·선택 표시 (글자 없음) */
 
   /* ── 상태 색 (색 + 아이콘 + 글자를 항상 함께) ── */
   --st-success-fg: #1E6B43;  --st-success-bg: #E3F4EA;  --st-success-line: #A8D9BC;
@@ -66,7 +68,7 @@
   --st-sample-fg:  #6A4BA8;  --st-sample-bg:  #F0EBFA;  --st-sample-line:  #CDBDEB;  /* mock 결과 전용 */
 
   /* 단계 칩 (로드맵 Pn 표기) */
-  --phase-0: #6B7A8F; --phase-1: #0A7F76; --phase-2: #2F6FAE; --phase-3: #6B4FB3;
+  --phase-0: #486581; --phase-1: #0A7F76; --phase-2: #2F6FAE; --phase-3: #6B4FB3;
   --phase-4: #A9650F; --phase-5: #B03C60; --phase-6: #42693A; --phase-7: #36506E; --phase-8: #7D4F3B;
 
   /* ── 글자 ─────────────────────────────── */

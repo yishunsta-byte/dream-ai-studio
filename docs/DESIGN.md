@@ -1,4 +1,4 @@
-# Dream AI Studio — 디자인 기준 v1.1
+# Dream AI Studio — 디자인 기준 v1.2
 
 작성: 플래너 · 2026-11-15 · 상위 문서: `docs/PLAN.md` v2.2 (충돌 시 PLAN 우선)
 함께 보는 파일: `docs/design/tokens.css` (값), `docs/design/prototype.html` (모양·동작 시안)
@@ -37,7 +37,8 @@
 | `--bg-accent-soft` | 강조 배지·선택된 옅은 배경 |
 | `--fg-strong` / `--fg-default` / `--fg-muted` / `--fg-subtle` | 제목 / 본문 / 보조 / 비활성 (subtle은 15px 이상만) |
 | `--fg-accent`, `--fg-link` | 강조 글자, 링크 (민트 700) |
-| `--accent`, `--accent-hover`, `--accent-press` | 주 버튼, 진행 막대, 선택 표시 |
+| `--accent`, `--accent-hover`, `--accent-press` | 흰 글자가 올라가는 강조 배경: 주 버튼, 숫자 칩, 현재 위치 칩 (민트 700, 흰 글자 4.87:1) |
+| `--accent-bar` | 글자 없는 강조: 진행 막대, 선택 막대 (민트 600 — **흰 글자 금지**, 3.28:1) |
 | `--line`, `--line-strong`, `--line-focus` | 카드 선 / 입력 테두리 / 포커스 |
 
 ### 2.2 상태 색 — 각각 `-fg` `-bg` `-line` 3개
@@ -223,7 +224,7 @@
 | `#library` 자료·캐릭터 | `/library` | P1-4 | 6.3 참고 |
 | `#brief` 요구 확인 | `/projects/[id]/brief` | P1-5 | 입력 요약 + 누락·불명확 목록 + "확인 완료" |
 | `#plan` 기획·승인 | `/projects/[id]/plan` | P1-5 | 6.4 참고 |
-| `#queue` 작업 대기열 | `/queue` | P1-6 | 6.5 참고 |
+| `#queue` 작업 대기열 | `/jobs` (`/queue`는 `/jobs`로 이동, Q-004) | P1-6 | 6.5 참고 |
 | `#scenes` 장면 제작 | `/projects/[id]/scenes` | P1-7 | Stepper + Tabs + 승인 기준 Callout + 장면 카드 목록 |
 | `#edit` 수정·조립 | `/projects/[id]/edit` | P1-8 | 6.6 참고 |
 | `#review` 검수 | `/projects/[id]/review` | P1-8 | 버전 Callout → 통과 막대·칩 → 그룹별 항목(공통 / 분야 / 조건부) → 승인 버튼 + 이유 → 내보낼 묶음 미리보기 |
@@ -379,4 +380,5 @@
 | 날짜 | 판 | 내용 |
 |---|---|---|
 | 2026-11-15 | v1 | 첫 작성 (P0-1). tokens.css v1, prototype.html 6화면 |
+| 2026-11-15 | v1.2 | Q-003 반영: `--accent` 민트 600→700(흰 글자 3.28→4.87:1), hover 800·press 900, 글자 없는 강조용 `--accent-bar` 신설, `--phase-0`을 남색 500(6.08:1)으로. Q-004: 작업 대기열 경로 `/jobs` 확정 |
 | 2026-11-15 | v1.1 | 마일스톤 번호를 PLAN 18장과 맞춤(장면 P1-7, 검수·내보내기 P1-8, 등록 P1-3). menus.json 필드명 정정(`label`, `isAd`, `realisticAi`). 화면 9개 추가: 준비 단계 분야·업무공간·시작 점검(P0-5), 자료 보관함·요구 확인·기획·작업 대기열·수정·조립·내보내기·설정(P1) — 6.3~6.7 |
