@@ -6,6 +6,7 @@ import type { DatabaseHandle } from "./connection";
 import { projects, stageStates } from "./schema";
 import * as tables from "./schema";
 import { encodeJson, jsonObject } from "./json";
+import { menuSnapshotSchema, snapshotForMenu } from "@/lib/menus/snapshot";
 
 export function seedDatabase(handle: DatabaseHandle, config: MenuConfig) {
   return handle.sqlite.transaction(()=>{
@@ -19,7 +20,7 @@ export function seedDatabase(handle: DatabaseHandle, config: MenuConfig) {
     const now=new Date().toISOString();
     handle.db.insert(projects).values({
       id, menuId:menu.id,templateVersion:config.templateVersion,
-      templateSnapshotJson:encodeJson(jsonObject,{schemaVersion:config.schemaVersion,templateVersion:config.templateVersion,stages:config.stages,commonInputs:config.commonInputs,commonReview:config.commonReview,conditionalReview:config.conditionalReview,menu}),
+      templateSnapshotJson:encodeJson(menuSnapshotSchema,snapshotForMenu(config,menu)),
       inputsJson:encodeJson(jsonObject,{title:"[샘플] 첫 쇼핑숏츠",goal:"샘플 제품을 소개해요",target:"짧은 제품 소개를 보는 사람",aspect:"9:16",lengthSec:30,productName:"샘플 텀블러",facts:"사용자가 확인할 샘플 장점",isSample:true}),
       title:"[샘플] 첫 쇼핑숏츠",goal:"샘플 제품을 소개해요",target:"짧은 제품 소개를 보는 사람",aspect:"9:16",lengthSec:30,createdAt:now,updatedAt:now,
     }).run();

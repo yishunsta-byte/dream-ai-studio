@@ -1,5 +1,9 @@
 # 검수 기록
 
+## R-008 · P1-2 자체 검수 (2026-11-15)
+
+판정:자체검수통과(독립검수아님). 순수도메인S1~S7과repo/service분리를 대조했다. 테스트57건으로 모든단계시작/실패/재시도,선행미승인차단,기획/검수자동승인거부,승인포인터·스냅샷·로그원자성,새draft버전할당·재승인,현재revision필수검수완전성,변경후자격무효화·완료내보내기불변,동시revision두번째변경차단과롤백을확인했다. build/lint/typecheck통과,운영감사0/개발moderate7. HTTP생성연결은P1-6에서추가검수한다. 다음P1-3진행가능.
+
 ### R-007 후속 · 파일 추적 필수 수정 완료
 
 최초 .nft.json 검사에서는 로컬 data/app.db가11개 라우트에 포함되어 있었다. 결과 확인 이전 "없음"으로 남긴 문구를 정정했다. next.config.ts outputFileTracingExcludes 적용 후 재빌드와 전체 경로 정규화 검사에서 data/storage/backups/tmp/.env* 항목0건. build에 scripts/verify-build.mjs 자동 차단 검사를 추가했다. 외부 배포 없음. 이 수정까지 포함해 P1-1 자체 검수 통과.
