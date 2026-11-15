@@ -1,4 +1,4 @@
-const stages = { worker: "P1-6", "db:migrate": "P1-1", "db:seed": "P1-1" };
+const stages = { worker: "P1-6" };
 const command = process.argv[2];
 const stage = stages[command];
 console.error(stage

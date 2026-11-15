@@ -1,5 +1,15 @@
 # 진행 기록
 
+## P1-1 · SQLite·마이그레이션·비파괴 시드 (2026-11-15)
+
+- 기준 PLAN v2.3 7.1의16테이블. 변경: lib/db/{schema,connection,migrate,json,seed,server}.ts, migrations/0001_initial.sql·0002_ownership.sql, scripts/db.ts, package/lock, .gitattributes, startup 서비스·화면, 테스트·README. better-sqlite3 13.2.0/Drizzle0.45.4/uuid14.0.3/tsx4.23.15/타입9.6.0 고정, npm ls 정상. 네이티브·esbuild 설치 스크립트는 해당 고정 버전만 로컬 allowScripts로 허용했다.
+- 구현: UUIDv7·UTC 기본값, foreign_keys ON·WAL·5초 busy timeout. JSON 칼럼 문법 및 저장·로드 zod 경계. 상태/범위/정수 마이크로 금액/통화, 유일키·외래키·상태 인덱스. 링크/파일 구분·상대경로, 원본 파일 메타데이터·승인 기획·완료 내보내기·완료 장면버전 불변. 같은 프로젝트 기획·같은 장면 성공 버전만 참조하도록 트리거. 단계별 서비스 게이트는 다음 P1-2.
+- 마이그레이션: 명시적 SQL+SHA256 저널, immediate 트랜잭션, 이미 적용한 파일 불일치·알 수 없는 버전 거부, 중간 실패 롤백. SQL 줄바꿈은 LF로 정규화. 실제 로컬 DB에 migrate 적용 후 재실행0 확인. 이미 적용한1번은 보존하고 추가 소유권 제약은2번으로 적용했다.
+- 시드: 모든 업무 테이블이 비어 있을 때만 가짜 샘플 프로젝트1+단계7개 추가. 승인·생성 없음. UUIDv7 사용, 초기 intake todo/나머지 locked, 템플릿 스냅샷에 내부 원본 경로 미포함. 실제 앱DB에는 시드를 넣지 않았고 격리 폴더에서 CLI 검증했다.
+- 검증: lint/typecheck/build 통과, 테스트7파일·30건 통과. 16테이블의 ORM/실DB 칼럼 대조, 잘못된 상태·JSON·참조·중복·금액 거부, 승인 원본·자산 파일 불변, 같은 장면 성공 버전 선택, 보류 사유, 시드 비파괴, 체크섬 불일치, 마이그레이션 롤백, 파일DB 재연결 유지 검증. 운영 감사0, 개발 moderate7 유지.
+- 실제 CLI 별도 프로세스: tmp/p11-runtime에서 migrate2개→seed1건→seed0건 확인. 빈 DB에서는 운영 시작 점검으로 모든 화면 차단, migrate 후 서버 재시작 없이 점검 통과로 전환. /setup1280/390에서 가로 넘침 없음, 모바일 스크린샷 육안 확인. 증거 tmp/p11-missing-database.png, p11-setup-1280.png, p11-setup-390.png. 런타임 DB·.env.local이 Next 파일 추적에 포함되지 않는지 별도 확인.
+- 제한: 프로젝트 등록·조회·생성 등의 사용자 기능은 후속 단계. ORM 정의에 대응하는 CHECK·불변 트리거는 SQL 마이그레이션이 관리한다. 현재 자체 검수(R-007)이며 독립 검수 아님. 다음 P1-2 규칙·서비스 게이트로 연속 진행.
+
 ## P0-5 · 앱 셸·전체 메뉴·시작 점검 (2026-11-15)
 
 - 기준 PLAN v2.3 / DESIGN v1.1. P0-4 자체 검수 후 연속 진행.

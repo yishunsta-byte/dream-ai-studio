@@ -1,6 +1,6 @@
 # Dream AI Studio
 
-현재 마일스톤: **P0-3 메뉴 설정 로더·시작 검증 구현 완료, 검수 대기**. 제품 디자인과 메뉴 화면·저장·생성 기능은 후속 단계입니다. 첫 화면은 실행 확인용 임시 문구입니다.
+현재 마일스톤: **P1-1 데이터베이스 기반 구현 완료**. 공통 UI·전체 분야 소개·모바일 앱 셸과 시작 점검을 제공합니다. 프로젝트 등록·자료 보관·기획·생성은 이어지는 단계입니다.
 
 서버 시작 시 `docs/spec/menus.json`을 검증합니다. 오류가 있으면 작업실 대신 잘못된 항목 경로와 한글 안내를 표시합니다. 설정 수정 후 서버를 다시 시작하세요. 메뉴 설정을 사용하는 서버 코드는 `lib/menus/server.ts`의 `getMenuConfig()`로 검증된 복사본을 읽습니다. 검증 실패 시 이 함수도 요청을 거부합니다. 정상 화면도 요청 시 렌더링하여 빌드 당시의 정상 화면이 시작 점검 실패를 우회하지 않도록 했습니다.
 
@@ -10,6 +10,7 @@ Node.js 22.13 이상인 22.x 또는 24 이상과 npm 10 이상이 필요합니�
 
 ```powershell
 npm.cmd ci
+npm.cmd run db:migrate
 npm.cmd run dev
 ```
 
@@ -29,15 +30,18 @@ npm.cmd test
 | lint / typecheck / test | ESLint / Next 타입 생성과 TS strict / Vitest 단발 실행 |
 | test:watch | 테스트 감시 |
 | worker | P1-6에서 구현 예정, 현재 안내 후 종료 코드 1 |
-| db:migrate / db:seed | P1-1에서 구현 예정, 현재 안내 후 종료 코드 1; 데이터 변경 없음 |
+| db:migrate | data/app.db에 누락된 마이그레이션을 트랜잭션으로 적용. 재실행 시 기존 데이터 유지 |
+| db:seed | 빈 DB에만 샘플 프로젝트 1개 추가. 데이터가 있으면 변경 없이 건너뜀 |
 | dev:all | 웹·워커 동시 실행; 현재 워커 미구현으로 둘 다 종료 |
 
-`dev:all`은 워커 도입 전까지 개발 서버 실행에 사용하지 않습니다. 현재 DB 초기화나 가짜 데이터 입력은 실행되지 않습니다. API 키나 환경변수는 필요 없습니다. 향후 비밀값은 `.env.local`에만 저장합니다.
+`dev:all`은 워커 도입 전까지 개발 서버 실행에 사용하지 않습니다. 시드는 선택 사항이며 웹 서버가 자동으로 실행하지 않습니다. 마이그레이션이 없거나 기록이 맞지 않으면 시작 점검이 작업실 진입을 차단합니다. API 키는 필요 없으며 향후 비밀값은 `.env.local`에만 저장합니다. `MOCK_MODE=false`일 때만 위 띠의 샘플 모드 표시가 숨겨집니다. 현재 실제 AI 생성 기능은 없습니다.
+
+SQLite는 foreign_keys ON과 WAL을 사용하며, SQL 마이그레이션 파일과 체크섬을 기록합니다. 이미 적용한 SQL 파일을 수정하면 적용이 거부되므로 새 번호의 마이그레이션을 추가해야 합니다. JSON은 zod 경계 함수를 통해 저장·읽기하고 DB도 JSON 문법을 검사합니다. 금액은 안전한 정수 마이크로 단위와 통화로 저장합니다. DB 파일은 Git에서 제외됩니다.
 
 ## 구조와 협업
 
 `app`은 화면, `components`는 공통 UI, `lib/services`는 업무 로직, `lib/domain`은 순수 규칙, `lib/repo`와 `lib/db`는 DB 접근을 맡습니다. 작업·AI·저장소 모듈은 각각 `lib/jobs`, `lib/providers`, `lib/storage`로 분리합니다. DB·파일·비밀을 다루는 구현에는 `server-only` 경계를 적용합니다. 폴더의 `.gitkeep`은 이후 단계의 자리이며 구현 완료를 의미하지 않습니다.
 
-최상위 기준은 [PLAN](docs/PLAN.md), 구현 규칙은 [CLAUDE.md](CLAUDE.md), 실제 검증 기록은 [PROGRESS](docs/PROGRESS.md), 플래너 검수는 [REVIEW](docs/REVIEW.md)입니다. 제품 디자인은 플래너의 `docs/design/` 산출물을 따른 다음 단계에서 적용합니다.
+최상위 기준은 [PLAN](docs/PLAN.md), 구현 규칙은 [CLAUDE.md](CLAUDE.md), 실제 검증 기록은 [PROGRESS](docs/PROGRESS.md), 검수 기록은 [REVIEW](docs/REVIEW.md)입니다. 제품 디자인은 플래너의 `docs/design/` 산출물을 따릅니다. 최신 사용자 지시에 따라 단계별 구현과 자체 검증을 연속 수행합니다.
 
-의존성은 정확한 버전과 package-lock.json으로 고정합니다. npm 공식 레지스트리의 engines/peerDependencies와 [Next 설치 문서](https://nextjs.org/docs/app/getting-started/installation), [Vitest 문서](https://vitest.dev/guide/)를 확인했습니다. SQLite/Drizzle은 P1-1에서 도입하며 현재 설치하지 않습니다.
+의존성은 정확한 버전과 package-lock.json으로 고정합니다. npm 레지스트리의 engines/peerDependencies와 공식 설치 문서를 확인했습니다. SQLite는 better-sqlite3 13.2.0, ORM은 Drizzle 0.45.4입니다. 개발 부품 모음 `/dev/ui`는 운영 빌드에서 404입니다.

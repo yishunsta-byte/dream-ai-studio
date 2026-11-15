@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 describe("unimplemented infrastructure commands", () => {
-  it.each(["worker", "db:migrate", "db:seed"])("%s fails explicitly instead of reporting success", (command) => {
+  it.each(["worker"])("%s fails explicitly instead of reporting success", (command) => {
     const result = spawnSync(process.execPath, [fileURLToPath(new URL("../scripts/pending.mjs", import.meta.url)), command], { encoding: "utf8" });
     expect(result.error).toBeUndefined();
     expect(result.status).toBe(1);
