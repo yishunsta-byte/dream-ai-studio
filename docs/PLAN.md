@@ -445,7 +445,7 @@ storage/
   "style": { "fontFamily": "Pretendard", "fontSize": 64, "fontWeight": 700, "color": "#FFFFFF",
              "stroke": { "color": "#000000", "width": 6 }, "shadow": null, "background": null,
              "align": "center", "letterSpacing": 0, "lineHeight": 1.3, "maxLines": 2 },
-  "box":   { "x": 0.5, "y": 0.82, "anchor": "center", "widthRatio": 0.86, "rotation": 0 },
+  "box":   { "x": 0.5, "y": 0.72, "anchor": "center", "widthRatio": 0.76, "rotation": 0 },   // 9:16 안전영역 안 (기본값은 docs/spec/text-presets.json)
   "timing": { "startFrame": 0, "endFrame": 60 },
   "animation": { "in": "none | fade | pop | slide-up | typewriter", "out": "none | fade | slide-down",
                  "emphasis": "none | bounce | shake | scale", "durationFrames": 8, "easing": "ease-out" },
@@ -459,7 +459,8 @@ storage/
 | T-2 | 비율 전환 시 안전영역 안으로 재배치 후 확인 표시 |
 | T-3 | 9:16 안전영역: 위 12%, 아래 20%, 오른쪽 12% → 침범 시 경고 |
 | T-4 | `disclosure` 레이어(광고·AI·가상인물 표기)는 검수와 연결, 삭제 시 경고 |
-| T-5 | 상업 이용이 확인된 글꼴만 목록에. ZIP에 글꼴 동봉 시 라이선스 파일 포함 |
+| T-5 | 상업 이용이 확인된 글꼴만 목록에(`docs/spec/fonts.json`, 모두 OFL 1.1). ZIP에 글꼴 동봉 시 라이선스 파일 포함 |
+| T-6 | 글자 종류 8개의 기본 모양·위치·움직임은 `docs/spec/text-presets.json`(플래너 관리). 모든 기본 위치는 모든 비율의 안전영역 안 |
 
 ### 11.4 렌더·오디오 (P2)
 H.264 + AAC, 30fps. 최종 음량 약 -14 LUFS(`loudnorm` 2단계), 음성 구간 음악 자동 낮춤, 곡 전환 `acrossfade`. 렌더 결과는 ffprobe로 길이·해상도·오디오 트랙을 확인한 뒤에만 성공.
@@ -719,5 +720,6 @@ P7-1 Postgres 이전(검증·롤백 계획 포함) · P7-2 Storage(Pro, TUS, 브
 | v2.2 | 2026-11-15 | v2.0 상세판과 v2.1 검토를 하나로 통합. 메뉴 16+2 확정과 기획서 대조표(6.2), 검증 증거 목록(19장) 추가. 이 판부터 8장 부록 없이 본문에 반영 |
 | v2.4 | 2026-11-15 | 20.1에 연속 진행 방식 추가(은영님 직접 지시): 마일스톤마다 자체 검수 기록 후 계속 진행, 작은 질문은 사후 답변 |
 | v2.4 보완 | 2026-11-15 | 7.2에 P1 정적 글자 설정 저장 위치 명시(T-002, Codex 요청) |
+| v2.4 보완 | 2026-11-15 | P2 글자 기준: 11.3 예시 위치를 안전영역 안으로(y 0.82→0.72), T-5 글꼴 목록 파일, T-6 글자 프리셋 파일 |
 | v2.4 보완 | 2026-11-15 | 14장 K-5에 P1 복원 범위 명시: 새 폴더 복원까지, 현재 데이터 교체는 P1 밖(T-003, Codex 요청) |
 | v2.3 | 2026-11-15 | 역할 변경(은영님 지정): 검수·테스트는 검수 담당(Codex), 플래너는 플랜·디자인. 20.1에 기준 문서 이의 절차(7·8번), 20.3에 디자인 대조 추가. P0-1 디자인 산출물 완료 |
