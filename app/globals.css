@@ -3,6 +3,7 @@
 html { min-height:100%; }
 body { margin:0; background:var(--bg-app); color:var(--fg-default); font-family:var(--font-pretendard),var(--font-sans); font-size:var(--text-md); line-height:var(--lh-normal); word-break:keep-all; overflow-wrap:break-word; -webkit-font-smoothing:antialiased; }
 button, input, select, textarea { font:inherit; color:inherit; }
+button,a,input,select,textarea,summary,[id] { scroll-margin-top:calc(var(--topbar-h) + var(--sp-4)); }
 button, a { -webkit-tap-highlight-color:transparent; }
 a { color:var(--fg-link); }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline:1px solid var(--line-focus); box-shadow:var(--focus-ring); border-radius:var(--radius-sm); }

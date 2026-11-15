@@ -14,7 +14,7 @@ export function workflowRepository(handle:DatabaseHandle) {
     insertPlan:(values:typeof plans.$inferInsert)=>db.insert(plans).values(values).run(),
     scenes:(id:string)=>db.select().from(scenes).where(and(eq(scenes.projectId,id),isNull(scenes.archivedAt))).orderBy(asc(scenes.position)).all(),
     version:(id:string)=>db.select().from(sceneVersions).where(eq(sceneVersions.id,id)).get(),
-    asset:(id:string)=>db.select().from(assets).where(and(eq(assets.id,id),isNull(assets.archivedAt))).get(),
+    asset:(id:string)=>db.select().from(assets).where(eq(assets.id,id)).get(),
     reviews:(id:string,revision:number)=>db.select().from(reviewItems).where(and(eq(reviewItems.projectId,id),eq(reviewItems.contentRevision,revision))).all(),
     updateProject:(id:string,values:Partial<typeof projects.$inferInsert>)=>db.update(projects).set({...values,updatedAt:new Date().toISOString()}).where(eq(projects.id,id)).run(),
     updatePlan:(id:string,values:Partial<typeof plans.$inferInsert>)=>db.update(plans).set(values).where(eq(plans.id,id)).run(),
