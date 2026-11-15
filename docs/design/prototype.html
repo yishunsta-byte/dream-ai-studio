@@ -374,6 +374,61 @@ tr.chg td{background:var(--st-warning-bg)}
   dl.kv dd{margin-bottom:var(--sp-2)}
 }
 
+/* P2 화면 (v1.3) */
+.m-only{display:none}
+.p2grid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:var(--sp-4);align-items:start}
+.pv2{display:flex;flex-direction:column;gap:var(--sp-3);align-items:stretch}
+.player{display:flex;justify-content:center}
+.p2stage{max-width:280px;background:linear-gradient(160deg,#F2EEE5,#D9CBB0)}
+.p2stage .sz{position:absolute;background:rgba(194,69,59,.10);pointer-events:none}
+.p2stage .sz.top{left:0;right:0;top:0;height:12%;border-bottom:1.5px dashed rgba(23,38,54,.35)}
+.p2stage .sz.bottom{left:0;right:0;bottom:0;height:20%;border-top:1.5px dashed rgba(23,38,54,.35)}
+.p2stage .sz.right{top:12%;bottom:20%;right:0;width:12%;border-left:1.5px dashed rgba(23,38,54,.35)}
+.p2stage .ad{top:14%}
+.p2stage .warnbox{outline:2px solid #FFD84D;outline-offset:3px;border-radius:4px;color:#FFD84D}
+.transport{display:flex;align-items:center;gap:var(--sp-2);justify-content:center;flex-wrap:wrap}
+.transport .tc{font-family:var(--font-mono);font-size:var(--text-sm);color:var(--fg-strong);margin-left:var(--sp-2)}
+.insp{min-width:0}
+.swatch{width:32px;height:32px;border-radius:50%;border:1px solid var(--line-strong);cursor:pointer}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg-surface),0 0 0 4px var(--c-navy-700)}
+.tl{--tn-w:76px;position:relative;padding:var(--sp-3) var(--sp-4) var(--sp-4);overflow:hidden}
+.ruler{position:relative;height:22px;margin-left:var(--tn-w);border-bottom:1px solid var(--line);font-size:var(--text-xs);color:var(--fg-muted)}
+.ruler span{position:absolute;top:0;transform:translateX(-50%)}
+.ruler span:first-child{transform:none}
+.ruler span:last-child{transform:translateX(-100%)}
+.track{display:grid;grid-template-columns:var(--tn-w) minmax(0,1fr);align-items:center;height:40px;border-bottom:1px solid var(--line)}
+.track .tn{font-size:var(--text-xs);font-weight:var(--weight-semibold);color:var(--fg-muted)}
+.lane{position:relative;height:30px}
+.clip{position:absolute;top:0;bottom:0;border-radius:4px;padding:0 8px;font-size:var(--text-xs);font-weight:var(--weight-semibold);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid rgba(23,38,54,.15)}
+.clip.v{background:var(--c-navy-100);color:var(--c-navy-900)}
+.clip.a{background:var(--st-running-bg);color:var(--st-running-fg)}
+.clip.m{background:var(--st-sample-bg);color:var(--st-sample-fg)}
+.clip.t{background:var(--c-mint-100);color:var(--c-mint-900)}
+.clip.t.lockd{background:var(--st-locked-bg);color:var(--st-locked-fg)}
+.clip.sel{box-shadow:inset 0 0 0 2px var(--c-navy-700)}
+.clip.warn{border:2px solid var(--st-warning-line)}
+.xf{position:absolute;top:4px;bottom:4px;width:10px;margin-left:-5px;border-radius:3px;background:repeating-linear-gradient(135deg,var(--c-navy-500) 0 2px,transparent 2px 4px)}
+.playhead{position:absolute;top:var(--sp-3);bottom:var(--sp-4);width:2px;background:var(--st-danger-fg);pointer-events:none}
+.rsteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2);font-size:var(--text-sm)}
+.rsteps li{display:flex;gap:var(--sp-2);align-items:center;color:var(--fg-muted)}
+.rsteps li.done{color:var(--st-success-fg)}
+.rsteps li.now{color:var(--st-running-fg);font-weight:var(--weight-semibold)}
+.vrow{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:var(--sp-4);padding:var(--sp-4) var(--sp-5);border-top:1px solid var(--line);align-items:start}
+.vthumb{width:72px;aspect-ratio:9/16;border-radius:var(--radius-sm);background:linear-gradient(160deg,#F2EEE5,#D9CBB0);display:grid;place-items:center;color:var(--fg-muted)}
+.vthumb.bad{background:var(--st-danger-bg);color:var(--st-danger-fg)}
+.vbody{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+.vbody .w{font-family:var(--font-mono);font-size:var(--text-sm);color:var(--fg-strong);display:flex;gap:var(--sp-2);align-items:center;flex-wrap:wrap}
+.vacts{display:flex;flex-direction:column;gap:var(--sp-2)}
+@media (max-width:1023px){ .p2grid{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:639px){
+  .pc-only{display:none!important}
+  .m-only{display:flex}
+  .vrow{grid-template-columns:56px minmax(0,1fr);padding:var(--sp-3) var(--sp-4)}
+  .vthumb{width:56px}
+  .vacts{grid-column:1/-1;flex-direction:row}
+  .vacts .btn{flex:1}
+}
+
 /* ── 반응형 ── */
 @media (max-width:1100px){ .g4{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:1023px){
@@ -451,6 +506,9 @@ tr.chg td{background:var(--st-warning-bg)}
   <a href="#review">검수</a>
   <a href="#export">내보내기</a>
   <a href="#settings">설정</a>
+  <span class="sep" aria-hidden="true">|</span>
+  <a href="#p2-edit">P2 영상 편집</a>
+  <a href="#p2-render">P2 영상 만들기</a>
   <span class="sep" aria-hidden="true">|</span>
   <a href="#components">부품 모음</a>
   <span class="note"><label><input type="checkbox" id="anno-toggle" checked> 주석 보기</label> · 예시 데이터</span>
@@ -1199,6 +1257,138 @@ tr.chg td{background:var(--st-warning-bg)}
   <div class="anno">키 입력칸을 만들지 않는다 (16장). 복원은 별도 위치에 풀어 검사 → 지금 데이터 보관 → 교체 → 실패 시 되돌리기 (K-5). "이 백업으로 복원"은 ConfirmPanel. 예산은 P3까지 잠김 표시만.</div>
 </section>
 
+
+<!-- ═════════ P2 영상 편집 (P2-1·2·3·5) ═════════ -->
+<section class="view" data-view="p2-edit" hidden>
+  <div class="ph"><div class="tx">
+    <div class="chips"><span class="phase" style="background:var(--phase-2)">P2</span><span class="badge">쇼핑숏츠·제품 광고</span><span class="badge num">25초 · 30fps</span><span class="badge num">내용 버전 r14</span></div>
+    <h1>핸드크림 3종 비교</h1></div>
+    <div class="act"><span class="small muted num pc-only" style="align-self:center">저장됨 · 타임라인 r4 · 14:20</span><a class="btn pri" href="#p2-render"><svg class="i"><use href="#i-eye"/></svg>영상 만들기</a></div>
+  </div>
+  <div class="tabs" role="tablist" aria-label="프로젝트 단계" data-tabs="edit" data-locked="review,export"></div>
+
+  <div class="callout info m-only"><svg class="i"><use href="#i-eye"/></svg><div class="tx"><b>타임라인 편집은 PC에서 해요.</b> 휴대폰에서는 미리보기를 보고 글자 문구를 고치거나 수정 요청을 남길 수 있어요.</div></div>
+
+  <div class="p2grid">
+    <!-- 미리보기 -->
+    <div class="card pad pv2">
+      <div class="ln">
+        <div class="seg" role="group" aria-label="화면 비율"><button class="nt" aria-pressed="true">9:16</button><button class="nt" aria-pressed="false">16:9</button><button class="nt" aria-pressed="false">1:1</button></div>
+        <label class="check small" style="align-items:center"><input type="checkbox" checked> 안전 영역 보기</label>
+      </div>
+      <div class="player">
+        <div class="stage p2stage" aria-label="미리보기 8.3초">
+          <span class="sz top" aria-hidden="true"></span><span class="sz bottom" aria-hidden="true"></span><span class="sz right" aria-hidden="true"></span>
+          <span class="ad">광고</span>
+          <span class="ov" style="top:34%">3종 다 써 봤어요</span>
+          <span class="ov warnbox" style="bottom:12%;font-size:17px">촉촉함은 2번이 제일 오래가요</span>
+          <span class="pill sample" style="position:absolute;left:8px;bottom:8px">샘플</span>
+        </div>
+      </div>
+      <div class="transport">
+        <button class="iconbtn" aria-label="한 프레임 뒤로"><svg class="i"><use href="#i-undo"/></svg></button>
+        <button class="btn pri sm" aria-label="재생"><svg class="i sm"><use href="#i-chev"/></svg>재생</button>
+        <button class="iconbtn" aria-label="한 프레임 앞으로"><svg class="i"><use href="#i-redo"/></svg></button>
+        <span class="tc num">00:08.10 <span class="muted">/ 00:25.00</span></span>
+      </div>
+      <div class="small muted pc-only">스페이스 재생·멈춤 · ←/→ 한 프레임 · Shift+←/→ 1초</div>
+    </div>
+
+    <!-- 글자 편집 -->
+    <div class="card insp">
+      <div class="ln" style="padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line)"><h3 class="sub">글자 · 강조 자막</h3><span class="chips"><span class="badge num">8.0–11.5초</span></span></div>
+      <div class="callout warn" style="margin:var(--sp-3) var(--sp-4) 0"><svg class="i"><use href="#i-alert"/></svg><div class="tx"><b>아래 안전 영역(20%)에 걸쳐 있어요.</b> 휴대폰 앱 버튼에 가려질 수 있어요. <button class="btn ghost sm" style="height:auto;padding:0">안전 영역 안으로 옮기기</button></div></div>
+      <div style="padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-4)">
+        <div class="field"><label for="p2-txt">문구</label><textarea class="inp" id="p2-txt" style="min-height:64px">촉촉함은 2번이 제일 오래가요</textarea><div class="help num">2줄까지 · 지금 1줄</div></div>
+        <div class="field"><span class="lab">빠른 모양</span>
+          <div class="chips"><button class="ver" aria-pressed="false">예능 자막</button><button class="ver" aria-pressed="true">강조 노랑</button><button class="ver" aria-pressed="false">제목 크게</button><button class="ver" aria-pressed="false">엔딩</button></div></div>
+        <div class="row2">
+          <div class="field"><label for="p2-font">글꼴</label><select class="inp" id="p2-font"><option>프리텐다드 · 굵게</option><option>노토 산스 · 굵게</option></select><div class="help">상업 이용이 확인된 글꼴만 보여요</div></div>
+          <div class="field"><label for="p2-size">크기</label><select class="inp" id="p2-size"><option>64</option></select></div>
+        </div>
+        <div class="field"><span class="lab" id="p2-col">글자 색 · 외곽선</span>
+          <div class="chips" role="group" aria-labelledby="p2-col">
+            <button class="swatch" aria-label="흰색" aria-pressed="false" style="background:#FFFFFF"></button>
+            <button class="swatch" aria-label="노랑" aria-pressed="true" style="background:#FFD84D"></button>
+            <button class="swatch" aria-label="민트" aria-pressed="false" style="background:#7FE0D6"></button>
+            <button class="swatch" aria-label="남색" aria-pressed="false" style="background:#243B53"></button>
+            <span class="small muted">외곽선 검정 6</span>
+          </div></div>
+        <div class="row3">
+          <div class="field"><label for="p2-in">나타날 때</label><select class="inp" id="p2-in"><option>톡 튀어나옴</option><option>없음</option><option>서서히</option><option>아래에서 위로</option><option>타자 치듯</option></select></div>
+          <div class="field"><label for="p2-emp">강조</label><select class="inp" id="p2-emp"><option>통통 튐</option><option>없음</option><option>흔들림</option><option>커졌다 작아짐</option></select></div>
+          <div class="field"><label for="p2-out">사라질 때</label><select class="inp" id="p2-out"><option>서서히</option><option>없음</option><option>아래로</option></select></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 타임라인 -->
+  <div class="card tl pc-only" aria-label="타임라인">
+    <div class="ruler" aria-hidden="true"><span style="left:0%">0초</span><span style="left:20%">5</span><span style="left:40%">10</span><span style="left:60%">15</span><span style="left:80%">20</span><span style="left:100%">25</span></div>
+    <div class="track"><div class="tn">영상</div><div class="lane">
+      <span class="clip v" style="left:0;width:16%">1 훅</span><span class="clip v" style="left:16%;width:30%">2 3종 비교</span><span class="clip v" style="left:46%;width:34%">3 효익 근거</span><span class="clip v" style="left:80%;width:20%">4 안내</span>
+      <span class="xf" style="left:46%" title="장면 전환 0.3초 서서히"></span></div></div>
+    <div class="track"><div class="tn">목소리</div><div class="lane"><span class="clip a" style="left:2%;width:88%">내레이션 · 0dB</span></div></div>
+    <div class="track"><div class="tn">음악</div><div class="lane"><span class="clip m" style="left:0;width:100%">배경 음악 · −18dB · 목소리 나올 때 자동으로 낮춤</span></div></div>
+    <div class="track"><div class="tn">글자</div><div class="lane">
+      <span class="clip t lockd" style="left:0;width:12%" title="광고 표기 · 검수와 연결"><svg class="i sm"><use href="#i-lock"/></svg>광고</span>
+      <span class="clip t" style="left:12%;width:18%">3종 다 써 봤어요</span>
+      <span class="clip t sel warn" style="left:32%;width:14%">촉촉함은 2번이…</span>
+      <span class="clip t" style="left:80%;width:20%">링크에서 만나요</span></div></div>
+    <div class="playhead" style="left:calc(var(--sp-4) + var(--tn-w) + (100% - 2 * var(--sp-4) - var(--tn-w)) * .332)" aria-hidden="true"></div>
+  </div>
+  <div class="anno">타임라인 규칙: 시간은 모두 프레임(30fps)으로 저장 (11.2). 글자는 영상에 굽지 않음 — 문구를 고쳐도 장면을 다시 만들지 않는다 (T-1). 안전 영역 9:16 위 12%·아래 20%·오른쪽 12%, 걸치면 노란 테두리 + 경고 + "안으로 옮기기" (T-3). 광고·AI·가상인물 표기 글자는 자물쇠, 지우려 하면 확인 패널 + 검수 항목 경고 (T-4). 비율을 바꾸면 글자를 안전 영역 안으로 다시 놓고 "위치를 바꿨어요, 확인해 주세요" 표시 (T-2). 저장할 때마다 타임라인 버전(r4)이 쌓이고 되돌릴 수 있다. 휴대폰에서는 타임라인 숨김 (PLAN 17장).</div>
+</section>
+
+<!-- ═════════ P2 영상 만들기·내보내기 (P2-4·6) ═════════ -->
+<section class="view" data-view="p2-render" hidden>
+  <div class="ph"><div class="tx">
+    <div class="chips"><span class="phase" style="background:var(--phase-2)">P2</span><span class="badge">쇼핑숏츠·제품 광고</span><span class="badge num">타임라인 r4</span></div>
+    <h1>핸드크림 3종 비교</h1></div></div>
+  <div class="tabs" role="tablist" aria-label="프로젝트 단계" data-tabs="edit" data-locked="review,export"></div>
+
+  <div class="card pad" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+    <div class="ln"><h3 class="sub">영상 만드는 중</h3><span class="pill running"><svg class="i sm spin"><use href="#i-spin"/></svg>64% · 1분 40초 지남</span></div>
+    <div class="meter" style="min-width:0;flex:none"><span class="track" aria-hidden="true"><i style="width:64%;background:var(--accent-bar)"></i></span></div>
+    <ol class="rsteps">
+      <li class="done"><svg class="i sm"><use href="#i-check"/></svg>준비 · 장면 4개, 글자 6개</li>
+      <li class="done"><svg class="i sm"><use href="#i-check"/></svg>장면과 글자 합치기</li>
+      <li class="now"><svg class="i sm spin"><use href="#i-spin"/></svg>소리 맞추기 · 음량 −14 LUFS</li>
+      <li><svg class="i sm"><use href="#i-clock"/></svg>파일 확인 · 길이·해상도·소리</li>
+    </ol>
+    <div class="ln"><span class="small muted">PC에서 만들어요. 창을 닫아도 작업 처리기가 켜져 있으면 계속돼요.</span><button class="btn sec sm"><svg class="i sm"><use href="#i-x"/></svg>취소</button></div>
+  </div>
+
+  <div class="card">
+    <div class="ln" style="padding:var(--sp-4) var(--sp-5) var(--sp-2)"><h3 class="sub">만든 영상</h3></div>
+    <div class="vrow">
+      <div class="vthumb" aria-hidden="true"><svg class="i"><use href="#i-eye"/></svg></div>
+      <div class="vbody">
+        <div class="w">handcream-3_r4.mp4 <span class="pill success" style="height:22px"><svg class="i sm"><use href="#i-check"/></svg>파일 확인 통과</span></div>
+        <div class="chips small"><span class="badge num">1080×1920</span><span class="badge num">25.0초</span><span class="badge num">H.264 · AAC</span><span class="badge num">−14.1 LUFS</span><span class="badge num">자막 오차 0.08초</span><span class="pill sample" style="height:22px">샘플 장면 포함</span></div>
+        <div class="small muted">글자만 바꾼 뒤 다시 만들면 장면은 다시 만들지 않아요 · 약 40초</div>
+      </div>
+      <div class="vacts"><button class="btn sec sm">재생</button><button class="btn sec sm">내려받기</button></div>
+    </div>
+    <div class="vrow">
+      <div class="vthumb bad" aria-hidden="true"><svg class="i"><use href="#i-alert"/></svg></div>
+      <div class="vbody">
+        <div class="w">handcream-3_r3.mp4 <span class="pill danger" style="height:22px"><svg class="i sm"><use href="#i-alert"/></svg>실패</span></div>
+        <div class="err"><b>파일은 만들었지만 소리 트랙이 없어요.</b> 그래서 완성으로 치지 않았어요. 음악 파일이 지원하는 형식인지 확인한 뒤 다시 만들어 주세요.<br><span class="small muted">코드 RENDER_VERIFY_FAILED · 11월 15일 13:02</span></div>
+      </div>
+      <div class="vacts"><button class="btn sec sm"><svg class="i sm"><use href="#i-redo"/></svg>다시 만들기</button></div>
+    </div>
+  </div>
+
+  <div class="card pad" style="display:flex;flex-direction:column;gap:var(--sp-3)">
+    <h3 class="sub">영상 내보내기</h3>
+    <div class="small muted">검수 승인 후 열려요. 받는 것: 완성 영상(MP4) · 자막(SRT·VTT) · 다시 편집용 묶음(장면·글자 설정·타임라인·글꼴 라이선스)</div>
+    <div><span class="btn pri" aria-disabled="true"><svg class="i"><use href="#i-lock"/></svg>영상 내보내기</span> <span class="small muted">검수 승인 후 열려요</span></div>
+  </div>
+  <div class="anno">파일 확인(ffprobe)으로 길이·해상도·소리 트랙을 확인한 뒤에만 "완성" (11.4). 확인 실패는 실패로 보이고 다시 만들기. 음량 −14 LUFS, 목소리 구간 음악 자동 낮춤. 영상 내보내기에는 SRT·VTT와 다시 편집용 묶음 (P2-6). 종료 기준: 글자만 바꿔 다시 만들 때 장면 재생성 없음, 자막 오차 0.2초 이내, 휴대폰 재생 확인.</div>
+</section>
+
     </main>
   </div>
 </div>
@@ -1213,7 +1403,7 @@ tr.chg td{background:var(--st-warning-bg)}
 
 <script>
 (function(){
-  var views = ['dashboard','menu','menu-locked','workspace','health','new','library','brief','plan','scenes','queue','edit','review','export','settings','components'];
+  var views = ['dashboard','menu','menu-locked','workspace','health','new','library','brief','plan','scenes','queue','edit','review','export','settings','p2-edit','p2-render','components'];
   var crumbs = {
     dashboard:'<b>작업실</b>',
     menu:'<span class="hide-m">숏폼·광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>쇼핑숏츠·제품 광고</b>',
@@ -1221,6 +1411,8 @@ tr.chg td{background:var(--st-warning-bg)}
     scenes:'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>보온 텀블러 30초 소개</b>',
     review:'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>핸드크림 3종 비교</b>',
     components:'<b>부품 모음</b>',
+    'p2-edit':'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>핸드크림 3종 비교</b>',
+    'p2-render':'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>핸드크림 3종 비교</b>',
     'menu-locked':'<span class="hide-m">숏폼·광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>여행숏츠</b>',
     workspace:'<span class="hide-m">업무공간</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>법무·부동산·세무</b>',
     health:'<b>시작 점검</b>',
@@ -1232,7 +1424,7 @@ tr.chg td{background:var(--st-warning-bg)}
     edit:'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>핸드크림 3종 비교</b>',
     'export':'<span class="hide-m">쇼핑숏츠·제품 광고</span><svg class="i sm hide-m"><use href="#i-chev"/></svg><b>핸드크림 3종 비교</b>'
   };
-  var navKey = {dashboard:'dashboard',menu:'menu','new':'menu',scenes:'menu',review:'menu',brief:'menu',plan:'menu',edit:'menu','export':'menu','menu-locked':'menu-locked',workspace:'workspace',library:'library',queue:'queue',settings:'settings'};
+  var navKey = {dashboard:'dashboard',menu:'menu','new':'menu',scenes:'menu',review:'menu',brief:'menu',plan:'menu',edit:'menu','export':'menu','menu-locked':'menu-locked',workspace:'workspace',library:'library',queue:'queue',settings:'settings','p2-edit':'menu','p2-render':'menu'};
 
   // 단계 표시·단계 탭 생성 (시안 전용 — 제품은 Stepper·Tabs 부품)
   var STG = [['등록',0],['요구 확인',0],['기획',1],['장면 제작',0],['수정·조립',0],['검수',1],['내보내기',0]];
