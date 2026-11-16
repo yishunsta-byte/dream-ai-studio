@@ -3,9 +3,12 @@ import type Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { isCertifiedCodeMigration, MigrationSourceError } from "./code-migration";
 
 // `verify` is the data check a step defines for itself (K-6 ③); it runs after the step is applied.
-export type Migration = { version:number; name:string; sql:string; sha256:string; verify?:(sqlite:Database.Database)=>void };
+// A code step (T-048, see code-migration.ts) also has `run`, the data transform bound to `sha256` with its `sources`;
+// it is executed only for migration objects created by `codeMigration`. SQL steps are unchanged.
+export type Migration = { version:number; name:string; sql:string; sha256:string; verify?:(sqlite:Database.Database)=>void; kind?:"sql"|"code"; run?:(sqlite:Database.Database)=>void; sources?:readonly string[] };
 export type AppliedMigration = { version:number; name:string; sha256:string };
 const productFiles=["0001_initial.sql","0002_ownership.sql","0003_edit_snapshots.sql","0004_audit_backups.sql"];
 export function migrationEntry(version:number,name:string,sql:string):Migration{const text=sql.replace(/\r\n/g,"\n");return {version,name,sql:text,sha256:createHash("sha256").update(text).digest("hex")};}
@@ -69,8 +72,11 @@ export function migrateDatabase(sqlite: Database.Database,options:MigrateOptions
     const applied=journal(sqlite)!;
     if(applied.length&&compareMigrations(applied,expected)!=="same"&&compareMigrations(applied,expected)!=="upgrade") throw new Error("기존 마이그레이션 기록이 달라 적용을 중단했어요.");
     let count=0;
+    // A transform not created by codeMigration is not covered by its recorded hash: refuse before any step runs.
+    for (const migration of expected.slice(applied.length)) if ((migration.run || migration.kind === "code") && !isCertifiedCodeMigration(migration)) throw new MigrationSourceError(`${migration.version} ${migration.name}: 해시에 묶이지 않은 실행 코드`);
     for (const migration of expected.slice(applied.length)) {
-      sqlite.exec(migration.sql);
+      if (migration.sql) sqlite.exec(migration.sql);
+      migration.run?.(sqlite);
       sqlite.prepare("INSERT INTO __schema_migrations(version,name,sha256,applied_at) VALUES(?,?,?,?)").run(migration.version,migration.name,migration.sha256,new Date(now()).toISOString());
       count++;
     }
