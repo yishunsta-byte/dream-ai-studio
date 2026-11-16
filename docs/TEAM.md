@@ -1031,3 +1031,9 @@
 - Failure/blocker/late/missing display probes distinguish injected rows from actual renderer behavior; late file404 observed. 1280/390 overflow0; CSS scale/reflow is not native200% or real-device/screen-reader PASS.
 - T119 author may include honest media-open label and pre-attempt wording with existing cancel/render-wait scope. Global Button accessibility refactor deferred. Final targeted design check follows committed T119 return.
 - T124 backend integrity independent review continues; no frontend result substitutes for it.
+
+### T125 new three-design request (2026-11-17)
+
+- User explicitly requested three design alternatives again under new design ownership.
+- T125 / CX-DESIGN-01 / ready (ack pending): three distinct current-feature UI prototypes under docs/design/codex-options, comparison page and desktop/mobile captures, unique report only. Existing T115 prototypes/deployed A preserved; no product/backend edits or automatic redeployment.
+- Scope includes workroom/editor/render screens using the same fake content, responsive/keyboard/readability checks, tradeoffs and recommendation. Master will collect and show the alternatives to user.
