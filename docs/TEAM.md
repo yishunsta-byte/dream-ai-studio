@@ -964,3 +964,10 @@
 - Selected static preview deployed successfully through Sites private publication: https://dream-ai-studio-ui-20261117.starnm.chatgpt.site ; comparison /options/index.html.
 - Site appgprj_6afb352c79b481918fdceef10f6eba76; deployment appgdep_6afb35b74d888191a6b2c79c25c8c45b status succeeded; source ce18cc4be6996142e005b8c0156d9f99e8b1d744 in separate D:/starwork/sites/dream-ai-studio-ui-20261117.
 - Static fake-design content only, not remote SQLite/worker app. Existing app source/data unchanged by deployment. T115 done; T114/T117 work remains separate.
+
+### T117 UI returned; T118 design and T119 bounded refinements (2026-11-17)
+
+- 3580883 / msg_11cef82df66e ready_review. Author533 passed/13 skips, lint/type/build and actual dev request-worker-video-download/cancel/verify-failure/1280/390 evidence; not independent acceptance.
+- T118 design assigned actual render UI lifecycle/state/focus/mobile review, unique report/history only, own isolated runtime.
+- T119 author assigned optional ConfirmPanel close label preserving defaults and evidence-backed existing blockedBy render waiting UI, no backend contract/DB changes; separate commit and focused tests.
+- T116 backend independent target remains3893e32. T115 selected-A static preview is deployed separately; no claim it already restyles production app.

@@ -289,3 +289,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T117: render request/progress/cancel/result/play/download UI implementation.
 - T115: three independent UI alternatives; Master selects and publishes one after comparison.
 - Next: address independent findings, validate integrated render UI, select design and publish verified design preview. Runtime application deployment remains distinct from static preview.
+
+## Current: render UI returned and integration validation underway
+
+- T116 backend independent review continues.
+- T118 render UI actual UX review requested.
+- T119 cancel-dialog labels and other-job render-wait guidance bounded implementation.
+- Next: integrate backend/design findings, fix and independently check full render user flow before P2-4 acceptance.
