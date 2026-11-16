@@ -51,18 +51,20 @@ describe("계약: 원문 해시, 실행은 해시한 원문에서만",()=>{
     expect((await readBackupManifest(S4_ZIP)).migrations).toEqual(product.map(({version,name,sha256})=>({version,name,sha256})));
     expect(migrationEntry(1,product[0].name,product[0].sql).sha256).toBe(product[0].sha256);
   });
-  it("v2 해시는 형식·경로·내용(LF)에 묶이고, 받은 저장소의 줄바꿈(LF/CRLF)이나 목록 순서만 다르면 같다",()=>{
+  it("v2 해시는 형식·실행 파일(entry)·경로·내용(LF)에 묶이고, 줄바꿈(LF/CRLF)이나 entry 뒤 도우미 순서만 다르면 같다",()=>{
     const files=readAll(process.cwd(),TEST5_CODE_FILES),normalized=files.map(file=>({...file,text:lf(file.text)}));
     expect(CODE_MIGRATION_FORMAT).toBe("dream-code-migration/v2");
     expect(codeMigrationSha256(files)).toBe(TEST5_CODE_SHA256);
     expect(codeMigrationSha256(normalized.map(file=>({...file,text:file.text.replace(/\n/g,"\r\n")})))).toBe(TEST5_CODE_SHA256);
-    expect(codeMigrationSha256(normalized)).toBe(TEST5_CODE_SHA256);expect(codeMigrationSha256([...files].reverse())).toBe(TEST5_CODE_SHA256);
+    expect(codeMigrationSha256(normalized)).toBe(TEST5_CODE_SHA256);expect(codeMigrationSha256([...files].reverse())).not.toBe(TEST5_CODE_SHA256);
+    const helpers=[{path:"p/a.cjs",text:"a"},{path:"p/b.cjs",text:"b"}],entry={path:"p/entry.cjs",text:"e"};
+    expect(codeMigrationSha256([entry,...helpers])).toBe(codeMigrationSha256([entry,...[...helpers].reverse()]));expect(codeMigrationSha256([helpers[0],entry,helpers[1]])).not.toBe(codeMigrationSha256([entry,...helpers]));
     expect(codeMigrationSha256(normalized.map(file=>({...file,text:`${file.text}\n`})))).not.toBe(TEST5_CODE_SHA256);
     expect(codeMigrationSha256(normalized.map((file,index)=>index?{...file,path:"tests/fixtures/migrations/ids.cjs"}:file))).not.toBe(TEST5_CODE_SHA256);
     // A checkout with CRLF (core.autocrlf) and one with LF both register with the same declaration.
     for(const eol of ["\r\n","\n"]){const other=join(root,`eol-${eol.length}`);copySources(other);for(const path of TEST5_CODE_FILES){const full=join(other,path);writeFileSync(full,lf(readFileSync(full,"utf8")).replace(/\n/g,eol));}expect(test5Code({root:other}).sha256).toBe(TEST5_CODE_SHA256);}
     // Independent vector: the hash input written out by hand.
-    const vector=sha(["dream-code-migration/v2",...[...normalized].sort((a,b)=>a.path<b.path?-1:1).map(file=>`file\0${file.path}\0${sha(file.text)}`)].join("\n"));
+    const vector=sha(["dream-code-migration/v2",`entry\0${TEST5_CODE_FILES[0]}`,...[...normalized].sort((a,b)=>a.path<b.path?-1:1).map(file=>`file\0${file.path}\0${sha(file.text)}`)].join("\n"));
     expect(vector).toBe(TEST5_CODE_SHA256);
   });
   it("정상 등록: run·sql은 원문에서 읽혀 실제로 실행된다",async()=>{
@@ -75,6 +77,15 @@ describe("계약: 원문 해시, 실행은 해시한 원문에서만",()=>{
     const edited=test5Code({root:other,sha256:codeMigrationSha256(readAll(other,TEST5_CODE_FILES))});expect(edited.sha256).not.toBe(TEST5_CODE_SHA256);
     const file=await s4("edited-run");migrateFile(file,[...productMigrations(),edited]);
     const sqlite=new Database(file,{readonly:true});try{expect(sqlite.prepare("SELECT DISTINCT source FROM test_k6_timeline").all()).toEqual([{source:"p1-edited"}]);}finally{sqlite.close();}
+  });
+  it("실행 파일 식별: 같은 두 원문을 [A,B]/[B,A]로 주면 해시가 다르고, A 선언으로 B를 실행할 수 없다",async()=>{
+    const files={"p/a.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES ('1')");};`,"p/b.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES ('2')");};`};
+    const base=join(root,"entries");for(const [path,text] of Object.entries(files)){const to=join(base,path);mkdirSync(dirname(to),{recursive:true});writeFileSync(to,text);}
+    const ab=["p/a.cjs","p/b.cjs"],ba=["p/b.cjs","p/a.cjs"],hashAB=codeMigrationSha256(readAll(base,ab)),hashBA=codeMigrationSha256(readAll(base,ba));expect(hashAB).not.toBe(hashBA);
+    const define=(list:string[],sha256:string)=>codeMigration({version:5,name:"0005_probe.cjs",files:list,sha256,root:base});
+    expect(()=>define(ba,hashAB)).toThrow(/원문 해시/);expect(()=>define(ab,hashBA)).toThrow(/원문 해시/);
+    const results:unknown[]=[];for(const [list,sha256] of [[ab,hashAB],[ba,hashBA]] as const){const file=await s4(`entry-${list[0].slice(2,3)}`);migrateFile(file,[...productMigrations(),define([...list],sha256)]);results.push({journal:(()=>{const d=new Database(file,{readonly:true});try{return journal(d)?.at(-1);}finally{d.close();}})(),rows:proofRows(file)});}
+    expect(results).toEqual([{journal:{version:5,name:"0005_probe.cjs",sha256:hashAB},rows:[{value:"1"}]},{journal:{version:5,name:"0005_probe.cjs",sha256:hashBA},rows:[{value:"2"}]}]);
   });
   it("F050-1: 실행 함수·모듈을 넘길 수 없다(module·run·sql·entry 항목 거부)",()=>{
     const base={version:5,name:"x",files:TEST5_CODE_FILES,sha256:TEST5_CODE_SHA256};

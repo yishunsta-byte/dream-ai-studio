@@ -14,9 +14,11 @@ import type { Migration } from "./migrate";
 // - A code step is an explicit, closed list of repository files in a restricted CommonJS-shaped `.cjs` format. The
 //   first file is the entry; it sets `module.exports.run` (a synchronous function) and may set
 //   `module.exports.sql` (the step's schema SQL, run right before `run`).
-// - Recorded sha256 = sha256 of the lines "dream-code-migration/v2" and, per file sorted by path,
-//   "file\0<repo-relative posix path>\0<sha256 of the text with CRLF→LF>", joined with "\n". The source files fully
-//   define the step (its SQL is inside the entry file), so nothing has to run to compute the hash.
+// - Recorded sha256 = sha256 of the lines "dream-code-migration/v2", "entry\0<path of the first listed file>" and,
+//   per file sorted by path, "file\0<repo-relative posix path>\0<sha256 of the text with CRLF→LF>", joined with
+//   "\n". The entry line binds which file is executed: the same files with another entry give another hash. Only the
+//   order of the helper files after the entry does not matter. The source files fully define the step (its SQL is
+//   inside the entry file), so nothing has to run to compute the hash.
 // - `codeMigration` reads each file once, hashes those strings and compares with the `sha256` declared in the
 //   registry. Only after that match does it execute the very same strings. There is no way to pass a function in:
 //   `run` and `sql` always come from the hashed text.
@@ -58,9 +60,11 @@ export const SQL_RULES:readonly [RegExp,string][]=[
 ];
 export function checkSqlText(where:string,text:string){for(const [pattern,label] of SQL_RULES)if(pattern.test(text))throw new MigrationSourceError(`${where}: ${label} 사용`);}
 
+// `files` in list order: the first one is the entry that is executed.
 export function codeMigrationSha256(files:readonly {path:string;text:string}[]){
+  if(!files.length)throw new MigrationSourceError("원문 파일 목록이 비어 있어요");
   const sorted=[...files].sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0);
-  return sha([CODE_MIGRATION_FORMAT,...sorted.map(file=>`file\0${file.path}\0${sha(lf(file.text))}`)].join("\n"));
+  return sha([CODE_MIGRATION_FORMAT,`entry\0${files[0].path}`,...sorted.map(file=>`file\0${file.path}\0${sha(lf(file.text))}`)].join("\n"));
 }
 
 const PRELUDE=`"use strict";(()=>{const g=globalThis;const blocked=name=>Object.freeze(function(){throw new Error(name+" is not available in a code migration");});

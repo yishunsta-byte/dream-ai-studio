@@ -4,7 +4,7 @@
 import type Database from "better-sqlite3";
 import { codeMigration } from "@/lib/db/code-migration";
 export const TEST5_CODE_FILES=["tests/fixtures/migrations/test5-code.cjs","tests/fixtures/migrations/test5-ids.cjs"] as const;
-export const TEST5_CODE_SHA256="eebbe113a2f93c3d5e60b3ac44ad9fc0b0a03d1ebec3d0433c445d460def5816";
+export const TEST5_CODE_SHA256="dd41a479b6a35c64e0035706559e46a3b161d4f3b479a3d75cce811986af4316";
 // The step's own data check: one timeline row per saved edit snapshot with the same content revision and text count.
 export function test5CodeVerify(sqlite:Database.Database){
   const expected=(sqlite.prepare("SELECT COUNT(*) AS n FROM settings WHERE key GLOB 'project.*.edit.*' AND key NOT GLOB '*.current'").get() as {n:number}).n;
