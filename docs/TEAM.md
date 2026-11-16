@@ -815,3 +815,10 @@
 - F093-1 latest draft loss during POST-success-to-refresh and real31s delay; F093-2 abandoned response resurrects canceled cache; F093-3 removed invalid-time state blocks save and raw invalid edits lost; F093-4 active drag conflicts with keys/selection.
 - T094 / CC-DATA-01 / ready (ack pending): unified UI lifecycle fixes, same-file single writer. Clear full-save-lifecycle editing lock is permitted alternative to complex carry, with explicit reason; no API/DB/schema/package changes. Actual dual-delay/navigation/cancel/time/drag rechecks and CDP gap closure required.
 - Design informed; previous normal-path UX evidence preserved, whole P2-3b acceptance remains FAIL pending fix/recheck.
+
+### T094 returned; T095/T096 focused rechecks (2026-11-16)
+
+- 9333b11 / msg_90fedb38037c ready_review. Master read report: author462 passed/2 skips, lint/type/build and dual-delay/real31.8s/navigation/invalid-time/drag conflict runtime checks. Owner-bound handover replaces prior TTL cache; unmounted responses ignored.
+- T095 design focused review requested msg_b856b0fc8574, unique report/history only.
+- T096 independent Codex dispatched ready: ctx_68047bb1d427 / task_822a246e4eb3 / term_a9020e22-bba7-4ea8-a95e-c5cac4960637; child p2-3b-lifecycle-recheck. Report-only originalCRLF suite and direct F093-1~4/rapid-save/cache ownership/rAF boundary verification, real dual-delay and31s, CDP/DB preservation.
+- P2-3b acceptance remains pending; author runtime results do not replace independent verdict.

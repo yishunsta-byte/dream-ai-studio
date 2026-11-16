@@ -169,3 +169,9 @@ Supersedes T075-fix-pending entries.
 - T093 independently reproduced four runtime failures despite458 green tests.
 - T094 fixes saving/refresh ownership and stale draft cache, invalid-time lifecycle, pointer/key/selection conflicts.
 - Next: actual production edge-case evidence, independent focused recheck and design review. No progression to rendering until required defects resolved.
+
+## Latest: T094 fixes returned; focused reviews started
+
+- T0949333b11 ready_review, author462 passed/2 skips.
+- T095 UX focused review and T096 independent lifecycle/runtime recheck assigned.
+- Next: resolve findings or accept P2-3b within combined evidence; rendering stage not yet started.
