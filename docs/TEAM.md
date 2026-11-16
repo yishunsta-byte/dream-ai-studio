@@ -1240,3 +1240,7 @@
 - msg_c4b519c46fa7 /bc034b6 report read/imported. Independent168+3/lint/type/Webpack build and actual old9 startup/inspect/finish rejection passed. Product acceptance withheld for F159-1: mocked audio in non-mock bundle survives ZIP/backup/restore and loses SAMPLE label.
 - T160 minimal v2 one-way sample consistency rule requested. Preserve v1 and issued0010; all-audio-nonmock does not imply bundle nonmock because scenes may be mocked. Real repackaged-ZIP/row/restore and normal download regression required.
 - T156 fixed9 work continues. Reviewer processes stopped; automatic approval blocked temp deletion, retained copies/junction/fake DB documented without bypass.
+### T160 returned; T161 focused sample recheck
+
+- msg_3ec8fb0473bb /440d1f4: Master inspected v2-only schema diff/report. Author6 new regressions and674/17skip, lint/type; issued SQL/fixtures/v1 unchanged. No independent acceptance yet.
+- T161 original reviewer requested for actual contradictory PCM ZIP/backup/ticket rejection and normal sample/v1 preservation. S3 source packaging still pending s9 and compatibility acceptance.
