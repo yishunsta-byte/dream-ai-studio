@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-046 · 신규 경로 경합·legacy 사본 안내 잔여 수정 (parent=T045/T035, priority=P1) — ready
+### T-046 · 신규 경로 경합·legacy 사본 안내 잔여 수정 (parent=T045/T035, priority=P1) — running
+
+- 실제 수락·점유 msg_edcd3701766f 수신, 시작 HEAD4e60460. 담당이 migrate-command/migration-record·필요최소호출·관련회귀·고유T046보고 범위를 확인했다.
 
 - CC-DATA-01 임시코딩. migrate-command/migration-record·필요최소호출/관련회귀/고유보고만. 모든쓰기연결provenance전wal:false, 최초존재여부로persistentPRAGMA허용하지않음. legacy digest없으면유용한실패안내만유지/사본확인은unconfirmed로failclosed, 자동hash승격없음.
 - 완료조건 실제원문afterProbe unknownDELETE bytes/논리/mode불변·사본없음, same-schema/journal 다른업무행/진짜legacy모두unconfirmed·새digest정상confirmed, 기존fresh/upgrade/noop/복원replay·전체tests/lint/typecheck/build·1280/390증거·선택커밋. SQL/고정fixture/사용자DB/공용문서/0005불변, 이후독립focused재검수.
