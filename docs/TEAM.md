@@ -999,3 +999,10 @@
 - 7109368 / msg_a838f9b09711 read. Prior T118 partial normal-flow UX evidence preserved separately from backend acceptance;17 captures and untested/error-state checklist available. Prior owner reports own3118 server/worker stopped, source copy retained.
 - CX-DESIGN-01 notified to read/acknowledge T121 and finalize T122 intake, separating inherited tests from own execution. Handover completion awaits recipient confirmation.
 - No product WIP changes authorized for new design owner; T119 implementation and T120 backend fixes remain single-author scopes.
+
+### Design handover completed; T123 assigned (2026-11-17)
+
+- msg_8d3e165b48b6 T122 and msg_4f5f3e047777 T121 both confirm actual recipient acknowledgment. Master read T122. T121/T122 done; CX-DESIGN-01 now owns new design/UI.
+- T123 assigned to Codex design: remaining render UX cases on fixed3580883, blockers/failure-late-missing states/labels/focus/1280-390/200% zoom, isolated runtime and unique report only. T119 commit-dependent checks deferred explicitly.
+- Late-canceled retained output remains unserved/API404, not automatically selectable; source UX contradiction to be reported, not silently changed.
+- T120 backend integrity fixes stay coding priority, no overlapping product edits.
