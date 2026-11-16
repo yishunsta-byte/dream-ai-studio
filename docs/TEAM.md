@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-065 · P2-1 최종 독립 검수 (parent=T061, priority=P1) — ready
+### T-065 · P2-1 최종 독립 검수 (parent=T061, priority=P1) — running
+
+- 실제worker ready dispatch ctx_0af825f8781e / task task_353f1a7b128a / terminal term_08953503-4059-4a3f-8fda-879ffd50cfe7 / child p2-1-independent-review. Orca wake로결과회수.
 
 - d8768a8 완료 보고 msg_8bdf18be0a02 회수. Master 보고·server/timeline/0005 핵심 원문 검토 및 전체34파일407통과/생성2skip 직접 실행. 새 Codex child 독립 검수 배정. 작성자 lint/typecheck/build·CLI/production·양폭 증거, 미실행 P1 pre/post 실제 캡처 비교·s4 placeholder 제약을 구분해 검수한다.
 - 전체 tests/lint/typecheck/build·저장/되돌리기/CAS/검수·ZIP·원본보존·s4/s5/직접복원동등·source 동봉/cwd/오류/production Next·실제양폭키보드 흐름을 검증. 고유T065보고만, 제품/fixture/사용자DB/공용문서 불변. 원본 비교 미실행을 통과로 과장하지 않는다.
