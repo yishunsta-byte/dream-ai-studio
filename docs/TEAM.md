@@ -828,3 +828,10 @@
 - badead0 / msg_a98b7e023c21: actual 1280/390 B0, delayed-save state/preservation, 409 focus/draft, invalid deletion and drag/key/selection fixes confirmed.
 - App-internal navigation discards unsaved drafts under current policy; no autosave claim observed. Optional explicit guidance/link confirmation follow-up recorded, not silently treated as persisted draft support.
 - T096 independent real31s/cache/API review remains pending; actual devices/accessibility and saved-wide/square layout limits retained.
+
+### T096 FAIL: external-save ownership race; T097 assigned (2026-11-16)
+
+- msg_8c8193d84234 imported. Independent462 passed/2 skips, lint/type/build, real31.5s and original F093 four paths, navigation/rAF/StrictMode/CDP/DB preservation passed.
+- F096-1 mandatory: handover accepts another client's newer revision because only 'different revision' is checked; next legitimate CAS saves stale untouched text over external edit.
+- T097 / CC-DATA-01 / ready (ack pending): exact response revision/pointer/project/owner binding, preserve own draft and explicitly conflict on newer external baseline; no silent whole-draft rebasing. Actual dual-writer race and subsequent save must preserve external text. Bounded UI/helpers/tests/report, no DB/API/migration changes.
+- P2-3b remains unaccepted; earlier normal-path UX and original defect resolution scopes retained.

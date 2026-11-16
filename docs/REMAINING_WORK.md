@@ -175,3 +175,9 @@ Supersedes T075-fix-pending entries.
 - T0949333b11 ready_review, author462 passed/2 skips.
 - T095 UX focused review and T096 independent lifecycle/runtime recheck assigned.
 - Next: resolve findings or accept P2-3b within combined evidence; rendering stage not yet started.
+
+## Latest: external-save ownership race requires T097
+
+- T096 closed original F093 failures but reproduced F096-1: newer external revision wrongly accepted for own handover; subsequent save overwrites untouched external text.
+- T097 exact-response ownership and explicit conflict handling assigned.
+- Next: collect fix, independently reproduce dual-writer ordering and verify preservation before P2-3b acceptance.
