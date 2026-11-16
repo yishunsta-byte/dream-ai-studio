@@ -165,7 +165,9 @@ export const hasLaterChanges=(changes:LaterChanges)=>changes.texts.length>0||cha
 // is lost. It is only shown, copied or downloaded by the person; the app never saves or applies it.
 type VersionRef={revision:number;timelineId:string|null;timelineRevision:number|null};
 export type RecoveryInput={projectId:string;createdAt:string;sentFrom:VersionRef;ownSave:{revision:number;timelineId:string;timelineRevision:number|null};
-  shown:VersionRef;sent:Timeline;draft:Timeline;timeFields:Readonly<Record<string,{raw:string;error:string}>>;selectedTextId:string|null;selectedAtSend:string|null};
+  shown:VersionRef;sent:Timeline;draft:Timeline;timeFields:Readonly<Record<string,{raw:string;error:string}>>;selectedTextId:string|null;selectedAtSend:string|null;
+  // T-149: sound fields typed but not valid yet ("<clipId>:<field>") and the chosen sound, when the screen had them.
+  audioFields?:Readonly<Record<string,{raw:string;error:string}>>;selectedAudioId?:string|null;selectedAudioAtSend?:string|null};
 export function recoveryJson(input:RecoveryInput):string{
   return JSON.stringify({format:"dream-ai-studio.timeline-recovery",version:1,
     note:"저장하는 동안 다른 창에서 더 새 버전을 저장해서, 저장을 보낸 뒤 고친 내용을 그 버전에 넣지 않았어요. draft가 이 화면의 마지막 내용 전체예요. 앱은 이 파일을 저장하거나 적용하지 않아요.",

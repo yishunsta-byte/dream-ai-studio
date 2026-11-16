@@ -8,6 +8,9 @@ import { applyEditView, editViewFromTimeline, FPS, framesToSeconds, textEndLimit
 import { newTextLayer } from "@/lib/edit/text-ops";
 import { selectableFonts } from "@/lib/fonts/registry";
 import { finishingRepository } from "@/lib/repo/finishing";
+import { libraryRepository } from "@/lib/repo/library";
+import { storedFileExists } from "@/lib/storage/paths";
+import type { AudioSource } from "@/lib/edit/audio-ops";
 import { jobsRepository } from "@/lib/repo/jobs";
 import { workflowRepository } from "@/lib/repo/workflow";
 import { productionService } from "./production";
@@ -39,11 +42,17 @@ export function editingService(handle:DatabaseHandle){const repo=finishingReposi
  }
  // R-6: the P1 seconds of a moved r1 (shown next to its frame times until the first save), read from its snapshot.
  function p1Times(projectId:string,fromP1:boolean){if(!fromP1)return null;try{const view=timelines.editView(projectId);return view.value?Object.fromEntries(view.value.layers.map(layer=>[layer.id,{startSec:layer.startSec,endSec:layer.endSec}])):null;}catch{return null;}}
+ // T-149 U2: sound files the editor may show (read-only). New choices are audio files not archived; a file the saved
+ // timeline names stays listed even when archived or missing, so it is never dropped silently. `available` is only
+ // "the stored file is there", not a render check (the server checks bytes and range when saving and rendering).
+ function audioSources(timeline:Timeline):AudioSource[]{const library=libraryRepository(handle),named=new Set(timeline.audio.map(clip=>clip.assetId));
+  const link=(value:string|null)=>{if(!value)return null;try{const parsed=new URL(value);return ["https:","http:"].includes(parsed.protocol)&&!parsed.username&&!parsed.password?value:null;}catch{return null;}};
+  return library.assets(true).filter(asset=>asset.kind==="audio"&&(!asset.archivedAt||named.has(asset.id))).map(asset=>({id:asset.id,title:asset.title,kind:"audio" as const,mime:asset.mime,durationMs:asset.durationMs,isMock:!!asset.isMock,archived:!!asset.archivedAt,available:!!asset.filePath&&storedFileExists(asset.filePath),sourceUrl:link(asset.sourceUrl),rightsNote:asset.rightsNote}));}
  const service={
   get:(projectId:string)=>{const {project,state,timeline,value,durationSec}=base(projectId),production=productionService(handle).get(projectId);
    const required=requiredDisclosures(z.record(z.string(),z.unknown()).parse(JSON.parse(project.inputsJson))),plannedFrames=durationSec*FPS,fromP1=state.current?.source==="p1-migration";
    return {projectId,revision:project.contentRevision,aspect:project.aspect,durationSec,lengthSec:project.lengthSec,maxEndSec:framesToSeconds(textEndLimit(state.clips,project.lengthSec)),production,savedId:state.current?.id??null,timelineId:state.current?.id??null,current:state.current,base:timeline,clips:state.clips,stale:state.stale,warnings:state.warnings,completed:states.stages(projectId).find(row=>row.stage==="edit")?.status==="approved",value,savedSrt:savedSrt(projectId,state.current!==null),fromP1,
-    draft:draft(timeline,state.timeline!==null,state.clips,required,plannedFrames),fonts:selectableFonts(),requiredDisclosures:required,plannedFrames,p1Times:p1Times(projectId,fromP1)};},
+    draft:draft(timeline,state.timeline!==null,state.clips,required,plannedFrames),fonts:selectableFonts(),requiredDisclosures:required,plannedFrames,p1Times:p1Times(projectId,fromP1),audioSources:audioSources(timeline)};},
   // Static-editor values saved as a timeline revision (server-side callers and tests; the screen posts the timeline).
   save:(projectId:string,revision:number,input:unknown)=>atomic(()=>{const values=editInputSchema.parse(input),{project,state,timeline}=base(projectId);assertRevision(revision,project.contentRevision);let next:Timeline;try{next=applyEditView(timeline,values,state.clips);}catch{throw new WorkflowError("INVALID_TRANSITION","현재 장면을 빠짐없이 한 번씩 배치해 주세요.",400);}const saved=timelines.save(projectId,revision,state.current?.id??null,next);return {revision:saved.revision,id:saved.timelineId};}),
   complete:(projectId:string,revision:number)=>atomic(()=>{const project=context(projectId);assertRevision(revision,project.contentRevision);const state=timelines.state(projectId);if(!state.current)throw new WorkflowError("STAGE_LOCKED","글자 설정을 먼저 저장해 주세요.");if(state.stale.length)throw new WorkflowError("STAGE_LOCKED",TIMELINE_STALE);return workflow.changeStage(projectId,"edit","complete",revision);}),

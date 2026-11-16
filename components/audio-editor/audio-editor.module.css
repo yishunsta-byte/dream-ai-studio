@@ -1,0 +1,26 @@
+.section { display:grid; gap:var(--sp-4); min-width:0; }
+.note { margin:0; color:var(--fg-muted); overflow-wrap:anywhere; }
+.list { list-style:none; margin:0; padding:0; display:grid; gap:8px; min-width:0; }
+.row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; padding:8px 12px; border:1px solid var(--line); border-radius:var(--radius-sm); }
+.row[data-selected="true"] { border-color:var(--line-focus); box-shadow:inset 3px 0 0 var(--line-focus); }
+.rowMain { flex:1 1 220px; min-width:0; overflow-wrap:anywhere; text-align:left; background:none; border:0; padding:0; font:inherit; color:inherit; min-height:var(--touch-min); cursor:pointer; }
+.rowMain:focus-visible { outline:2px solid var(--line-focus); outline-offset:2px; }
+.rowText { flex:1 1 220px; min-width:0; overflow-wrap:anywhere; }
+.meta { display:block; color:var(--fg-muted); font-size:0.9em; }
+.problem { color:var(--st-danger-fg); }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:12px; min-width:0; }
+.inline { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
+.select, .input { min-height:var(--touch-min); max-width:100%; min-width:0; box-sizing:border-box; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius-sm); font:inherit; background:var(--bg-surface); color:inherit; }
+.check { display:flex; align-items:center; gap:8px; min-height:var(--touch-min); }
+.check input { width:20px; height:20px; }
+.box { display:grid; gap:12px; padding:12px; border:1px solid var(--line); border-radius:var(--radius-sm); min-width:0; }
+.box h3, .box h4 { margin:0; overflow-wrap:anywhere; }
+.changes { margin:0; padding-left:20px; }
+.audio { width:100%; max-width:100%; min-height:var(--touch-min); }
+.progress { overflow-wrap:anywhere; }
+.pcOnly { display:block; }
+.mobileOnly { display:none; }
+@media(max-width:639px) { .pcOnly { display:none; } .mobileOnly { display:block; } }
+/* every control of the sound card is at least the touch size at every width (T-146 6장) */
+.section button, .section input[type="file"] { min-height:var(--touch-min); }
+.section input[type="file"] { max-width:100%; }

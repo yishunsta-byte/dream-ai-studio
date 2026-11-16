@@ -68,7 +68,7 @@ describe("경계",()=>{
     expect(panel.match(/^let /gm)).toEqual(["let "]);expect(panel).toContain("let handover:Handover|null=null;");expect(panel).toContain("if(!mounted.current)return;");
     expect(panel).toContain("return ()=>{mounted.current=false;if(handover?.owner===me)handover=null;};");// T-096 F096-1: taken over only by the editor of exactly the version this save made (its answer's revision + timeline id).
     expect(panel).not.toContain("fromRevision!==data.revision");expect(panel).toContain("from.arrived.revision===data.revision&&from.arrived.timelineId===data.timelineId");
-    expect(panel).toContain("return {draft:initial,kept:false,times:{},selectedId:from.selectedId,missed};");
+    expect(panel).toContain("return {draft:initial,kept:false,times:{},selectedId:from.selectedId,audioRaw:{},audioId:null,missed};");
     // T-098: the recovery file is only copied or downloaded, never sent; leaving asks while it is open.
     expect(panel).toContain("if(!dirty&&!missed)return;");expect(panel.slice(panel.indexOf("function RecoveryBox"))).not.toMatch(/fetch\(|router\.|setDraft/);expect(panel).toContain("handover=arrived?{...handover,arrived}:null");
     expect(panel).toContain("startRefresh(()=>router.refresh())");expect(panel).not.toMatch(/Date\.now\(\)|30_000/);expect(panel).toContain("저장하는 동안 고친 내용은 아직 저장하지 않았어요.");

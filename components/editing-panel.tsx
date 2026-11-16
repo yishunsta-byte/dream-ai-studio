@@ -20,6 +20,8 @@ import { hasWarning, TextEditor, type TextWarning, type TimeState } from "./text
 import { TextTimeline } from "./text-editor/text-timeline";
 import { RenderEntry } from "./render-panel/entry";
 import { createFrameStore } from "./player/frame-store";
+import { AudioEditor } from "./audio-editor/audio-editor";
+import { AUDIO_FIELD_LABEL, audioLaterChanges, audioProblems, hasAudioLaterChanges, liveAudioFields, otherThanSound, problemCount, ROLE_LABEL, type AudioField, type AudioLaterChanges, type AudioRawState } from "@/lib/edit/audio-ops";
 const sourceLabel={"p1-migration":" · P1 글자 설정에서 옮김","restore-version":" · 이전 버전으로 되돌림",user:""} as const;
 // Off-screen real-font measurement draws with the Player's composition (remotion): client only, loaded on demand.
 const TextMeasure=dynamic(()=>import("./player/text-measure").then(module=>module.TextMeasure),{ssr:false,loading:()=>null});
@@ -37,8 +39,9 @@ export async function finishingRequest(projectId:string,revision:number,action:s
 // what was changed after sending is listed for the person, never laid over it (no silent rebase, no merge), and the
 // whole last state of the screen (draft, typed time fields, selection, versions) stays available as a recovery file
 // to copy or download until the person closes it (T-098). The app never saves or applies that file.
-type Handover={owner:symbol;projectId:string;sentFrom:{revision:number;timelineId:string|null;timelineRevision:number|null};sent:Timeline;sentSelectedId:string|null;arrived:{revision:number;timelineId:string;timelineRevision:number|null}|null;draft:Timeline;times:TimeState;selectedId:string|null};
-type Recovery={changes:LaterChanges;times:TimeState;selectionChanged:boolean;texts:Timeline["text"];json:string;fromRevision:number|null;ownRevision:number|null;shownRevision:number|null};
+type Handover={owner:symbol;projectId:string;sentFrom:{revision:number;timelineId:string|null;timelineRevision:number|null};sent:Timeline;sentSelectedId:string|null;sentAudioId:string|null;arrived:{revision:number;timelineId:string;timelineRevision:number|null}|null;draft:Timeline;times:TimeState;selectedId:string|null;audioRaw:AudioRawState;audioId:string|null};
+type Recovery={changes:LaterChanges;times:TimeState;selectionChanged:boolean;texts:Timeline["text"];json:string;fromRevision:number|null;ownRevision:number|null;shownRevision:number|null;
+ audio:AudioLaterChanges;audioRaw:AudioRawState;audioSelectionChanged:boolean;otherSettings:boolean;clipNames:Record<string,string>};
 let handover:Handover|null=null;
 const CONFLICT="다른 창에서 먼저 저장했어요. 지금 고친 내용은 그대로 있어요. 새로고침하면 고친 내용이 사라지니, 필요한 문구를 따로 적어 둔 뒤 새로고침해 주세요.";
 export function EditingPanel({data}:{data:EditingData}){return <Editor key={data.projectId} data={data}/>;}
@@ -50,16 +53,20 @@ function Editor({data}:{data:EditingData}){
  const [me]=useState(()=>Symbol("editor"));
  // Taken over from the saving editor of the previous revision (read, not cleared: a thrown-away render may read again).
  const [took]=useState(()=>{const from=handover;if(!from||!from.arrived||from.owner===me||from.projectId!==data.projectId)return null;
-  if(from.arrived.revision===data.revision&&from.arrived.timelineId===data.timelineId)return {...afterSave(from.draft,from.sent,initial),times:from.times,selectedId:from.selectedId,missed:null};
+  if(from.arrived.revision===data.revision&&from.arrived.timelineId===data.timelineId)return {...afterSave(from.draft,from.sent,initial),times:from.times,selectedId:from.selectedId,audioRaw:from.audioRaw,audioId:from.audioId,missed:null};
   // A newer version from elsewhere: shown as it is. Anything done after sending is kept as a recovery file, never applied.
-  const changes=laterChanges(from.sent,from.draft),selectionChanged=from.selectedId!==from.sentSelectedId;
-  if(!hasLaterChanges(changes)&&!Object.keys(from.times).length&&!selectionChanged)return null;
+  const changes=laterChanges(from.sent,from.draft),selectionChanged=from.selectedId!==from.sentSelectedId,audio=audioLaterChanges(from.sent,from.draft),audioSelectionChanged=from.audioId!==from.sentAudioId;
+  if(!hasLaterChanges(changes)&&!Object.keys(from.times).length&&!selectionChanged&&!hasAudioLaterChanges(audio)&&!Object.keys(from.audioRaw).length&&!audioSelectionChanged)return null;
   const json=recoveryJson({projectId:data.projectId,createdAt:new Date().toISOString(),sentFrom:from.sentFrom,ownSave:from.arrived,shown:{revision:data.revision,timelineId:data.timelineId,timelineRevision:data.current?.revision??null},
-   sent:from.sent,draft:from.draft,timeFields:from.times,selectedTextId:from.selectedId,selectedAtSend:from.sentSelectedId});
-  const missed:Recovery={changes,times:from.times,selectionChanged,texts:[...from.draft.text,...from.sent.text],json,fromRevision:from.sentFrom.timelineRevision,ownRevision:from.arrived.timelineRevision,shownRevision:data.current?.revision??null};
-  return {draft:initial,kept:false,times:{},selectedId:from.selectedId,missed};});
+   sent:from.sent,draft:from.draft,timeFields:from.times,selectedTextId:from.selectedId,selectedAtSend:from.sentSelectedId,audioFields:from.audioRaw,selectedAudioId:from.audioId,selectedAudioAtSend:from.sentAudioId});
+  const titles=new Map(data.audioSources.map(source=>[source.id,source.title])),clipNames:Record<string,string>={};
+  for(const timeline of [from.sent,from.draft])if(timeline.schemaVersion===2)for(const clip of timeline.audio)clipNames[clip.id]=`${ROLE_LABEL[clip.role]} '${titles.get(clip.assetId)??"보관함에 없는 파일"}'`;
+  const missed:Recovery={changes,times:from.times,selectionChanged,texts:[...from.draft.text,...from.sent.text],json,fromRevision:from.sentFrom.timelineRevision,ownRevision:from.arrived.timelineRevision,shownRevision:data.current?.revision??null,
+   audio,audioRaw:from.audioRaw,audioSelectionChanged,otherSettings:otherThanSound(from.sent,from.draft),clipNames};
+  return {draft:initial,kept:false,times:{},selectedId:from.selectedId,audioRaw:{},audioId:null,missed};});
  const [draft,setDraft]=useState<Timeline>(took?.draft??initial),[frameStore]=useState(createFrameStore);
  const [selectedId,setSelectedId]=useState<string|null>(took?.selectedId&&(took.draft.text.some(layer=>layer.id===took.selectedId))?took.selectedId:initial.text[0]?.id??null);
+ const [audioRaw,setAudioRaw]=useState<AudioRawState>(took?.audioRaw??{}),[audioId,setAudioId]=useState<string|null>(took?.audioId&&took.draft.schemaVersion===2&&took.draft.audio.some(clip=>clip.id===took.audioId)?took.audioId:null);
  const [times,setTimes]=useState<TimeState>(took?.times??{}),[measure,setMeasure]=useState<MeasureResult|null>(null),[placeCheck,setPlaceCheck]=useState<ReadonlySet<string>>(()=>new Set());
  const [completing,setCompleting]=useState(false),[error,setError]=useState(""),[kept,setKept]=useState(!!took?.kept),[missed,setMissed]=useState<Recovery|null>(took?.missed??null),missedRef=useRef<HTMLDivElement>(null);const router=useRouter(),notify=useToast(),controlRef=useRef<PreviewControl|null>(null),statusRef=useRef<HTMLParagraphElement>(null),errorRef=useRef<HTMLParagraphElement>(null),formRef=useRef<HTMLFormElement>(null);
  const [saving,setSaving]=useState<"post"|"refresh"|null>(null),[refreshing,startRefresh]=useTransition(),mounted=useRef(true),posting=useRef(false);
@@ -68,12 +75,15 @@ function Editor({data}:{data:EditingData}){
   if(took?.missed)missedRef.current?.focus();else if(took)statusRef.current?.focus();
   return ()=>{mounted.current=false;if(handover?.owner===me)handover=null;};},[me,took]);
  // While this editor's save is on its way, its latest state is what the next editor takes over.
- useEffect(()=>{if(handover?.owner===me)handover={...handover,draft,times,selectedId};});
+ useEffect(()=>{if(handover?.owner===me)handover={...handover,draft,times,selectedId,audioRaw,audioId};});
 
  const savingNow=saving==="post"||(saving==="refresh"&&refreshing),busy=savingNow||completing;
  // Typed times of a text that is gone do not block saving (T-093 F093-3A).
  const liveTimes=useMemo(()=>liveTimeFields(times,draft.text),[times,draft.text]);
  const dirty=canonicalJson(draft)!==savedJson,timeInvalid=Object.keys(liveTimes).length>0,emptyText=draft.text.some(layer=>!layer.content.trim());
+ // T-149: sound fields typed but not valid yet, and problems of the sound part (client-safe rules; the server checks again).
+ const liveAudio=useMemo(()=>liveAudioFields(audioRaw,draft),[audioRaw,draft]),audioInvalid=Object.keys(liveAudio).length>0;
+ const problems=useMemo(()=>audioProblems(draft,data.audioSources),[draft,data.audioSources]),audioBlocked=problemCount(problems)>0;
  const stale=data.stale.length>0,empty=draft.video.filter(clip=>clip.sceneVersionId===null).length,videoFrames=totalFrames(draft.video),limitFrames=textEndLimit(draft.video,data.lengthSec);
  const ordered=draft.video.map(clip=>data.production.scenes.find(scene=>scene.id===clip.sceneId)!).filter(Boolean);
  const assets=useMemo(()=>{const map=new Map<string,PreviewAsset>();for(const scene of data.production.scenes)for(const version of scene.versions)if(version.asset)map.set(version.asset.id,{kind:version.asset.kind,available:version.asset.available,isMock:version.asset.isMock});return map;},[data.production]);
@@ -102,8 +112,8 @@ function Editor({data}:{data:EditingData}){
  // Typed text is trimmed when saved; a text whose words did not change keeps its saved bytes (outer spaces too).
  function forSave():Timeline{const saved=new Map(initial.text.map(layer=>[layer.id,layer.content]));return {...draft,text:draft.text.map(layer=>saved.get(layer.id)===layer.content?layer:{...layer,content:layer.content.trim()})};}
  async function save(event?:FormEvent){event?.preventDefault();// Clicks before the screen shows the busy button (double click, Enter + click) send one POST only.
-  if(timeInvalid||emptyText||busy||posting.current)return;posting.current=true;const sent=draft;setSaving("post");setError("");
-  handover={owner:me,projectId:data.projectId,sentFrom:{revision:data.revision,timelineId:data.timelineId,timelineRevision:data.current?.revision??null},sent,sentSelectedId:selectedId,arrived:null,draft,times,selectedId};
+  if(timeInvalid||emptyText||audioInvalid||audioBlocked||busy||posting.current)return;posting.current=true;const sent=draft;setSaving("post");setError("");
+  handover={owner:me,projectId:data.projectId,sentFrom:{revision:data.revision,timelineId:data.timelineId,timelineRevision:data.current?.revision??null},sent,sentSelectedId:selectedId,sentAudioId:audioId,arrived:null,draft,times,selectedId,audioRaw,audioId};
   try{const response=await fetch(`/api/projects/${data.projectId}/timeline`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"save",revision:data.revision,timelineId:data.timelineId,timeline:forSave()})});const result=await response.json();
    // An editor that is gone (the page was left) does nothing with a late answer.
    if(!mounted.current)return;
@@ -116,17 +126,17 @@ function Editor({data}:{data:EditingData}){
   finally{posting.current=false;}}
  async function complete(){setCompleting(true);setError("");try{await finishingRequest(data.projectId,data.revision,"complete-edit");router.push(`/projects/${data.projectId}/review`);router.refresh();}catch(error){setError((error as Error).message);requestAnimationFrame(()=>errorRef.current?.focus());}finally{if(mounted.current)setCompleting(false);}}
  function moveScene(index:number,direction:number){setDraft(old=>{const video=[...old.video];[video[index],video[index+direction]]=[video[index+direction],video[index]];return {...old,video};});}
- function cancel(){if(busy)return;setDraft(initial);setTimes({});setKept(false);setPlaceCheck(new Set());setSelectedId(old=>initial.text.some(layer=>layer.id===old)?old:initial.text[0]?.id??null);notify({tone:"success",message:"저장한 상태로 되돌렸어요."});
+ function cancel(){if(busy)return;setDraft(initial);setTimes({});setAudioRaw({});setAudioId(old=>initial.schemaVersion===2&&initial.audio.some(clip=>clip.id===old)?old:null);setKept(false);setPlaceCheck(new Set());setSelectedId(old=>initial.text.some(layer=>layer.id===old)?old:initial.text[0]?.id??null);notify({tone:"success",message:"저장한 상태로 되돌렸어요."});
   // The cancel button goes away: focus moves to save (or, when there is nothing to save, to the saved-state line).
   requestAnimationFrame(()=>{const save=formRef.current?.querySelector<HTMLButtonElement>("button[type=submit]");if(save&&!save.disabled)save.focus();else statusRef.current?.focus();});}
- const saveReason=timeInvalid?"시작·끝 시간을 먼저 확인해 주세요.":emptyText?"문구를 적어 주세요.":!dirty&&!!data.savedId&&!stale?"저장할 변경이 없어요.":undefined;
+ const saveReason=timeInvalid?"시작·끝 시간을 먼저 확인해 주세요.":emptyText?"문구를 적어 주세요.":audioInvalid?"소리의 시간·크기 칸을 먼저 확인해 주세요.":audioBlocked?"소리 설정에서 확인할 것을 먼저 고쳐 주세요.":!dirty&&!!data.savedId&&!stale?"저장할 변경이 없어요.":undefined;
  return <div className="stack">
-  <Callout title="글자와 장면 순서를 고치는 화면이에요. 완성 영상은 아직 만들지 않아요.">문구·모양·순서만 고쳐도 생성 결과는 그대로 유지해요. 저장하면 새 타임라인 버전과 새 내용 버전이 생기고 검수를 다시 해야 해요. 시간은 1/30초 단위로 저장해요. 음성에 자동으로 맞추지 않아요.</Callout>
+  <Callout title="장면 순서·글자·소리 설정을 고치는 화면이에요. 완성 영상은 여기서 만들지 않아요.">문구·모양·순서·소리 설정만 고쳐도 생성 결과와 원본 소리 파일은 그대로 유지해요. 저장하면 새 타임라인 버전과 새 내용 버전이 생기고 검수를 다시 해야 해요. 시간은 1/30초 단위로 저장해요. 음성에 자동으로 맞추지 않아요.</Callout>
   <form ref={formRef} onSubmit={save} className={editorStyles.header}>
    <p ref={statusRef} tabIndex={-1} aria-live="polite">{data.current?<>저장됨 · 타임라인 r{data.current.revision} · <time dateTime={data.current.createdAt}>{new Date(data.current.createdAt).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"})}</time>{sourceLabel[data.current.source]}{kept&&dirty&&" · 저장하는 동안 고친 내용은 아직 저장하지 않았어요."}</>:"아직 저장하지 않은 초안이에요. 저장하면 타임라인 r1이 만들어져요."}</p>
    {dirty&&<><Badge>저장하지 않은 변경</Badge><Button type="button" variant="ghost" size="sm" disabledReason={busy?"저장이 끝난 뒤 취소할 수 있어요.":undefined} onClick={cancel}>변경 취소</Button></>}
-   <Button type="submit" loading={savingNow} disabledReason={saveReason}>새 글자 설정 저장</Button>
-   <RenderEntry projectId={data.projectId} dirty={dirty}/>
+   <Button type="submit" loading={savingNow} disabledReason={saveReason}>장면·글자·소리 설정 저장</Button>
+   <RenderEntry projectId={data.projectId} dirty={dirty||timeInvalid||audioInvalid||savingNow}/>
   </form>
   {data.fromP1&&dirty&&<p className="muted">저장하면 모든 글자 시간이 1/30초 단위로 맞춰져요. 차이는 0.017초 이하예요.</p>}
   {stale&&<Callout title="선택한 장면 결과가 바뀌었어요." tone="warning">저장한 타임라인과 지금 선택이 달라요. 이 화면은 지금 선택으로 보여 줘요. 저장해야 검수로 넘어갈 수 있어요.</Callout>}
@@ -145,6 +155,7 @@ function Editor({data}:{data:EditingData}){
   <div className={styles.pcOnly}><Card><div className="stack"><h2>타임라인</h2>
    <TextTimeline texts={draft.text} selectedId={selectedId} onSelect={setSelectedId} onTiming={onTiming} onEnter={onEnter} totalFrames={rowFrames} videoFrames={videoFrames} limitFrames={limitFrames} scenes={scenes} warned={warned} changed={rowSets.changed} unchecked={rowSets.unchecked} timeErrors={rowSets.timeErrors} frameStore={frameStore} controlRef={controlRef}/>
   </div></Card></div>
+  <Card><AudioEditor projectId={data.projectId} draft={draft} saved={initial} setDraft={setDraft} sources={data.audioSources} raw={audioRaw} setRaw={setAudioRaw} selectedId={audioId} setSelectedId={setAudioId} problems={problems} busy={busy} onUploaded={()=>router.refresh()} controlRef={controlRef}/></Card>
   <Card><div className={`stack ${styles.pcOnly}`}><h2>장면 순서</h2>{ordered.map((scene,index)=><div className={styles.order} key={scene.id}><span>{index+1}. {scene.title}{draft.video[index]?.sceneVersionId===null&&<> <Badge>결과 선택 필요</Badge></>}</span><Button variant="ghost" size="sm" disabled={index===0} aria-label={`${scene.title} 위로`} onClick={()=>moveScene(index,-1)}>위로</Button><Button variant="ghost" size="sm" disabled={index===ordered.length-1} aria-label={`${scene.title} 아래로`} onClick={()=>moveScene(index,1)}>아래로</Button></div>)}</div>
    <h2>수동 자막 미리보기 (SRT)</h2><pre className={styles.srt} aria-label="읽기 전용 수동 자막">{(!dirty&&data.savedSrt!==null?data.savedSrt:timelineSrt(draft.text))||"직접 입력한 자막이 없어요."}</pre>{data.fromP1&&<p className="muted">지금 묶음은 P1에서 옮긴 시간 그대로예요. 한 번 저장하면 모든 시간이 1/30초 단위로 맞춰져요.</p>}
    {draft.text.some(layer=>beyondVideo(layer,videoFrames))&&<p className="muted">영상은 {framesToSeconds(videoFrames)}초예요. 영상보다 긴 글자는 자르지 않고 그대로 둬요.</p>}</Card>
@@ -153,6 +164,7 @@ function Editor({data}:{data:EditingData}){
  </div>;
 }
 const CHANGE_LABEL={changed:"고친 글자",added:"새로 넣은 글자",removed:"뺀 글자"} as const;
+const SOUND_CHANGE={changed:"고친 소리",added:"새로 넣은 소리",removed:"뺀 소리"} as const;
 function MissedItem({item}:{item:LaterChange}){
  return <li><span className={editorStyles.missedHead}>{CHANGE_LABEL[item.change]}</span> · {kindLabel(item.kind)} · {formatFrameTime(item.timing.startFrame)}–{formatFrameTime(item.timing.endFrame)}{item.parts.length>0&&<> · 바뀐 것: {item.parts.map(part=>TEXT_PART_LABEL[part]).join(", ")}</>}<br/><span className={editorStyles.missedText}>{item.content||"문구 없음"}</span></li>;
 }
@@ -175,7 +187,12 @@ function RecoveryBox({recovery,onClose}:{recovery:Recovery;onClose:()=>void}){
   <p>보낸 내용은 타임라인{r(recovery.ownRevision)}로 저장됐고, 그 뒤 다른 창이{r(recovery.shownRevision)}을 저장했어요. 지금 화면은 그 새 버전이에요.</p>
   <p>저장을 보낸 뒤 고친 내용은 이 버전에 넣지 않았어요. 아래 복구 자료를 복사하거나 파일로 받아 두고, 필요한 것만 다시 고쳐 주세요. 복구 자료는 자동으로 저장하거나 적용하지 않아요.</p>
   <ul>{changes.texts.map(item=><MissedItem key={item.change+item.id} item={item}/>)}
-   {changes.order&&<li>장면 순서를 바꿨어요.</li>}{changes.textOrder&&<li>글자 순서(앞으로·뒤로)를 바꿨어요.</li>}{changes.other&&<li>그 밖의 타임라인 설정을 바꿨어요.</li>}
+   {changes.order&&<li>장면 순서를 바꿨어요.</li>}{changes.textOrder&&<li>글자 순서(앞으로·뒤로)를 바꿨어요.</li>}{recovery.otherSettings&&<li>그 밖의 타임라인 설정을 바꿨어요.</li>}
+   {recovery.audio.started&&<li>소리 설정을 새로 시작했어요.</li>}
+   {recovery.audio.clips.map(item=><li key={item.change+item.id}><span className={editorStyles.missedHead}>{SOUND_CHANGE[item.change]}</span> · {recovery.clipNames[item.id]??ROLE_LABEL[item.role]}{item.fields.length>0&&<> · 바뀐 것: {item.fields.join(", ")}</>}</li>)}
+   {recovery.audio.joins&&<li>곡 연결을 바꿨어요.</li>}{recovery.audio.rights&&<li>소리 권리 기록을 바꿨어요.</li>}
+   {Object.entries(recovery.audioRaw).map(([key,field])=><li key={key}>소리 칸에 적다 만 값 · {recovery.clipNames[key.split(":")[0]]??"소리"} {AUDIO_FIELD_LABEL[key.split(":")[1] as AudioField]??"칸"}: <span className={editorStyles.missedText}>{field.raw||"(빈 칸)"}</span></li>)}
+   {recovery.audioSelectionChanged&&<li>고른 소리를 바꿨어요.</li>}
    {typed.map(([key,field])=><li key={key}>시간 칸에 적다 만 값 · {textName(key.split(":")[0])} {key.endsWith(":start")?"시작":"끝"}: <span className={editorStyles.missedText}>{field.raw||"(빈 칸)"}</span></li>)}
    {recovery.selectionChanged&&<li>고른 글자를 바꿨어요.</li>}</ul>
   <div className={editorStyles.recoveryActions}><Button variant="secondary" size="sm" onClick={copy}>복구 자료 복사</Button><Button variant="secondary" size="sm" onClick={download}>파일로 받기</Button></div>
