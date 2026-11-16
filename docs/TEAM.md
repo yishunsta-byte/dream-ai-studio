@@ -47,6 +47,8 @@
 
 ### T-020 · 복원 중단 이름표·중복 날짜 문구 정리 (parent=T016, priority=P3) — ready_review
 
+- 디자인 대조 msg_9ff96c6a7cc4 회수: CC-DESIGN-01이51a3df4 diff를직접확인해이름표/중복제거/출처Callout유지가명세와일치함을확인했다. 코드대조완료이며실제1280/390화면은T015통합검수때확인할항목으로유지한다. 사용자결정없음.
+
 - 담당 CX-MASTER-01. 디자인msg_87313a35822e의권장1/2를채택. 허용 settings-panel.tsx와settings/page.tsx. 중단행을warning기본문구에서canceled톤의명시적'복원으로 멈춤'으로바꾸고중복접두어제거. 상단출처/복원시각안내는유지하고앱정보의중복날짜만제거. DB/선택정책/원본변경없음.
 - 실제검증: typecheck와lint 종료0, StatusPill children지원과최종diff대조. 작은표시변경으로전체193검사를다시실행하지않았고새브라우저실행도아직없음. T015후통합화면·독립재검수에포함하며P1전체통과로처리하지않는다.
 
