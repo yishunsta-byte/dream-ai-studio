@@ -42,6 +42,16 @@
 
 ## 요청 기록
 
+### T-065 · P2-1 최종 독립 검수 (parent=T061, priority=P1) — ready
+
+- d8768a8 완료 보고 msg_8bdf18be0a02 회수. Master 보고·server/timeline/0005 핵심 원문 검토 및 전체34파일407통과/생성2skip 직접 실행. 새 Codex child 독립 검수 배정. 작성자 lint/typecheck/build·CLI/production·양폭 증거, 미실행 P1 pre/post 실제 캡처 비교·s4 placeholder 제약을 구분해 검수한다.
+- 전체 tests/lint/typecheck/build·저장/되돌리기/CAS/검수·ZIP·원본보존·s4/s5/직접복원동등·source 동봉/cwd/오류/production Next·실제양폭키보드 흐름을 검증. 고유T065보고만, 제품/fixture/사용자DB/공용문서 불변. 원본 비교 미실행을 통과로 과장하지 않는다.
+
+### T-066 · P2-1 최종 디자인 읽기 대조 (parent=T061/T064) — ready
+
+- CC-DESIGN-01, 고유 T066 보고/히스토리만. 최종 코드의 T064 항목·PLAN/spec·r1/P1 SRT 안내·현재 저장경로를 읽기 대조. 구현자 캡처 원본 공유 후 육안 대조 가능. 독립 T065와 구분하며 별도 server/build/browser/제품·기준·공용문서 수정 금지.
+
+
 ### T-064 · P2-1 중간 디자인·흐름 읽기 대조 (parent=T061) — done (읽기 보고)
 
 - 결과4e4c32a / msg_eed4fe60af5a 회수. Master고유보고전체·현editing-panel/timeline원문대조확인후B1긴소수/B2잠긴표기불가행동/B3시간대/A1carry초과폼상한충돌을T061기존범위내수정지시했다. C1최소stale이유·편집링크권장, C2/3확장은후속. 읽기보고완료이며실제앱/브라우저통과아님, 최종8항양폭수용조건은T061에전달.
@@ -50,7 +60,7 @@
 - 제품파일/spec/PLAN/TEAM/캡처 수정금지, 구현 담당의 build/test와 별도 서버·브라우저 동시 실행 금지. 결과Master회수후수정범위조정, 새요구/P2-2착수없음.
 
 
-### T-061 · P2-1 타임라인·리비전 실제 구현 (parent=P2-1, priority=P1) — running
+### T-061 · P2-1 타임라인·리비전 실제 구현 (parent=P2-1, priority=P1) — ready_review
 
 - 진행 msg_1cf3a8d98e42 수신: timeline스키마/0005·등록/DB검사·API CAS/현UI저장전환/검수·ZIP/stale차단/오류안내 구현은미커밋·typecheck통과. s4사본r1프레임/빈자리실측,차단없음. 전체검사/신규회귀/s5/CLI·productionNext/양폭키보드·보고/커밋은남음. Master가원P1 r1 ZIP동일성우회·공백보존·구fixture4단계고정과현재5단계별도검증을지시했다. 구현완료/통과로과장하지않음.
 
