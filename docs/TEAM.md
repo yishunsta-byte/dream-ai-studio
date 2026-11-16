@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-058 · 동기 전용 이관의 비동기 생성 제한 (parent=T055/T054, priority=P1) — ready
+### T-058 · 동기 전용 이관의 비동기 생성 제한 (parent=T055/T054, priority=P1) — running
+
+- 실제수락·점유 msg_e4e5e1145d2e 수신. 담당시작HEAD4f543e0(문서최신과제품동일), loader·관련tests/deadlinechild/README·고유보고범위확인, 실행환경조사후설계공유예정.
 
 - CC-DATA-01 임시코딩, loader/필요검증보조/회귀/README·고유보고. Promise글로벌·async/dynamicimport 등통상비동기생성을실행전/런타임좁은.cjs계약으로failclosed하는추천안공유후구현. 일반Promise species처리범위확장을추가하지않는다.
 - floating/returned Promise·nestedasync·dynamicimport가안전거부/status0·미적용/열린DB무쓰기, 기존정상동기변환/require/crypto/rollback/snapshot/directrestore·전체tests/lint/typecheck/build·T054원문재현증거후독립검수. 보수적문법오탐/신뢰단계hostsqlite async금지한계명시, 전역listener/warn플래그금지. SQL/s4/사용자DB/제품0005/공용문서불변.
