@@ -4,6 +4,7 @@
 |---|---|
 | 작업 ID | T-034 (차기 준비 · 데이터 설계만) |
 | 지시 | Master `msg_c18d83f39a97`, 수락·점유 회신 `msg_fabe058d2c36` |
+| 보완 | Master 검토 `msg_2da9fa668814`(25c77eb 대상) 4건 반영. 반영 위치는 10장 |
 | 기준 HEAD | `b9c926c` 이후 Master 커밋 상태(수락 시점 HEAD는 회신에 기록) |
 | 상태 | **명세만.** 코드·SQL·fixture·ZIP을 만들지 않았고, 이관도 실행하지 않았어요. P2 착수나 승인이 아니에요. 사용자 흐름 확인과 시안 승인 대기는 그대로예요 |
 | 바꾼 파일 | 이 파일 하나 |
@@ -41,7 +42,7 @@
 | 층 | 무엇 | 다시 만들 때 같아야 하나 | 이유 |
 |---|---|---|---|
 | H1 보관 파일 | 커밋한 `tests/fixtures/backups/s4.zip`의 sha256·바이트 수 | **아니요.** 한 번 만든 파일을 보관 원본으로 삼아요 | ZIP 항목 시각이 실행 시각이에요(`writeArchive`에 날짜 인자 없음). SQLite 파일 바이트도 버전·페이지 배치·헤더(변경 카운터, SQLite 버전 번호)에 따라 달라질 수 있어요. 그래서 "다시 만들어도 같은 ZIP"은 약속할 수 없어요. 커밋한 파일이 바뀌지 않았는지만 지켜요 |
-| H2 ZIP 안 기록 | manifest `database.sha256`·`inventorySha256`·파일별 sha256, 마이그레이션 4줄 | 저장 파일 해시·`inventorySha256`·마이그레이션은 **예**, `database.sha256`은 **아니요** | 저장 파일은 생성기 소스에 바이트 그대로 넣은 상수라 어디서나 같아요. DB 파일 바이트는 위 이유로 고정하지 않아요 |
+| H2 ZIP 안 기록 | manifest `database.sha256`·`inventorySha256`·파일별 sha256, 마이그레이션 4줄 | 저장 파일 해시·`inventorySha256`·마이그레이션은 **예**, `database.sha256`은 **아니요** | 저장 파일은 **모두** 고정 바이트 입력(1.4)에서 복사해요. fixture 안 내보내기 묶음 ZIP도 포함해요. 그래서 어디서 다시 만들어도 같아요. DB 파일 바이트는 위 이유로 고정하지 않아요 |
 | H3 논리 내용 | 표마다 정해진 직렬화(2장)의 sha256 + 전체 묶음 해시 | **예** (플랫폼·SQLite 버전과 무관해야 함) | "같은 입력 같은 결과", "백업 복원 = 직접 migrate", "사용자 입력 보존"을 비교하는 기준이에요 |
 | H4 스키마 | `sqlite_master`(type, name, tbl_name, sql) 정렬 목록 sha256 | 같은 마이그레이션이면 **예** | 마이그레이션 SQL 문자열이 그대로 저장돼요 |
 
@@ -83,6 +84,9 @@
 - 샘플 생성기(`mockImage`=sharp+시스템 글꼴)는 쓰지 않아요.
 - 결과·원본 파일은 생성기 소스에 넣은 **아주 작은 고정 바이트**로 만들어요. 예: 1×1~8×8 PNG(base64 상수), 짧은 텍스트, 무음 WAV 머리말.
 - `assets.sha256`·`size_bytes`·`width/height`는 그 바이트에서 앱 함수로 계산해요.
+- **fixture 안 내보내기 묶음 ZIP(r4)도 고정 바이트 입력이에요.** `writeZip`은 실행할 때마다 항목 시각이 달라져요. 그래서 이 묶음은 처음 한 번만 `writeZip`으로 만들고, 그 바이트를 생성기 입력 파일로 보관해요(예: `tests/fixtures/backups/s4-inputs/export-r4.zip`, sha256은 `s4.json`에 기록). 이후 생성기는 `writeZip`을 다시 부르지 않고 이 바이트를 그대로 복사해요.
+  - 그러면 `exports.sha256`·`size_bytes`, storage 인벤토리, `inventorySha256`이 모두 고정돼요. H2·H3 재현 기준과 어긋나지 않아요.
+  - **의미 비교는 별도 계층(H5)이에요.** 묶음 안 항목 이름·항목별 sha256·묶음 manifest를 `verifyZip`으로 확인해요. H1~H3를 대신하지 않고 **덧붙이는** 검사예요. 입력 파일을 다시 만들어야 할 때(형식 변경) 새 바이트가 같은 의미인지 보는 용도예요.
 - 미리보기 표시가 필요한 화면 시험은 이 fixture 범위가 아니에요.
 
 ### 1.5 백업 ZIP 조립 방식 (추천: 앱 함수 조립 + 실제 경로와 형식 대조)
@@ -112,14 +116,29 @@
   - blob → `{"b":"16진"}`
   - 이렇게 하면 `1`과 `'1'`, 정수와 실수가 구분돼요.
 - **표 해시:** `sha256(표이름 + "\n" + 행마다 JSON 배열 + "\n")`이에요. **전체 해시:** 정렬한 `표이름=표해시` 줄의 sha256이에요.
-- **비교용 제외 목록 (이름 붙인 집합으로 고정):**
-  - `X_JOURNAL`: `__schema_migrations.applied_at`
-  - `X_RUNTIME`: settings `worker.heartbeat`, `job.*.startedAt`, `restore.check.*`
-  - `X_RESTORE`: 복원 정규화가 바꾸는 칸과 행(T-006·T-021). 대상은 아래와 같아요.
-    - 표: jobs·scene_versions·exports·backups
-    - settings: `backup.directory`, `backup.auto.lastDay`, `restore.info`
-    - activity_log: `action='restore.completed'` 새 행
-  - `X_NEWCOLS(n)`: 마이그레이션 n이 더한 새 표·새 칸 (그 마이그레이션 명세가 정함)
+- **원칙: 표 전체를 빼지 않아요.** 비교에서 빼는 것은 "어느 행의 어느 칸"까지 코드와 대조해 적은 것뿐이에요. 뺀 칸은 숨기지 않고 **기대값을 따로 assert**해요. 나머지 행과 칸은 모두 보존 해시로 대조해요.
+- **비교 방법 (표마다):**
+  1. 행 수와 기본키 집합이 같아야 해요. 예외는 아래 D_R에 적은 settings 삭제·추가 키와 activity_log 새 행 1개뿐이에요.
+  2. 아래 조건에 걸리지 않는 행은 행 전체 해시가 같아야 해요.
+  3. 조건에 걸리는 행은 바뀌는 칸만 빼고 나머지 칸의 해시가 같아야 해요. 바뀌는 칸은 기대값과 같아야 해요.
+  4. fixture에는 각 조건에 걸리는 행이 **최소 1개씩** 있어야 해요. 그래야 검사가 헛돌지 않아요(3장에서 보장).
+- **`X_JOURNAL`:** `__schema_migrations`에서 **version > 4인 행의 `applied_at`만** 빼요. 1~4행은 백업에서 그대로 오므로 `applied_at`까지 대조해요. 5 이상 행은 version·name·sha256을 대조하고, `applied_at`은 ISO 시각 형식인지만 확인해요.
+- **`D_R` 복원 정규화 변경 (`lib/services/restore.ts` `normalize` 37~41행 원문 대조).** `stamp`는 복원 시각 한 값이고, 시험은 `now`를 주입해 고정할 수 있어요.
+
+| 표 | 조건 (원본 DB 기준) | 바뀌는 칸 → 기대값 | 그대로여야 하는 것 |
+|---|---|---|---|
+| jobs | `status IN ('queued','running')` | `status='canceled'`, `error_code='RESTORED_NOT_RESUMED'`, `error_message='복원본에서는 작업을 이어서 하지 않아요.'`, `lease_until`·`heartbeat_at`·`next_run_at`=NULL, `finished_at`=`updated_at`=stamp | 그 행의 다른 칸(attempts, payload, idempotency_key, created_at, started_at 등)과 조건 밖 jobs 행 전부 |
+| scene_versions | `status IN ('queued','running')` | `status='canceled'`만 | error_code 등 다른 칸 전부, 조건 밖 행(succeeded·failed·canceled) 전부 |
+| exports | `status='running'` | `status='failed'`, `error='RESTORE_INTERRUPTED'` | sha256·size_bytes·file_path 등 다른 칸, 조건 밖 행 전부 (r4 succeeded의 `sha256` 포함) |
+| backups | `status='running'` (s4 자신) | `status='failed'`, `error='RESTORE_INTERRUPTED'` | 다른 칸, B0 행 전부 |
+| settings 삭제 | `key='worker.heartbeat' OR key='backup.auto.lastDay' OR key GLOB 'restore.check.*'` | 복원 뒤 해당 키 0개 | 다른 키 전부. **`job.*.startedAt`은 normalize가 지우지 않으므로 보존 대조 대상**이에요(제외하지 않음) |
+| settings 쓰기 | `backup.directory` | 값 = `join(destination,'backups')` (원본 값은 가상 경로라 반드시 바뀜) | — |
+| settings 추가 | `restore.info` | `restoreStateSchema`(T-021) 통과. `ticketId`=시험의 티켓 ID, `backupId`=s4 백업 ID, `destination`=시험 목적지, `backupCreatedAt`=manifest.createdAt, `restoredAt`=stamp, `inheritedBackupIds`=복원 DB의 backups ID 전체(ID순), `protectedRoots`=원본 경계 목록 | s4 원본에는 이 키가 없어요(3장) |
+| activity_log 추가 | 복원 뒤 새 행 | 정확히 1개. `project_id` NULL, `actor='local-user'`, `action='restore.completed'`, `detail_json`={ticketId, backupId, pendingJobs=원본 jobs의 queued·running 수}. `id`는 uuidv7, `created_at`은 ISO 형식 | 기존 activity 행 전부 바이트 그대로 |
+
+- 위 표에 없는 표(projects, plans, scenes, assets, generations, review_items, characters, stage_states, project_assets, project_characters 등)는 **행 전체가 그대로**여야 해요.
+- **`X_NEWCOLS(n)` (새 마이그레이션 n의 새 표·새 칸):** 기존 표 비교에서만 빼요. 새 데이터는 그 마이그레이션 명세가 정한 **독립 검사**로 따로 확인해요(예: 0005가 글자 스냅샷을 `timeline_revisions`로 옮기면 프로젝트별 행 수, 원래 settings 키와의 1:1 대응, 문구·시간 값 일치, 결정적 ID 규칙). 뺀다는 것은 "검사 안 함"이 아니에요.
+- 복원 산출물 `restore-info.json`(DB 밖)은 기존 `normalized()` 검사가 다시 확인해요. 별도로 restore.info와 같은 값인지만 대조해요.
 - **입력값 표(H3-U):** `S4_INPUTS`의 각 값이 어느 표·칸·JSON 경로에 있는지 정한 목록이에요. UTF-8 바이트 16진으로 대조해요. 이관 뒤 위치가 바뀌는 값(예: 0005가 settings 스냅샷을 새 표로 옮김)은 그 마이그레이션 명세에 "옛 위치 + 새 위치" 두 곳을 적고 둘 다 대조해요(옛 행은 지우지 않음, K-6 ⑤).
 
 ## 3. s4 데이터 구성 (가상)
@@ -137,14 +156,17 @@
 | generations | succeeded·failed 버전마다 1개, currency USD, cost 0, settlement 값 | 입력 불변 트리거(0004), 통화 가드 |
 | assets | 원본 업로드 PNG 2개, 링크 자료 1개(파일 없음), 결과 PNG 4개(isMock=1), 보관 자료 1개. 권리 메모에 `S4_INPUTS` 문자열 | 파일 불변 트리거, 링크 자료 예외 |
 | project_assets / characters / project_characters | 고정 캐릭터 1개(잠금 JSON·참조 자료 2개·음성 프로필) | 참조 무결성 |
-| settings | `project.main.edit.<e1>`(이전), `.edit.<e2>`(현재), `.edit.current`→e2. 레이어에 광고 표기(잠김)+자막 2개(소수 시간). `backup.B0.meta`, `backup.<id>.origin`(T-021 표시, B0는 null), `backup.directory`(가상 경로), `worker.heartbeat`, `job.<id>.startedAt` | 글자 스냅샷 불변(0003), 백업 meta 불변(0004), 정규화 삭제 대상 |
+| settings | `project.main.edit.<e1>`(이전), `.edit.<e2>`(현재), `.edit.current`→e2. 레이어에 광고 표기(잠김)+자막 2개(소수 시간). `backup.B0.meta`, `backup.<id>.origin`(T-021 표시, B0는 null), `backup.directory`(가상 경로), 정규화 삭제 대상 `worker.heartbeat`·`backup.auto.lastDay`·`restore.check.<가상ID>` 각 1개, **보존 대상** `job.<id>.startedAt`(running 작업용) | 글자 스냅샷 불변(0003), 백업 meta 불변(0004), D_R 삭제 조건마다 1행 이상 + 지우면 안 되는 비슷한 키 |
 | review_items | r4 전부 pass, r5 일부 보류(메모 있음) | `review_project_revision_item` 유일성 |
-| exports | r4 succeeded(묶음 ZIP 파일 포함), r5 failed STORAGE_FAILED, 취소 1개 | 완료 불변·삭제 금지 |
+| exports | r4 succeeded(묶음 ZIP 파일 포함, 1.4 고정 바이트), r5 failed STORAGE_FAILED, 취소 1개, **running 1개**(D_R exports 조건용) | 완료 불변·삭제 금지, 정규화 대상과 보존 대상이 함께 있음 |
 | backups | B0 succeeded(가상 외부 경로, 파일 없음 → 복원본에서 inherited·available=false), s4 자신 running | T-019/T-021 출처 구분 |
 | activity_log | 위 동작 기록 몇 줄(actor 3종) | 수정·삭제 금지 트리거 |
 | storage | `library/…png`, `projects/<main>/scenes/…png`, `projects/<main>/exports/<r4>.zip` | 파일 참조 대조 |
 
-**내보내기 r4 묶음 ZIP:** 이것도 `writeZip`의 시각 문제로 바이트가 매번 달라요. 그래서 `exports.sha256`과 묶음 ZIP 바이트는 **H3에서 빼고**, 대신 `verifyZip`(manifest 파일 해시 대조)이 통과하는지로 확인해요. 묶음 manifest JSON(`exportedAt` 고정)은 H3에 넣어요.
+**내보내기 r4 묶음 ZIP:** 1.4대로 고정 바이트 입력에서 복사해요. 그래서 `exports.sha256`·`size_bytes`는 H3에 **포함**하고, 묶음 ZIP 바이트는 H2 인벤토리에 포함돼요. 복원 시험에서는 아래를 반드시 확인해요(제외로 숨기지 않음).
+- 복원된 묶음 ZIP 파일의 sha256 = 원본 백업 안 같은 파일 = `exports.sha256`
+- 그 값이 `s4.json`의 입력 파일 기록과 같음
+- `verifyZip`(H5 의미 비교)도 통과
 
 ## 4. 회귀 행렬
 
@@ -155,9 +177,9 @@
 | # | 시험 | 입력 | 현 코드(P1) 예상 | K-6 구현 후 기대 | 확인할 것 |
 |---|---|---|---|---|---|
 | A1 | 보관 원본 | 커밋 s4.zip | — | — | H1 = `s4.json` 기록. manifest 스키마 통과, 마이그레이션 4줄 = 0장 표 |
-| A2 | 같은 구조 복원 | s4 → 현재(4) | 성공 | `compat:"same"` 성공 | 복원본 H3(X_JOURNAL·X_RESTORE 제외) = 기록, H3-U 전부 일치, H4 = 기록. 정규화 결과: s4 행 RESTORE_INTERRUPTED, queued·running 버전 canceled, B0 inherited·available=false |
-| A3 | 올려서 복원 | s4 → 현재(5+) | — | `upgrade` 성공 | 기존 표 H3(X_NEWCOLS 제외) 불변, H3-U 옛·새 위치 일치, 새 마이그레이션의 데이터 검사, `restore-info.json`에 schemaFrom 4 / schemaTo n |
-| A4 | 같은 결과 | (a) s4 복원+올리기 (b) s4의 `data/app.db`를 직접 migrate한 뒤 같은 정규화 적용 | — | 같음 | H3 (a)=(b) (X_JOURNAL·restore.info·restore 활동 행 제외) |
+| A2 | 같은 구조 복원 | s4 → 현재(4) | 성공 | `compat:"same"` 성공 | 2장 비교 방법 1~4: D_R 조건 밖 행 전체 해시·행 수·PK 집합 = 기록, 조건 행은 나머지 칸 해시 = 기록이고 바뀐 칸 = D_R 기대값, settings 삭제·추가·activity 새 행 각각 assert. H3-U 전부 일치, H4 = 기록. 저장 파일 전부(묶음 ZIP 포함) sha256 = 원본. B0 inherited·available=false |
+| A3 | 올려서 복원 | s4 → 현재(5+) | — | `upgrade` 성공 | 기존 표는 A2와 같은 방법(X_NEWCOLS 칸만 빼고) 대조, 새 데이터는 X_NEWCOLS 독립 검사, H3-U 옛·새 위치 일치, `restore-info.json`에 schemaFrom 4 / schemaTo n |
+| A4 | 같은 결과 | (a) s4 복원+올리기 (b) s4의 `data/app.db`를 직접 migrate한 뒤 같은 정규화를 **같은 stamp·같은 티켓 값**으로 적용 | — | 같음 | (a)=(b) 모든 표 대조. 다를 수 있는 것은 X_JOURNAL과 activity 새 행의 `id`·`created_at`뿐이에요. 이것도 각각 형식과 1행인지 assert |
 | A5 | 두 번 해도 같음 | 같은 s4로 A3를 서로 다른 임시 폴더에서 두 번 | — | 같음 | 두 결과 H3 동일. 이관 코드에 시각·난수 없음(코드 sha256이 `__schema_migrations`에 기록됨) |
 | B1 | 미래 버전 | 사본 DB와 manifest 둘 다에 0099 줄 추가 후 다시 묶음(meta 다시 계산) | 거부 RESTORE_INVALID | `BACKUP_TOO_NEW` | staging 없음, 목적지 없음 |
 | B2 | 기록 다름 | 0002 sha256 한 글자 변경 / 3번 줄 삭제(1,2,4) / 이름만 변경 / `__schema_migrations` 표 없음 | 거부 | `BACKUP_SCHEMA_MISMATCH` | 각각 따로 |
@@ -184,6 +206,7 @@
   "manifest": { "schemaVersion": 1, "appVersion": "0.1.0", "inventorySha256": "…", "fileCount": 0 },
   "migrations": [ { "version": 1, "name": "0001_initial.sql", "sha256": "ee96edd4…" } ],
   "logical": { "all": "…", "tables": { "projects": "…" }, "excluded": ["X_JOURNAL"] },
+  "inputs_files": { "export-r4.zip": { "sha256": "…", "sizeBytes": 0 } },
   "schema": "…",
   "inputs": { "count": 0, "sha256": "…" },
   "environment": { "betterSqlite3": "13.2.0", "sqlite": "3.54.1", "zipStream": "7.0.5" }
@@ -198,7 +221,7 @@
 1. 생성기는 테스트 쪽 스크립트예요(예: `tests/fixtures/backups/make-s4.ts`). OS 임시 root에서만 돌고, 실제 data/storage/backups는 열지 않아요.
 2. 입력: 라벨 표, `S4_INPUTS`, 고정 바이트 상수, 기준 시각. 출력: 임시 폴더의 `s4.zip` + `s4.json` 초안.
 3. 생성 직후 자체 검사: A1·A2를 그대로 실행하고, 실제 runClaimedBackup ZIP과 형식을 대조하고(1.5-5), 개인 경로 문자열 검사를 해요.
-4. 사람이 확인한 뒤 한 번만 커밋해요. 이후 생성기는 **재현 검사 모드**로만 돌아요. 다시 만든 결과의 H2(저장 파일·인벤토리·마이그레이션)·H3·H4가 `s4.json`과 같은지만 보고, 파일을 쓰지 않아요.
+4. **Master 검토**를 거쳐 한 번만 커밋해요(은영님 추가 승인은 필요 없어요. 기존 P1 게이트와 시안 승인 게이트는 그대로예요). 이후 생성기는 **재현 검사 모드**로만 돌아요. 다시 만든 결과의 H2(저장 파일·인벤토리·마이그레이션)·H3·H4가 `s4.json`과 같은지만 보고, 파일을 쓰지 않아요.
 5. 재현 검사가 다르면 원인이 생성기(입력·ID 규칙)인지, 의존 라이브러리 차이인지 나눠서 보고해요. H3가 다르면 결정성 결함이에요. H1만 다르면 정상이에요(재현 대상 아님).
 
 ## 7. 미정·추천
@@ -207,7 +230,7 @@
 |---|---|---|
 | ZIP을 앱 함수로 조립 vs `runClaimedBackup` 그대로 | 앱 함수 조립 + 형식 대조(1.5). 개인 경로가 fixture에 들어가는 것을 막기 위해서예요 | Master |
 | 가상 경로 형식 | `C:\dream-s4\…`(Windows 주 플랫폼). POSIX에서 복원하면 inherited·available=false로 보이는 것이 정상 | Master |
-| H3 제외 집합의 범위 | 2장의 이름 붙인 집합으로 고정. 새 마이그레이션이 늘리면 그 명세에 적기 | 마이그레이션 담당 |
+| 비교 제외 범위 | 2장 D_R 표(행 조건·칸·기대값)와 X_JOURNAL(version > 4의 applied_at)만. 복원 코드나 새 마이그레이션이 바뀌면 그 변경과 함께 D_R·X_NEWCOLS 표와 assert를 고치기 | 마이그레이션 담당 |
 | fixture 크기 | 저장 파일은 수 KB, ZIP 전체 100KB 미만 목표(저장소 부담) | Master |
 | 스냅샷 방식(backup API vs VACUUM INTO) | K-6 ⑥대로 코딩 단계에서 E1~E3로 검증해 정하기 | 코딩 담당 |
 | 현 코드 B1~B4 실제 응답 | 구현 전에 한 번 실행해 "현 코드" 열을 확정 | 구현 담당 |
@@ -222,6 +245,8 @@
    - A3~A5·E는 첫 새 마이그레이션 마일스톤에서 실행해요.
    - 실행하지 않은 칸은 skip 사유를 적고, 통과로 세지 않아요.
 5. 모든 시험이 끝난 뒤 커밋 s4.zip의 H1이 그대로예요.
+6. 비교에서 표 전체를 빼는 곳이 없어요. 뺀 칸마다 기대값 assert가 있고, D_R 조건마다 fixture 행이 1개 이상 있다는 assert가 있어요.
+7. 묶음 ZIP 입력 파일과 `exports.sha256`이 원본·복원본·기록에서 모두 같아요.
 
 ## 9. 하지 않은 것·한계
 
@@ -230,3 +255,14 @@
 - 4장 "현 코드" 열은 코드를 읽고 한 예상이에요. 실행 결과가 아니에요.
 - 같은 SQLite 버전·같은 입력에서 DB 바이트가 같을 가능성은 있지만 확인하지 않았어요. 그래서 고정 대상에서 뺐어요.
 - zip-stream이 항목마다 날짜 옵션을 받는지는 이번에 확인하지 않았어요. 앱 코드(`writeArchive`)가 날짜를 넘기지 않는 것만 확인했어요. 날짜를 고정해도 라이브러리 버전 차이가 남으므로 H1을 재현 대상에서 빼는 결정은 그대로예요.
+
+## 10. Master 검토 반영 (`msg_2da9fa668814`)
+
+| # | 지적 | 반영 |
+|---|---|---|
+| 1 | X_RESTORE가 jobs·scene_versions·exports·backups 표 전체를 빼요. 복원으로 추가되는 settings·activity와 X_NEWCOLS도 검증이 없어요 | X_RESTORE를 없애고 2장 **D_R 표**로 바꿨어요. `normalize` 원문의 WHERE 조건과 실제로 바꾸는 칸만 적고, 기대값을 assert해요. 조건 밖 행과 칸은 보존 해시, 행 수, PK 집합으로 대조해요. settings 삭제·쓰기·추가와 activity 새 행 1개도 정확한 조건과 기대값으로 따로 assert해요. 조건마다 fixture 행이 1개 이상 있게 했어요. X_NEWCOLS 새 데이터는 독립 검사가 필수예요. X_JOURNAL은 version > 4 행의 `applied_at`으로 좁혔어요 |
+| 2 | 내보내기 ZIP을 다시 만들면 바이트가 달라지는데, 그러면 인벤토리·H2 재현 기준과 모순이에요 | 1.4: 묶음 ZIP을 처음 한 번 만든 **고정 바이트 입력 파일**로 보관하고 생성기는 복사만 해요. 그래서 H2·H3 재현이 성립해요. `exports.sha256`은 H3에 포함하고, 원본 → 복원본 바이트 보존을 반드시 확인해요(3장·A2·수용 기준 7). 항목별 의미 비교는 별도 계층 H5로 나눴어요 |
+| 3 | `job.*.startedAt`을 무조건 빼고 있어요 | 코드 대조 결과 normalize는 이 키를 지우지 않아요. 그래서 X_RUNTIME을 없애고 보존 대조 대상으로 옮겼어요. fixture에 넣어 실제로 남는지 확인해요. 실제로 지우는 키 3종(`worker.heartbeat`·`backup.auto.lastDay`·`restore.check.*`)만 삭제 assert해요 |
+| 4 | 처음 커밋할 때 사용자 추가 승인을 요구해요 | 6장 4번을 "Master 검토로 한 번 커밋"으로 바꿨어요. 기존 P1 게이트와 시안 승인 게이트는 그대로예요 |
+
+추가로 읽은 코드: `lib/services/restore.ts` 37~42행(normalize 전체), `lib/repo/maintenance.ts` 12행(`setSetting` upsert), `lib/repo/jobs.ts` 29행(activity 기록, id·created_at은 스키마 기본값), `0001_initial.sql` activity_log·settings 정의. 코드·SQL·fixture·데이터는 계속 바꾸지 않았어요.
