@@ -855,3 +855,11 @@
 - 8f9d0ce / msg_f00c05a57caa: actual dual-window 1280/390 B0, full recovery display/copy/fallback/download equality/focus/dismiss and beforeunload confirmed.
 - Five minor clarity/accessibility refinements recorded; author asked to hold product target while T100 deep ownership/JSON/runtime review runs. Direct UX evidence is not substituted for independent verdict.
 - Actual devices/screen-reader/touch and deeper server ordering remain separately scoped.
+
+### Parallel next-stage preparation and T100 result (2026-11-16)
+
+- User requested continued work/delegation. T100 worker-list confirmed live; then wake msg_3900d02054fe returned core focused PASS. Report imported: independent467 passed/2 skips, lint/type/build, exact dual-writer ownership/full recovery and31.5s/StrictMode/CDP/DB checks passed.
+- Open observation: one1280 bulk recovery sample scrollWidth1329; native unload confirmation and device/wide-square limits remain. Master assigned bounded T103 layout reproduction/display-only correction before final closure.
+- T101 / implementation author: PC renderer technical preparation, unique report only, official exact4.0.543 renderer license/API/runtime and immutable job/temp/ffprobe/cancel/retry design, no installs or product edits. Request msg_8a53f06b4650.
+- T102 / design: renderer state/progress/cancel/retry/success UX preparation, unique report/history only. Request msg_060a4ca21910.
+- T103 / implementation author: first reproduce bulk overflow and correct minimal display/accessibility issues without recovery-data loss; then continue T101. No duplicate broad review requested.

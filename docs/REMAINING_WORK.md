@@ -193,3 +193,13 @@ Supersedes T075-fix-pending entries.
 - T098df094f9 ready_review; author467 passed/2 skips.
 - T099 UX and T100 independent ownership/recovery validation started.
 - Next: findings/fixes or P2-3b acceptance within combined evidence; later rendering/audio pending.
+
+## Current actionable list (supersedes older pending T100 entries)
+
+1. T103: reproduce bulk-recovery1280 overflow and close bounded display/accessibility refinements.
+2. T101: PC-render implementation design/license/runtime/job validation preparation (author).
+3. T102: PC-render states/progress/cancel/retry UX preparation (design).
+4. Master: combine T100 core PASS with T103 result, close P2-3b verified scope, reconcile T101/T102 and assign actual P2-4 implementation.
+5. Later: render implementation/independent validation, audio P2-5, SRT/VTT and editable ZIP P2-6, real-device evidence where available.
+
+T100 core ownership/recovery is PASS, not still waiting. Rendering preparation is actual assigned work; renderer implementation/install has not started. User decisions currently unnecessary.
