@@ -149,7 +149,7 @@ export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInv
       {dirty&&!timeInvalid&&<p>저장하지 않은 고침도 미리보기에 보여요.</p>}
       {moved&&<p>미리보기에서만 글자 위치를 옮겨 보여 줘요. 저장하지 않았어요.</p>}
       {reducedMotion&&props.texts.some(text=>text.animated)&&<p>움직임 줄이기 설정이라 글자 움직임은 생략해 보여요. 영상 만들기 결과는 그대로예요.</p>}
-      <p>미리보기는 소리 없이 보여요. 소리는 다음 단계에서 붙여요.</p>
+      <p>이 미리보기는 영상과 글자만 소리 없이 보여 줘요. 소리 파일은 아래 소리 칸의 원본 듣기로 하나씩, 합친 소리는 영상 만들기 결과에서 들어요.</p>
       <p>미리보기 영상은 조금 어긋날 수 있어요. 자막 맞춤은 영상 만들기 결과로 확인해요.</p>
     </div>
     <p className={`${styles.keys} ${styles.pcOnly}`}><b>키는 초점이 있는 곳 하나만 움직여요.</b><br/>재생 화면: Space 재생·멈춤 · ←/→ 1/30초 · Shift+←/→ 1초 · Home/End 처음·끝<br/>글자 칸: 글자만 고쳐요. 미리보기가 키를 가로채지 않아요.</p>
