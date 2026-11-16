@@ -248,3 +248,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T110 independent guards/semantic restore/CLI6→7 recheck dispatched.
 - T108 resumes bundler-stall diagnosis and actual pinned-browser renderer smoke; package WIP separate.
 - Next: close foundation defects, verify real toolchain, then render worker/composition/API/UI.
+
+## Latest: DB guards verified; CLI cause preservation pending
+
+- T110 independently resolved F107-1/2/3 with496 passed/4 skips and actual restore preservation.
+- T111: preserve safe render ID/validation cause in real CLI migration diagnostics; atomic rollback unchanged.
+- T108 toolchain investigation continues after this bounded correction.
+- Next: focused CLI recheck, foundation acceptance, then actual render worker/API/UI.

@@ -911,3 +911,9 @@
 - T108 package/lock/scripts WIP protected; author instructed to resume bundle-stall diagnosis and real toolchain smoke, no duplicate stuck processes. Exact-package expectation test to be updated meaningfully in separate T108 commit.
 - Sidecar generic migration diagnostic recorded as limitation for later scoped improvement; actual-user DB remains untouched.
 - T110 receipt: dispatch ctx_756512f4b205 / task task_3618d98017dc / terminal term_278d5436-07e6-4e7b-927c-6fe5c5982ee0; state ready, actual result pending.
+
+### T110 guards PASS; T111 CLI diagnostic correction (2026-11-17)
+
+- msg_68918a0f0c86 report imported. Independent496 passed/4 skips, lint/type/build; F107-1/2/3, atomic rollback, issued bytes and actual restore/MP4 preservation PASS.
+- F110-1 remains: actual CLI discards offending render UUID and validator cause, not merely public-sidecar detail. Foundation acceptance held on this requested diagnostic gate.
+- T111 / implementation author / ready (ack pending): typed safe cause preservation/output or identified log, generic public code retained. Allow only validator reason+UUID, no raw input/path/secret stack dump. Actual invalid fake6→7 cause and unchanged DB/no partial guards/prebackup validation required. Separate from T108 package work.
