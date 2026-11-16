@@ -26,6 +26,8 @@ export const S6_INPUTS={passed:join(S6_DIR,"s6-inputs","render-passed.mp4"),late
 export const S6_GENERATOR_VERSION=1;
 export const S6_BACKUP_ID=labelId("backup.s6",970);
 export const S6_UPGRADED_AT=Date.parse(at(951));
+// s6 stays the 6-step backup it was recorded as (T-109): later steps (0007) belong to s7.
+export const s6Migrations=()=>productMigrations().slice(0,6);
 const RENDERER={remotion:"4.0.543",browser:"158.0.8127.2",compositionSourceSha256:"0".repeat(64)};
 const VERIFY=(frames:number)=>({format:"mov,mp4,m4a,3gp,3g2,mj2",video:{count:1,codec:"h264",pixFmt:"yuv420p",width:1080,height:1920,rFrameRate:"30/1",avgFrameRate:"30/1",frames},durationSec:frames/30,audioStreams:0,otherStreams:0,expectedFrames:900,result:frames===900?"passed":"failed"});
 // The five rows: verified success, verified result after cancel (kept), verify failure, plain cancel with a temp path
@@ -51,12 +53,12 @@ function renderInput(sqlite:Database.Database,projectId:string){
   const json=canonicalJson(input);return {row,json,sha256:renderInputSha256(json)};
 }
 
-// s5 runtime → product list (0006 at a fixed time) → five render rows (and their jobs) + two files under storage/.
+// s5 runtime → the first six product steps (0006 at a fixed time) → five render rows (and their jobs) + two files under storage/.
 export async function buildS6Runtime(runtime:string){
   await buildS5Runtime(runtime);
   const ids=s6Ids(),projectId=s4Ids().main,handle=openDatabase(join(runtime,"data/app.db"),{fileMustExist:true});
   try{
-    migrateDatabase(handle.sqlite,{migrations:productMigrations(),now:()=>S6_UPGRADED_AT});
+    migrateDatabase(handle.sqlite,{migrations:s6Migrations(),now:()=>S6_UPGRADED_AT});
     const sqlite=handle.sqlite,input=renderInput(sqlite,projectId);
     const files:{id:string;from:string}[]=[];
     const make=(seq:number,id:string,jobId:string,sec:number,end:{job:Record<string,unknown>;render:Record<string,unknown>|null;file?:string;stage?:string;progress?:number})=>{

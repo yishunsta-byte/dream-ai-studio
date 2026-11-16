@@ -1,0 +1,134 @@
+{
+  "fixture": "s7",
+  "generatorVersion": 1,
+  "zip": {
+    "sha256": "b861d214187bbade08136be9a36a4a8f6909ac900e52bd113ed12e46ec5e503b",
+    "sizeBytes": 555424
+  },
+  "backupId": "019b8b83-3330-79bc-9ead-6372546ee123",
+  "migrations": [
+    {
+      "version": 1,
+      "name": "0001_initial.sql",
+      "sha256": "ee96edd4ecfed0d1c707f0efaa922c421c533cd6562d9b887f3b213c0ca31fa0"
+    },
+    {
+      "version": 2,
+      "name": "0002_ownership.sql",
+      "sha256": "6d7b88304f9c2416d544b7f678ae7054a22d072bd8ad95c51a71d9cd5c1420ed"
+    },
+    {
+      "version": 3,
+      "name": "0003_edit_snapshots.sql",
+      "sha256": "9782fed4c886a4ee37954bf6c1945d165e240b1e8509732e48b704449c409c1e"
+    },
+    {
+      "version": 4,
+      "name": "0004_audit_backups.sql",
+      "sha256": "6ff0cacf3edbc1b0c0911803f38ce01e39ede50a4f7357c2fe779472f91863c3"
+    },
+    {
+      "version": 5,
+      "name": "0005_timeline_revisions.cjs",
+      "sha256": "6a012009fd045439d6d3af8ad2021043fec475aadf10fd942b6585c9e88f0061"
+    },
+    {
+      "version": 6,
+      "name": "0006_renders.sql",
+      "sha256": "0bedf2afb9db707b255917707a364ed6a30f35b8d97dfb660485e2e7aea0d19e"
+    },
+    {
+      "version": 7,
+      "name": "0007_render_guards.sql",
+      "sha256": "3d1f6a58331c7660c3944e14e19b73d4e7bdd9a2a1319c430355e31c43532f3a"
+    }
+  ],
+  "logical": {
+    "profile": "P_REGEN",
+    "all": "06d58873388127b53bdf99f636efd3887794cd48f8cbf0d08f9bfefccd6b30aa",
+    "tables": {
+      "__schema_migrations": "3e2fcca7bb5d9a554a994d014fb5f2c051dde1f0edcf3e95b1af56ceb41a3fbb",
+      "activity_log": "3c89232a7cd71fd1275bc1fb4ba14b77a3dfd356bdde3853d1696800f79ca770",
+      "assets": "df42f79b7246a7ddeffd4edb379f23acb3bd459b2b0097c99be55d2ddac3a146",
+      "backups": "10544b8233b7f2ccb0d65c7549b1c752c5655e912fe6e831706bdc10d4f59fa3",
+      "characters": "13ef8d7a8542a9a0e4710304da3cf1f0bcc3f25b239bbe5d3538fe09db0df3b2",
+      "exports": "eedcd26105fd4a72d67a9345b94c019f3d519e754d0bb5f363b1bb4fc471dc2a",
+      "generations": "28ff8be4d192ad755102c541aef1ffd4f946cf841ef8a802d898cf1e9c33d870",
+      "jobs": "2c54c72c362a4eae4ef1271e990a9c836cb685183ad3fd9e6597664ce390c731",
+      "plans": "50a3dba968068fec5773efe1c685ade7d62065afe05bbeb54891ca35dbf83af7",
+      "project_assets": "8523c06ff67b98695bd22396e739c2a9227bf05d9bee80513040bdfb8f0ccdd7",
+      "project_characters": "d0a9619e0ca9ffb072c3fcb8b4fe3d34bcd27a9d8928078b5fd91e6eca9cf170",
+      "projects": "cf3be4625cbf75bd0bb91f13d0f96ce21d6b96471bacf4ade67496fed4cd251f",
+      "renders": "2a7ddf824ea9b7db5b1dbef7207143086bad23d4a36b27454a6a2b5b87e5631b",
+      "review_items": "88458a73c9c15c492bbc1c8059902d9c21b8cd7e32a55fd96004cfecfe57f2f3",
+      "scene_versions": "5269265a76acd55ef427901a51ee0cc67f1c51bd20fa5dbc88f18dabadc8e68c",
+      "scenes": "6ddd2e0b9de0a7b82c8624fcc6f4743e8808ee133e64f61ccb92e9addbe2f4fe",
+      "settings": "04330dce0ac331b62df22115bcbc9ec21671e9c01ba7401a0d108e3d527a3b1e",
+      "stage_states": "bfda9ab60a39e0ede26dcfa7f1e3b607a8e0475d8ed9348fb1744d581dab70ea",
+      "timeline_revisions": "06e74854521cfebedf960d69711a32e885796446ed2a93ec98d285c6c7a24628"
+    }
+  },
+  "schema": "4e29c4965750c6ea2ab3a565556dac9295badbd43b6662a7a1d3781d575d8389",
+  "renders": [
+    {
+      "id": "019b8b82-9ec0-7496-b5c5-282774bb56c4",
+      "status": "succeeded",
+      "name_seq": 1,
+      "display_name": "가상 텀블러 소개_9x16_r1_SAMPLE.mp4",
+      "file_path": "projects/019b8b74-3f10-7137-8265-68b11d809f0c/renders/019b8b82-9ec0-7496-b5c5-282774bb56c4.mp4",
+      "sha256": "93025ddd96faa0d0b7253e3a9c156617221426d804b18f2bc4c409525a79fb33",
+      "size_bytes": 73037,
+      "canceled_late": 0,
+      "error_code": null,
+      "input_sha256": "a345d93fc3192ba308fb7040607a118a10130d203277f9f9ec2048df9337eb52"
+    },
+    {
+      "id": "019b8b82-a690-745d-93fc-969a3678a42e",
+      "status": "canceled",
+      "name_seq": 2,
+      "display_name": "가상 텀블러 소개_9x16_r1_SAMPLE-2.mp4",
+      "file_path": "projects/019b8b74-3f10-7137-8265-68b11d809f0c/renders/019b8b82-a690-745d-93fc-969a3678a42e.mp4",
+      "sha256": "5d80beeda0a9496544c6869628f86bb77b1a346fc5f6ce42d51165bf775d1417",
+      "size_bytes": 73026,
+      "canceled_late": 1,
+      "error_code": "RENDER_CANCELED",
+      "input_sha256": "a345d93fc3192ba308fb7040607a118a10130d203277f9f9ec2048df9337eb52"
+    },
+    {
+      "id": "019b8b82-ae60-7d9a-9230-ce1f4266e85c",
+      "status": "failed",
+      "name_seq": 3,
+      "display_name": "가상 텀블러 소개_9x16_r1_SAMPLE-3.mp4",
+      "file_path": null,
+      "sha256": null,
+      "size_bytes": null,
+      "canceled_late": 0,
+      "error_code": "RENDER_VERIFY_FAILED",
+      "input_sha256": "a345d93fc3192ba308fb7040607a118a10130d203277f9f9ec2048df9337eb52"
+    },
+    {
+      "id": "019b8b82-b630-7b20-8e06-5a18590bc865",
+      "status": "canceled",
+      "name_seq": 4,
+      "display_name": "가상 텀블러 소개_9x16_r1_SAMPLE-4.mp4",
+      "file_path": null,
+      "sha256": null,
+      "size_bytes": null,
+      "canceled_late": 0,
+      "error_code": "RENDER_CANCELED",
+      "input_sha256": "a345d93fc3192ba308fb7040607a118a10130d203277f9f9ec2048df9337eb52"
+    },
+    {
+      "id": "019b8b82-be00-76c9-928d-d67503eacebb",
+      "status": "running",
+      "name_seq": 5,
+      "display_name": "가상 텀블러 소개_9x16_r1_SAMPLE-5.mp4",
+      "file_path": null,
+      "sha256": null,
+      "size_bytes": null,
+      "canceled_late": 0,
+      "error_code": null,
+      "input_sha256": "a345d93fc3192ba308fb7040607a118a10130d203277f9f9ec2048df9337eb52"
+    }
+  ]
+}

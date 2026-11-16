@@ -68,7 +68,8 @@ export async function verifyRestoredDatabase(folder:string,manifest:BackupManife
   for(const row of handle.sqlite.prepare("SELECT key,value_json FROM settings WHERE key GLOB 'project.*.edit.*' AND key NOT GLOB '*.current'").all() as {key:string;value_json:string}[])editSnapshotSchema.parse(JSON.parse(row.value_json));
   // T-061: timeline revisions (same structure, or right after the staging upgrade) read back by schema and hash.
   checkTimelineRows(handle.sqlite);
-  // T-105: render rows (input hash, job contract); their files are among fileReferences above.
+  // T-105/T-109: render rows (input hash, saved timeline binding, job identity, file fields); their files are among
+  // fileReferences above. Runs for a direct restore and again right after every staging upgrade.
   checkRenderRows(handle.sqlite);}
   return {compat,schemaFrom:recorded.length,projects:(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM projects").get() as {n:number}).n,assets:(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM assets").get() as {n:number}).n,pendingJobs:(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM jobs WHERE status IN ('queued','running')").get() as {n:number}).n};
  }finally{handle.close();}

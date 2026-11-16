@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { codeMigration, isCertifiedCodeMigration, MigrationSourceError } from "./code-migration";
 import { verifyTimelineMigration } from "./timeline-data";
+import { checkRenderRows } from "./render-data";
 
 // `verify` is the data check a step defines for itself (K-6 ③); it runs after the step is applied.
 // A code step (T-048, see code-migration.ts) also has `run`, the data transform bound to `sha256` with its `sources`;
@@ -18,8 +19,11 @@ export function migrationEntry(version:number,name:string,sql:string):Migration{
 export const PRODUCT_CODE_STEPS=[{version:5,name:"0005_timeline_revisions.cjs",files:["lib/db/migrations/0005_timeline_revisions.cjs","lib/db/migrations/0005_timeline_shared.cjs"],sha256:"6a012009fd045439d6d3af8ad2021043fec475aadf10fd942b6585c9e88f0061"}] as const;
 export const productSqlMigrations=()=>productFiles.map((name,index)=>migrationEntry(index+1,name,readFileSync(join(process.cwd(),"lib/db/migrations",name),"utf8")));
 // SQL steps after the code step (T-105): explicit versions, appended after PRODUCT_CODE_STEPS in this order.
-export const LATER_SQL_STEPS=[{version:6,name:"0006_renders.sql"}] as const;
-export const productLaterSqlMigrations=()=>LATER_SQL_STEPS.map(({version,name})=>migrationEntry(version,name,readFileSync(join(process.cwd(),"lib/db/migrations",name),"utf8")));
+// 0007 (T-109) also checks every render row written under 0006 (read-only, after it is applied): a row that breaks the
+// new guards stops the whole run with its id and reason, and nothing is recorded.
+export const LATER_SQL_STEPS=[{version:6,name:"0006_renders.sql"},{version:7,name:"0007_render_guards.sql"}] as const;
+const LATER_SQL_VERIFY:Partial<Record<number,(sqlite:Database.Database)=>void>>={7:checkRenderRows};
+export const productLaterSqlMigrations=()=>LATER_SQL_STEPS.map(({version,name})=>{const entry=migrationEntry(version,name,readFileSync(join(process.cwd(),"lib/db/migrations",name),"utf8"));const verify=LATER_SQL_VERIFY[version];return verify?{...entry,verify}:entry;});
 // The product list. Tests may pass an isolated list (e.g. product + a test-only step); the product never adds one at runtime.
 // A product file that cannot be read (missing, or the app started outside its folder) is a source error (T-061 D8).
 export function productMigrations():Migration[]{let sql:Migration[],later:Migration[];try{sql=productSqlMigrations();later=productLaterSqlMigrations();}catch{throw new MigrationSourceError("lib/db/migrations: 제품 마이그레이션 파일을 읽지 못했어요");}

@@ -1,3 +1,4 @@
+// Checks run on the 6-step app (s6Migrations): the product list now adds 0007 (T-109), checked with s7.
 // Fixed virtual backup s6 (T-105): s5 + 0006_renders.sql + five virtual render rows and two MP4 files. Generated once
 // with S6_WRITE=1 (refuses to overwrite). Checks: kept bytes and record, regeneration, the 0001–0005 journal equals
 // s5's, s5 → upgrade has the s6 structure, direct s6 restore keeps finished renders and their files and stops the
@@ -18,7 +19,7 @@ import { restoreService, type RestoreOptions, type RestoreStage } from "@/lib/se
 import { S4_ZIP, s4Ids } from "./fixtures/backups/s4-build";
 import { logicalHash, P_REGEN, schemaHash, snapshotDb, type DbSnap } from "./fixtures/backups/s4-compare";
 import { S5_RECORD, S5_ZIP, s5Migrations } from "./fixtures/backups/s5-build";
-import { assembleS6Zip, buildS6Runtime, S6_GENERATOR_VERSION, S6_INPUTS, S6_RECORD, S6_ZIP, s6Ids, s6RenderPath } from "./fixtures/backups/s6-build";
+import { assembleS6Zip, buildS6Runtime, S6_GENERATOR_VERSION, S6_INPUTS, s6Migrations, S6_RECORD, S6_ZIP, s6Ids, s6RenderPath } from "./fixtures/backups/s6-build";
 
 type S6Record={fixture:"s6";generatorVersion:number;zip:{sha256:string;sizeBytes:number};backupId:string;migrations:{version:number;name:string;sha256:string}[];logical:{profile:"P_REGEN";all:string;tables:Record<string,string>};schema:string;renders:RenderSummary[];files:{path:string;sha256:string;sizeBytes:number}[]};
 type RenderSummary={id:string;status:string;name_seq:number;display_name:string;file_path:string|null;sha256:string|null;size_bytes:number|null;canceled_late:number;error_code:string|null;input_sha256:string};
@@ -46,9 +47,9 @@ async function rewritten(name:string,change:(folder:string,sqlite:Database.Datab
   const next=backupManifestSchema.parse({...manifest,database:{path:manifest.database.path,...await fileDigest(db)},files,inventorySha256:inventoryHash(files)}),zip=join(root,"archive",`${name}.zip`);mkdirSync(dirname(zip),{recursive:true});
   await writeArchive(zip,[{path:next.database.path,filename:db},...files.map(file=>({path:file.path,filename:join(into,file.path)})),{path:"backup-manifest.json",bytes:Buffer.from(JSON.stringify(next))}]);return zip;
 }
-async function refused(zip:string,code:string,migrations:readonly Migration[]=productMigrations()){
+async function refused(zip:string,code:string,migrations:readonly Migration[]=s6Migrations()){
   const manifest=await source(migrations,zip),destination=join(root,"restored"),digest=await fileDigest(zip),svc=restoreService(handle!,now,{migrations});
-  const error=await svc.inspect({backupId:manifest.backupId,destination}).then(async checked=>{await svc.finish(checked.ticketId);return null;},(caught:unknown)=>caught as {code?:string});
+  let error:{code?:string}|null=null;try{const checked=await svc.inspect({backupId:manifest.backupId,destination});await svc.finish(checked.ticketId);}catch(caught){error=caught as {code?:string};}
   expect(error).toMatchObject({code});expect(existsSync(destination)).toBe(false);expect(await fileDigest(zip)).toEqual(digest);
 }
 
@@ -66,7 +67,7 @@ describe.skipIf(process.env.S6_WRITE==="1")("고정 백업 s6",()=>{
   const record=()=>JSON.parse(readFileSync(S6_RECORD,"utf8")) as S6Record,ids=s6Ids(),project=s4Ids().main;
   it("보관 원본: ZIP 해시·마이그레이션 6줄(1~5는 s5와 같음)·렌더 5행·파일 2개·논리 내용·스키마가 기록과 같고, 다시 만들어도 같다",async()=>{
     const expected=record();expect(await fileDigest(S6_ZIP)).toEqual(expected.zip);
-    const {manifest,db}=await extract(S6_ZIP,join(root,"a1"));expect(manifest.migrations).toEqual(plain(productMigrations()));
+    const {manifest,db}=await extract(S6_ZIP,join(root,"a1"));expect(manifest.migrations).toEqual(plain(s6Migrations()));expect(plain(productMigrations()).slice(0,6)).toEqual(manifest.migrations);
     const s5=JSON.parse(readFileSync(S5_RECORD,"utf8")) as {migrations:unknown[]};expect(manifest.migrations.slice(0,5)).toEqual(s5.migrations);expect(manifest.migrations[5]).toMatchObject({version:6,name:"0006_renders.sql"});
     const described=describeDb(db);expect(described.logical).toEqual({all:expected.logical.all,tables:expected.logical.tables});expect(described.schema).toBe(expected.schema);expect(described.renders).toEqual(expected.renders);
     expect(described.renders.map(row=>[row.status,row.canceled_late,!!row.file_path])).toEqual([["succeeded",0,true],["canceled",1,true],["failed",0,false],["canceled",0,false],["running",0,false]]);
@@ -74,15 +75,15 @@ describe.skipIf(process.env.S6_WRITE==="1")("고정 백업 s6",()=>{
     expect(expected.files).toHaveLength(2);
     const regen=describeDb((await extract((await generate(join(root,"regen"))).out,join(root,"regen-x"))).db);expect(regen.logical).toEqual(described.logical);expect(regen.schema).toBe(described.schema);
   },120000);
-  it("s5를 제품 목록으로 올리면 s6와 같은 구조이고 renders는 비어 있으며, 렌더와 무관한 표는 그대로다",async()=>{
-    const {db}=await extract(S5_ZIP,join(root,"s5"));const before=describeDb(db);const sqlite=new Database(db);try{sqlite.pragma("foreign_keys = ON");migrateDatabase(sqlite,{migrations:productMigrations(),now});}finally{sqlite.close();}
+  it("s5를 제품 목록 앞 6단계로 올리면 s6와 같은 구조이고 renders는 비어 있으며, 렌더와 무관한 표는 그대로다",async()=>{
+    const {db}=await extract(S5_ZIP,join(root,"s5"));const before=describeDb(db);const sqlite=new Database(db);try{sqlite.pragma("foreign_keys = ON");migrateDatabase(sqlite,{migrations:s6Migrations(),now});}finally{sqlite.close();}
     const after=describeDb(db);expect(after.schema).toBe(record().schema);expect(after.renders).toEqual([]);
     for(const [name,hash] of Object.entries(before.logical.tables))if(name!=="__schema_migrations")expect(after.logical.tables[name]).toBe(hash);
     const s6=record().logical.tables;for(const name of Object.keys(s6))if(!["__schema_migrations","jobs","renders"].includes(name))expect(after.logical.tables[name]).toBe(s6[name]);
   });
   it("s6 직접 복원(same): 끝난 렌더와 파일은 그대로, 진행 중이던 렌더는 RESTORE_INTERRUPTED, 실패·취소 행은 파일 없이 복원",async()=>{
-    const zip=await copied(S6_ZIP,"s6.zip"),manifest=await source(productMigrations(),zip),destination=join(root,"restored");
-    const svc=restoreService(handle!,now),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"same",fromVersion:6,toVersion:6,pendingJobs:5}); // s4 queued/running 4 + the running render 1
+    const zip=await copied(S6_ZIP,"s6.zip"),manifest=await source(s6Migrations(),zip),destination=join(root,"restored");
+    const svc=restoreService(handle!,now,{migrations:s6Migrations()}),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"same",fromVersion:6,toVersion:6,pendingJobs:5}); // s4 queued/running 4 + the running render 1
     await svc.finish(checked.ticketId);
     const sqlite=new Database(join(destination,"data/app.db"),{readonly:true,fileMustExist:true});
     try{
@@ -98,8 +99,8 @@ describe.skipIf(process.env.S6_WRITE==="1")("고정 백업 s6",()=>{
     expect(await fileDigest(zip)).toEqual(record().zip);
   },120000);
   it("s5 올려서 복원: staging에서 올린 직후 구조 = s6, renders 비어 있음, 원본 s5 ZIP 그대로",async()=>{
-    const zip=await copied(S5_ZIP,"s5.zip"),manifest=await source(productMigrations(),zip),destination=join(root,"restored"),upgraded:DbSnap[]=[];let schema="";
-    const options:RestoreOptions={onStage:async(stage:RestoreStage,staging:string)=>{if(stage==="upgraded"){const sqlite=new Database(join(staging,"data/app.db"),{readonly:true,fileMustExist:true});try{upgraded.push(snapshotDb(sqlite));schema=schemaHash(sqlite);}finally{sqlite.close();}}}};
+    const zip=await copied(S5_ZIP,"s5.zip"),manifest=await source(s6Migrations(),zip),destination=join(root,"restored"),upgraded:DbSnap[]=[];let schema="";
+    const options:RestoreOptions={migrations:s6Migrations(),onStage:async(stage:RestoreStage,staging:string)=>{if(stage==="upgraded"){const sqlite=new Database(join(staging,"data/app.db"),{readonly:true,fileMustExist:true});try{upgraded.push(snapshotDb(sqlite));schema=schemaHash(sqlite);}finally{sqlite.close();}}}};
     const svc=restoreService(handle!,now,options),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"upgrade",fromVersion:5,toVersion:6});await svc.finish(checked.ticketId);
     expect(upgraded).toHaveLength(1);expect(schema).toBe(record().schema);expect(upgraded[0].get("renders")!.rows.size).toBe(0);
     const sqlite=new Database(join(destination,"data/app.db"),{readonly:true,fileMustExist:true});try{expect(sqlite.prepare("SELECT name FROM __schema_migrations ORDER BY version").all().map(row=>(row as {name:string}).name).at(-1)).toBe("0006_renders.sql");}finally{sqlite.close();}
