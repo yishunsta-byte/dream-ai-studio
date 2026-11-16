@@ -163,3 +163,9 @@ Supersedes T075-fix-pending entries.
 - T092 final UX and T093 independent runtime/data validation assigned.
 - High-attention area: post-send draft preservation across delayed response/refresh, next-save CAS and stale cache boundaries, plus one-action pointer/keyboard semantics.
 - Next: findings/fixes/recheck before P2-3b acceptance; render/audio stages remain.
+
+## Latest: P2-3b FAIL; T094 required lifecycle fixes
+
+- T093 independently reproduced four runtime failures despite458 green tests.
+- T094 fixes saving/refresh ownership and stale draft cache, invalid-time lifecycle, pointer/key/selection conflicts.
+- Next: actual production edge-case evidence, independent focused recheck and design review. No progression to rendering until required defects resolved.

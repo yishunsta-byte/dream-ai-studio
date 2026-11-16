@@ -808,3 +808,10 @@
 - c7addfc / msg_0e730478813c: B0; actual pointer/keys, delayed-save draft preservation/resave, conflict retention, preview-only DB equality on 1280/390. Direction accepted.
 - Minor C1 end-of-video label occlusion, C2 saving/conflict focus, C3 refresh guidance vs preserved draft noted. Shared with T093 for boundary assessment; current target held fixed, no uncoordinated product edits.
 - Actual device/screen reader/touch-pen remain unverified. Independent T093 verdict pending.
+
+### T093 FAIL collected; T094 unified lifecycle fixes assigned (2026-11-16)
+
+- msg_a6d9d1679903 report imported. Independent458 passed/2 skips and lint/type/build do not override four mandatory runtime failures.
+- F093-1 latest draft loss during POST-success-to-refresh and real31s delay; F093-2 abandoned response resurrects canceled cache; F093-3 removed invalid-time state blocks save and raw invalid edits lost; F093-4 active drag conflicts with keys/selection.
+- T094 / CC-DATA-01 / ready (ack pending): unified UI lifecycle fixes, same-file single writer. Clear full-save-lifecycle editing lock is permitted alternative to complex carry, with explicit reason; no API/DB/schema/package changes. Actual dual-delay/navigation/cancel/time/drag rechecks and CDP gap closure required.
+- Design informed; previous normal-path UX evidence preserved, whole P2-3b acceptance remains FAIL pending fix/recheck.
