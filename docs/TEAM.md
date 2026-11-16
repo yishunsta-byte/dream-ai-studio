@@ -56,7 +56,9 @@
 
 - 담당 CC-DESIGN-01. 실제 요청 msg_3f0545fe3bb3. PLAN2.1/18 최소 이력·P1-USER-REVIEW.html 승인 상태·고유 보고서만 수정. 사용자 전달 msg_4b845849ef02 근거. 캡처/제품코드/TEAM/REVIEW/PROGRESS 불가침. 완료 조건은 두 승인과 독립PASS/P1 종료의 일관 반영 및 K6 준비 우선순위 보존.
 
-### T-037 · Remotion 공식 사용 조건 검증 (parent=P2 준비) — running
+### T-037 · Remotion 공식 사용 조건 검증 (parent=P2 준비) — ready_review
+
+- 보고 b7305aa / msg_5212f646dec2 회수. Master가 문서 전체를 검토했고 고정4.0.543 배포물 LICENSE 원문 대조와 로컬=server-rendering 없음 단정 정정을 담당에게 요청했다. 버전별 미확인 한계는 유지. 사용자 개인/조직 업무 여부는 Master가 비동기 질문 1건으로 취합했고 무응답을 승인/개인으로 간주하지 않는다. T035 및 Remotion과 무관한 타임라인 준비는 계속 가능. 아직 라이선스 적합성 확정·구매·설치는 하지 않았다.
 
 - msg_d584bbc7c47b에서 담당의 실제 조사 착수 확인. 사용자 추가 지휘 지침 전달 수신: Claude design은 범위 내 기본 판단·후속 협조를 직접 진행하고 Master에 참조한다. 공통 범위/인터페이스/점유는 조정하고 통합·검증 책임은 Master가 유지한다.
 
