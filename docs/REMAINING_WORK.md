@@ -376,3 +376,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T134 ready_review, isolated audio processing module not yet connected to app. Author numeric evidence is not independent acceptance or human listening.
 - T135 independent DSP verification requested; T136 concrete render integration contract assigned in parallel.
 - Sparse-click outputs outside fixed loudness criterion remain failures. Next: close findings and implement stageC, then UI/P2-6/device validation.
+## Latest: audio render integration assigned
+
+- T136 contract reviewed; T137 actual stageC implementation requested while T135 independently reviews frozen DSP target.
+- Silent/short outputs require honest non-normalized state; ordinary out-of-range outputs remain failure. Versioned input and new0009 compatibility gate required without rewriting old data.
+- Next: collect DSP verdict, resolve findings, validate real audio render integration, then UI. New fixed fixture checkpoint follows acceptance; P2-6/device/semantic sync remain separate.

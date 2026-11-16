@@ -1134,3 +1134,10 @@
 - T135 independent DSP review reopened existing reviewer: ctx_19a4b1ff043c /task_7c6e68ed245c ready receipt. Scope includes measured output, compressed-source/sample alignment, ownership/cleanup and failure publication; report-only.
 - T136 CC-DATA-01 integration contract requested via msg_2b7a2dd6c7f0; unique document only. Concrete versioned audio render input/immutable pins/owned pipeline/cancel/verification/backup/API contract and smallest implementation plan, no overlapping code edits during DSP review.
 - No actual audio app rendering/UI, actual listening or user DB/deployment completion claimed. Next: integrate review, resolve findings, then implement contracted renderer connection.
+### T136 contract accepted; T137 audio-render integration assigned (2026-11-17)
+
+- msg_ea280ebe0968 /019cb40: Master read complete code-grounded integration contract. Proposal accepted as implementation basis, not actual integration evidence.
+- Decisions: silent/too_short may succeed only with preserved chosen signal and valid output structure, accepted:null and explicit normalization-not-applied state; never -14 achievement. Normalizable out-of-range/unmeasurable signals remain failure. New fixed s8/s9 archives deferred to separate post-acceptance task; actual fake8->9 restore and old8-app refusal remain required now.
+- T137 assigned CC-DATA-01 via msg_8b29f254df9b: actual owned-child audio pipeline, envelope1/audioPlan1, new0009, full row/restore validation, final-file streamhash/loudness and existing publication/cancel invariants. Current issued migrations1-8 and fixtures immutable.
+- T135 review retains fixed T134 target; lib/audio and DSP tests frozen during T137. Nonfinite measurement conversion belongs to integration adapter; DSP changes require coordination. SQL NULL logic and ffprobe processing identity specifically called out for verification.
+- T137 completion requires actual worker/child/Remotion/FFmpeg evidence, error/cancel/download/restore/old-app checks, related regression and isolated build. Request sent, acknowledgment pending. No app audio-output PASS or deployment claimed.
