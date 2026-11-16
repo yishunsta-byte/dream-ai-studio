@@ -275,3 +275,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T114 implements app render worker, immutable input and media verification, job lifecycle, API and verified file serving.
 - Next: backend review, render UI connection, actual project render/download/cancel/restore independent validation.
 - Tool smoke and foundation acceptance do not equal complete P2-4 application rendering.
+
+## Latest: tool outputs accepted in scope; launch-failure containment required
+
+- T113 exact packages/browser/output smoke independently passed.
+- T114 actual backend must contain missing-after-preflight/browser-launch failures in bounded owned child and verify no residual server/browser/compositor; F113-1 integration requirement open.
+- Installer staging validation robustness and exhaustive network audit remain tracked.
+- Next: backend report/independent runtime validation, then render UI integration.

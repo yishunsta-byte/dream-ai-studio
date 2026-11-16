@@ -937,3 +937,10 @@
 - T114 author assigned actual render child worker/shared composition/input/verification/jobs/API/file route integration, no product render screen yet. Existing schema/migrations/packages/assets preserved. Request msg_d55932f8781e.
 - Design informed msg_7b4d8bcf2b25, API/error-state contract coordination only until UI implementation assignment.
 - Personal local use already confirmed; redistribution licensing issues recorded for future distribution, not repeated user approval.
+
+### T113 scoped toolchain PASS; launch-race containment required (2026-11-17)
+
+- msg_f7c6402a1e6a report imported. Independent501 passed/4 skips, fresh lock install, lint/type/build, pinned installer and actual three-aspect/cancel/runtime-failure smoke passed.
+- F113-1: browser disappearance after successful preflight leaves selectComposition TCP server. Master accepts pinned tools/output scope, requires bounded owned-child/process-tree containment in T114 before app-worker acceptance; rechecking existence alone is insufficient.
+- Installer post-publication license/count validation robustness and non-exhaustive Node/TCP network observations retained as limits. Author may fix staging validation separately without changing pins.
+- Actual-user/app-render/UI acceptance not implied; design informed, T114 continues.
