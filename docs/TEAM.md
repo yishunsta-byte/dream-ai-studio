@@ -923,3 +923,9 @@
 - 10b8aa1 / msg_91aa252c2a03 ready_review. Author reports safe allowlisted UUID/reason CLI diagnostic, actual invalid fake6→7 rollback/cause and normal/noop, related checks/lint/type/build. Root T108 package expectation failure remains separately owned; do not claim full root suite green.
 - T112 independent dispatched ready (see receipt): focused typed safety/actual stderr/rollback/sidecar and migration-data validation boundaries, committed target excludes root T108 WIP.
 - T108 investigation narrowed: bundle completes; missing-browser failure leaves Remotion TCP server so Node stays alive. Author instructed preflight before starting server and own-process/server cleanup verification. Three-aspect H.264/yuv420p bt709 smoke reported as author evidence, not independent PASS.
+
+### Render foundation accepted after T112 (2026-11-17)
+
+- T112 report imported msg_9be62c8cb8d6. Safe actual CLI cause/rollback/normal/noop/source/future8 checks PASS; full500/5skips and separate media9/0skip, focused200/1skip, lint/type PASS. Prior T110 build/restore/guards explicitly inherited, not rerun.
+- Master accepts T105/T109/T111 render-record/migration/backup-restore foundation within combined T110/T112 scope. No actual-user DB migration or renderer/UI acceptance implied.
+- T108 package/scripts WIP protected; author continues toolchain cleanup and actual render/cancel/failure smoke. Design assigned minimal PLAN foundation status, not whole P2-4 completion.

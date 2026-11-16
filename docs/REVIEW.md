@@ -394,3 +394,7 @@ T085 broad evidence plus T089 independent449 passed/2 skips, lint/typecheck/buil
 ## P2-3b acceptance (2026-11-16)
 
 Master combines T100 exact ownership/full recovery/lifecycle/CDP preservation PASS, T104 focused resize/layout/data-equality PASS and T099 design B0. Earlier T093/F096 failures are resolved within the reports' direct and inherited evidence. T104 ran focused19, lint/type/build; T100 ran independent full467/2skip. Author T103468 is separate. Actual-phone/screen-reader/native-unload/saved-wide-square limits remain. Render foundation T105 proceeds; no full-P2 or deployment claim.
+
+## Render foundation acceptance (2026-11-17)
+
+T110 independently closes F107-1/2/3, verifies immutable migrations/fixtures, actual rollback/restore and terminal MP4 preservation. T112 closes F110-1 with safe actual CLI diagnosis and future-step validation, full500/5skips plus separate media9 and inherited T110 build/restore evidence. Master accepts the local render-record/migration/backup-restore foundation. No actual-user migration, renderer runtime/UI or P2-4 overall acceptance claimed. T108 tooling remains in progress.

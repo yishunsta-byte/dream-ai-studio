@@ -261,3 +261,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T112 independently checks T111 safe diagnostic output and rollback preservation.
 - T108 finishes exact dependencies/package test update, pinned browser preflight and success/cancel/missing-browser no-process/server-leak smoke.
 - Next: foundation acceptance from T110+T112, independent toolchain validation, then render worker/composition/API/UI implementation.
+
+## Current: render foundation accepted; toolchain validation continues
+
+- T110 guards/restore and T112 CLI-diagnostic PASS integrated. No outstanding required foundation finding.
+- T108 exact package/browser tooling and actual success/cancel/missing-browser cleanup verification underway.
+- Next: independent toolchain verification, app render worker/composition/API/UI implementation, actual end-to-end media and cancellation verification.
+- Actual user DB untouched; P2-4 overall incomplete.
