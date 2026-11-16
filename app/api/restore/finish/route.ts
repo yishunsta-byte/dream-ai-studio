@@ -1,7 +1,9 @@
 ﻿import { z } from "zod";
-import { finishRestore } from "@/lib/services/restore";
+import { finishRestore, restoreTicketStatus } from "@/lib/services/restore";
+import { canRetrySameTicket } from "@/lib/backup/restore-retry";
 import { WorkflowError } from "@/lib/domain/stages";
 import { mediaErrorResponse } from "@/lib/services/http-error";
 export const runtime="nodejs";
 const schema=z.strictObject({ticketId:z.uuidv7()});
-export async function POST(request:Request){try{const body=schema.parse(await request.json());return Response.json(await finishRestore(body.ticketId),{headers:{"cache-control":"no-store"}});}catch(error){if(error instanceof WorkflowError)return Response.json({error:error.message,code:error.code},{status:error.status});return mediaErrorResponse(error);}}
+// A failed finish also reports the ticket's real state so the screen knows whether the same ticket can be confirmed again.
+export async function POST(request:Request){let ticketId:string|undefined;try{const body=schema.parse(await request.json());ticketId=body.ticketId;return Response.json(await finishRestore(body.ticketId),{headers:{"cache-control":"no-store"}});}catch(error){const response=error instanceof WorkflowError?Response.json({error:error.message,code:error.code},{status:error.status}):mediaErrorResponse(error);if(!ticketId)return response;const ticketStatus=await restoreTicketStatus(ticketId);return Response.json({...await response.json(),ticketStatus,retryable:canRetrySameTicket(ticketStatus)},{status:response.status,headers:{"cache-control":"no-store"}});}}

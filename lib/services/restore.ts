@@ -11,6 +11,7 @@ import { jobsRepository } from "@/lib/repo/jobs";
 import { backupMetaSchema, parseRestoreState, restoreInfoSchema, restoreTicketSchema, type RestoreInfo, type RestoreTicket } from "@/lib/backup/schema";
 import { readBackupManifest, verifyBackupArchive, verifyRestoredDatabase, verifyStagingFiles } from "@/lib/backup/archive";
 import { BackupCompatError, backupCompatCopy, type BackupCompatCode } from "@/lib/backup/compat";
+import type { RestoreTicketState } from "@/lib/backup/restore-retry";
 import { physicalPath, rejectForeignDataRoot, removeOwnedStaging, sourceBoundaries, validateInheritedBoundaries, validateRestoreBoundary, validateRestoreTarget, within } from "@/lib/backup/paths";
 import { fileDigest } from "@/lib/export/zip";
 import { MediaError } from "@/lib/media/inspect";
@@ -20,7 +21,7 @@ const inspectSchema=z.strictObject({backupId:z.uuidv7(),destination:z.string().m
 function invalid(){return new MediaError("RESTORE_INVALID","복원 검사 정보나 파일이 달라요. 다시 검사해 주세요.",409);}
 function compatError(code:BackupCompatCode){const copy=backupCompatCopy[code];return new MediaError(code,copy.message,copy.status);}
 const plain=(rows:readonly {version:number;name:string;sha256:string}[])=>rows.map(({version,name,sha256})=>({version,name,sha256}));
-function dto(ticket:RestoreTicket){return {ticketId:ticket.id,fileCount:ticket.manifest.files.length+1,projects:ticket.projects,assets:ticket.assets,pendingJobs:ticket.pendingJobs,destination:ticket.destination,expiresAt:ticket.expiresAt,compat:ticket.compat??"same",fromVersion:ticket.schemaFrom??ticket.manifest.migrations.length,toVersion:ticket.schemaTo??ticket.manifest.migrations.length,appVersion:ticket.manifest.appVersion};}
+function dto(ticket:RestoreTicket){return {ticketId:ticket.id,backupId:ticket.backupId,fileCount:ticket.manifest.files.length+1,projects:ticket.projects,assets:ticket.assets,pendingJobs:ticket.pendingJobs,destination:ticket.destination,expiresAt:ticket.expiresAt,compat:ticket.compat??"same",fromVersion:ticket.schemaFrom??ticket.manifest.migrations.length,toVersion:ticket.schemaTo??ticket.manifest.migrations.length,appVersion:ticket.manifest.appVersion};}
 // Test-only observation and failure-injection points. Routes never pass them.
 export type RestoreStage="extracted"|"upgraded"|"normalized"|"before-publish";
 export type RestoreOptions={migrations?:readonly Migration[];onStage?:(stage:RestoreStage,staging:string)=>void|Promise<void>};
@@ -91,9 +92,12 @@ export function restoreService(source:DatabaseHandle,now:()=>number=Date.now,opt
   }catch(error){if(ticket.status!=="completed"){let own=false;try{atomic(()=>{const current=owned(ticket,token);save({...current,...(prepared?{normalizedDatabase:ticket.normalizedDatabase,completedAt:ticket.completedAt}:{}),status:published||prepared&&!invalidStage?"prepared":"failed",claim:null,leaseUntil:null});own=true;});}catch{/* A new owner must retain its staging and final. */}if(own&&!published&&(!prepared||invalidStage)&&await exists(ticket.staging))await removeOwnedStaging(ticket.staging,dirname(ticket.destination),id);}if(error instanceof BackupCompatError)throw compatError(error.code);if(error instanceof MediaError||error instanceof WorkflowError)throw error;throw new MediaError("RESTORE_FAILED","복원을 확정하지 못했어요. 목적지와 저장 공간을 확인한 뒤 다시 시도해 주세요.",503);}
   finally{clearInterval(heartbeat);}
  }
- return {inspect:async(input:unknown)=>{try{return await inspectInternal(input);}catch(error){if(error instanceof BackupCompatError)throw compatError(error.code);if(error instanceof MediaError||error instanceof WorkflowError)throw error;throw invalid();}},finish};
+  // Server truth for the screen after a failed finish (T-041). Never throws.
+ function status(input:unknown):RestoreTicketState{try{return load(z.uuidv7().parse(input)).status;}catch{return "missing";}}
+ return {status,inspect:async(input:unknown)=>{try{return await inspectInternal(input);}catch(error){if(error instanceof BackupCompatError)throw compatError(error.code);if(error instanceof MediaError||error instanceof WorkflowError)throw error;throw invalid();}},finish};
 }
 function ready(){if(!checkStartup().canStart)throw new WorkflowError("STAGE_LOCKED","시작 점검을 확인해 주세요.",503);}
 async function live<T>(operation:(service:ReturnType<typeof restoreService>)=>Promise<T>){ready();const handle=openDatabase(undefined,{fileMustExist:true});try{verifyMigrations(handle.sqlite);return await operation(restoreService(handle));}finally{handle.close();}}
 export function inspectRestore(input:unknown){return live(service=>service.inspect(input));}
 export function finishRestore(ticketId:unknown){return live(service=>service.finish(ticketId));}
+export async function restoreTicketStatus(ticketId:unknown):Promise<RestoreTicketState>{try{return await live(async service=>service.status(ticketId));}catch{return "unknown";}}
