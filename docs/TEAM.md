@@ -1235,3 +1235,8 @@
 - Question msg_b56899113a4b: fixed9 backup candidate exact preservation PASS; native fresh mix/AAC bytes vary despite matching pinned input/tool/video/sample and passing loudness. Master approved separating fresh execution evidence from immutable archive restoration checks.
 - Fixed ZIP/source/restore bytes remain strict SHA acceptance. Fresh render compares existing pinned identities, exact samples/codec/frame and unchanged loudness policy; fresh hashes recorded without bitexact regeneration claim. Cause of fresh-byte variation unconfirmed, original failures retained.
 - No criterion relaxation for output policy; negative controls must still reject corrupted archive/source pins/out-of-policy measurement. Stage9 generation and current9->10 restoration remain separate.
+### T159 manifest2 FAIL; T160 sample consistency correction
+
+- msg_c4b519c46fa7 /bc034b6 report read/imported. Independent168+3/lint/type/Webpack build and actual old9 startup/inspect/finish rejection passed. Product acceptance withheld for F159-1: mocked audio in non-mock bundle survives ZIP/backup/restore and loses SAMPLE label.
+- T160 minimal v2 one-way sample consistency rule requested. Preserve v1 and issued0010; all-audio-nonmock does not imply bundle nonmock because scenes may be mocked. Real repackaged-ZIP/row/restore and normal download regression required.
+- T156 fixed9 work continues. Reviewer processes stopped; automatic approval blocked temp deletion, retained copies/junction/fake DB documented without bypass.
