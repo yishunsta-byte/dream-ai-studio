@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-047 · 잔여 두 조건 집중 독립 재검수 (parent=T046/T045, priority=P1) — ready
+### T-047 · 잔여 두 조건 집중 독립 재검수 (parent=T046/T045, priority=P1) — running
+
+- 실제worker ready dispatch ctx_7d04d5a8942c / task task_746652d7daad / terminal term_b7e19858-6845-464f-97b2-5c042a01d90a / child k6-residual-focused-recheck. 결과Orca wake로회수.
 
 - b586d66 제품2파일최소변경에대해 F0451 absent-path afterProbe rawDELETE 원본bytes/논리보존, F0452 legacy digest없음은진짜/다른업무사본모두unconfirmed·새digest정상confirmed를독립재현한다. 관련4파일98회귀·실제1280/390안내·원본/fixture보존, 새결함없으면T045기존통과증거와합쳐현재SQL K6범위판정. 전체307을재실행했다고과장하지않는다.
 - 고유T047보고만, 제품/사용자DB/fixture원본/공용문서불변. 미래코드이관hash는0005전별도미완료조건유지.
