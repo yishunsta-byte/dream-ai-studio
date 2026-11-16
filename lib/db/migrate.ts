@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { codeMigration, isCertifiedCodeMigration, MigrationSourceError } from "./code-migration";
-import { verifyTimelineMigration } from "./timeline-data";
+import { checkTimelineRows, verifyTimelineMigration } from "./timeline-data";
 import { checkRenderRows } from "./render-data";
 
 // `verify` is the data check a step defines for itself (K-6 ③); it runs after the step is applied.
@@ -21,8 +21,9 @@ export const productSqlMigrations=()=>productFiles.map((name,index)=>migrationEn
 // SQL steps after the code step (T-105): explicit versions, appended after PRODUCT_CODE_STEPS in this order.
 // 0007 (T-109) also checks every render row written under 0006 (read-only, after it is applied): a row that breaks the
 // new guards stops the whole run with its id and reason, and nothing is recorded.
-export const LATER_SQL_STEPS=[{version:6,name:"0006_renders.sql"},{version:7,name:"0007_render_guards.sql"}] as const;
-const LATER_SQL_VERIFY:Partial<Record<number,(sqlite:Database.Database)=>void>>={7:checkRenderRows};
+// 0008 (T-132) is the timeline v2 feature gate (no column change); its data check reads every timeline row.
+export const LATER_SQL_STEPS=[{version:6,name:"0006_renders.sql"},{version:7,name:"0007_render_guards.sql"},{version:8,name:"0008_timeline_audio.sql"}] as const;
+const LATER_SQL_VERIFY:Partial<Record<number,(sqlite:Database.Database)=>void>>={7:checkRenderRows,8:checkTimelineRows};
 export const productLaterSqlMigrations=()=>LATER_SQL_STEPS.map(({version,name})=>{const entry=migrationEntry(version,name,readFileSync(join(process.cwd(),"lib/db/migrations",name),"utf8"));const verify=LATER_SQL_VERIFY[version];return verify?{...entry,verify}:entry;});
 // The product list. Tests may pass an isolated list (e.g. product + a test-only step); the product never adds one at runtime.
 // A product file that cannot be read (missing, or the app started outside its folder) is a source error (T-061 D8).

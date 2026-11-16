@@ -5,7 +5,7 @@ import { join, relative } from "node:path";
 import { z } from "zod";
 import type { DatabaseHandle } from "@/lib/db/connection";
 import { readTimelineRow } from "@/lib/db/timeline-data";
-import { canonicalJson, FPS, timelineSchema, totalFrames, type Timeline } from "@/lib/edit/timeline";
+import { canonicalJson, FPS, timelineV1Schema, totalFrames, type Timeline } from "@/lib/edit/timeline";
 import { PREVIEW_SIZE } from "@/lib/edit/preview";
 import { fontStatuses, type FontStatus } from "@/lib/fonts/registry";
 import { jobsRepository } from "@/lib/repo/jobs";
@@ -27,7 +27,8 @@ export const renderMediaSchema=z.strictObject({assetId:z.uuid(),kind:z.enum(["im
 export const renderFontSchema=z.strictObject({family:z.string().min(1).max(80),relPath,sha256:hex64,sizeBytes:z.number().int().min(1),weightMin:z.number().int().min(1).max(1000),weightMax:z.number().int().min(1).max(1000)});
 export const renderInputSchema=z.strictObject({
   schemaVersion:z.literal(1),projectId:z.uuidv7(),contentRevision:z.number().int().min(1),timelineRevId:z.uuid(),timelineRevision:z.number().int().min(1),timelineSha256:hex64,
-  timeline:timelineSchema,
+  // The render envelope 1 holds a v1 timeline without sound only (T-132): sound needs the later audioPlan (step C).
+  timeline:timelineV1Schema.refine(timeline=>timeline.audio.length===0,{message:"render input 1 has no sound"}),
   output:z.strictObject({codec:z.literal("h264"),pixelFormat:z.literal("yuv420p"),colorSpace:z.literal("bt709"),fps:z.literal(FPS),width:z.number().int().min(16),height:z.number().int().min(16),audio:z.literal("none")}),
   durationInFrames:z.number().int().min(1),videoFrames:z.number().int().min(1),
   media:z.array(renderMediaSchema),fonts:z.array(renderFontSchema),
@@ -46,7 +47,8 @@ export type RenderBlocker=
   |{code:"TIMELINE_STALE";params:{scenes:{sceneId:string;sceneTitle:string}[]}}
   |{code:"RENDER_BROWSER_MISSING";params:{reason:"missing"|"mismatch";version:string}}
   |{code:"DISK_FULL";params:{where:"storage";needBytes:number;freeBytes:number}}
-  |{code:"RENDER_ACTIVE";params:{renderId:string}};
+  |{code:"RENDER_ACTIVE";params:{renderId:string}}
+  |{code:"AUDIO_RENDER_UNSUPPORTED";params:{schemaVersion:1|2;audioClips:number}};
 
 // Space a render may use: frames, browser profile and the encoded file, all in the work folder under storage/tmp
 // (the child's TEMP points there) and then the published file under storage (T-101 2.7).
@@ -67,6 +69,9 @@ export async function prepareRender(handle:DatabaseHandle,projectId:string,deps:
   const row=project.currentTimelineRevId?timelines.row(project.currentTimelineRevId):undefined;
   if(!row||row.project_id!==projectId){blockers.push({code:"RENDER_INPUT_MISSING",params:{reason:"no_timeline"}});return {project,row:null,blockers,input:null};}
   const timeline:Timeline=readTimelineRow(row);
+  // T-132: a v2 timeline (sound settings) or an old v1 row that lists sound is never rendered by the silent path, so a
+  // missing sound can never become a "succeeded" video. Sound rendering comes with render envelope 1 + audioPlan 1.
+  if(timeline.schemaVersion===2||timeline.audio.length){blockers.push({code:"AUDIO_RENDER_UNSUPPORTED",params:{schemaVersion:timeline.schemaVersion,audioClips:timeline.audio.length}});return {project,row,blockers,input:null};}
   if(!timeline.video.length){blockers.push({code:"RENDER_INPUT_MISSING",params:{reason:"no_scenes"}});return {project,row,blockers,input:null};}
   const scenes=new Map(timeline.video.map((clip,index)=>[clip.sceneId,{number:index+1,title:jobs.scene(clip.sceneId)?.title??`장면 ${index+1}`}]));
   // Clips: a chosen result for every slot, a stored image or video whose bytes are still the registered ones.

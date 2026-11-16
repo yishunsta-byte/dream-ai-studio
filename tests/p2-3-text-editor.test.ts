@@ -16,7 +16,7 @@ import { READABLE_FONT_FAMILIES, SPEC_FONTS, type FontRef } from "@/lib/edit/fon
 import { PRESETS, QUICK_LOOK_KINDS, presetFor } from "@/lib/edit/presets";
 import { SAFE_AREA, formatFrameTime, PREVIEW_SIZE } from "@/lib/edit/preview";
 import { applyPreset, changeKind, insertText, moveInsideSafeArea, moveText, newTextLayer, parseFrameTime, removeText, replaceText, safeViolations, textMotion } from "@/lib/edit/text-ops";
-import { canonicalJson, TEXT_KINDS, textFromP1, timelineSchema, type Timeline, type TimelineText } from "@/lib/edit/timeline";
+import { canonicalJson, TEXT_KINDS, textFromP1, timelineV1Schema, type Timeline, type TimelineText } from "@/lib/edit/timeline";
 import { fontStatuses, licenseOk, selectableFonts } from "@/lib/fonts/registry";
 import { jobsRepository } from "@/lib/repo/jobs";
 import { editingService } from "@/lib/services/editing";
@@ -42,8 +42,8 @@ describe("글꼴 목록 (읽기 목록 ⊇ spec, 고를 수 있는 목록 = spec
   it("읽기 목록은 spec 8종을 모두 포함하고 스키마가 그 이름을 받는다",()=>{
     expect(SPEC_FONTS.map(font=>font.family).every(family=>(READABLE_FONT_FAMILIES as readonly string[]).includes(family))).toBe(true);
     const layer=newTextLayer("subtitle",{startFrame:0,videoFrames:300,plannedFrames:300,content:"가"});
-    for(const family of READABLE_FONT_FAMILIES)expect(timelineSchema.shape.text.element.safeParse({...layer,style:{...layer.style,fontFamily:family}}).success).toBe(true);
-    expect(timelineSchema.shape.text.element.safeParse({...layer,style:{...layer.style,fontFamily:"Comic Sans"}}).success).toBe(false);
+    for(const family of READABLE_FONT_FAMILIES)expect(timelineV1Schema.shape.text.element.safeParse({...layer,style:{...layer.style,fontFamily:family}}).success).toBe(true);
+    expect(timelineV1Schema.shape.text.element.safeParse({...layer,style:{...layer.style,fontFamily:"Comic Sans"}}).success).toBe(false);
   });
   it("가짜 글꼴 폴더: 라이선스 없음·본문 다름·파일 0개·2개는 빠지고, CRLF 원문 라이선스는 통과",()=>{
     const fake=join(root,"fonts"),put=(folder:string,files:Record<string,string>)=>{const dir=join(fake,"public","fonts",folder);mkdirSync(dir,{recursive:true});for(const [name,body] of Object.entries(files))writeFileSync(join(dir,name),body);};
@@ -75,7 +75,7 @@ describe("프리셋·편집 함수 (순수, 입력 불변)",()=>{
       expect({style:layer.style,animation:layer.animation,locked:layer.locked}).toEqual({style:preset.style,animation:preset.animation,locked:preset.locked});
       if(kind!=="disclosure")expect(layer.box).toEqual(preset.box);
       expect(layer.timing).toEqual(kind==="disclosure"?{startFrame:0,endFrame:900}:{startFrame:30,endFrame:120});
-      expect(timelineSchema.shape.text.element.safeParse(layer).success).toBe(true);
+      expect(timelineV1Schema.shape.text.element.safeParse(layer).success).toBe(true);
       for(const aspect of ["9:16","16:9","1:1"] as const){const safe=SAFE_AREA[aspect],box=PRESETS[kind].box,left=box.anchor==="center"?box.x-box.widthRatio/2:box.x,right=left+box.widthRatio;
         expect(left).toBeGreaterThanOrEqual(safe.left-1e-9);expect(right).toBeLessThanOrEqual(1-safe.right+1e-9);expect(box.y).toBeGreaterThanOrEqual(safe.top);expect(box.y).toBeLessThanOrEqual(1-safe.bottom);}
     }

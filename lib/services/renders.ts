@@ -30,7 +30,7 @@ async function withDatabaseAsync<T>(operation:(handle:DatabaseHandle)=>Promise<T
 function ready(){if(!checkStartup().canStart)throw new RenderRequestError("STAGE_LOCKED","시작 점검을 확인해 주세요.",503);}
 const BLOCKER_MESSAGE:Record<RenderBlocker["code"],string>={
   RENDER_INPUT_MISSING:"영상에 쓸 장면 결과나 파일을 확인해 주세요.",FONT_MISSING:"글자에 쓴 글꼴을 확인해 주세요.",TIMELINE_STALE:"선택한 장면 결과가 바뀌었어요. 편집 화면에서 다시 저장해 주세요.",
-  RENDER_BROWSER_MISSING:"영상 만들기 도구를 확인해 주세요.",DISK_FULL:"저장 공간이 부족해요.",RENDER_ACTIVE:"이 프로젝트의 다른 영상을 만들고 있어요.",
+  RENDER_BROWSER_MISSING:"영상 만들기 도구를 확인해 주세요.",DISK_FULL:"저장 공간이 부족해요.",RENDER_ACTIVE:"이 프로젝트의 다른 영상을 만들고 있어요.",AUDIO_RENDER_UNSUPPORTED:"소리를 넣은 타임라인은 아직 영상으로 만들 수 없어요.",
 };
 
 type VerifyView={result:"passed"|"failed";items:VerifyResult["items"]};

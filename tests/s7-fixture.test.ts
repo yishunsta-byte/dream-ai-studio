@@ -1,7 +1,9 @@
 // Fixed virtual backup s7 (T-109): s6 + 0007_render_guards.sql. Generated once with S7_WRITE=1 (refuses to overwrite).
 // Checks: kept bytes and record, regeneration, s6 → 0007 keeps every row, direct s7 restore, s6 (6→7) and s5 (5→7)
 // upgrade restores, and refusal of repacked backups whose rows break F107-1/2/3 (on s7, and on s6 at both the 6-step
-// app and the product app), an older app and a changed 0007. s4/s5/s6 bytes are checked unchanged.
+// app and the 7-step app), an older app and a changed 0007. s4/s5/s6 bytes are checked unchanged.
+// T-132: the product list is longer now (0008); these checks keep s7's own 7-step app (s7Migrations) as the app under
+// test, so their meaning is unchanged. Product (8-step) restores of s7 are checked in p2-5a-audio-db.test.ts.
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -10,7 +12,7 @@ import Database from "better-sqlite3";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only",()=>({}));
 import { openDatabase, type DatabaseHandle } from "@/lib/db/connection";
-import { migrateDatabase, migrationEntry, productMigrations, type Migration } from "@/lib/db/migrate";
+import { migrateDatabase, migrationEntry, type Migration } from "@/lib/db/migrate";
 import { renderInputSha256 } from "@/lib/db/render-data";
 import { inventoryHash, readBackupManifest, verifyBackupArchive } from "@/lib/backup/archive";
 import { backupManifestSchema } from "@/lib/backup/schema";
@@ -78,20 +80,20 @@ describe.skipIf(process.env.S7_WRITE==="1")("고정 백업 s7",()=>{
   const record=()=>JSON.parse(readFileSync(S7_RECORD,"utf8")) as S7Record,s6=()=>JSON.parse(readFileSync(S6_RECORD,"utf8")) as {migrations:unknown[];renders:RenderSummary[];logical:{tables:Record<string,string>}};
   it("보관 원본: ZIP 해시·마이그레이션 7줄(1~6은 s6과 같음)·렌더 5행(s6과 같음)·논리 내용·스키마가 기록과 같고, 다시 만들어도 같다",async()=>{
     const expected=record();expect(await fileDigest(S7_ZIP)).toEqual(expected.zip);
-    const {manifest,db}=await extract(S7_ZIP,join(root,"a1"));expect(manifest.migrations).toEqual(plain(s7Migrations()));expect(manifest.migrations).toEqual(plain(productMigrations()));
+    const {manifest,db}=await extract(S7_ZIP,join(root,"a1"));expect(manifest.migrations).toEqual(plain(s7Migrations()));expect(manifest.migrations).toEqual(plain(s7Migrations()));
     expect(manifest.migrations.slice(0,6)).toEqual(s6().migrations);expect(manifest.migrations[6]).toMatchObject({version:7,name:"0007_render_guards.sql"});
     const described=describeDb(db);expect(described.logical).toEqual({all:expected.logical.all,tables:expected.logical.tables});expect(described.schema).toBe(expected.schema);
     expect(described.renders).toEqual(expected.renders);expect(described.renders).toEqual(s6().renders);
     for(const [name,hash] of Object.entries(s6().logical.tables))if(name!=="__schema_migrations")expect(described.logical.tables[name],name).toBe(hash);
     const regen=describeDb((await extract((await generate(join(root,"regen"))).out,join(root,"regen-x"))).db);expect(regen.logical).toEqual(described.logical);expect(regen.schema).toBe(described.schema);
   },180000);
-  it("s6를 제품 목록으로 올리면(0007, 행 검사 통과) s7과 같다 — 0006 행은 바뀌지 않는다",async()=>{
-    const {db}=await extract(S6_ZIP,join(root,"s6"));const sqlite=openDatabase(db,{fileMustExist:true});try{expect(migrateDatabase(sqlite.sqlite,{migrations:productMigrations(),now})).toBe(1);}finally{sqlite.close();}
+  it("s6를 7단계 목록으로 올리면(0007, 행 검사 통과) s7과 같다 — 0006 행은 바뀌지 않는다",async()=>{
+    const {db}=await extract(S6_ZIP,join(root,"s6"));const sqlite=openDatabase(db,{fileMustExist:true});try{expect(migrateDatabase(sqlite.sqlite,{migrations:s7Migrations(),now})).toBe(1);}finally{sqlite.close();}
     const after=describeDb(db);expect(after.schema).toBe(record().schema);expect(after.logical.all).toBe(record().logical.all);
   });
   it("s7 직접 복원(same 7→7): 끝난 렌더·파일 그대로, 진행 중 렌더는 RESTORE_INTERRUPTED, 0007 트리거가 복원본에서도 동작",async()=>{
-    const zip=await copied(S7_ZIP,"s7.zip"),manifest=await source(productMigrations(),zip),destination=join(root,"restored");
-    const svc=restoreService(handle!,now),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"same",fromVersion:7,toVersion:7});await svc.finish(checked.ticketId);
+    const zip=await copied(S7_ZIP,"s7.zip"),manifest=await source(s7Migrations(),zip),destination=join(root,"restored");
+    const svc=restoreService(handle!,now,{migrations:s7Migrations()}),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"same",fromVersion:7,toVersion:7});await svc.finish(checked.ticketId);
     const restored=openDatabase(join(destination,"data/app.db"),{fileMustExist:true});
     try{const rows=renderRows(restored.sqlite);for(const id of [ids.passed,ids.late,ids.verifyFailed,ids.canceled])expect(rows.find(row=>row.id===id)).toEqual(record().renders.find(row=>row.id===id));
       expect(rows.find(row=>row.id===ids.running)).toMatchObject({status:"failed",error_code:"RESTORE_INTERRUPTED"});
@@ -101,27 +103,27 @@ describe.skipIf(process.env.S7_WRITE==="1")("고정 백업 s7",()=>{
   },120000);
   it("s6 올려서 복원(upgrade 6→7)과 s5 올려서 복원(5→7): staging에서 올린 직후 구조 = s7, 원본 ZIP 그대로",async()=>{
     for(const [zipFile,name,from,rows] of [[S6_ZIP,"s6.zip",6,5],[S5_ZIP,"s5.zip",5,0]] as const){
-      const zip=await copied(zipFile,name),manifest=await source(productMigrations(),zip),destination=join(root,`restored-${from}`);let schema="",count=-1;
+      const zip=await copied(zipFile,name),manifest=await source(s7Migrations(),zip),destination=join(root,`restored-${from}`);let schema="",count=-1;
       const options:RestoreOptions={onStage:async(stage:RestoreStage,staging:string)=>{if(stage==="upgraded"){const sqlite=new Database(join(staging,"data/app.db"),{readonly:true,fileMustExist:true});try{schema=schemaHash(sqlite);count=renderRows(sqlite).length;}finally{sqlite.close();}}}};
-      const svc=restoreService(handle!,now,options),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"upgrade",fromVersion:from,toVersion:7});await svc.finish(checked.ticketId);
+      const svc=restoreService(handle!,now,{...options,migrations:s7Migrations()}),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"upgrade",fromVersion:from,toVersion:7});await svc.finish(checked.ticketId);
       expect(schema).toBe(record().schema);expect(count).toBe(rows);expect(await fileDigest(zip)).toEqual(await fileDigest(zipFile));
       handle?.close();handle=undefined;await rm(join(root,"source"),{recursive:true,force:true});
     }
   },180000);
   it("F107-1/2/3: 해시·manifest까지 맞춘 위조 s7은 실제 inspect·finish에서 RESTORE_INVALID, 목적지 없음, ZIP 그대로",async()=>{
-    await refused(await forged(S7_ZIP,"timeline-999",falseBinding),"RESTORE_INVALID",productMigrations());
-    await refused(await forged(S7_ZIP,"job-kind",sqlite=>{sqlite.prepare("UPDATE jobs SET kind='export' WHERE id=?").run(ids.jobPassed);}),"RESTORE_INVALID",productMigrations());
-    await refused(await forged(S7_ZIP,"job-project",sqlite=>{sqlite.prepare("UPDATE jobs SET project_id=? WHERE id=?").run(s4Ids().draft,ids.jobLate);}),"RESTORE_INVALID",productMigrations());
-    await refused(await forged(S7_ZIP,"null-sha",sqlite=>{sqlite.prepare("UPDATE renders SET sha256=NULL WHERE id=?").run(ids.passed);}),"RESTORE_INVALID",productMigrations());
+    await refused(await forged(S7_ZIP,"timeline-999",falseBinding),"RESTORE_INVALID",s7Migrations());
+    await refused(await forged(S7_ZIP,"job-kind",sqlite=>{sqlite.prepare("UPDATE jobs SET kind='export' WHERE id=?").run(ids.jobPassed);}),"RESTORE_INVALID",s7Migrations());
+    await refused(await forged(S7_ZIP,"job-project",sqlite=>{sqlite.prepare("UPDATE jobs SET project_id=? WHERE id=?").run(s4Ids().draft,ids.jobLate);}),"RESTORE_INVALID",s7Migrations());
+    await refused(await forged(S7_ZIP,"null-sha",sqlite=>{sqlite.prepare("UPDATE renders SET sha256=NULL WHERE id=?").run(ids.passed);}),"RESTORE_INVALID",s7Migrations());
   },240000);
-  it("같은 위조 s6: 6단계 앱(same)은 RESTORE_INVALID, 제품 앱(올려서)은 0007 행 검사에서 BACKUP_UPGRADE_FAILED",async()=>{
+  it("같은 위조 s6: 6단계 앱(same)은 RESTORE_INVALID, 7단계 앱(올려서)은 0007 행 검사에서 BACKUP_UPGRADE_FAILED",async()=>{
     const zip=await forged(S6_ZIP,"s6-timeline-999",falseBinding);
     await refused(zip,"RESTORE_INVALID",s6Migrations());
-    await refused(zip,"BACKUP_UPGRADE_FAILED",productMigrations());
+    await refused(zip,"BACKUP_UPGRADE_FAILED",s7Migrations());
   },180000);
   it("6단계 앱은 s7을 BACKUP_TOO_NEW로, 0007 원문이 다른 앱은 BACKUP_SCHEMA_MISMATCH로 거부한다",async()=>{
     await refused(await copied(S7_ZIP,"s7-old.zip"),"BACKUP_TOO_NEW",s6Migrations());
-    const seven=productMigrations()[6],changed=[...s6Migrations(),{...migrationEntry(7,seven.name,`${seven.sql}\n-- changed\n`),verify:seven.verify}];expect(changed[6].sha256).not.toBe(seven.sha256);
+    const seven=s7Migrations()[6],changed=[...s6Migrations(),{...migrationEntry(7,seven.name,`${seven.sql}\n-- changed\n`),verify:seven.verify}];expect(changed[6].sha256).not.toBe(seven.sha256);
     await refused(await copied(S7_ZIP,"s7-changed.zip"),"BACKUP_SCHEMA_MISMATCH",changed);
   },120000);
 });

@@ -9,6 +9,7 @@ import { canonicalJson, editViewFromTimeline, FPS, textFromP1, framesToSeconds, 
 import type { FontRef } from "@/lib/edit/fonts";
 import { presetFor } from "@/lib/edit/presets";
 import { selectableFonts } from "@/lib/fonts/registry";
+import { storedFileExists } from "@/lib/storage/paths";
 import { finishingRepository } from "@/lib/repo/finishing";
 import { jobsRepository } from "@/lib/repo/jobs";
 import { timelineRepository } from "@/lib/repo/timeline";
@@ -23,6 +24,9 @@ export const TIMELINE_CONFLICT="다른 창에서 먼저 저장했어요. 새로�
 export const TIMELINE_P1_MISMATCH="옮긴 타임라인이 원래 글자 설정과 달라요(글자·장면 순서·클립). 데이터 상태를 확인해 주세요.";
 export const FONT_UNAVAILABLE="이 글꼴은 아직 설치되지 않았어요. 다른 글꼴을 골라 주세요.";
 export const FONT_WEIGHT_UNAVAILABLE="이 글꼴에 없는 굵기예요. 굵기를 다시 골라 주세요.";
+export const AUDIO_V1_UNSUPPORTED="예전 형식(v1)의 소리 항목은 저장하거나 되돌릴 수 없어요. 원래 기록은 그대로 두고, 소리는 새 형식으로 다시 넣어 주세요.";
+export const AUDIO_ASSET_INVALID="소리 파일을 다시 골라 주세요. 자료 보관함의 소리 파일만 쓸 수 있어요.";
+export const AUDIO_RANGE_INVALID="소리 파일에서 가져올 구간이 파일 길이를 넘어요.";
 export const TIMELINE_STALE="선택한 장면 결과가 타임라인을 저장한 뒤 바뀌었어요. 편집 화면에서 지금 선택으로 다시 저장해 주세요.";
 const MAX_JSON=1024*1024;
 const invalid=(message:string)=>new WorkflowError("INVALID_TRANSITION",message,400);
@@ -49,7 +53,10 @@ export function timelineService(handle:DatabaseHandle,fonts:()=>readonly FontRef
   const value=project(projectId),timeline=timelineSchema.parse(input),json=canonicalJson(timeline);
   if(json.length>MAX_JSON)throw invalid("타임라인이 너무 커요. 글자와 장면 수를 줄여 주세요.");
   if(timeline.aspect!==value.aspect)throw invalid("화면 비율은 프로젝트와 같아야 해요.");
-  if(timeline.audio.length)throw invalid("소리 줄은 다음 단계에서 열려요. 지금은 비워 두세요.");
+  // T-132: v1 never gains sound (its audio has no source range; no guessed conversion). v2 sound is checked against
+  // the library here; the timeline-only rules (length, fades, joins, rights rows) were checked by the schema.
+  if(timeline.schemaVersion===1&&timeline.audio.length)throw invalid(AUDIO_V1_UNSUPPORTED);
+  if(timeline.schemaVersion===2)checkAudio(timeline,base);
   const server=clipsFor(projectId,base),byScene=new Map(server.map(clip=>[clip.sceneId,clip])),savedIds=new Map(base?.video.map(clip=>[clip.sceneId,clip.id])??[]);
   if(timeline.video.length!==server.length||timeline.video.some(clip=>!byScene.has(clip.sceneId)))throw invalid("현재 장면을 빠짐없이 한 번씩 배치해 주세요.");
   if(timeline.video.some(clip=>!sameClip(clip,byScene.get(clip.sceneId)!)||(savedIds.has(clip.sceneId)&&savedIds.get(clip.sceneId)!==clip.id)))throw new WorkflowError("CONFLICT","장면 결과가 지금 선택과 달라요. 새로고침한 뒤 다시 저장해 주세요.");
@@ -80,6 +87,20 @@ export function timelineService(handle:DatabaseHandle,fonts:()=>readonly FontRef
   if(timeline.text.some(layer=>layer.locked&&!required.includes(layer.content)))throw invalid("잠긴 필수 표기를 확인해 주세요.");
   return {timeline,json};
  }
+ // A clip kept unchanged from the base may stay on an archived file (never rewritten); a new or changed clip needs an
+ // audio file of the library that is not archived and still stored. Every clip must fit inside its file's length
+ // (whole frames inside the recorded duration; exact samples are measured by the later mix step).
+ function checkAudio(timeline:Extract<Timeline,{schemaVersion:2}>,base:Timeline|null){
+  const before=new Map(base?.schemaVersion===2?base.audio.map(clip=>[clip.id,canonicalJson(clip)]):[]);
+  const rows=new Map(jobs.assets([...new Set(timeline.audio.map(clip=>clip.assetId))]).map(asset=>[asset.id,asset]));
+  for(const clip of timeline.audio){
+   const asset=rows.get(clip.assetId),carried=before.get(clip.id)===canonicalJson(clip);
+   if(!asset||asset.kind!=="audio"||!asset.filePath)throw invalid(AUDIO_ASSET_INVALID);
+   if(!carried&&(asset.archivedAt||!storedFileExists(asset.filePath)))throw invalid(AUDIO_ASSET_INVALID);
+   if(!Number.isSafeInteger(asset.durationMs)||asset.durationMs!<=0)throw invalid("소리 파일의 길이를 알 수 없어요. 다른 파일을 골라 주세요.");
+   if(clip.sourceInFrame+clip.durationFrames>Math.floor(asset.durationMs!*FPS/1000))throw invalid(AUDIO_RANGE_INVALID);
+  }
+ }
  function write(projectId:string,revision:number,expectedTimelineId:string|null,json:string,action:"timeline.save"|"timeline.restore",restoredFromId:string|null,timeline:Timeline){
   const value=project(projectId),current=currentRow(projectId,value.currentTimelineRevId);
   if(current&&current.row.timeline_json===json)return {revision,timelineId:current.row.id,timelineRevision:current.row.revision,created:false};
@@ -97,6 +118,7 @@ export function timelineService(handle:DatabaseHandle,fonts:()=>readonly FontRef
   save:(projectId:string,revision:number,expectedTimelineId:string|null,input:unknown)=>atomic(()=>{const value=cas(projectId,revision,expectedTimelineId),base=currentRow(projectId,value.currentTimelineRevId)?.timeline??null;const {timeline,json}=check(projectId,input,base);return write(projectId,revision,expectedTimelineId,json,"timeline.save",null,timeline);}),
   restore:(projectId:string,revision:number,expectedTimelineId:string|null,fromId:string)=>atomic(()=>{const value=cas(projectId,revision,expectedTimelineId),from=repo.row(fromId);if(!from||from.project_id!==projectId)throw new WorkflowError("NOT_FOUND","되돌릴 타임라인 버전을 찾을 수 없어요.",404);
    const old=readTimelineRow(from),base=currentRow(projectId,value.currentTimelineRevId)?.timeline??null;
+   if(old.schemaVersion===1&&old.audio.length)throw invalid(AUDIO_V1_UNSUPPORTED);
    // The old version is checked by today's rules against today's selection; carried texts are judged against itself.
    let checked:{timeline:Timeline;json:string};try{checked=check(projectId,old,{...old,video:base?.video??old.video});}catch(error){if(error instanceof WorkflowError||error instanceof z.ZodError)throw invalid("그 버전 이후 장면이나 기준이 바뀌어 그대로 되돌릴 수 없어요.");throw error;}
    return write(projectId,revision,expectedTimelineId,checked.json,"timeline.restore",from.id,checked.timeline);}),

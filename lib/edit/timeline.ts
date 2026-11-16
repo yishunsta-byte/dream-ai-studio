@@ -35,12 +35,90 @@ export const timelineTextSchema=z.strictObject({
   animation:z.strictObject({in:z.enum(["none","fade","pop","slide-up","typewriter"]),out:z.enum(["none","fade","slide-down"]),emphasis:z.enum(["none","bounce","shake","scale"]),durationFrames:z.number().int().min(0).max(300),easing:z.enum(["linear","ease-out","ease-in-out"])}),
   locked:z.boolean(),
 }).refine(layer=>layer.timing.endFrame>layer.timing.startFrame,{message:"끝은 시작보다 1프레임 이상 뒤여야 해요."});
-export const timelineSchema=z.strictObject({
+const uniqueVideo=(value:{video:{id:string;sceneId:string}[]})=>new Set(value.video.map(clip=>clip.id)).size===value.video.length&&new Set(value.video.map(clip=>clip.sceneId)).size===value.video.length;
+const uniqueText=(value:{text:{id:string}[]})=>new Set(value.text.map(layer=>layer.id)).size===value.text.length;
+// v1 (P2-1): read as stored. Its `audio` has no source range, so a non-empty v1 audio list is kept byte for byte but is
+// never saved again, converted or rendered (T-132, Master: no guessed conversion).
+export const timelineV1Schema=z.strictObject({
   schemaVersion:z.literal(1),fps:z.literal(FPS),aspect:z.enum(["9:16","16:9","1:1"]),
   video:z.array(clipSchema).max(100),audio:z.array(audioClipSchema).max(100),text:z.array(timelineTextSchema).max(100),
-}).refine(value=>new Set(value.video.map(clip=>clip.id)).size===value.video.length&&new Set(value.video.map(clip=>clip.sceneId)).size===value.video.length,{message:"장면과 클립은 한 번씩만 넣어 주세요."})
-  .refine(value=>new Set(value.text.map(layer=>layer.id)).size===value.text.length,{message:"글자 항목이 겹쳐요."});
+}).refine(uniqueVideo,{message:"장면과 클립은 한 번씩만 넣어 주세요."})
+  .refine(uniqueText,{message:"글자 항목이 겹쳐요."});
+
+// ── P2-5A timeline v2 (T-130 4.1, T-132). Saved only when the client sends schemaVersion 2 (opt-in); a v1 row is never
+// rewritten as v2 by reading. Times are whole 30 fps frames; the mix uses 48 kHz, so one frame is exactly 1600 samples.
+export const AUDIO_SAMPLE_RATE=48000;
+export const SAMPLES_PER_FRAME=AUDIO_SAMPLE_RATE/FPS;
+export const AUDIO_MIX_PROFILE="p2-5-local-v1";
+export const AUDIO_ROLES=["voice","music","effect"] as const;
+const AUDIO_CHECK="소리 설정을 확인해 주세요.";
+export const audioClipV2Schema=z.strictObject({
+  id:ref,assetId:ref,role:z.enum(AUDIO_ROLES),
+  startFrame:frame,                                              // where it starts in the video
+  sourceInFrame:frame,durationFrames:z.number().int().min(1).max(MAX_FRAMES),// the part of the file it uses
+  gainDb:z.number().min(-60).max(12),fadeInFrames:frame,fadeOutFrames:frame,duckUnderVoice:z.boolean(),
+});
+export const audioJoinSchema=z.strictObject({fromClipId:ref,toClipId:ref,type:z.literal("crossfade"),durationFrames:z.number().int().min(1).max(MAX_FRAMES),curve:z.literal("equalPower")});
+const rightsText=(max:number)=>z.string().max(max).refine(value=>value.trim()===value&&value.length>0,{message:"앞뒤 공백 없이 적거나 비워 두세요."}).nullable();
+// Rights as recorded for THIS version (one row per audio file the version uses). A filled row is a record, not a
+// license decision: it never passes a review item by itself. Empty values mean "직접 확인 필요".
+export const audioRightsSchema=z.strictObject({
+  assetId:ref,sourceUrl:z.url({protocol:/^https?$/}).max(2000).nullable(),planName:rightsText(120),
+  createdOn:z.iso.date().nullable(),licenseNote:rightsText(1000),
+});
+type AudioClipV2=z.infer<typeof audioClipV2Schema>;
+type AudioJoin=z.infer<typeof audioJoinSchema>;
+type AudioRights=z.infer<typeof audioRightsSchema>;
+type AudioIssue={path:(string|number)[];message:string};
+// Output length D (T-132 Master): the video and the texts decide it; sound never makes a video longer or loops.
+export const outputFrames=(timeline:{video:readonly {durationFrames:number}[];text:readonly {timing:{endFrame:number}}[]})=>Math.max(totalFrames(timeline.video),...timeline.text.map(layer=>layer.timing.endFrame));
+// Every rule that needs only the timeline itself (asset rules are checked by the server against the database).
+export function audioIssues(value:{video:readonly {durationFrames:number}[];text:readonly {timing:{endFrame:number}}[];audio:readonly AudioClipV2[];audioJoins:readonly AudioJoin[];audioRights:readonly AudioRights[]}):AudioIssue[]{
+  const issues:AudioIssue[]=[],add=(path:(string|number)[],message:string)=>issues.push({path,message});
+  const end=outputFrames(value),byId=new Map<string,AudioClipV2>();
+  value.audio.forEach((clip,index)=>{
+    if(byId.has(clip.id))add(["audio",index,"id"],"소리 항목이 겹쳐요.");byId.set(clip.id,clip);
+    if(clip.startFrame+clip.durationFrames>end)add(["audio",index,"durationFrames"],"소리는 영상 길이 안에서 끝나야 해요. 소리로 영상을 늘리지 않아요.");
+    if(clip.fadeInFrames+clip.fadeOutFrames>clip.durationFrames)add(["audio",index,"fadeOutFrames"],"처음·끝 서서히의 합이 소리 길이보다 길어요.");
+    if(clip.duckUnderVoice&&clip.role!=="music")add(["audio",index,"duckUnderVoice"],"음성에 맞춰 낮추기는 배경 음악에만 써요.");
+  });
+  const incoming=new Map<string,AudioJoin>(),outgoing=new Map<string,AudioJoin>(),pair=(a:string,b:string)=>a<b?`${a}|${b}`:`${b}|${a}`,joined=new Set<string>();
+  value.audioJoins.forEach((join,index)=>{
+    const from=byId.get(join.fromClipId),to=byId.get(join.toClipId),at=(field:string)=>["audioJoins",index,field];
+    if(!from||!to){add(at(from?"toClipId":"fromClipId"),"이어 붙일 소리를 찾을 수 없어요.");return;}
+    if(from.id===to.id||from.role!=="music"||to.role!=="music"){add(at("fromClipId"),"곡 사이 겹치기는 서로 다른 배경 음악 두 곡에만 써요.");return;}
+    if(outgoing.has(from.id)||incoming.has(to.id)||joined.has(pair(from.id,to.id))){add(at("fromClipId"),"한 곡은 앞뒤로 한 번씩만 이어 붙일 수 있어요.");return;}
+    outgoing.set(from.id,join);incoming.set(to.id,join);joined.add(pair(from.id,to.id));
+    if(to.startFrame!==from.startFrame+from.durationFrames-join.durationFrames)add(at("durationFrames"),"다음 곡은 앞 곡 끝에서 겹치는 시간만큼 앞에서 시작해야 해요.");
+    // The join is the fade between the two songs: the clip's own fade on that side stays 0 (never applied twice).
+    if(from.fadeOutFrames||to.fadeInFrames)add(at("durationFrames"),"곡 사이 겹치기 쪽에는 따로 서서히를 넣지 않아요.");
+    if(join.durationFrames+from.fadeInFrames>=from.durationFrames||join.durationFrames+to.fadeOutFrames>=to.durationFrames)add(at("durationFrames"),"겹치는 시간은 두 곡의 사용 길이보다 짧아야 해요.");
+  });
+  for(const clip of value.audio){const a=incoming.get(clip.id),b=outgoing.get(clip.id);if(a&&b&&a.durationFrames+b.durationFrames>=clip.durationFrames)add(["audio",value.audio.indexOf(clip),"durationFrames"],"앞뒤 겹치는 시간이 이 곡보다 길어 세 곡이 겹쳐요.");}
+  // Music: two songs may overlap only through their join; three at the same moment are refused.
+  const music=value.audio.filter(clip=>clip.role==="music");
+  for(let i=0;i<music.length;i++)for(let j=i+1;j<music.length;j++){const a=music[i],b=music[j];
+    if(a.startFrame<b.startFrame+b.durationFrames&&b.startFrame<a.startFrame+a.durationFrames&&!joined.has(pair(a.id,b.id)))add(["audio",value.audio.indexOf(b),"startFrame"],"배경 음악은 곡 사이 겹치기로만 겹칠 수 있어요.");}
+  const edges=music.flatMap(clip=>[[clip.startFrame,1],[clip.startFrame+clip.durationFrames,-1]] as const).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);let live=0;
+  for(const [,step] of edges){live+=step;if(live>2){add(["audio"],"배경 음악이 세 곡 이상 겹쳐요.");break;}}
+  // Rights: exactly one record for each audio file the version uses.
+  const used=new Set(value.audio.map(clip=>clip.assetId)),seen=new Set<string>();
+  value.audioRights.forEach((row,index)=>{if(seen.has(row.assetId))add(["audioRights",index,"assetId"],"권리 기록이 겹쳐요.");else if(!used.has(row.assetId))add(["audioRights",index,"assetId"],"쓰지 않는 소리의 권리 기록이에요.");seen.add(row.assetId);});
+  for(const assetId of used)if(!seen.has(assetId))add(["audioRights"],"쓰는 소리마다 권리 기록 한 줄이 필요해요(모르면 비워 두세요).");
+  return issues;
+}
+export const timelineV2Schema=z.strictObject({
+  schemaVersion:z.literal(2),fps:z.literal(FPS),aspect:z.enum(["9:16","16:9","1:1"]),
+  video:z.array(clipSchema).max(100),text:z.array(timelineTextSchema).max(100),
+  audio:z.array(audioClipV2Schema).max(100),audioJoins:z.array(audioJoinSchema).max(100),audioMixProfile:z.literal(AUDIO_MIX_PROFILE),audioRights:z.array(audioRightsSchema).max(100),
+}).refine(uniqueVideo,{message:"장면과 클립은 한 번씩만 넣어 주세요."})
+  .refine(uniqueText,{message:"글자 항목이 겹쳐요."})
+  .superRefine((value,ctx)=>{for(const issue of audioIssues(value))ctx.addIssue({code:"custom",path:issue.path,message:issue.message||AUDIO_CHECK});});
+export const timelineSchema=z.discriminatedUnion("schemaVersion",[timelineV1Schema,timelineV2Schema]);
 export type Timeline=z.infer<typeof timelineSchema>;
+export type TimelineV1=z.infer<typeof timelineV1Schema>;
+export type TimelineV2=z.infer<typeof timelineV2Schema>;
+export type TimelineAudioClip=AudioClipV2;
 export type TimelineClip=z.infer<typeof clipSchema>;
 export type TimelineText=z.infer<typeof timelineTextSchema>;
 

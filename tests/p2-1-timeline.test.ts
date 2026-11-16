@@ -236,10 +236,10 @@ describe("원문·시간 초과 오류 (CLI·시작 점검)",()=>{
     time+=1000;const err:string[]=[];expect(runMigrateCommand({root:folder,migrations:list,now,log:()=>{},error:line=>err.push(line)})).toBe(1);const copy=migrationFailureCopy("MIGRATION_TIMEOUT",null,true);expect(err.slice(0,2)).toEqual([copy.headline,copy.next]);
     expect(checkDatabase(folder,list)).toMatchObject({ok:false,message:copy.headline,code:"MIGRATION_TIMEOUT"});expect(snap(file)).toEqual(before);
   },30000);
-  it("실제 제품 목록 CLI: s4 사본 4→7(0005·0006·0007, 복사본 남김)→0, 빈 폴더는 7단계, 시작 점검 통과",async()=>{
+  it("실제 제품 목록 CLI: s4 사본 4→8(0005~0008, 복사본 남김)→0, 빈 폴더는 8단계, 시작 점검 통과",async()=>{
     const folder=join(root,"runtime");mkdirSync(join(folder,"data"),{recursive:true});copyFileSync(await s4Copy("src"),join(folder,"data/app.db"));
-    const out:string[]=[];expect(runMigrateCommand({root:folder,now,log:line=>out.push(line),error:()=>{}})).toBe(0);expect(out[0]).toBe("데이터베이스 준비 완료: 새 마이그레이션 3개");expect(out[1]).toMatch(/^바꾸기 전 복사본: backups\/pre-migrate\/\d{8}T\d{6}Z_s4-s7\.db/);
+    const out:string[]=[];expect(runMigrateCommand({root:folder,now,log:line=>out.push(line),error:()=>{}})).toBe(0);expect(out[0]).toBe("데이터베이스 준비 완료: 새 마이그레이션 4개");expect(out[1]).toMatch(/^바꾸기 전 복사본: backups\/pre-migrate\/\d{8}T\d{6}Z_s4-s8\.db/);
     out.length=0;expect(runMigrateCommand({root:folder,now,log:line=>out.push(line),error:()=>{}})).toBe(0);expect(out).toEqual(["데이터베이스 준비 완료: 새 마이그레이션 0개"]);expect(checkDatabase(folder)).toEqual({ok:true});
-    const fresh=join(root,"fresh");out.length=0;expect(runMigrateCommand({root:fresh,now,log:line=>out.push(line),error:()=>{}})).toBe(0);expect(out).toEqual(["데이터베이스 준비 완료: 새 마이그레이션 7개"]);expect(timelineRows(join(fresh,"data/app.db"))).toEqual([]);
+    const fresh=join(root,"fresh");out.length=0;expect(runMigrateCommand({root:fresh,now,log:line=>out.push(line),error:()=>{}})).toBe(0);expect(out).toEqual(["데이터베이스 준비 완료: 새 마이그레이션 8개"]);expect(timelineRows(join(fresh,"data/app.db"))).toEqual([]);
   });
 });

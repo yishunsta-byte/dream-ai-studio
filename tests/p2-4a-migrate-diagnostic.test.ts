@@ -28,7 +28,8 @@ async function runtime(change?:(sqlite:Database.Database)=>void){
   return folder;
 }
 const sha=(file:string)=>createHash("sha256").update(readFileSync(file)).digest("hex");
-function run(folder:string,migrations=productMigrations()){
+// T-132: these checks are about 0007 diagnostics, so the app under test stays the 7-step list (0008 came later).
+function run(folder:string,migrations=productMigrations().slice(0,7)){
   const out:string[]=[],err:string[]=[],records:MigrationRecord[]=[];
   const exit=runMigrateCommand({root:folder,migrations,now,log:line=>out.push(line),error:line=>err.push(line),writeRecord:(_root,record)=>records.push(record)});
   return {exit,out,err,record:records[0]};
@@ -66,7 +67,7 @@ describe("실제 migrate 명령: 0007 행 확인 실패의 원인이 남는다",
     const second=run(folder);expect(second.exit).toBe(0);expect(second.out).toEqual(["데이터베이스 준비 완료: 새 마이그레이션 0개"]);expect(second.err).toEqual([]);
   });
   it("회귀: 행 확인이 아닌 실패(알 수 없는 SQL 오류)는 원인 진단 줄 없이 공용 문구만, 스택 없음",async()=>{
-    const folder=await runtime(),broken=[...productMigrations(),migrationEntry(8,"0008_broken.sql","SELECT * FROM no_such_table;")];
+    const folder=await runtime(),broken=[...productMigrations().slice(0,7),migrationEntry(8,"0008_broken.sql","SELECT * FROM no_such_table;")];
     const result=run(folder,broken);expect(result.exit).toBe(1);expect(result.err.some(line=>line.startsWith("원인 진단"))).toBe(false);
     expect(result.err.slice(0,2)).toEqual([copy.headline,copy.next]);expect(result.err.join("\n")).not.toMatch(/no_such_table|\n\s+at /);expect(state(folder).journal).toEqual([1,2,3,4,5,6]);
   });

@@ -69,7 +69,10 @@ export function checkP1MigratedRow(sqlite:Database.Database,row:TimelineRow,time
 // every P1-moved row still matches its source snapshot.
 export function checkTimelineRows(sqlite:Database.Database){
   if(!sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='timeline_revisions'").get())return;
-  for(const row of sqlite.prepare("SELECT * FROM timeline_revisions ORDER BY project_id,revision").all() as TimelineRow[]){const timeline=readTimelineRow(row);if(row.source==="p1-migration")checkP1MigratedRow(sqlite,row,timeline);}
+  const asset=sqlite.prepare("SELECT kind FROM assets WHERE id=?");
+  for(const row of sqlite.prepare("SELECT * FROM timeline_revisions ORDER BY project_id,revision").all() as TimelineRow[]){const timeline=readTimelineRow(row);if(row.source==="p1-migration")checkP1MigratedRow(sqlite,row,timeline);
+    // T-132: a v2 row names only audio files of this database (JSON has no foreign key).
+    if(timeline.schemaVersion===2)for(const clip of timeline.audio)if((asset.get(clip.assetId) as {kind:string}|undefined)?.kind!=="audio")throw new Error("Timeline audio reference differs");}
   const broken=sqlite.prepare("SELECT COUNT(*) AS n FROM projects p WHERE p.current_timeline_rev_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM timeline_revisions t WHERE t.id=p.current_timeline_rev_id AND t.project_id=p.id)").get() as {n:number};
   if(broken.n)throw new Error("Timeline pointer differs");
 }

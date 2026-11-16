@@ -50,7 +50,7 @@ describe("등록 (정확한 앞부분)",()=>{
   beforeEach(()=>s5Copy(7));
   it("제품 목록은 1~5(0005 코드 해시 그대로) 뒤에 0006·0007 SQL이고, s5·0006 기록은 그 앞부분이라 upgrade다",()=>{
     const list=productMigrations(),s5=JSON.parse(readFileSync(S5_RECORD,"utf8")) as {migrations:{version:number;name:string;sha256:string}[]};
-    expect(list.map(step=>step.version)).toEqual([1,2,3,4,5,6,7]);expect(LATER_SQL_STEPS).toEqual([{version:6,name:"0006_renders.sql"},{version:7,name:"0007_render_guards.sql"}]);
+    expect(list.map(step=>step.version)).toEqual([1,2,3,4,5,6,7,8]);expect(LATER_SQL_STEPS).toEqual([{version:6,name:"0006_renders.sql"},{version:7,name:"0007_render_guards.sql"},{version:8,name:"0008_timeline_audio.sql"}]);
     expect(list.slice(0,5).map(({version,name,sha256})=>({version,name,sha256}))).toEqual(s5.migrations);
     for(const step of list.slice(5)){const text=readFileSync(join(process.cwd(),"lib/db/migrations",step.name),"utf8").replace(/\r\n/g,"\n");expect(step.sha256).toBe(createHash("sha256").update(text).digest("hex"));}
     // 0006 as issued by T-105 (normalized source digest recorded by T-107) is unchanged.
@@ -58,7 +58,7 @@ describe("등록 (정확한 앞부분)",()=>{
     const plainList=list.map(({version,name,sha256})=>({version,name,sha256}));
     expect(compareMigrations(s5.migrations,list)).toBe("upgrade");expect(compareMigrations(plainList.slice(0,6),list)).toBe("upgrade");expect(compareMigrations(plainList,list.slice(0,6))).toBe("too_new");
     expect(compareMigrations([...plainList.slice(0,5),plainList[6]],list)).toBe("mismatch");
-    expect(migrateDatabase(handle.sqlite,{migrations:list,now})).toBe(0);
+    expect(migrateDatabase(handle.sqlite,{migrations:list.slice(0,7),now})).toBe(0);expect(migrateDatabase(handle.sqlite,{migrations:list,now})).toBe(1);
   });
 });
 
@@ -176,15 +176,15 @@ describe("0007 이관: 0006 아래 쓰인 잘못된 행은 원인을 밝히고 �
     const a=render({name_seq:1});set(a,{status:"running",started_at:stamp});
     set(a,{status:"succeeded",finished_at:stamp,file_path:`projects/${P}/renders/${a}.mp4`,sha256:null,size_bytes:1,verify_json:"{}"}); // F107-2 as reproduced under 0006
     const before=JSON.stringify(handle.sqlite.prepare("SELECT * FROM renders").all()),triggers=handle.sqlite.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='trigger'").get();
-    expect(()=>migrateDatabase(handle.sqlite,{migrations:productMigrations(),now})).toThrow(new RegExp(`Render row ${a}: (file fields are incomplete|success without a verified file)`));
+    expect(()=>migrateDatabase(handle.sqlite,{migrations:productMigrations().slice(0,7),now})).toThrow(new RegExp(`Render row ${a}: (file fields are incomplete|success without a verified file)`));
     expect(journal(handle.sqlite)!.map(row=>row.version)).toEqual([1,2,3,4,5,6]);expect(JSON.stringify(handle.sqlite.prepare("SELECT * FROM renders").all())).toBe(before);
     expect(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='trigger'").get()).toEqual(triggers);
   });
   it("0006에서 작업 계약이 깨진 행(작업 kind 변경) → 0007 실패 / 정상 행만 있으면 0007 적용 후 검사 통과",()=>{
     const a=render({name_seq:1});setJob(jobOf(a),{kind:"export"}); // F107-1 as reproduced under 0006
-    expect(()=>migrateDatabase(handle.sqlite,{migrations:productMigrations(),now})).toThrow(new RegExp(`Render row ${a}: job differs`));
+    expect(()=>migrateDatabase(handle.sqlite,{migrations:productMigrations().slice(0,7),now})).toThrow(new RegExp(`Render row ${a}: job differs`));
     expect(journal(handle.sqlite)!.map(row=>row.version)).toEqual([1,2,3,4,5,6]);
-    setJob(jobOf(a),{kind:"render"});expect(migrateDatabase(handle.sqlite,{migrations:productMigrations(),now})).toBe(1);
+    setJob(jobOf(a),{kind:"render"});expect(migrateDatabase(handle.sqlite,{migrations:productMigrations().slice(0,7),now})).toBe(1);
     expect(journal(handle.sqlite)!.at(-1)?.name).toBe("0007_render_guards.sql");expect(()=>setJob(jobOf(a),{kind:"export"})).toThrow(/identity is immutable/);
   });
 });
