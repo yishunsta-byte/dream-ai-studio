@@ -386,3 +386,7 @@ T065 broad review found F065-1; T069 01f81f9 fixed it. T070 independently confir
 ## P2-2 independent acceptance (2026-11-16)
 
 Combined T073 broad runtime, T076 changed error/recovery/development warning/visual checks and T078 original-CRLF425 passed/2 generation skips close F073-1 and F076-1. T072 design review and T074 refinements are integrated. Master accepts this local P2-2 scope. Actual phone/screen reader/real hidden and long font-checking delay remain unverified; no deployment, user-data migration or complete P2 claim. Next is P2-3 design preparation T079/T080.
+
+## P2-3a acceptance (2026-11-16)
+
+T085 broad evidence plus T089 independent449 passed/2 skips, lint/typecheck/build and runtime/API fixes close F085-1/F085-2. T088 design confirms B1/B2 resolution. Master accepts P2-3a within stated evidence; historical bytes preserved, actual export ZIP evidence inherited from T085. Actual-phone/screen-reader and exhaustive measurement limits remain. Next P2-3b T090/T091; no full-P2/deployment claim.

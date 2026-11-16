@@ -149,3 +149,10 @@ Supersedes T075-fix-pending entries.
 - T088 design focused review underway/requested.
 - T089 independent focused runtime/API review dispatched (ctx_26b8a588299c).
 - Next: resolve remaining mandatory findings or accept P2-3a within combined verified scope, then plan P2-3b.
+
+## Latest: P2-3a accepted; P2-3b implementation assigned
+
+- T085 broad + T089 independent focused PASS + T088 design B0 accepted. Full449 passed /2 skips.
+- T090: PC timeline text tracks, frame/second keyboard movement, pointer drag/end handles, cancel and focus ownership; explicit save only.
+- T091: interaction UX/checklist and minimal PLAN status update.
+- Next: collect code/UX, test and independently review. P2-3b, rendering/audio and later deliverables remain; P2 overall incomplete.

@@ -783,3 +783,10 @@
 - a9ba383 / msg_8646dfe2d20c: actual 1280/390 on fixed ea2956e confirms B1 font timeout/late/retry and B2 disclosure warning fixes, cancel/save focus and empty-text notice. No required design defect remains.
 - Minor follow-up: font-retry success loses focus to body; suggested editor heading. Kept separate from required findings; no uncoordinated product change requested during T089 target review.
 - Saved 16:9/1:1, actual phone and screen reader remain unverified. T087 server behavior is outside design evidence, assigned T089.
+
+### P2-3a accepted; P2-3b assigned (2026-11-16)
+
+- T089 imported msg_884ebcb17a1f. Independent original-CRLF449 passed/2 skips, lint/type/build and direct HTTP invariants/font timeout/retry/races/1280/390 checks PASS. T085 broad actual export/font/value evidence inherited explicitly, T088 design B0 integrated. T086/T087/T089 done; P2-3a accepted within this scope.
+- Limits: actual phone/screen reader, exhaustive saved-wide/square measurements and real-hidden behavior remain unverified. C5 retry focus minor follow-up and sticky deferred.
+- T090 / CC-DATA-01 / ready (ack pending): actual P2-3b PC timeline text tracks, pointer and local keyboard controls, explicit save remains. Existing API/server/migrations/packages/assets unchanged. C5 focus may be included and identified separately. Request msg_978c464582b0.
+- T091 / CC-DESIGN-01 / ready (ack pending): bounded interaction specification and direct author collaboration, unique report/history and minimal PLAN status only. Final UI review follows return. Request msg_fd7ee24bd98c.
