@@ -42,9 +42,17 @@
 
 ## 요청 기록
 
-### T-051 · 실행 원문 결합·의존 그래프·결정성 계약 보완 (parent=T050/T048, priority=P1) — running
+### T-052 · 코드 이관 v2 실행 결합 독립 검수 (parent=T051/T050, priority=P1) — ready
 
-- 1bbaa98 / msg_3699d48060f8 결과회수. Master가v2로더원문·보고검토와관련2파일56검사를직접실행해통과. 추가발견: hash는파일목록정렬하지만실행entry는files[0]이라동일파일집합순서만바꿔같은hash·다른run가능. 독립재검수전에entry경로도hashidentity에포함·두entry1/2실제회귀·문서/선언정합을같은담당에최소보완요청했다. 아직T051완료/독립통과아님.
+- cc75f57 대상 새Codex child. F0501~4와Master발견entry identity를실제재현검증, v2동일원문실행·닫힌loader·clock규칙/개별결정성·async/timeout/query_only복구·rollback/snapshot/directrestore·CRLFcheckout을확인한다.
+- 전체tests/lint/typecheck/build·원본SQL/s4불변·증거/신뢰경계·PASS/FAIL반환. 고유T052보고만,제품0005/사용자data/공용문서수정금지. 실제제품등록·Next소스동봉/오류안내는이후0005통합검증과구분.
+
+
+### T-051 · 실행 원문 결합·의존 그래프·결정성 계약 보완 (parent=T050/T048, priority=P1) — ready_review
+
+- 최종cc75f57 / msg_59b7825b9295 회수. Master실제hash diff로entry경로결합을확인했고관련2파일57검사를직접실행해통과. 담당전체333통과/생성1skip·lint/typecheck/build와구분하며T052독립검수전완료판정아님.
+
+- 최초1bbaa98 / msg_3699d48060f8 결과회수. Master가v2로더원문·보고검토와관련2파일56검사를직접실행해통과. 추가발견: hash는파일목록정렬하지만실행entry는files[0]이라동일파일집합순서만바꿔같은hash·다른run가능. 독립재검수전에entry경로도hashidentity에포함·두entry1/2실제회귀·문서/선언정합을같은담당에최소보완요청했다. 아직T051완료/독립통과아님.
 
 - 설계 msg_a7764d3f7705 검토 후 제한.cjs 원문을한번읽어검증한동일문자열로실행하는추천안을채택·실제회신했다. 해시검증전top-level실행금지/SQL해시순환해결,동기timeout·async거부,닫힌require/crypto창구,verify query_only복구·기존영향,VM보안sandbox아님·개별결정성검증·CLI/Next동일로더·v1/v2구분을조건으로했다. 설계채택이지구현/검증통과아님.
 
