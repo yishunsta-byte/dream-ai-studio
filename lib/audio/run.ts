@@ -3,7 +3,10 @@ import { spawn } from "node:child_process";
 // Owned FFmpeg/ffprobe runs for P2-5B. Arguments are an array (no shell); stdout can be streamed to a callback;
 // stderr is kept up to a bound. A run ends on exit, on the caller's AbortSignal (CANCELED) or on its own timeout
 // (TIMEOUT); in both cases the child is killed and awaited before the promise settles, so no process outlives it.
-export type AudioErrorCode="INVALID_INPUT"|"SOURCE_UNSUPPORTED"|"SOURCE_TOO_SHORT"|"SOURCE_CHANGED"|"STATS_MISMATCH"|"LOUDNESS_UNMEASURABLE"|"LOUDNESS_OUT_OF_RANGE"|"OUTPUT_INVALID"|"OUTPUT_EXISTS"|"DISK_FULL"|"CANCELED"|"TIMEOUT"|"TOOL_FAILED";
+export type AudioErrorCode="INVALID_INPUT"|"SOURCE_UNSUPPORTED"|"SOURCE_TOO_SHORT"|"SOURCE_CHANGED"|"STATS_MISMATCH"|"LOUDNESS_UNMEASURABLE"|"LOUDNESS_OUT_OF_RANGE"|"OUTPUT_INVALID"|"OUTPUT_EXISTS"|"DISK_FULL"|"CANCELED"|"TIMEOUT"|"TOOL_FAILED"
+  // T-138: the pinned FFmpeg/ffprobe copy differs from the expected or recorded bytes; the given video's length or
+  // frame rate is not the requested output (sound never stretches or cuts a video).
+  |"TOOL_CHANGED"|"VIDEO_MISMATCH";
 export class AudioError extends Error{constructor(readonly code:AudioErrorCode,message:string,readonly detail:string|null=null){super(message);this.name="AudioError";}}
 const STDERR_LIMIT=1024*1024;
 const DISK_FULL=/No space left on device|ENOSPC|disk quota exceeded/i;
