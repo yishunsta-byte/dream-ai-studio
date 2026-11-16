@@ -46,7 +46,7 @@ describe("글꼴 상태 (가짜 FontFace)",()=>{
   it("화면 문구: '미리보기를 다시 불러와 보세요' 없음, 실패에만 '글꼴 다시 불러오기', 미리보기와 실측이 같은 상태 훅을 씀",()=>{
     const panel=readFileSync("components/player/player-panel.tsx","utf8"),measure=readFileSync("components/player/text-measure.tsx","utf8");
     expect(panel).not.toContain("미리보기를 다시 불러와 보세요");expect(panel).toContain("글꼴을 아직 다 불러오지 못했어요.");expect(panel).toContain("다 받으면 저절로 바뀌어요.");
-    expect(panel).toMatch(/named\("failed"\)[^\n]*onClick=\{retryFonts\}>글꼴 다시 불러오기/);expect(panel).not.toMatch(/named\("timeout"\)[^\n]*retryFonts/);
+    expect(panel).toMatch(/named\("failed"\)[^\n]*retryFonts\(\);\}\}>글꼴 다시 불러오기/);expect(panel).toContain('loadingLabel="다시 불러오는 중"');expect(panel).toContain("다시 불러왔지만 아직 읽지 못했어요.");expect(panel).not.toMatch(/named\("timeout"\)[^\n]*retryFonts/);
     expect(panel).toContain("useFontStates(");expect(measure).toContain("useFontStates(");
   });
 });

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useRouter } from "next/navigation";
 import type { EditingData } from "@/lib/services/editing";
 import { canonicalJson, framesToSeconds, textEndLimit, timelineSrt, totalFrames, type Timeline } from "@/lib/edit/timeline";
-import { beyondVideo, safeViolations } from "@/lib/edit/text-ops";
+import { beyondVideo, replaceText, safeViolations } from "@/lib/edit/text-ops";
 import { Badge, Button, Card, Callout } from "./ui/primitives";
 import { useToast } from "./ui/interactive";
 import styles from "./finishing-panel.module.css";
@@ -15,6 +15,8 @@ import type { PreviewControl } from "./player/player-panel";
 import type { MeasureResult } from "./player/text-measure";
 import type { PreviewAsset } from "@/lib/edit/preview";
 import { hasWarning, TextEditor, type TextWarning, type TimeState } from "./text-editor/text-editor";
+import { TextTimeline } from "./text-editor/text-timeline";
+import { createFrameStore } from "./player/frame-store";
 const sourceLabel={"p1-migration":" · P1 글자 설정에서 옮김","restore-version":" · 이전 버전으로 되돌림",user:""} as const;
 // Off-screen real-font measurement draws with the Player's composition (remotion): client only, loaded on demand.
 const TextMeasure=dynamic(()=>import("./player/text-measure").then(module=>module.TextMeasure),{ssr:false,loading:()=>null});
@@ -22,6 +24,11 @@ export async function finishingRequest(projectId:string,revision:number,action:s
 
 // After a save the new editor puts focus on the saved-state line (T-084 C-2).
 let focusStatusOnMount=false;
+// Changes made while a save was on its way are not lost when the saved version starts a fresh editor (T-033 3.3 1-2):
+// the newer draft comes back as an unsaved change on top of the new version, and the chosen text stays chosen.
+let carried:{projectId:string;fromRevision:number;at:number;draft:Timeline|null;selectedId:string|null}|null=null;
+// Only for the refresh that follows the save (not for a later visit after leaving the page).
+const carriedFor=(projectId:string,revision:number)=>carried&&carried.projectId===projectId&&carried.fromRevision!==revision&&Date.now()-carried.at<30_000?carried:null;
 // A saved version (new timeline id or content revision) starts a fresh editor: the draft is the saved one again.
 export function EditingPanel({data}:{data:EditingData}){return <Editor key={`${data.timelineId??"draft"}:${data.revision}`} data={data}/>;}
 
@@ -29,7 +36,12 @@ export function EditingPanel({data}:{data:EditingData}){return <Editor key={`${d
 // or a computed draft) and saves it explicitly (CAS on content revision + timeline id, same content = no new version).
 function Editor({data}:{data:EditingData}){
  const initial=data.draft,savedJson=useMemo(()=>canonicalJson(initial),[initial]);
- const [draft,setDraft]=useState<Timeline>(initial),[selectedId,setSelectedId]=useState<string|null>(initial.text[0]?.id??null);
+ // Read without clearing (a render React throws away must not use it up); cleared once this editor is on screen.
+ const [carry]=useState(()=>carriedFor(data.projectId,data.revision));
+ useEffect(()=>{if(carriedFor(data.projectId,data.revision))carried=null;},[data.projectId,data.revision]);
+ const [draft,setDraft]=useState<Timeline>(()=>carry?.draft??initial),[selectedId,setSelectedId]=useState<string|null>(()=>carry?.selectedId&&(carry.draft??initial).text.some(layer=>layer.id===carry.selectedId)?carry.selectedId:initial.text[0]?.id??null);
+ const draftRef=useRef(draft),selectedRef=useRef(selectedId),[frameStore]=useState(createFrameStore);
+ useEffect(()=>{draftRef.current=draft;selectedRef.current=selectedId;});
  const [times,setTimes]=useState<TimeState>({}),[measure,setMeasure]=useState<MeasureResult|null>(null),[placeCheck,setPlaceCheck]=useState<ReadonlySet<string>>(()=>new Set());
  const [pending,setPending]=useState(false),[error,setError]=useState("");const router=useRouter(),notify=useToast(),controlRef=useRef<PreviewControl|null>(null),statusRef=useRef<HTMLParagraphElement>(null),formRef=useRef<HTMLFormElement>(null);
  useEffect(()=>{if(focusStatusOnMount){focusStatusOnMount=false;statusRef.current?.focus();}},[]);
@@ -43,10 +55,24 @@ function Editor({data}:{data:EditingData}){
   return out;},[draft.text,draft.aspect,measure,videoFrames]);
  const warned=useMemo(()=>new Set(Object.entries(warnings).filter(([,warning])=>hasWarning(warning)&&warning.font==="ok").map(([id])=>id)),[warnings]);
  const onMeasure=useCallback((result:MeasureResult)=>setMeasure(result),[]);
+ // Timeline row (P2-3b): a moved text drops its typed time fields (they showed the old time).
+ const onTiming=useCallback((id:string,next:(timing:Timeline["text"][number]["timing"])=>Timeline["text"][number]["timing"])=>{
+  setDraft(old=>replaceText(old,id,layer=>{const timing=next(layer.timing);return timing===layer.timing||(timing.startFrame===layer.timing.startFrame&&timing.endFrame===layer.timing.endFrame)?layer:{...layer,timing};}));
+  setTimes(old=>{if(!(`${id}:start` in old)&&!(`${id}:end` in old))return old;const next={...old};delete next[`${id}:start`];delete next[`${id}:end`];return next;});},[]);
+ // Enter on a clip: its text field (a locked disclosure has none, so the edit fields' heading).
+ const onEnter=useCallback((text:Timeline["text"][number])=>{setSelectedId(text.id);const target=()=>document.getElementById(`text-content-${text.id}`)??document.querySelector<HTMLElement>("[data-text-heading]");
+  // The chosen text's fields are already on screen (focusing a clip chose it), so the focus moves at once.
+  const now=document.getElementById(`text-content-${text.id}`);if(now||text.locked)target()?.focus();else requestAnimationFrame(()=>target()?.focus());},[]);
+ const savedText=useMemo(()=>new Map(initial.text.map(layer=>[layer.id,canonicalJson(layer)])),[initial]);
+ const rowSets=useMemo(()=>({changed:new Set(draft.text.filter(layer=>savedText.get(layer.id)!==canonicalJson(layer)).map(layer=>layer.id)),
+  unchecked:new Set(Object.entries(warnings).filter(([,warning])=>warning.font!=="ok").map(([id])=>id)),
+  timeErrors:new Set(Object.keys(times).map(key=>key.split(":")[0]))}),[draft.text,savedText,warnings,times]);
+ const scenes=useMemo(()=>draft.video.map((clip,index)=>({startFrame:totalFrames(draft.video.slice(0,index)),label:`장면 ${index+1}`})),[draft.video]);
+ const rowFrames=Math.max(limitFrames,videoFrames,30,...draft.text.map(layer=>layer.timing.endFrame));
  useEffect(()=>{if(!dirty)return;const onLeave=(event:BeforeUnloadEvent)=>{event.preventDefault();};window.addEventListener("beforeunload",onLeave);return ()=>window.removeEventListener("beforeunload",onLeave);},[dirty]);
  // Typed text is trimmed when saved; a text whose words did not change keeps its saved bytes (outer spaces too).
  function forSave():Timeline{const saved=new Map(initial.text.map(layer=>[layer.id,layer.content]));return {...draft,text:draft.text.map(layer=>saved.get(layer.id)===layer.content?layer:{...layer,content:layer.content.trim()})};}
- async function save(event?:FormEvent){event?.preventDefault();if(timeInvalid||emptyText)return;setPending(true);setError("");try{const response=await fetch(`/api/projects/${data.projectId}/timeline`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"save",revision:data.revision,timelineId:data.timelineId,timeline:forSave()})});const result=await response.json();if(!response.ok)throw new Error(result.error??"저장하지 못했어요.");notify({tone:"success",message:result.result?.created===false?"바뀐 내용이 없어 새 버전을 만들지 않았어요.":"새 타임라인 버전을 저장했어요. 현재 내용으로 다시 검수해 주세요."});if(result.result?.created===false)statusRef.current?.focus();else focusStatusOnMount=true;router.refresh();}catch(error){setError((error as Error).message);}finally{setPending(false);}}
+ async function save(event?:FormEvent){event?.preventDefault();if(timeInvalid||emptyText)return;setPending(true);setError("");const sent=draft;try{const response=await fetch(`/api/projects/${data.projectId}/timeline`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"save",revision:data.revision,timelineId:data.timelineId,timeline:forSave()})});const result=await response.json();if(!response.ok)throw new Error(result.error??"저장하지 못했어요.");notify({tone:"success",message:result.result?.created===false?"바뀐 내용이 없어 새 버전을 만들지 않았어요.":"새 타임라인 버전을 저장했어요. 현재 내용으로 다시 검수해 주세요."});if(result.result?.created===false)statusRef.current?.focus();else{focusStatusOnMount=true;carried={projectId:data.projectId,fromRevision:data.revision,at:Date.now(),draft:canonicalJson(draftRef.current)!==canonicalJson(sent)?draftRef.current:null,selectedId:selectedRef.current};}router.refresh();}catch(error){setError((error as Error).message);}finally{setPending(false);}}
  async function complete(){setPending(true);setError("");try{await finishingRequest(data.projectId,data.revision,"complete-edit");router.push(`/projects/${data.projectId}/review`);router.refresh();}catch(error){setError((error as Error).message);}finally{setPending(false);}}
  function moveScene(index:number,direction:number){setDraft(old=>{const video=[...old.video];[video[index],video[index+direction]]=[video[index+direction],video[index]];return {...old,video};});}
  function cancel(){setDraft(initial);setTimes({});setPlaceCheck(new Set());setSelectedId(old=>initial.text.some(layer=>layer.id===old)?old:initial.text[0]?.id??null);notify({tone:"success",message:"저장한 상태로 되돌렸어요."});
@@ -56,7 +82,7 @@ function Editor({data}:{data:EditingData}){
  return <div className="stack">
   <Callout title="글자와 장면 순서를 고치는 화면이에요. 완성 영상은 아직 만들지 않아요.">문구·모양·순서만 고쳐도 생성 결과는 그대로 유지해요. 저장하면 새 타임라인 버전과 새 내용 버전이 생기고 검수를 다시 해야 해요. 시간은 1/30초 단위로 저장해요. 음성에 자동으로 맞추지 않아요.</Callout>
   <form ref={formRef} onSubmit={save} className={editorStyles.header}>
-   <p ref={statusRef} tabIndex={-1} aria-live="polite">{data.current?<>저장됨 · 타임라인 r{data.current.revision} · <time dateTime={data.current.createdAt}>{new Date(data.current.createdAt).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"})}</time>{sourceLabel[data.current.source]}</>:"아직 저장하지 않은 초안이에요. 저장하면 타임라인 r1이 만들어져요."}</p>
+   <p ref={statusRef} tabIndex={-1} aria-live="polite">{data.current?<>저장됨 · 타임라인 r{data.current.revision} · <time dateTime={data.current.createdAt}>{new Date(data.current.createdAt).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"})}</time>{sourceLabel[data.current.source]}{carry?.draft&&dirty&&" · 저장하는 동안 고친 내용은 아직 저장하지 않았어요."}</>:"아직 저장하지 않은 초안이에요. 저장하면 타임라인 r1이 만들어져요."}</p>
    {dirty&&<><Badge>저장하지 않은 변경</Badge><Button type="button" variant="ghost" size="sm" onClick={cancel}>변경 취소</Button></>}
    <Button type="submit" loading={pending} disabledReason={saveReason}>새 글자 설정 저장</Button>
   </form>
@@ -66,13 +92,16 @@ function Editor({data}:{data:EditingData}){
   {error&&<p role="alert">{error}</p>}
   <div className={styles.editor}>
    <Card><div className="stack"><h2>미리보기</h2>
-    <PlayerLoader projectId={data.projectId} timeline={draft} savedAspect={data.aspect as Timeline["aspect"]} assets={assets} dirty={dirty} timeInvalid={timeInvalid} fonts={data.fonts} selectedTextId={selectedId} textWarnings={warned} controlRef={controlRef}/>
+    <PlayerLoader projectId={data.projectId} timeline={draft} savedAspect={data.aspect as Timeline["aspect"]} assets={assets} dirty={dirty} timeInvalid={timeInvalid} fonts={data.fonts} selectedTextId={selectedId} textWarnings={warned} controlRef={controlRef} frameStore={frameStore}/>
     <div className={styles.mobileOnly}><Callout title="장면 순서·글자 모양·시간은 PC에서 바꿔요.">휴대폰에서는 미리보기를 보고 글자 문구를 고칠 수 있어요.</Callout></div>
    </div></Card>
    <Card><div className="stack"><h2>글자</h2>
     <TextEditor draft={draft} initial={initial} setDraft={setDraft} selectedId={selectedId} setSelectedId={setSelectedId} fonts={data.fonts} required={data.requiredDisclosures} plannedFrames={data.plannedFrames} videoFrames={videoFrames} limitFrames={limitFrames} aspect={draft.aspect} warnings={warnings} measure={measure} placeCheck={placeCheck} setPlaceCheck={setPlaceCheck} times={times} setTimes={setTimes} controlRef={controlRef} p1Times={data.fromP1?data.p1Times:null}/>
    </div></Card>
   </div>
+  <div className={styles.pcOnly}><Card><div className="stack"><h2>타임라인</h2>
+   <TextTimeline texts={draft.text} selectedId={selectedId} onSelect={setSelectedId} onTiming={onTiming} onEnter={onEnter} totalFrames={rowFrames} videoFrames={videoFrames} limitFrames={limitFrames} scenes={scenes} warned={warned} changed={rowSets.changed} unchecked={rowSets.unchecked} timeErrors={rowSets.timeErrors} frameStore={frameStore} controlRef={controlRef}/>
+  </div></Card></div>
   <Card><div className={`stack ${styles.pcOnly}`}><h2>장면 순서</h2>{ordered.map((scene,index)=><div className={styles.order} key={scene.id}><span>{index+1}. {scene.title}{draft.video[index]?.sceneVersionId===null&&<> <Badge>결과 선택 필요</Badge></>}</span><Button variant="ghost" size="sm" disabled={index===0} aria-label={`${scene.title} 위로`} onClick={()=>moveScene(index,-1)}>위로</Button><Button variant="ghost" size="sm" disabled={index===ordered.length-1} aria-label={`${scene.title} 아래로`} onClick={()=>moveScene(index,1)}>아래로</Button></div>)}</div>
    <h2>수동 자막 미리보기 (SRT)</h2><pre className={styles.srt} aria-label="읽기 전용 수동 자막">{(!dirty&&data.savedSrt!==null?data.savedSrt:timelineSrt(draft.text))||"직접 입력한 자막이 없어요."}</pre>{data.fromP1&&<p className="muted">지금 묶음은 P1에서 옮긴 시간 그대로예요. 한 번 저장하면 모든 시간이 1/30초 단위로 맞춰져요.</p>}
    {draft.text.some(layer=>beyondVideo(layer,videoFrames))&&<p className="muted">영상은 {framesToSeconds(videoFrames)}초예요. 영상보다 긴 글자는 자르지 않고 그대로 둬요.</p>}</Card>

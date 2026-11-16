@@ -90,3 +90,41 @@ export function textMotion(frame:number,span:number,animation:TimelineText["anim
     if(animation.emphasis==="bounce")motion.translateY-=12*Math.abs(wave);else if(animation.emphasis==="shake")motion.translateX+=6*Math.sin(frame/FPS*8*Math.PI);else motion.scale*=1+0.06*wave;}
   return motion;
 }
+
+// P2-3b timeline text row (T-079 6.4, T-033 3.2.1). "move" keeps the length and shifts the whole text; "end" changes
+// only the end. Both stay inside 0..limit (the server's end limit for a new or changed text) and keep at least one
+// frame. A text that already ends past the limit (kept from P1) comes back inside on its first move; a text longer
+// than the limit cannot be moved (the same timing is returned).
+export type TimingEdit="move"|"end";
+export function shiftTiming(timing:TimelineText["timing"],delta:number,mode:TimingEdit,limit:number):TimelineText["timing"]{
+  const {startFrame,endFrame}=timing;
+  if(mode==="end"){const end=Math.min(limit,Math.max(startFrame+1,endFrame+delta));return end===endFrame||end<=startFrame?timing:{startFrame,endFrame:end};}
+  const length=endFrame-startFrame,maxStart=limit-length;if(maxStart<0)return timing;
+  const start=Math.min(maxStart,Math.max(0,startFrame+delta));return start===startFrame?timing:{startFrame:start,endFrame:start+length};
+}
+// Timeline keys (T-033 3.2.1, T-091 5장): what one key press does where. A clip key never seeks and the position bar
+// never changes a text, so one key is one action (T-033 3.3 1-1).
+type KeyInput={key:string;shiftKey:boolean;altKey:boolean;ctrlKey:boolean;metaKey:boolean};
+export type ClipKeyAction={type:"move";mode:TimingEdit;delta:number}|{type:"locked"}|{type:"select";step:-1|1}|{type:"enter"}|{type:"toggle"}|{type:"cancel"};
+export function clipKeyAction(input:KeyInput,locked:boolean,dragging:boolean):ClipKeyAction|null{
+  if(input.ctrlKey||input.metaKey)return null;
+  if(input.key==="Escape")return dragging?{type:"cancel"}:null;
+  if(input.key==="Enter")return {type:"enter"};
+  if(input.key===" ")return {type:"toggle"};
+  if(input.key==="ArrowUp"||input.key==="ArrowDown")return {type:"select",step:input.key==="ArrowUp"?-1:1};
+  if(input.key!=="ArrowLeft"&&input.key!=="ArrowRight")return null;
+  if(locked)return {type:"locked"};
+  return {type:"move",mode:input.altKey?"end":"move",delta:(input.key==="ArrowLeft"?-1:1)*(input.shiftKey?FPS:1)};
+}
+export type BarKeyAction={type:"seek";frame:number}|{type:"toggle"};
+export function barKeyAction(input:KeyInput,now:number,totalFrames:number):BarKeyAction|null{
+  if(input.altKey||input.ctrlKey||input.metaKey)return null;if(input.key===" ")return {type:"toggle"};
+  const step=input.shiftKey?FPS:1,target=input.key==="ArrowLeft"?now-step:input.key==="ArrowRight"?now+step:input.key==="Home"?0:input.key==="End"?totalFrames-1:null;
+  return target===null?null:{type:"seek",frame:Math.min(totalFrames-1,Math.max(0,target))};
+}
+// Ruler ticks (T-091): every second, a label every 1/2/5/10 s (30/60 s for long videos) at least 48 px apart.
+export function rulerSteps(totalFrames:number,widthPx:number){
+  const seconds=Math.max(1,Math.ceil(totalFrames/FPS)),perSecond=widthPx/Math.max(1,totalFrames/FPS);
+  const label=[1,2,5,10,30,60].find(step=>step*perSecond>=48)??120;
+  return {seconds,label};
+}

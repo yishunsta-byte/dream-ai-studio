@@ -6,6 +6,7 @@ import { clampFrame, formatFrameTime, PREVIEW_ASPECTS, previewProps, SAFE_AREA, 
 import type { Timeline } from "@/lib/edit/timeline";
 import type { FontRef } from "@/lib/edit/fonts";
 import { retryFonts, useFontStates, type FontState } from "./font-loader";
+import type { FrameStore } from "./frame-store";
 import { Badge, Button, Callout, EmptyState, IconButton, SampleBadge } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { TimelineComposition } from "./timeline-composition";
@@ -16,8 +17,8 @@ import styles from "./player-panel.module.css";
 // P2-3 (T-080): the editor passes its fonts, the selected text and the texts it warns about (outlines), and gets a
 // small control to read the frame and seek ("지금 재생 위치로", "이 글자 처음으로"). Without textWarnings the panel keeps
 // its own P2-2 frame check.
-export type PreviewControl={frame:()=>number;seek:(frame:number)=>void};
-export type PlayerPanelProps={projectId:string;timeline:Timeline|null;savedAspect:PreviewAspect;assets:ReadonlyMap<string,PreviewAsset>;dirty:boolean;timeInvalid:boolean;fonts?:readonly FontRef[];selectedTextId?:string|null;textWarnings?:ReadonlySet<string>;controlRef?:MutableRefObject<PreviewControl|null>};
+export type PreviewControl={frame:()=>number;seek:(frame:number)=>void;toggle:()=>void};
+export type PlayerPanelProps={projectId:string;timeline:Timeline|null;savedAspect:PreviewAspect;assets:ReadonlyMap<string,PreviewAsset>;dirty:boolean;timeInvalid:boolean;fonts?:readonly FontRef[];selectedTextId?:string|null;textWarnings?:ReadonlySet<string>;controlRef?:MutableRefObject<PreviewControl|null>;frameStore?:FrameStore};
 const NO_FONTS:readonly FontRef[]=[],NO_TEXTS:readonly Timeline["text"][number][]=[];
 type Status="paused"|"playing"|"waiting"|"error";
 // F073-1: a render error on the first mount, after an aspect change or on a retry happens before the event listeners
@@ -45,7 +46,7 @@ const StageView=memo(function StageView({playerRef,props,initialFrame,onFailed}:
 
 const motionQuery="(prefers-reduced-motion: reduce)";
 const subscribeMotion=(notify:()=>void)=>{const media=window.matchMedia(motionQuery);media.addEventListener("change",notify);return ()=>media.removeEventListener("change",notify);};
-export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInvalid,fonts=NO_FONTS,selectedTextId=null,textWarnings,controlRef}:PlayerPanelProps){
+export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInvalid,fonts=NO_FONTS,selectedTextId=null,textWarnings,controlRef,frameStore}:PlayerPanelProps){
   const rootRef=useRef<HTMLDivElement>(null);
   // Master D-4: while a time field is wrong the last valid timeline stays on the stage (derived state, no effect).
   const json=timeline?JSON.stringify(timeline):null,[shownJson,setShownJson]=useState(json);
@@ -61,6 +62,11 @@ export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInv
   const {result:fontResult}=useFontStates(shown?.text??NO_TEXTS,fonts);
   const missing=useMemo(()=>Object.entries(fontResult?.states??{}).filter(([,state])=>state!=="ok"),[fontResult]);
   const named=(state:FontState)=>missing.filter(([,value])=>value===state).map(([family])=>family).join(", ");
+  // T-088 C-5: "글꼴 다시 불러오기" shows loading until the new attempt answers. Success → focus the chosen text's edit
+  // heading (or the stage); the same failure → focus stays on the button with a status line beside it.
+  const [retry,setRetry]=useState<{key:string;waitFor:number}|null>(null);
+  const answered=!!retry&&!!fontResult&&fontResult.key===retry.key&&fontResult.attempt>=retry.waitFor,retrying=!!retry&&!answered,stillFailed=answered&&missing.some(([,state])=>state==="failed");
+  useEffect(()=>{if(answered&&!stillFailed)(document.querySelector<HTMLElement>("[data-text-heading]")??stageRef.current)?.focus();},[answered,stillFailed]);
   const props=useMemo(()=>shown?previewProps(shown,assets,{aspect,reducedMotion,missingFamilies:missing.map(([family])=>family),selectedTextId,warnings:textWarnings}):null,[shown,assets,aspect,reducedMotion,missing,selectedTextId,textWarnings]);
   const ready=fontResult!==null&&props!==null,last=props?props.durationInFrames-1:0;
 
@@ -86,11 +92,12 @@ export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInv
   const seek=useCallback((target:number)=>{const player=playerRef.current;if(!player||!props)return;const next=clampFrame(target,props.durationInFrames);player.seekTo(next);setFrame(next);
     // Screen readers hear the place once the keys stop for 0.3 s (T-068 3장), not on every repeat.
     clearTimeout(quiet.current);quiet.current=setTimeout(()=>setAnnounce(spokenFrameTime(next)),300);},[props]);
-  useEffect(()=>{if(controlRef)controlRef.current={frame:()=>playerRef.current?.getCurrentFrame()??0,seek};});
   const toggle=useCallback((event?:Parameters<PlayerRef["play"]>[0])=>{const player=playerRef.current;if(!player||!props)return;
     if(player.isPlaying()){player.pause();return;}
     // At the last frame play starts again from 0 (T-068 2.1).
     if(player.getCurrentFrame()>=props.durationInFrames-1)player.seekTo(0);player.play(event);},[props]);
+  useEffect(()=>{if(controlRef)controlRef.current={frame:()=>playerRef.current?.getCurrentFrame()??0,seek,toggle:()=>toggle()};});
+  useEffect(()=>{frameStore?.set(frame);},[frame,frameStore]);
   function keys(event:KeyboardEvent<HTMLElement>,onStage:boolean){
     if(!ready||event.altKey||event.ctrlKey||event.metaKey)return;const now=playerRef.current?.getCurrentFrame()??frame,step=event.shiftKey?30:1;
     if(event.key===" "&&onStage){event.preventDefault();event.stopPropagation();if(!event.repeat)toggle(event);return;}
@@ -135,7 +142,7 @@ export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInv
     {outside&&<Callout tone="warning" title="글자가 안전 영역을 벗어났어요.">{`문구 길이·크기·위치를 고치고 미리보기를 다시 확인해 주세요.${missing.length?" (대신 그린 글꼴 기준)":""}`}</Callout>}
     {/* T-084 B-1: each font state says what is true now; only a failed file can be fetched again. */}
     {named("timeout")&&<Callout tone="warning" title={`${named("timeout")} 글꼴을 아직 다 불러오지 못했어요.`}>파일이 커서 시간이 걸려요. 그동안은 기본 글꼴로 보여 줘요. 다 받으면 저절로 바뀌어요.</Callout>}
-    {named("failed")&&<Callout tone="warning" title={`${named("failed")} 글꼴을 불러오지 못해 기본 글꼴로 대신 보여 줘요.`}>글꼴 파일을 읽지 못했어요. 영상 만들기 전에 글꼴을 확인해 주세요. <Button variant="secondary" size="sm" onClick={retryFonts}>글꼴 다시 불러오기</Button></Callout>}
+    {named("failed")&&<Callout tone="warning" title={`${named("failed")} 글꼴을 불러오지 못해 기본 글꼴로 대신 보여 줘요.`}>글꼴 파일을 읽지 못했어요. 영상 만들기 전에 글꼴을 확인해 주세요. <Button variant="secondary" size="sm" loading={retrying} loadingLabel="다시 불러오는 중" onClick={()=>{if(fontResult)setRetry({key:fontResult.key,waitFor:fontResult.attempt+1});retryFonts();}}>글꼴 다시 불러오기</Button> <span role="status">{stillFailed?"다시 불러왔지만 아직 읽지 못했어요.":""}</span></Callout>}
     {named("unavailable")&&<Callout tone="warning" title={`${named("unavailable")} 글꼴은 지금 쓸 수 없어 기본 글꼴로 대신 보여 줘요.`}>저장한 값은 그대로 둬요. 다른 글꼴을 고르면 바뀌어요.</Callout>}
     <div className={styles.notes}>
       {timeInvalid&&<p>시간 칸을 고칠 때까지 마지막으로 맞았던 내용으로 보여 줘요.</p>}

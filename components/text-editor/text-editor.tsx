@@ -127,7 +127,7 @@ function TextInspector({layer,index,draft,initial,setDraft,fonts,aspect,warnings
   const setMotion=(name:"in"|"out"|"emphasis",value:string)=>update(current=>({...current,animation:{...current.animation,[name]:value,durationFrames:current.animation.durationFrames||presetFor(current.kind).animation.durationFrames||8}}));
   return <section className={styles.inspector} aria-labelledby={headingId}>
     <h3 id={headingId} tabIndex={-1} data-text-heading>{label} · {layer.content.slice(0,20)||"문구 없음"} {layer.locked&&<Badge>필수 표기 · 위치만 변경</Badge>}</h3>
-    <p className={styles.time}>{shortTime(layer.timing.startFrame)}–{shortTime(layer.timing.endFrame)}</p>
+    <p className={styles.time}>{shortTime(layer.timing.startFrame)}–{shortTime(layer.timing.endFrame)} <Button variant="ghost" size="sm" onClick={()=>controlRef.current?.seek(layer.timing.startFrame)}>이 글자 처음으로</Button></p>
     {lines.length>0&&<Callout tone="warning" title={lines.length===1?lines[0][0]:`확인할 것이 ${lines.length}개 있어요.`}>
       {lines.length===1?lines[0][1]:<ul>{lines.map(([title,text])=><li key={title}>{title} {text}</li>)}</ul>}
       {warning?.font==="ok"&&warning.sides.length>0&&<><span className={styles.pcOnly}> <Button variant="secondary" size="sm" onClick={moveInside}>안전 영역 안으로 옮기기</Button></span><span className={styles.mobileOnly}> PC에서 옮길 수 있어요.</span></>}
