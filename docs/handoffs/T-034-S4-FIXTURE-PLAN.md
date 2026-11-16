@@ -49,7 +49,7 @@
 **결론:**
 - 회귀 시험의 동등성 판정은 **H3**로 해요.
 - 보관 원본이 바뀌지 않았는지는 **H1**로 지켜요.
-- 생성기를 다시 돌린 결과(재현 검사)는 H2(저장 파일·인벤토리·마이그레이션)와 H3가 기록과 같은지만 봐요. H1과 DB 해시는 재현 대상이 아니에요.
+- 생성기를 다시 돌린 결과(재현 검사)는 H2(저장 파일·인벤토리·마이그레이션)와 H3(**P_REGEN** 프로파일, 2장)가 기록과 같은지만 봐요. H1과 DB 해시는 재현 대상이 아니에요.
 
 ### 1.2 결정적 값과 사용자 입력값을 나눠요
 
@@ -77,7 +77,7 @@
 - **시각:** 기준 `2026-01-05T00:00:00.000Z`에 라벨별 고정 오프셋(초)을 더해요. 만든 순서 = 시각 순서예요.
 - **ID:** UUIDv7 형식이에요. 앞 48비트는 위 시각(ms)이고, 나머지 비트는 `sha256("dream-s4:" + 라벨)`에서 가져와요. version 니블 7과 variant `10`은 강제로 맞춰요. 그래서 `z.uuidv7()`을 통과하고, 시각 순서와 ID 순서가 같아요(일부 코드가 ID 정렬을 써요).
 - **라벨:** 사람이 읽는 고정 이름이에요(예: `project.main`, `scene.main.1`, `version.main.1.v2`). 라벨 표가 곧 fixture 구성 명세예요.
-- **`__schema_migrations.applied_at`:** `migrateDatabase`가 실행 시각을 넣어요. 생성기는 migrate 뒤 이 칸을 고정 시각으로 바꾸지 않아요(앱 함수 결과를 손대지 않음). 대신 H3에서 `applied_at`은 빼요.
+- **`__schema_migrations.applied_at`:** `migrateDatabase`가 실행 시각을 넣어요. 생성기는 migrate 뒤 이 칸을 고정 시각으로 바꾸지 않아요(앱 함수 결과를 손대지 않음). 대신 재생성 비교(P_REGEN)에서만 1~4행 `applied_at`을 빼고 형식만 봐요. 보관 s4에서 복원할 때(P_RESTORE)는 1~4행 `applied_at`이 원본 그대로여야 해요(2장).
 
 ### 1.4 저장 파일 바이트
 
@@ -122,7 +122,22 @@
   2. 아래 조건에 걸리지 않는 행은 행 전체 해시가 같아야 해요.
   3. 조건에 걸리는 행은 바뀌는 칸만 빼고 나머지 칸의 해시가 같아야 해요. 바뀌는 칸은 기대값과 같아야 해요.
   4. fixture에는 각 조건에 걸리는 행이 **최소 1개씩** 있어야 해요. 그래야 검사가 헛돌지 않아요(3장에서 보장).
-- **`X_JOURNAL`:** `__schema_migrations`에서 **version > 4인 행의 `applied_at`만** 빼요. 1~4행은 백업에서 그대로 오므로 `applied_at`까지 대조해요. 5 이상 행은 version·name·sha256을 대조하고, `applied_at`은 ISO 시각 형식인지만 확인해요.
+- **비교 프로파일 (목적마다 다름).** 어떤 시험이 어떤 프로파일을 쓰는지는 4장에 적어요. 프로파일에 없는 칸은 모두 정확히 대조해요.
+
+| 프로파일 | 쓰는 곳 | `__schema_migrations.applied_at` | 복원으로 바뀌는 값 | 나머지 |
+|---|---|---|---|---|
+| **P_REGEN** 재생성 비교 | 생성기 재현 검사 모드(6장 4번): 새로 만든 DB ↔ `s4.json` 기록 | **1~4행 전부 제외**하고 ISO 시각 형식만 확인. 생성기가 부르는 `migrateDatabase`가 실행 시각을 써서 매번 달라요 | 해당 없음(복원 전) | 정확히 같음 |
+| **P_RESTORE** 보관본 복원 | A2·A3: 커밋 s4.zip에서 복원한 DB ↔ 그 zip 안 원본 DB | **1~4행은 원본 값과 정확히 같아야 해요**(백업에서 그대로 옴. 값은 `s4.json` `journal`에도 기록). 5행 이상은 version·name·sha256 대조, `applied_at`은 형식만 | D_R 표대로(조건 행의 바뀐 칸은 기대값 assert) | 정확히 같음 |
+| **P_MIGRATE** 이관 결정성 | A4·A5 1단계: 올리기 **직후, 정규화 전** DB끼리 | 1~4행은 둘 다 원본 값이라 정확히 같음. 5행 이상은 형식만 | 해당 없음(정규화 전) | 정확히 같음. 이관 코드가 만든 새 데이터(X_NEWCOLS)도 **정확히 같아야** 해요(시각·난수 없음 검증) |
+| **P_POSTNORM** 정규화 뒤 비교 | A4·A5 2단계: 정규화 **뒤** DB끼리, 목적지·티켓이 다를 수 있음 | P_MIGRATE와 같음 | 실행마다 다른 값(V_RUN)은 **각 실행의 자기 값과 따로 assert**한 뒤에만 비교에서 빼요 | 정확히 같음 |
+
+- **V_RUN (실행마다 달라지는 값, `restore.ts` 37~41행 대조):**
+  - settings `backup.directory` 값 = 그 실행의 `join(destination,'backups')`
+  - settings `restore.info`의 `ticketId`·`destination`·`restoredAt`·`protectedRoots` = 그 실행의 티켓·목적지·stamp·`sourceBoundaries` 결과
+  - jobs 정규화 행의 `finished_at`·`updated_at` = 그 실행의 stamp (시험에서 `now`를 주입하면 두 실행이 같게 고정할 수 있지만 요구하지 않아요)
+  - activity 새 행의 `id`·`created_at`, 그리고 `detail_json.ticketId`
+  - 이 값들을 뺀 나머지는 `restore.info`의 `backupId`·`backupCreatedAt`·`inheritedBackupIds`, activity의 `actor`·`action`·`detail_json.backupId`·`pendingJobs`까지 포함해 두 실행이 정확히 같아야 해요.
+- 한 번에 전체 H3가 같다고 요구하는 비교는 **없어요.** 전체 H3 하나로 비교하는 것은 P_REGEN 기록값을 만들 때뿐이고, 그때도 applied_at은 뺀 값이에요(5장 `logical.profile`).
 - **`D_R` 복원 정규화 변경 (`lib/services/restore.ts` `normalize` 37~41행 원문 대조).** `stamp`는 복원 시각 한 값이고, 시험은 `now`를 주입해 고정할 수 있어요.
 
 | 표 | 조건 (원본 DB 기준) | 바뀌는 칸 → 기대값 | 그대로여야 하는 것 |
@@ -132,7 +147,7 @@
 | exports | `status='running'` | `status='failed'`, `error='RESTORE_INTERRUPTED'` | sha256·size_bytes·file_path 등 다른 칸, 조건 밖 행 전부 (r4 succeeded의 `sha256` 포함) |
 | backups | `status='running'` (s4 자신) | `status='failed'`, `error='RESTORE_INTERRUPTED'` | 다른 칸, B0 행 전부 |
 | settings 삭제 | `key='worker.heartbeat' OR key='backup.auto.lastDay' OR key GLOB 'restore.check.*'` | 복원 뒤 해당 키 0개 | 다른 키 전부. **`job.*.startedAt`은 normalize가 지우지 않으므로 보존 대조 대상**이에요(제외하지 않음) |
-| settings 쓰기 | `backup.directory` | 값 = `join(destination,'backups')` (원본 값은 가상 경로라 반드시 바뀜) | — |
+| settings 쓰기 | `backup.directory` | `value_json` = `join(destination,'backups')`의 JSON 문자열(원본 값은 가상 경로라 반드시 바뀜). **settings 표의 칸은 `key`·`value_json` 둘뿐이에요**(`0001_initial.sql` settings 정의, `lib/db/schema.ts` 47행, 0002~0004에 ALTER 없음). `setSetting`(`lib/repo/maintenance.ts` 12행)도 `value_json`만 upsert해요. 그래서 `updated_at` 같은 다른 바뀌는 칸은 없어요. 나중 마이그레이션이 settings에 칸을 더하면 그 마이그레이션과 함께 이 줄을 고쳐요 | `key` |
 | settings 추가 | `restore.info` | `restoreStateSchema`(T-021) 통과. `ticketId`=시험의 티켓 ID, `backupId`=s4 백업 ID, `destination`=시험 목적지, `backupCreatedAt`=manifest.createdAt, `restoredAt`=stamp, `inheritedBackupIds`=복원 DB의 backups ID 전체(ID순), `protectedRoots`=원본 경계 목록 | s4 원본에는 이 키가 없어요(3장) |
 | activity_log 추가 | 복원 뒤 새 행 | 정확히 1개. `project_id` NULL, `actor='local-user'`, `action='restore.completed'`, `detail_json`={ticketId, backupId, pendingJobs=원본 jobs의 queued·running 수}. `id`는 uuidv7, `created_at`은 ISO 형식 | 기존 activity 행 전부 바이트 그대로 |
 
@@ -179,8 +194,8 @@
 | A1 | 보관 원본 | 커밋 s4.zip | — | — | H1 = `s4.json` 기록. manifest 스키마 통과, 마이그레이션 4줄 = 0장 표 |
 | A2 | 같은 구조 복원 | s4 → 현재(4) | 성공 | `compat:"same"` 성공 | 2장 비교 방법 1~4: D_R 조건 밖 행 전체 해시·행 수·PK 집합 = 기록, 조건 행은 나머지 칸 해시 = 기록이고 바뀐 칸 = D_R 기대값, settings 삭제·추가·activity 새 행 각각 assert. H3-U 전부 일치, H4 = 기록. 저장 파일 전부(묶음 ZIP 포함) sha256 = 원본. B0 inherited·available=false |
 | A3 | 올려서 복원 | s4 → 현재(5+) | — | `upgrade` 성공 | 기존 표는 A2와 같은 방법(X_NEWCOLS 칸만 빼고) 대조, 새 데이터는 X_NEWCOLS 독립 검사, H3-U 옛·새 위치 일치, `restore-info.json`에 schemaFrom 4 / schemaTo n |
-| A4 | 같은 결과 | (a) s4 복원+올리기 (b) s4의 `data/app.db`를 직접 migrate한 뒤 같은 정규화를 **같은 stamp·같은 티켓 값**으로 적용 | — | 같음 | (a)=(b) 모든 표 대조. 다를 수 있는 것은 X_JOURNAL과 activity 새 행의 `id`·`created_at`뿐이에요. 이것도 각각 형식과 1행인지 assert |
-| A5 | 두 번 해도 같음 | 같은 s4로 A3를 서로 다른 임시 폴더에서 두 번 | — | 같음 | 두 결과 H3 동일. 이관 코드에 시각·난수 없음(코드 sha256이 `__schema_migrations`에 기록됨) |
+| A4 | 같은 결과 | (a) s4 복원+올리기 (b) s4의 `data/app.db` 사본을 직접 migrate한 뒤 정규화. 목적지는 서로 다른 임시 폴더예요(같은 물리 목적지를 요구하지 않음) | — | 같음 | **1단계 P_MIGRATE:** (a)는 올리기 직후·정규화 전 지점(시험용 관찰 지점, D1 실패 주입과 같은 자리)의 DB, (b)는 migrate 직후 DB. 정확히 같아야 해요. **2단계 P_POSTNORM:** 각자 V_RUN을 자기 목적지·티켓·stamp와 assert한 뒤 나머지가 같아야 해요 |
+| A5 | 두 번 해도 같음 | 같은 s4로 A3를 서로 다른 임시 목적지에서 두 번 | — | 같음 | A4와 같은 두 단계. 1단계 P_MIGRATE 정확히 같음(이관 코드에 시각·난수 없음 확인, 코드 sha256은 `__schema_migrations`에 기록), 2단계 P_POSTNORM |
 | B1 | 미래 버전 | 사본 DB와 manifest 둘 다에 0099 줄 추가 후 다시 묶음(meta 다시 계산) | 거부 RESTORE_INVALID | `BACKUP_TOO_NEW` | staging 없음, 목적지 없음 |
 | B2 | 기록 다름 | 0002 sha256 한 글자 변경 / 3번 줄 삭제(1,2,4) / 이름만 변경 / `__schema_migrations` 표 없음 | 거부 | `BACKUP_SCHEMA_MISMATCH` | 각각 따로 |
 | B3 | manifest ≠ DB | DB는 그대로, manifest `migrations`만 한 줄 다르게 | 거부 | `BACKUP_SCHEMA_MISMATCH` | |
@@ -205,7 +220,8 @@
   "zip": { "sha256": "…", "sizeBytes": 0 },
   "manifest": { "schemaVersion": 1, "appVersion": "0.1.0", "inventorySha256": "…", "fileCount": 0 },
   "migrations": [ { "version": 1, "name": "0001_initial.sql", "sha256": "ee96edd4…" } ],
-  "logical": { "all": "…", "tables": { "projects": "…" }, "excluded": ["X_JOURNAL"] },
+  "logical": { "profile": "P_REGEN", "all": "…", "tables": { "projects": "…" } },
+  "journal": [ { "version": 1, "appliedAt": "…" } ],
   "inputs_files": { "export-r4.zip": { "sha256": "…", "sizeBytes": 0 } },
   "schema": "…",
   "inputs": { "count": 0, "sha256": "…" },
@@ -230,7 +246,7 @@
 |---|---|---|
 | ZIP을 앱 함수로 조립 vs `runClaimedBackup` 그대로 | 앱 함수 조립 + 형식 대조(1.5). 개인 경로가 fixture에 들어가는 것을 막기 위해서예요 | Master |
 | 가상 경로 형식 | `C:\dream-s4\…`(Windows 주 플랫폼). POSIX에서 복원하면 inherited·available=false로 보이는 것이 정상 | Master |
-| 비교 제외 범위 | 2장 D_R 표(행 조건·칸·기대값)와 X_JOURNAL(version > 4의 applied_at)만. 복원 코드나 새 마이그레이션이 바뀌면 그 변경과 함께 D_R·X_NEWCOLS 표와 assert를 고치기 | 마이그레이션 담당 |
+| 비교 제외 범위 | 2장 비교 프로파일 4개, D_R 표(행 조건·칸·기대값), V_RUN만. 복원 코드나 새 마이그레이션이 바뀌면 그 변경과 함께 D_R·X_NEWCOLS 표와 assert를 고치기 | 마이그레이션 담당 |
 | fixture 크기 | 저장 파일은 수 KB, ZIP 전체 100KB 미만 목표(저장소 부담) | Master |
 | 스냅샷 방식(backup API vs VACUUM INTO) | K-6 ⑥대로 코딩 단계에서 E1~E3로 검증해 정하기 | 코딩 담당 |
 | 현 코드 B1~B4 실제 응답 | 구현 전에 한 번 실행해 "현 코드" 열을 확정 | 구현 담당 |
@@ -239,7 +255,7 @@
 
 1. `s4.zip`과 `s4.json`이 커밋되고 A1이 통과해요. 생성 직후 A2와 형식 대조가 통과해요.
 2. 개인 경로·키·실제 데이터 검사 결과가 0이에요(DB 텍스트 전체, manifest, ZIP 항목 이름).
-3. 재현 검사: 다른 임시 폴더, 가능하면 다른 플랫폼에서 H2(저장 파일·인벤토리·마이그레이션)·H3·H4가 같아요.
+3. 재현 검사: 다른 임시 폴더, 가능하면 다른 플랫폼에서 H2(저장 파일·인벤토리·마이그레이션)·H3(P_REGEN)·H4가 같아요. 복원·이관 비교는 4장 시험별 프로파일(P_RESTORE·P_MIGRATE·P_POSTNORM)대로예요.
 4. 4장 행렬을 모두 시험으로 만들어요.
    - 0005가 없는 지금은 A1·A2·B·C·D의 정규화와 rename 지점까지만 실행 가능해요.
    - A3~A5·E는 첫 새 마이그레이션 마일스톤에서 실행해요.
@@ -266,3 +282,13 @@
 | 4 | 처음 커밋할 때 사용자 추가 승인을 요구해요 | 6장 4번을 "Master 검토로 한 번 커밋"으로 바꿨어요. 기존 P1 게이트와 시안 승인 게이트는 그대로예요 |
 
 추가로 읽은 코드: `lib/services/restore.ts` 37~42행(normalize 전체), `lib/repo/maintenance.ts` 12행(`setSetting` upsert), `lib/repo/jobs.ts` 29행(activity 기록, id·created_at은 스키마 기본값), `0001_initial.sql` activity_log·settings 정의. 코드·SQL·fixture·데이터는 계속 바꾸지 않았어요.
+
+## 11. Master 최종 보완 반영 (`msg_bff61538548d`)
+
+| # | 지적 | 반영 |
+|---|---|---|
+| 1 | 생성기를 다시 돌리면 `migrateDatabase`가 1~4행 `applied_at`을 실행 시각으로 써요. 그래서 H3 전체가 같을 수 없어요 | 2장에 **비교 프로파일**을 넣었어요. P_REGEN(재생성 비교)에서만 1~4행 `applied_at`을 빼고 ISO 형식을 확인해요. P_RESTORE(보관 s4에서 복원)에서는 1~4행 `applied_at`을 원본과 정확히 대조해요. 값은 `s4.json` `journal`에도 기록해요. 1.3, 1.1 재현 줄, 5장, 8장 3번도 같이 맞췄어요 |
+| 2 | A5처럼 다른 목적지에 두 번 복원하면 backup.directory, restore.info의 destination·protectedRoots·ticketId, 활동 ID·시각이 달라요. 그래서 H3 전체가 같을 수 없어요 | A4·A5를 두 단계로 나눴어요. ① P_MIGRATE: 올리기 직후·정규화 전 DB끼리 정확히 같아야 해요. ② P_POSTNORM: 실행마다 다른 값(V_RUN, 코드 대조 목록)은 각 실행의 자기 목적지·티켓·stamp와 따로 assert한 뒤 빼고, 나머지는 같아야 해요. A4도 같은 물리 목적지를 요구하지 않아요. "전체 H3 동일" 요구는 없앴어요 |
+| 3 | settings `backup.directory` upsert가 `updated_at`도 바꿔요 | **코드 대조 결과 해당 칸이 없어요.** settings 칸은 `key`·`value_json` 둘뿐이에요(`0001_initial.sql` settings 정의, `lib/db/schema.ts` 47행, 0002~0004에 ALTER 없음). `setSetting`(`lib/repo/maintenance.ts` 12행)도 `value_json`만 바꿔요. D_R 표의 그 줄에 이 근거를 적고, 바뀌는 칸이 `value_json` 하나뿐임을 명시했어요. 나중에 칸이 생기면 그 마이그레이션과 함께 고친다는 규칙도 넣었어요 |
+
+코드·SQL·fixture·데이터는 계속 바꾸지 않았고, P2 착수가 아니에요.
