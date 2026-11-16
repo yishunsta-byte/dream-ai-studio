@@ -16,9 +16,10 @@
 |---|---|---|---|
 | CX-MASTER-01 | Codex CLI / term_3831c608-dc70-4b7f-aaba-742095a2481e | Master, T-012 운영구성/통합검증 | busy, 이 세션 |
 | CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, T-013 디자인 대조 | returned, 명세 회수·채택 |
-| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터 전담, T-014 | ready_review, msg_6c30b4c5e18c 회수 |
-| CC-ENG-01 | Claude CLI acceptEdits / term_cc667bc2-39ee-4648-bc6b-3bb000a9ab47 | 코딩, T-015 | blocked, 최초 PowerShell 명령의 사람 승인 대기 |
+| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터/임시코딩T021·23·28 | 반환·통합/재검수완료 |
+| CC-ENG-01 | Claude CLI acceptEdits / term_cc667bc2-39ee-4648-bc6b-3bb000a9ab47 | 옛코딩T015 | 배정철회/fence·별도자원보존, 물리종료미확인 |
 | CX-REVIEW-01 | Codex / dispatch ctx_fa91b94b9d65 | 독립검수, 격리 child worktree | returned, 제품 FAIL/F0161·2/V13부분 |
+| CX-REVIEW-03 | Codex / dispatch ctx_35f31485cffe | 최종집중독립검수T029 | returned, R018최종P1독립PASS |
 
 위 세션의 실행 환경은 Orca executionHostId=local/Windows다. Master·디자인·데이터의 Orca 작업공간 D:/starwork, 실제 Git 저장소 D:/starwork/dream-ai-studio(master). 검수는 C:/Users/Administrator/orca/workspaces/dream-ai-studio/p1-independent-review의 p1-independent-review 브랜치. CLI `codex --help`·`claude --help` 실행 확인, Orca 전송/수락/결과회수 확인. CLI 경로: Codex=C:/Users/Administrator/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe, Claude=C:/Users/Administrator/.local/bin/claude.exe. 각 세션의 구체적 미디어 입출력/권한은 배정별 확인하며 추정하지 않는다. Antigravity·dev-requests는 현재 PATH 미검출/미연결, 여러 장비 동기화도 미연결이다. 원격/유료 연동을 추가하지 않았다.
 
@@ -41,7 +42,13 @@
 
 ## 요청 기록
 
-### T-030 · 독립 통과 후 사용자 확인 자료 최종 갱신 (parent=T029/P1 종료, priority=P1) — running
+### T-030 · 독립 통과 후 사용자 확인 자료 최종 갱신 (parent=T029/P1 종료, priority=P1) — done
+
+- 회수msg_924fb7c16b38/164ee8b. Master가HTML/보고/2파일diff·상대링크존재·스크립트없음/통과상태·14그림로드를확인했고ego공간25에서1280/390실제표시·넘침0을확인했다. lazy이미지는eager확인후14/14로드. 기존A/R016·B/R017·C/R018 가상프로젝트가다름을명시, 독립전체221/집중2와Master223을분리. 원본이미지파일변경없음. 확인페이지와시안은사용자검토용으로남기되승인은아직받지않았다.
+
+### T-031 · 사용자 흐름 확인·디자인 시안 승인 (parent=P1 종료) — waiting_human
+
+- 최종결정사용자, 취합CX-MASTER-01. 구체자료 P1-USER-REVIEW.html(최신14그림/흐름·오류·내보내기·모바일/백업)과 docs/design/prototype.html. PLAN18장과사용자기존지시에따라두확인은자동승인불가. Master자료/링크/화면검증완료후한번에확인요청한다. 답변전P2/유료호출/데이터이관착수없음. 사용자가수정의견을주면대상별작업으로분리한다.
 
 - 실제수락msg_c23b43adc0e3. 확인HTML/고유인계만점유, 캡처읽기전용·사용자승인기록/외부공유없음.
 
@@ -255,4 +262,5 @@
 - 회신(Codex): msg_894f466d4c41 수신 후 읽기 교차 확인을 수행했다. 결과는 docs/handoffs/T-005-planner-crosscheck.md. 고칠 것2건(글꼴 OFL 첫 줄 조건/ZIP 장 번호), 기본박스3비율8종 통과·글꼴/굵기 연결 일치·공식OFL8종 확인. 효과 포함 안전영역 경계/글자 수 의미/P1 표기·경로 이관/센트 미만·통화 정책은 플래너 정리를 요청한다. 현재 P1의 SRT 읽기 전용 미리보기/시간칸 오류 누락은 Codex가 별도 보완한다. P2/P3 구현이나 독립 검수로 표시하지 않는다.
 
 - 플래너 반영 (Claude, 2026-11-15) — **전부 정리, 완료**: ① fonts.json 설치 검사 = 본문 전체 정리 후 OFL 1.1 확인, 원문 그대로 보존 ② 근거 장 번호 11.3 T-5·13장 ③ Pretendard는 P1 경로(public/fonts/ 바로 아래) 유지, 새 글꼴만 하위 폴더 ④ widthRatio = 그려지는 바깥 폭(효과 포함), 중앙 기본 폭 0.74로 1% 여유, 안전영역 경고는 실제 글꼴 실측 ⑤ 글자 수는 권장값(recommendedCharsPerLine), 줄 수 초과는 실측 경고 + c.typos 근거 ⑥ P1→P2 이관: 기존 값 그대로, 새 프리셋은 새 글자만, 초→프레임 반올림·끝≥시작+1 ⑦ 표기 문구는 P1·PLAN 12장 표준(광고/유료 광고 포함, AI 생성, 가상인물) ⑧ PLAN B-7: USD만, 다른 통화 CURRENCY_UNSUPPORTED, 샘플 금액 합계 제외, 정수 마이크로 비교, 1센트 미만 `<$0.01`. SRT 미리보기 보완은 Codex 진행 그대로.
+
 
