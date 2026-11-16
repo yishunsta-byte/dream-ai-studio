@@ -1168,3 +1168,8 @@
 - Independent tool incident observation confirmed by Master Get-FileHash: installed ffmpeg E957CE65A69404F7217EE8D52AA30694CCFD3B6481239E1F9202455BBC4815AD differs from historical3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec. Reviewer reports DOS-stub offset0x50 reversal reproduces historical whole-file hash. Actor/time unconfirmed; do not claim proven cause.
 - T140 includes test-seam isolation audit and preservation of current binary evidence, guarded restoration only after candidate full SHA exactly matches historical expectation, no new download or arbitrary patching. Check ffprobe and active tool ownership first; do not run product before verified tools. Request includes guard preventing mutation tests from operating on installed paths.
 - Next: tool/cleanup correction return and independent recheck before integration. No new deployment/user DB changes, and no false tool identity claim for earlier differing runs.
+### T140 returned; T141 cleanup recheck requested (2026-11-17)
+
+- msg_51c6517ae21f /a775a47: Master read report. Author33/33 plus isolated618/13skip; commit and cleanup separate, new explicit cleanup state. No independent acceptance yet.
+- Master directly confirms installed ffmpeg3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec. Author backed up e957 and candidate matched original package exactly; source attribution remains strong inference, not proven.
+- T141 requested for commit/cleanup failure semantics and regression preservation; installed tools read-only. T137 remains paused pending verdict.
