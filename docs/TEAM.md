@@ -1,4 +1,4 @@
-﻿# 팀 협업 보고서 (Claude design ↔ Codex)
+# 팀 협업 보고서 (Claude design ↔ Codex)
 
 은영님 지시(2026-11-15): Claude design과 Codex는 한 팀으로 일한다. 플래너·디자인 담당의 이름은 **Claude design**이다(2026-11-16 은영님 최종 지정 — "Claude Code"·"Claude(design)"으로 바꾸지 않는다).
 - 위험하거나 은영님 결정이 필요한 일이 **아니면**, 상대가 해야 할 일은 이 문서에 보고서로 남기고 **바로** 작업을 요청한다. 은영님을 거치지 않는다.
@@ -50,13 +50,17 @@
 
 - 담당CC-DESIGN-01. 사용자순차계속지시전달msg_424e8b9ed697에따른Master배정. 허용DESIGN6.7현재표시규칙·PLAN13실제묶음예시/최소변경이력·본인T032인계. 구현된상태/파일명/README/fonts만정정하고새미구현요구/날짜형식/삭제흐름추가금지. 현재독립PASS와사용자게이트유지, 제품코드/캡처/공용TEAM미변경.
 
-### T-033 · 다음 타임라인·미리보기·글자 편집 명세 준비 (parent=차기준비, priority=P2) — running
+### T-033 · 다음 타임라인·미리보기·글자 편집 명세 준비 (parent=차기준비, priority=P2) — ready_review
+
+- 2302899 / msg_f4f399920227 회수. Master 문서·실제 schema 대조 후 초 단위 정정, focus별 키보드 우선순위, 임시 비율 미저장 표시·불변 검사 보완을 담당에게 실제 요청했다. 보완 결과 대기이며 done 아님. 제품 코드 검증을 새로 실행한 것은 아니다.
 
 - T032회신에서후속착수확인. 고유입력초안문서만점유, 제품코드/P2구현/기준변경없음.
 
 - 담당CC-DESIGN-01, T032후순차. 허용 docs/handoffs/T-033-P2-DESIGN-INPUT.md만. 기존PLAN/DESIGN/spec의P2-1~3을화면/상태/인터랙션/접근성/비율·시간·안전영역/기존값이관·완료조건으로정리한미승인입력초안. 코드/스키마/기준변경/P2착수없음. 충돌/미정은구체근거와추천으로Master에제출.
 
-### T-034 · K6 호환·고정 s4 백업 회귀 자료 설계 (parent=차기준비, priority=P2) — running
+### T-034 · K6 호환·고정 s4 백업 회귀 자료 설계 (parent=차기준비, priority=P2) — ready_review
+
+- 25c77eb / msg_52330a97a85e 회수. Master가 restore.normalize와 대조해 표 전체 해시 제외의 검출 누락, 내부 export ZIP 가변성/H2 모순, startedAt 제외 근거를 발견했다. 정확한 변경 행·칸 허용 목록과 나머지 원본 보존 검사로 보완 요청을 실제 전송했다. 문서 보완 대기, 구현·fixture 생성·P2 착수 없음.
 
 - 실제수락msg_fabe058d2c36, HEAD0db4d7b·고유설계문서1파일만점유. 코드/SQL/실제ZIP/기존fixture/실사용data미접근.
 
