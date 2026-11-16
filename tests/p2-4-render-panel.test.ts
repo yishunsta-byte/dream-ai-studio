@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 vi.mock("server-only",()=>({}));
 vi.mock("next/navigation",()=>({useRouter:()=>({refresh:()=>{},push:()=>{}})}));
 import type { RenderView } from "@/lib/services/renders";
-import { RenderPanel, type RendersData } from "@/components/render-panel/render-panel";
+import { RenderPanel, type RendersData, type SavedRenderTimeline } from "@/components/render-panel/render-panel";
 import { RenderEntry } from "@/components/render-panel/entry";
 import { blockerLines, failureCopy, progressCopy, verifyReasons, canceledCopy, duration } from "@/components/render-panel/copy";
 
@@ -16,7 +16,7 @@ const base:RenderView={id:"r1",jobId:"j1",status:"succeeded",stage:null,progress
   verify:{result:"passed",items:[]},canceledLate:false,cleanupLeft:[],errorCode:null,errorMessage:null,error:null,subtitleMeasure:null,phonePlayback:null,textOnlyChange:null,etaSec:null,audioMode:"none",audio:null};
 const view=(patch:Partial<RenderView>):RenderView=>({...base,...patch});
 const data=(patch:Partial<RendersData>={}):RendersData=>({workerOnline:true,contentRevision:7,timelineId:"019b0000-0000-7000-8000-000000000001",check:{ready:true,blockers:[]},renders:[],...patch});
-const html=(value:RendersData,saved:{revision:number;aspect:string}|null={revision:5,aspect:"9:16"})=>renderToStaticMarkup(createElement(RenderPanel,{projectId:"p1",data:value,saved}));
+const html=(value:RendersData,saved:SavedRenderTimeline|null={revision:5,aspect:"9:16",audioMode:"none",audioClips:0})=>renderToStaticMarkup(createElement(RenderPanel,{projectId:"p1",data:value,saved}));
 const text=(markup:string)=>markup.replace(/<[^>]+>/g," ").replace(/&quot;/g,"\"").replace(/&amp;/g,"&").replace(/\s+/g," ");
 
 describe("영상 만들기 화면", ()=>{
@@ -50,7 +50,7 @@ describe("영상 만들기 화면", ()=>{
     expect(text(markup)).toContain("작업 처리기가 꺼져 있어요. 지금 요청해 두면 처리기가 켜질 때 시작해요.");
     expect(text(markup)).toContain("저장한 타임라인 r5 · 9:16으로 만들어요");
     expect(text(markup)).toContain("아직 만든 영상이 없어요");
-    expect(text(markup)).toContain("소리를 붙이는 단계(P2-5)와 자막 파일(P2-6)이 끝나면 열려요");
+    expect(text(markup)).toContain("소리 편집과 자막 파일(P2-6) 등 남은 단계의 확인이 끝나면 열려요");
   });
   it("대기·처리기 꺼짐·다른 작업 뒤·다시 시작·취소 중 문구가 서버 값 그대로다", ()=>{
     const queued=view({status:"queued",finishedAt:null,startedAt:null,elapsedSec:null,attempt:0,verify:null,sizeBytes:null,fileExists:false,codec:null,audioStreams:null});
@@ -74,7 +74,7 @@ describe("영상 만들기 화면", ()=>{
   });
   it("확인 통과 행만 재생·내려받기가 있고, 크기·소리 없음·측정 전·확인 전을 보여 준다", ()=>{
     const markup=html(data({renders:[base]})),page=text(markup);
-    expect(page).toContain("파일 확인 통과");expect(page).toContain("1080×1920 · 30.0초 · H.264 · 30fps · 소리 없음 · 다음 단계에서 붙여요");
+    expect(page).toContain("파일 확인 통과");expect(page).toContain("1080×1920 · 30.0초 · H.264 · 30fps · 소리 트랙 없음");
     expect(page).toContain("확인 안 한 것: 자막 표시 오차 측정 전 · 휴대폰 재생 확인 전");
     expect(page).toContain("영상 보기");expect(markup).not.toContain(">재생<");
     expect(markup).toContain('href="/api/renders/r1/file?download"');expect(page).toContain("내려받기 · 12.4MB");expect(markup).toContain('download="핸드크림_9x16_r5.mp4"');

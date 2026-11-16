@@ -41,6 +41,25 @@ export function blockerLines(blockers:RenderBlocker[]):BlockerLine[]{
 const kindName:Record<string,string>={image:"장면 이미지 만들기",video:"장면 영상 만들기",audio:"소리 만들기",bundle:"묶음 만들기",backup:"백업",restore:"복원",render:"다른 영상 만들기"};
 export const STAGES=[{key:"prepare",label:"준비"},{key:"compose",label:"장면과 글자 합치기"},{key:"verify",label:"파일 확인"}] as const;
 export const stageAnnounce:Record<string,string>={prepare:"1단계 준비를 시작했어요.",compose:"2단계 장면과 글자 합치기를 시작했어요.",verify:"파일을 확인하고 있어요."};
+export const stagesFor=(render:RenderView)=>STAGES.map(stage=>({...stage,label:render.audioMode==="aac"?(stage.key==="compose"?"장면·글자·소리 합치기":stage.key==="verify"?"파일과 소리 확인":stage.label):stage.label}));
+export function announceStage(render:RenderView){
+  if(render.audioMode!=="aac")return stageAnnounce[render.stage??""]??"";
+  return render.stage==="compose"?"2단계 장면·글자·소리 합치기를 시작했어요.":render.stage==="verify"?"파일과 소리를 확인하고 있어요.":stageAnnounce[render.stage??""]??"";
+}
+
+const finite=(value:number|null)=>value!==null&&Number.isFinite(value);
+// A track, an audible signal and a loudness verdict are separate facts. Never infer measurements.
+export function audioResultCopy(render:RenderView):{badge:string;track:string;summary:string;measurement:string|null}{
+  const verified=render.status==="succeeded"&&render.verify?.result==="passed";
+  if(verified&&render.audioMode==="none"&&render.audioStreams===0)return {badge:"소리 트랙 없음",track:"소리 트랙 없음",summary:"음량 맞춤 · 해당 없음",measurement:null};
+  if(!verified||render.audioMode!=="aac"||render.audioStreams!==1)return {badge:"소리 확인 전",track:"소리 트랙 확인 전",summary:"최종 음량 · 측정 전/기록 없음",measurement:null};
+  const audio=render.audio;
+  const measurement=audio?[finite(audio.integrated)?`측정 음량 ${audio.integrated!.toFixed(1)} LUFS`:"측정 음량 없음",finite(audio.truePeak)?`최대 피크 ${audio.truePeak!.toFixed(1)} dBTP`:"피크 측정 없음"].join(" · "):null;
+  if(audio?.status==="silent"&&audio.accepted===null)return {badge:"소리 트랙 포함 · 무음 신호",track:"AAC · 소리 1트랙",summary:"무음 신호 · 음량 맞춤 해당 없음",measurement};
+  if(audio?.status==="too_short"&&audio.accepted===null)return {badge:"소리 포함 · 3초 미만",track:"AAC · 소리 1트랙",summary:"짧은 소리라 음량 맞춤 미적용",measurement};
+  if(audio?.status==="normalized"&&audio.accepted===true&&finite(audio.integrated)&&finite(audio.truePeak))return {badge:"소리 포함",track:"AAC · 소리 1트랙",summary:"음량 기준 충족",measurement};
+  return {badge:"소리 포함",track:"AAC · 소리 1트랙",summary:audio?.accepted===false?"음량 기준 미충족":"최종 음량 · 측정 전/기록 없음",measurement};
+}
 
 // Progress card: pill and body (T-102 5장). attempt is the number of starts so far (0 before the first).
 export function progressCopy(render:RenderView):{pill:string;body:string}{
@@ -51,9 +70,10 @@ export function progressCopy(render:RenderView):{pill:string;body:string}{
     if(render.waiting?.reason==="behind_job")return {pill:"차례를 기다려요",body:`다른 작업(${kindName[render.waiting.kind]??"다른 작업"})이 끝나면 시작해요.`};
     return {pill:"차례를 기다려요",body:"곧 시작해요."};
   }
-  if(render.stage==="verify")return {pill:"파일 확인 중",body:"만든 파일의 길이·해상도·코덱을 확인하고 있어요. 확인을 통과해야 완성으로 쳐요."};
+  if(render.stage==="verify")return {pill:render.audioMode==="aac"?"파일과 소리 확인 중":"파일 확인 중",body:render.audioMode==="aac"?"만든 파일의 길이·해상도·코덱과 소리를 확인하고 있어요. 확인을 통과해야 완성으로 쳐요.":"만든 파일의 길이·해상도·코덱을 확인하고 있어요. 확인을 통과해야 완성으로 쳐요."};
+  if(render.stage==="compose"&&render.audioMode==="aac")return {pill:"장면·글자·소리 합치는 중",body:"장면·글자·소리를 합치고 있어요. 음량을 맞추는 작업이 포함돼요."};
   if(render.stage==="compose"&&render.progress!==null)return {pill:`${Math.floor(render.progress*100)}%${render.elapsedSec!==null?` · ${duration(render.elapsedSec)} 지남`:""}`,body:`프레임 ${render.renderedFrames}/${render.totalFrames}`};
-  return {pill:"준비 중",body:"장면 파일과 글꼴을 다시 확인하고 있어요."};
+  return {pill:"준비 중",body:render.audioMode==="aac"?"장면·글꼴·소리 파일을 준비하고 있어요.":"장면 파일과 글꼴을 다시 확인하고 있어요."};
 }
 
 // Verify failure: which items did not match, in plain words.

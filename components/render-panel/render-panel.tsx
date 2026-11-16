@@ -8,11 +8,12 @@ import type { RenderBlocker } from "@/lib/render/input";
 import type { RenderView } from "@/lib/services/renders";
 import { Badge, Button, Card, EmptyState, SampleBadge, StatusPill } from "../ui/primitives";
 import { ConfirmPanel, useToast } from "../ui/interactive";
-import { STAGES, aspectLabel, blockerLines, canceledCopy, duration, failureCopy, linkHref, linkLabel, mb, progressCopy, stageAnnounce } from "./copy";
+import { stagesFor, announceStage, audioResultCopy, aspectLabel, blockerLines, canceledCopy, duration, failureCopy, linkHref, linkLabel, mb, progressCopy } from "./copy";
 import styles from "./render-panel.module.css";
 
 export type RendersData={workerOnline:boolean;contentRevision:number;timelineId:string|null;check:{ready:boolean;blockers:RenderBlocker[]}|null;renders:RenderView[]};
-type Saved={revision:number;aspect:string}|null;
+export type SavedRenderTimeline={revision:number;aspect:string;audioMode:"none"|"aac"|"unsupported";audioClips:number};
+type Saved=SavedRenderTimeline|null;
 const isActive=(render:RenderView)=>render.status==="queued"||render.status==="running";
 const when=(iso:string)=>new Date(iso).toLocaleString("ko-KR",{timeZone:"Asia/Seoul",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"});
 const codecName=(codec:string|null)=>codec==="h264"?"H.264":codec??"코덱 확인 전";
@@ -31,7 +32,7 @@ export function RenderPanel({projectId,data,saved}:{projectId:string;data:Render
     const before=seen.current,next=new Map<string,{status:string;stage:string|null}>();
     for(const render of data.renders){
       next.set(render.id,{status:render.status,stage:render.stage});const old=before?.get(render.id);if(!old)continue;
-      if(isActive(render)&&render.status==="running"&&render.stage&&(old.stage!==render.stage||old.status!=="running"))setLive(stageAnnounce[render.stage]??"");
+      if(isActive(render)&&render.status==="running"&&render.stage&&(old.stage!==render.stage||old.status!=="running"))setLive(announceStage(render));
       if((old.status==="queued"||old.status==="running")&&!isActive(render)){
         setLive("");
         if(render.status==="succeeded")notify({tone:"success",message:render.canceledLate?"취소한 뒤에 영상이 끝났어요. 보관만 해요.":"영상을 만들었어요. 파일 확인을 통과했어요."});
@@ -72,7 +73,8 @@ export function RenderPanel({projectId,data,saved}:{projectId:string;data:Render
   return <div className="stack">
     <Card><section className="stack" aria-labelledby="render-make">
       <h2 id="render-make">새 영상 만들기</h2>
-      <p>{saved?<>저장한 타임라인 r{saved.revision} · {saved.aspect}으로 만들어요. 편집에서 저장하지 않은 변경은 들어가지 않아요.</>:"저장한 타임라인으로만 만들어요."} 소리 없는 영상이에요. 소리는 다음 단계에서 붙여요.</p>
+      <p>{saved?<>저장한 타임라인 r{saved.revision} · {saved.aspect}으로 만들어요. 편집에서 저장하지 않은 변경은 들어가지 않아요.</>:"저장한 타임라인으로만 만들어요."}</p>
+      {saved&&<p>{saved.audioMode==="aac"?`저장한 소리 ${saved.audioClips}개를 함께 합쳐요. 이 기기의 재생 음소거는 결과에 영향을 주지 않아요.`:saved.audioMode==="unsupported"?"예전 형식의 소리 설정이에요. 위의 시작 전 확인을 보고 편집에서 다시 저장해 주세요.":"저장한 타임라인으로 소리 없는 영상을 만들어요."}</p>}
       {lines.length>0&&<div className={styles.blockers}><h3>만들기 전에 고칠 것 {lines.length}개</h3><ul>{lines.map(line=><li key={line.key}><span>{line.text}</span>{line.link&&<> <Link href={linkHref(line.link,projectId)}>{linkLabel[line.link]}</Link></>}{line.code&&<span className={styles.code}> {line.code}</span>}</li>)}</ul></div>}
       {!data.workerOnline&&!active&&<p className="muted">작업 처리기가 꺼져 있어요. 지금 요청해 두면 처리기가 켜질 때 시작해요.</p>}
       <div className={styles.actions}>{makeButton("영상 만들기")}</div>
@@ -92,7 +94,7 @@ export function RenderPanel({projectId,data,saved}:{projectId:string;data:Render
 
     <Card><section className="stack" aria-labelledby="render-export">
       <h2 id="render-export">완성 영상 내보내기</h2>
-      <p><StatusPill status="locked"/> 소리를 붙이는 단계(P2-5)와 자막 파일(P2-6)이 끝나면 열려요. 편집용 묶음 내보내기는 지금처럼 쓸 수 있어요.</p>
+      <p><StatusPill status="locked"/> 소리 편집과 자막 파일(P2-6) 등 남은 단계의 확인이 끝나면 열려요. 편집용 묶음 내보내기는 지금처럼 쓸 수 있어요.</p>
     </section></Card>
 
     <ConfirmPanel open={confirm} title="영상 만들기를 취소할까요?" description="만들던 부분은 버려요. 이미 만든 영상은 그대로예요." confirmLabel="취소하기" closeLabel="계속 만들기" tone="danger" confirming={busy==="cancel"} onDismiss={()=>setConfirm(false)} onConfirm={()=>void cancel()}/>
@@ -101,16 +103,16 @@ export function RenderPanel({projectId,data,saved}:{projectId:string;data:Render
 
 function ProgressBody({render,title,onCancel}:{render:RenderView;title:RefObject<HTMLHeadingElement|null>;onCancel:()=>void}){
   const copy=progressCopy(render),aspect=aspectLabel(render.width,render.height),running=render.status==="running";
-  const current=STAGES.findIndex(stage=>stage.key===render.stage),barId=useId();
-  const percent=render.stage==="compose"&&render.progress!==null?Math.floor(render.progress*100):null;
+  const stages=stagesFor(render),current=stages.findIndex(stage=>stage.key===render.stage),barId=useId();
+  const percent=render.audioMode==="none"&&render.stage==="compose"&&render.progress!==null?Math.floor(render.progress*100):null;
   return <>
     <div className={styles.head}><h2 id="render-progress" ref={title} tabIndex={-1}>영상 만드는 중 · 타임라인 r{render.timelineRevision} · {aspect}</h2>{render.stale&&<StatusPill status="warning">지금 내용과 다름 · 타임라인 r{render.timelineRevision}</StatusPill>}{render.isSample&&<SampleBadge size="sm"/>}</div>
     <p className={styles.pillLine}><StatusPill status={running&&!render.cancelRequested?"running":"queued"}>{copy.pill}</StatusPill></p>
     <p>{copy.body}</p>
-    {running&&<ol className={styles.stages} aria-label="진행 단계">{STAGES.map((stage,index)=>{const state=index<current?"done":index===current?"now":"todo";return <li key={stage.key} className={styles[state]} aria-current={state==="now"?"step":undefined}><span aria-hidden="true">{state==="done"?"✓":state==="now"?"●":"○"}</span> <span className="sr-only">{state==="done"?"끝남":state==="now"?"지금":"남음"}: </span>{index+1}. {stage.label}</li>;})}</ol>}
+    {running&&<ol className={styles.stages} aria-label="진행 단계">{stages.map((stage,index)=>{const state=index<current?"done":index===current?"now":"todo";return <li key={stage.key} className={styles[state]} aria-current={state==="now"?"step":undefined}><span aria-hidden="true">{state==="done"?"✓":state==="now"?"●":"○"}</span> <span className="sr-only">{state==="done"?"끝남":state==="now"?"지금":"남음"}: </span>{index+1}. {stage.label}</li>;})}</ol>}
     {percent!==null&&<div className={styles.bar}><span id={barId}>장면과 글자 합치기</span><progress aria-labelledby={barId} max={100} value={percent} aria-valuetext={`${percent}%${render.elapsedSec!==null?` · ${duration(render.elapsedSec)} 지남`:""}`}/></div>}
     {render.stage==="verify"&&running&&<p className={styles.checking}>확인 중</p>}
-    <p className="muted">{render.elapsedSec!==null&&<>지난 시간 <time dateTime={`PT${render.elapsedSec}S`}>{duration(render.elapsedSec)}</time> · </>}{render.etaSec!==null&&<>이 PC의 이전 기록으로 남은 시간 약 {duration(render.etaSec)} · </>}시도 {Math.max(render.attempt,1)}/{render.maxAttempts}</p>
+    <p className="muted">{render.elapsedSec!==null&&<>지난 시간 <time dateTime={`PT${render.elapsedSec}S`}>{duration(render.elapsedSec)}</time> · </>}{render.audioMode==="none"&&render.etaSec!==null&&<>이 PC의 이전 기록으로 남은 시간 약 {duration(render.etaSec)} · </>}시도 {Math.max(render.attempt,1)}/{render.maxAttempts}</p>
     <p className="muted">PC에서 만들어요. 창을 닫아도 작업 처리기가 켜져 있으면 계속돼요.</p>
     {!render.cancelRequested&&<div className={styles.actions}><Button variant="secondary" onClick={onCancel}>취소</Button></div>}
   </>;
@@ -119,6 +121,7 @@ function ProgressBody({render,title,onCancel}:{render:RenderView;title:RefObject
 function ResultRow({render,playing,onPlay,remake}:{render:RenderView;playing:boolean;onPlay:()=>void;remake:(label:string,variant?:"primary"|"secondary")=>ReactNode}){
   const aspect=aspectLabel(render.width,render.height),videoId=useId(),ok=render.status==="succeeded";
   const usable=ok&&!render.canceledLate&&render.fileExists,failure=render.status==="failed"?failureCopy(render):null;
+  const audio=audioResultCopy(render);
   return <li className={styles.row}>
     <div className={`${styles.thumb} ${styles[`a${aspect.replace(":","x")}`]}`} aria-hidden="true">{aspect}</div>
     <div className={styles.body}>
@@ -130,13 +133,16 @@ function ResultRow({render,playing,onPlay,remake}:{render:RenderView;playing:boo
         {render.status==="canceled"&&<StatusPill status="canceled"/>}
         {render.canceledLate&&<StatusPill status="canceled">취소 뒤 끝남</StatusPill>}
         {render.stale&&<StatusPill status="warning">지금 내용과 다름 · 타임라인 r{render.timelineRevision}</StatusPill>}
-        <Badge>소리 없는 영상</Badge>{render.isSample&&<SampleBadge size="sm"/>}{render.textOnlyChange&&<Badge>글자만 바뀜</Badge>}
+        {ok&&<Badge>{audio.badge}</Badge>}{render.isSample&&<SampleBadge size="sm"/>}{render.textOnlyChange&&<Badge>글자만 바뀜</Badge>}
       </div>
-      {ok&&<p>{render.width}×{render.height} · {render.durationSec.toFixed(1)}초 · {codecName(render.codec)} · {render.fps}fps · {render.audioStreams===0?"소리 없음 · 다음 단계에서 붙여요":"소리 트랙 확인 전"}</p>}
+      {ok&&<p>{render.width}×{render.height} · {render.durationSec.toFixed(1)}초 · {codecName(render.codec)} · {render.fps}fps · {audio.track}</p>}
+      {ok&&<p>{audio.summary}{audio.measurement&&<> · {audio.measurement}</>}</p>}
+      {ok&&render.audio&&<details className={styles.audioDetails}><summary>소리 확인 세부 정보</summary><p>기준: 음량 {render.audio.target.integrated} LUFS ±{render.audio.target.tolerance} LU · 최대 피크 {render.audio.target.truePeakMax} dBTP</p><p className={styles.code}>처리 프로필 {render.audio.profile} · 도구 {render.audio.ffmpeg}</p></details>}
       {ok&&<p className="muted">확인 안 한 것: 자막 표시 오차 {render.subtitleMeasure===null?"측정 전":"측정함"} · 휴대폰 재생 {render.phonePlayback===null?"확인 전":"확인함"}</p>}
       {ok&&render.stale&&!render.canceledLate&&<p>보관만 해요. 지금 내용으로 다시 만들어야 검수·내보내기에 쓸 수 있어요.</p>}
       {render.canceledLate&&<p>취소한 뒤에 끝난 영상이에요. 보관만 하고 자동으로 쓰지 않아요. 재생·내려받기는 하지 않고 백업에는 함께 들어가요.</p>}
       {ok&&!render.fileExists&&<p className={styles.error}>영상 파일을 찾지 못했어요. 백업에 함께 들어가는 파일이라 원래 있어야 해요. 파일을 옮겼거나 지웠는지 확인해 주세요. 다시 만들 수도 있어요.</p>}
+      {ok&&render.cleanupLeft.length>0&&<p className={styles.cleanup}>영상은 만들었지만 임시 파일 정리를 확인해 주세요.</p>}
       {failure&&<p>{failure.text}</p>}
       {render.status==="canceled"&&<p>{canceledCopy(render)}</p>}
       <p className={styles.meta}><time dateTime={render.finishedAt??render.createdAt}>{when(render.finishedAt??render.createdAt)}</time>{render.elapsedSec!==null&&` · ${duration(render.elapsedSec)} 걸림`}{render.status==="failed"&&render.errorCode&&<span className={styles.code}> · {render.errorCode}{render.error?` · ${render.error.attempts}/${render.error.maxAttempts}번 시도`:""}</span>}</p>
@@ -145,7 +151,18 @@ function ResultRow({render,playing,onPlay,remake}:{render:RenderView;playing:boo
         {usable&&render.stale&&remake("지금 내용으로 만들기","secondary")}
         {(render.status==="failed"||render.status==="canceled"||(ok&&!render.fileExists))&&remake("다시 만들기","secondary")}
       </div>
-      {usable&&<div id={videoId} hidden={!playing}>{playing&&<video className={`${styles.video} ${styles[`v${aspect.replace(":","x")}`]}`} controls muted playsInline preload="metadata" src={`/api/renders/${render.id}/file`} aria-label={`${render.fileName} 재생`}/>}</div>}
+      {usable&&<div id={videoId} hidden={!playing}>{playing&&<ResultPlayback render={render} aspect={aspect}/>}</div>}
     </div>
   </li>;
+}
+
+function ResultPlayback({render,aspect}:{render:RenderView;aspect:string}){
+  const video=useRef<HTMLVideoElement>(null),[muted,setMuted]=useState(true),[error,setError]=useState(false),hintId=useId();
+  const hasAudio=render.audioMode==="aac"&&render.audioStreams===1&&render.verify?.result==="passed";
+  return <div className="stack">
+    <p id={hintId} className="muted">{hasAudio?`이 기기에서 소리 ${muted?"꺼짐":"켜짐"}. 재생 버튼을 누르면 시작돼요. 재생 음소거와 기기 음량은 내려받는 파일에 영향을 주지 않아요.`:"재생 버튼을 누르면 영상이 시작돼요."}</p>
+    <video ref={video} className={`${styles.video} ${styles[`v${aspect.replace(":","x")}`]}`} controls muted={muted} playsInline preload="metadata" src={`/api/renders/${render.id}/file`} aria-label={`${render.fileName} 재생`} aria-describedby={hintId} onVolumeChange={()=>setMuted(video.current?.muted??true)} onError={()=>setError(true)}/>
+    {hasAudio&&<div className={styles.actions}><Button variant="secondary" aria-pressed={!muted} onClick={()=>{if(video.current){video.current.muted=!video.current.muted;setMuted(video.current.muted);}}}>{muted?"이 기기에서 소리 켜기":"이 기기에서 소리 끄기"}</Button></div>}
+    {error&&<p role="alert" className={styles.error}>이 기기에서 영상을 열지 못했어요. 내려받은 파일로 재생을 확인해 주세요.</p>}
+  </div>;
 }

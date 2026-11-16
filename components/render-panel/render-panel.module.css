@@ -29,6 +29,10 @@
 .a1x1 { aspect-ratio:1 / 1; }
 .body { display:flex; flex-direction:column; gap:var(--sp-2); min-width:0; }
 .body p { margin:0; }
+.audioDetails { min-width:0; overflow-wrap:anywhere; font-size:var(--text-sm); }
+.audioDetails summary { display:list-item; min-height:var(--touch-min); cursor:pointer; padding-block:var(--sp-3); }
+.audioDetails p { margin-block:var(--sp-2); }
+.cleanup { color:var(--st-warning-fg); }
 .name { margin:0; font-family:var(--font-mono); font-size:var(--text-md); overflow-wrap:anywhere; }
 .chips { display:flex; flex-wrap:wrap; gap:var(--sp-2); }
 .meta { font-size:var(--text-sm); color:var(--fg-muted); }
