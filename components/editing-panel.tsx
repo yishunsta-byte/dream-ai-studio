@@ -18,6 +18,7 @@ import type { MeasureResult } from "./player/text-measure";
 import type { PreviewAsset } from "@/lib/edit/preview";
 import { hasWarning, TextEditor, type TextWarning, type TimeState } from "./text-editor/text-editor";
 import { TextTimeline } from "./text-editor/text-timeline";
+import { RenderEntry } from "./render-panel/entry";
 import { createFrameStore } from "./player/frame-store";
 const sourceLabel={"p1-migration":" · P1 글자 설정에서 옮김","restore-version":" · 이전 버전으로 되돌림",user:""} as const;
 // Off-screen real-font measurement draws with the Player's composition (remotion): client only, loaded on demand.
@@ -125,6 +126,7 @@ function Editor({data}:{data:EditingData}){
    <p ref={statusRef} tabIndex={-1} aria-live="polite">{data.current?<>저장됨 · 타임라인 r{data.current.revision} · <time dateTime={data.current.createdAt}>{new Date(data.current.createdAt).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"})}</time>{sourceLabel[data.current.source]}{kept&&dirty&&" · 저장하는 동안 고친 내용은 아직 저장하지 않았어요."}</>:"아직 저장하지 않은 초안이에요. 저장하면 타임라인 r1이 만들어져요."}</p>
    {dirty&&<><Badge>저장하지 않은 변경</Badge><Button type="button" variant="ghost" size="sm" disabledReason={busy?"저장이 끝난 뒤 취소할 수 있어요.":undefined} onClick={cancel}>변경 취소</Button></>}
    <Button type="submit" loading={savingNow} disabledReason={saveReason}>새 글자 설정 저장</Button>
+   <RenderEntry projectId={data.projectId} dirty={dirty}/>
   </form>
   {data.fromP1&&dirty&&<p className="muted">저장하면 모든 글자 시간이 1/30초 단위로 맞춰져요. 차이는 0.017초 이하예요.</p>}
   {stale&&<Callout title="선택한 장면 결과가 바뀌었어요." tone="warning">저장한 타임라인과 지금 선택이 달라요. 이 화면은 지금 선택으로 보여 줘요. 저장해야 검수로 넘어갈 수 있어요.</Callout>}
