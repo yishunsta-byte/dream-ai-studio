@@ -56,6 +56,8 @@ export function runMigrateCommand(options:MigrateCommandOptions):number{
       // A snapshot that failed its own check is not a usable copy, even though the file is kept.
       const kept=failure.snapshot&&failure.code!=="SNAPSHOT_FAILED"?snapshotRelative(failure.snapshot):null,copy=migrationFailureCopy(failure.code,failure.reason,!!kept);
       error(copy.headline);error(copy.next);
+      // T-111: the cause a data check named, built only from typed fields (fixed reason, UUID or nothing).
+      if(failure.diagnostic)error(`원인 진단: ${failure.diagnostic.subject==="render"?"렌더 기록":"프로젝트"} ${failure.diagnostic.id??"(id 확인 불가)"} — ${failure.diagnostic.reason}`);
       if(kept)error(`바꾸기 전 복사본: ${kept} (자동으로 지우지 않아요)`);
       else if(failure.snapshot){const name=snapshotRelative(failure.snapshot);if(name)error(`확인하지 못한 복사본 파일이 남아 있어요: ${name} (지우지 않았어요)`);}
       outcome={result:"failed",code:failure.code,reason:failure.reason,from:appliedCount((handle?.sqlite??probe)!),to:migrations.length,snapshot:kept,snapshotSha256:kept&&failure.snapshot?digestOf(failure.snapshot):null};

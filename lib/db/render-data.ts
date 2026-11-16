@@ -8,12 +8,20 @@ import type Database from "better-sqlite3";
 // The input hash is the sha256 of the exact stored input_json text (the service stores canonical JSON).
 export const renderInputSha256=(json:string)=>createHash("sha256").update(json).digest("hex");
 export const hasRendersTable=(sqlite:Database.Database)=>!!sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='renders'").get();
-export class RenderRowError extends Error{constructor(id:string,reason:string){super(`Render row ${id}: ${reason}`);this.name="RenderRowError";}}
+// T-111: the reason is one of these fixed sentences and the subject id is a UUID, so a caller may show both as they
+// are (CLI diagnostics). No stored text (input JSON, file path, hash) is ever put into the error.
+export const renderRowReasons=["input differs from its hash","input is not JSON","input schemaVersion is not 1","input names another project or timeline","saved timeline is missing","saved timeline binding differs","input timeline hash differs from the saved timeline","job differs","file fields are incomplete","verify record is not JSON","verify record is not an object","success without a verified file","late result without a kept file","file kept for an unfinished or failed render","failure without a code","finish time differs from status","more than one render in progress"] as const;
+export type RenderRowReason=typeof renderRowReasons[number];
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+export class RenderRowError extends Error{
+  readonly subjectId:string|null;
+  constructor(readonly subject:"render"|"project",id:string,readonly reason:RenderRowReason){const safe=typeof id==="string"&&uuid.test(id)?id:null;super(`${subject==="render"?"Render row":"Project"} ${safe??"(id not a UUID)"}: ${reason}`);this.subjectId=safe;this.name="RenderRowError";}
+}
 type Row={id:string;project_id:string;job_id:string;timeline_rev_id:string;timeline_revision:number;content_revision:number;input_json:string;input_sha256:string;status:string;file_path:string|null;sha256:string|null;size_bytes:number|null;verify_json:string|null;canceled_late:number;error_code:string|null;finished_at:string|null};
 const hex64=(value:unknown)=>typeof value==="string"&&/^[0-9a-f]{64}$/.test(value);
 const isObject=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==="object"&&!Array.isArray(value);
 export function checkRenderRow(sqlite:Database.Database,row:Row){
-  const fail=(reason:string)=>{throw new RenderRowError(row.id,reason);};
+  const fail=(reason:RenderRowReason)=>{throw new RenderRowError("render",row.id,reason);};
   // Input record: its own hash, and the identity it names is the row's identity.
   if(renderInputSha256(row.input_json)!==row.input_sha256)fail("input differs from its hash");
   let input:unknown;try{input=JSON.parse(row.input_json);}catch{fail("input is not JSON");}
@@ -43,7 +51,7 @@ export function checkRenderRows(sqlite:Database.Database){
   if(!hasRendersTable(sqlite))return;
   for(const row of sqlite.prepare("SELECT id,project_id,job_id,timeline_rev_id,timeline_revision,content_revision,input_json,input_sha256,status,file_path,sha256,size_bytes,verify_json,canceled_late,error_code,finished_at FROM renders ORDER BY id").all() as Row[])checkRenderRow(sqlite,row);
   const active=sqlite.prepare("SELECT project_id FROM renders WHERE status IN ('queued','running') GROUP BY project_id HAVING COUNT(*)>1").get() as {project_id:string}|undefined;
-  if(active)throw new RenderRowError(active.project_id,"more than one render in progress");
+  if(active)throw new RenderRowError("project",active.project_id,"more than one render in progress");
 }
 // Files the backup must hold for render rows: a verified success or a verified result that finished after cancel.
 export function renderFileReferences(sqlite:Database.Database){

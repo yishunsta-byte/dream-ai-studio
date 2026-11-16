@@ -8,11 +8,16 @@ import type { DatabaseHandle } from "./connection";
 import { compareMigrations, databaseOrigin, journal, migrateDatabase, productMigrations, verifyMigrations, type Migration } from "./migrate";
 import { MigrationSourceError } from "./code-migration";
 import { checkTimelineRows } from "./timeline-data";
+import { checkRenderRows, RenderRowError } from "./render-data";
 
 export const liveMigrationCodes=["SCHEMA_MISMATCH","SNAPSHOT_EXISTS","SNAPSHOT_FAILED","DATABASE_BUSY","MIGRATION_FAILED","MIGRATION_SOURCE","MIGRATION_TIMEOUT"] as const;
 export type LiveMigrationCode=typeof liveMigrationCodes[number];
 // reason "unrecorded": SCHEMA_MISMATCH because a nonempty database has no readable journal (F039-2).
-export class LiveMigrationError extends Error{constructor(readonly code:LiveMigrationCode,readonly snapshot:string|null=null,readonly reason:"unrecorded"|null=null){super(code);this.name="LiveMigrationError";}}
+// T-111 diagnostic: the typed cause of a MIGRATION_FAILED that a data check names (a render row and its fixed reason),
+// kept for the CLI's diagnostic line. The public code, record and shared sentences do not change.
+export type LiveMigrationDiagnostic={kind:"render_row";subject:"render"|"project";id:string|null;reason:RenderRowError["reason"]};
+export class LiveMigrationError extends Error{constructor(readonly code:LiveMigrationCode,readonly snapshot:string|null=null,readonly reason:"unrecorded"|null=null,readonly diagnostic:LiveMigrationDiagnostic|null=null){super(code);this.name="LiveMigrationError";}}
+const diagnosticOf=(error:unknown):LiveMigrationDiagnostic|null=>error instanceof RenderRowError?{kind:"render_row",subject:error.subject,id:error.subjectId,reason:error.reason}:null;
 export type LiveMigrationResult={applied:number;from:number;to:number;snapshot:string|null};
 export type LiveMigrationOptions={snapshotDirectory:string;migrations?:readonly Migration[];now?:()=>number;afterSnapshot?:(path:string)=>void};
 const stampOf=(time:number)=>new Date(time).toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
@@ -24,6 +29,8 @@ export function checkMigratedData(sqlite:Database.Database,migrations:readonly M
   for(const row of sqlite.prepare("SELECT value_json FROM settings WHERE key GLOB 'project.*.edit.*' AND key NOT GLOB '*.current'").all() as {value_json:string}[])editSnapshotSchema.parse(JSON.parse(row.value_json));
   // T-061: every timeline revision reads back through the schema and its hash; every pointer stays in its project.
   checkTimelineRows(sqlite);
+  // T-111: render rows read back after every live upgrade too (the same check restore runs), not only in 0007.
+  checkRenderRows(sqlite);
 }
 
 // K-6 ⑥ / T-017 3.5: before changing the DB the app is using, keep a consistent copy as a NEW file.
@@ -66,6 +73,6 @@ export function migrateLiveDatabase(handle:DatabaseHandle,options:LiveMigrationO
     // T-061 D8: a code step's source refused while running, or its time limit, get their own codes and sentences.
     if(error instanceof MigrationSourceError)throw new LiveMigrationError("MIGRATION_SOURCE",path);
     if(error instanceof Error&&error.name==="MigrationTimeoutError")throw new LiveMigrationError("MIGRATION_TIMEOUT",path);
-    throw new LiveMigrationError("MIGRATION_FAILED",path);
+    throw new LiveMigrationError("MIGRATION_FAILED",path,null,diagnosticOf(error));
   }
 }
