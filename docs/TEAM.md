@@ -1265,3 +1265,7 @@
 
 - msg_6fa3e809fa9a confirms CX-DESIGN-01 accepted T164. Scope exports-panel.tsx, dedicated CSS/UI tests/report only; page already forwards full DTO. Worker reports inspection/implementation started; no completion claim.
 - T163 writer review continues separately. Shared service/schema and user3013 protected.
+### T164 baseline type discrepancy; T165 narrow test correction
+
+- msg_2c8aac8833ba reports TS2352 in tests/t162-audio-bundle.test.ts163 in isolated UI baseline. Master inspected same assertion and ran current tsc --noEmit --incremental false:exit0. Environment cause not established; no false shared failure claim.
+- T165 implementation owner requested safe explicit manifest version/type narrowing in that test only, no assertion weakening. UI author requested exact compiler/lock/source evidence and honest failed baseline state while browser work continues.
