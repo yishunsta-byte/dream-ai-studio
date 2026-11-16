@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-045 · K6 DB 보호 필수3건 독립 재검수 (parent=T044, priority=P1) — ready
+### T-045 · K6 DB 보호 필수3건 독립 재검수 (parent=T044, priority=P1) — running
+
+- 실제worker ready dispatch ctx_554493d1a416 / task task_4a97ab2b8e31 / terminal term_01101526-060a-489c-b4eb-fc89d7482ee8 / child k6-db-protection-recheck. 결과는Orca wake로회수.
 
 - 새 구현미참여 Codex child, 기준83b58f7. F0431/2/3 원본재현·회귀와 F0391/4 통과범위유지를독립검증. rawDELETE/WAL/정확journal예외/새DB경합·sidecar옛형식/다른정상사본/readonly원본보존·실제1280/390정확안내 포함.
 - 제품코드/fixture원본/사용자DB/공용문서불변, 고유T045보고만. 전체tests/lint/typecheck/build·직접재현증거·PASS/FAIL·미검증한계 반환. 미래code-data-migrationhash미구현은0005전 별도선행조건으로유지.
