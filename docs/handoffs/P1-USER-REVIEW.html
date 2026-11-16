@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 흐름 미리 보기</title>
+<!--
+  T-024 · 은영님용 P1 흐름 확인 페이지 (준비본, 승인 요청 아님)
+  그림은 ../../tmp/p1-review/ 의 캡처 11장을 상대 경로로 읽는다. 캡처 원본은 바꾸지 않는다.
+  수정 후 교체 방법은 docs/handoffs/T-024-CC-DESIGN-01.md 3장.
+  외부 글꼴·스크립트를 불러오지 않는다(로컬 파일로 열어도 그대로 보이게).
+-->
+<style>
+:root{
+  --bg:#F6F8FA; --surface:#FFFFFF; --sunken:#EEF2F6; --line:#D9E2EC;
+  --fg:#243B53; --strong:#102A43; --muted:#52677D;
+  --accent:#0A7F76; --accent-soft:#E3F7F4;
+  --ok:#17663A; --ok-bg:#E6F6EC; --warn:#8A5A00; --warn-bg:#FFF6DB; --bad:#A3271D; --bad-bg:#FDECEA;
+  --sample:#5B3FA8; --sample-bg:#EFEAFB;
+  --font:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1B26; --surface:#162533; --sunken:#1E3142; --line:#2B4257;
+  --fg:#D6E2EC; --strong:#F0F5F9; --muted:#9FB3C5;
+  --accent:#4FD1C1; --accent-soft:#123A38;
+  --ok:#7AD69C; --ok-bg:#163527; --warn:#F2C35B; --warn-bg:#3A2E10; --bad:#F59A90; --bad-bg:#3F1D1A;
+  --sample:#C7B5F5; --sample-bg:#2C2445; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1B26; --surface:#162533; --sunken:#1E3142; --line:#2B4257;
+  --fg:#D6E2EC; --strong:#F0F5F9; --muted:#9FB3C5;
+  --accent:#4FD1C1; --accent-soft:#123A38;
+  --ok:#7AD69C; --ok-bg:#163527; --warn:#F2C35B; --warn-bg:#3A2E10; --bad:#F59A90; --bad-bg:#3F1D1A;
+  --sample:#C7B5F5; --sample-bg:#2C2445; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:16px;line-height:1.65;word-break:keep-all;overflow-wrap:anywhere;
+  padding:32px 16px 64px}
+.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1{margin:0;font-size:30px;line-height:1.3;color:var(--strong);font-weight:800}
+h2{margin:0;font-size:22px;line-height:1.35;color:var(--strong);font-weight:700}
+h3{margin:0;font-size:18px;line-height:1.4;color:var(--strong);font-weight:700}
+p{margin:0}
+ul,ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+section{display:flex;flex-direction:column;gap:16px}
+.lead{display:flex;flex-direction:column;gap:10px;max-width:68ch}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.status{border-left:6px solid var(--warn)}
+.status-head{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:2px 12px;border-radius:999px;font-size:14px;font-weight:700;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.sample{background:var(--sample-bg);color:var(--sample)}
+.pill.wait{background:var(--sunken);color:var(--muted)}
+.gates{list-style:none;padding:0;gap:10px}
+.gates .pill{min-width:84px;justify-content:center}
+.gates li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.fact{background:var(--sunken);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fact b{font-size:19px;color:var(--strong);font-variant-numeric:tabular-nums}
+.fact span{font-size:13px;color:var(--muted)}
+.flow{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:0}
+.flow li{display:inline-flex;align-items:center;gap:6px;background:var(--sunken);border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600;color:var(--strong)}
+.flow li::after{content:"→";color:var(--muted);font-weight:400;margin-left:2px}
+.flow li:last-child::after{content:""}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:32px}
+.step{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:20px;align-items:start}
+.shot{position:relative;background:var(--sunken);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.shot img{display:block;width:100%;height:auto}
+.shot.pending img{opacity:.55}
+.flag{position:absolute;left:10px;top:10px;right:10px;display:flex}
+.flag span{background:var(--warn-bg);color:var(--warn);border:1px solid currentColor;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700;line-height:1.4}
+.note{display:flex;flex-direction:column;gap:8px;min-width:0}
+.k{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:700}
+.look{font-size:14px;font-weight:700;color:var(--muted);margin-top:4px}
+.fix{background:var(--warn-bg);color:var(--fg);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.fix b{color:var(--warn)}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.pair .shot{max-width:330px}
+.pair{grid-template-columns:repeat(auto-fit,minmax(240px,330px))}
+figcaption{font-size:14px;color:var(--muted)}
+.tree{margin:0;background:var(--sunken);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.tree .root{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--strong)}
+.tree div:not(.root){display:grid;grid-template-columns:9.5em minmax(0,1fr);gap:4px 12px;padding-left:12px;border-left:2px solid var(--line)}
+.tree dt{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);padding-top:2px}
+.tree dd{margin:0}
+code{font-family:var(--mono);font-size:.9em;background:var(--sunken);border-radius:4px;padding:0 4px}
+.later{background:var(--accent-soft);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.later code{font-family:var(--font);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1px 8px;color:var(--strong);font-weight:700}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+@media (max-width:680px){ .tree div:not(.root){grid-template-columns:minmax(0,1fr);gap:0}  .step{grid-template-columns:minmax(0,1fr)} h1{font-size:25px} h2{font-size:20px} .card{padding:16px} }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <header class="lead">
+    <div class="eyebrow">P1 · 은영님 확인용 자료 (준비본)</div>
+    <h1>쇼핑숏츠 한 편을 처음부터 편집용 묶음까지 만드는 흐름</h1>
+    <p>가상 상품 "가상 민트컵"으로 새 프로젝트를 만들고, 편집용 묶음(ZIP)을 내려받기까지 찍은 화면이에요. 모든 결과는 샘플이고 실제 AI는 쓰지 않았어요.</p>
+  </header>
+
+  <section class="card status" aria-labelledby="st-h">
+    <div class="status-head">
+      <h2 id="st-h">지금 상태 · 아직 확인을 부탁드리는 단계가 아니에요</h2>
+      <span class="pill bad">독립 검수 불통과</span>
+    </div>
+    <p>미리 보시라고 준비해 둔 페이지예요. 아래가 모두 끝나면 이 페이지를 새 화면으로 바꾼 뒤 확인을 부탁드릴게요. <strong>지금은 답하지 않으셔도 돼요.</strong></p>
+    <ul class="gates">
+      <li><span class="pill bad">고치는 중</span><span><b>장면 실패 안내</b> — 실패한 장면이 "결과를 기다리고 있어요."로만 보이고 이유가 안 나와요.</span></li>
+      <li><span class="pill bad">고치는 중</span><span><b>내보내기 정보</b> — 묶음을 만들기 전에 들어갈 폴더와 예상 크기가, 만든 뒤에 파일 이름과 크기가 안 보여요.</span></li>
+      <li><span class="pill warn">확인 남음</span><span><b>접근성 마무리</b> — 휴대폰 화면에서 검수표 직접 입력, 키보드만으로 처음부터 끝까지 진행하기.</span></li>
+      <li><span class="pill wait">대기</span><span><b>독립 재검수</b> — 만들지 않은 검수 담당이 위 내용을 다시 확인해요.</span></li>
+      <li><span class="pill wait">대기</span><span><b>은영님 확인</b> — 이 흐름 확인과 디자인 시안 승인. 두 가지가 끝나야 다음 단계(P2 영상 편집)를 시작해요.</span></li>
+    </ul>
+    <div class="facts">
+      <div class="fact"><b>191개</b><span>독립 검수 때 자동 시험 통과</span></div>
+      <div class="fact"><b>12 / 13</b><span>필수 확인 항목 통과 (1개 일부만)</span></div>
+      <div class="fact"><b>2건</b><span>꼭 고칠 것</span></div>
+      <div class="fact"><b>1280 · 390</b><span>PC·휴대폰 화면 너비</span></div>
+    </div>
+    <p class="muted small">기준: 독립 검수 보고(R-016). 그 뒤 Master가 백업·복원 안내를 고치고 자동 시험 207개를 직접 돌렸지만, 이는 만든 쪽의 확인이라 독립 검수를 대신하지 않아요.</p>
+  </section>
+
+  <section aria-labelledby="flow-h">
+    <h2 id="flow-h">전체 흐름 한눈에</h2>
+    <ol class="flow" aria-label="제작 단계 순서">
+      <li>등록</li><li>요구 확인</li><li>기획 승인</li><li>장면 제작</li><li>수정·조립</li><li>검수 승인</li><li>내보내기</li>
+    </ol>
+    <p>단계는 순서대로만 열려요. 앞 단계를 끝내지 않으면 뒤 단계에는 자물쇠가 걸려 있어요. "승인" 표시가 붙은 기획과 검수는 은영님이 직접 눌러야 넘어가요.</p>
+  </section>
+
+  <section aria-labelledby="steps-h">
+    <h2 id="steps-h">화면 8장 · 무엇을 보시면 되는지</h2>
+    <ol class="steps">
+      <li class="step">
+        <div class="shot"><img src="../../tmp/p1-review/flow-01.png" alt="새 프로젝트 입력 화면. 제목·목표·보는 사람·화면 비율·목표 길이·광고 포함 칸이 있다" width="1280" height="960" loading="lazy"></div>
+        <div class="note"><span class="k">1 · 등록</span><h3>새 프로젝트에 필요한 칸을 채워요</h3>
+          <p class="look">보실 것</p>
+          <ul><li>제목·목표·보는 사람·화면 비율(9:16)·길이(30초)를 적어요.</li><li>광고·협찬을 체크하면 검수 항목이 늘어난다고 미리 알려 줘요.</li><li>위쪽 안내: "확인한 내용만 등록해 주세요."</li></ul></div>
+      </li>
+      <li class="step">
+        <div class="shot"><img src="../../tmp/p1-review/flow-02.png" alt="자료·캐릭터 화면. 가상 상품 사진 두 장이 원본 표시와 함께 올라가 있다" width="1280" height="960" loading="lazy"></div>
+        <div class="note"><span class="k">2 · 자료</span><h3>상품 사진을 올려 보관해요</h3>
+          <p class="look">보실 것</p>
+          <ul><li>올린 사진에 "원본" 표시와 크기·해상도가 보여요.</li><li>출처·권리 메모를 함께 적어 둘 수 있어요.</li><li>원본은 바꾸지 않고 그대로 보관해요.</li></ul></div>
+      </li>
+      <li class="step">
+        <div class="shot"><img src="../../tmp/p1-review/flow-03.png" alt="요구 확인 단계. 위에 7단계 진행 표시, 아래에 등록한 내용 목록" width="1280" height="960" loading="lazy"></div>
+        <div class="note"><span class="k">3 · 요구 확인</span><h3>등록한 내용이 맞는지 다시 봐요</h3>
+          <p class="look">보실 것</p>
+          <ul><li>위쪽 7단계 진행 표시에서 지금 단계와 잠긴 단계가 구분돼요.</li><li>잠긴 단계에는 "이전 단계를 완료하면 열려요."라고 이유가 붙어요.</li></ul></div>
+      </li>
+      <li class="step">
+        <div class="shot"><img src="../../tmp/p1-review/flow-04.png" alt="기획 단계. 기획 버전 선택, 새 버전으로 저장 안내, 전체 대본 칸" width="1280" height="960" loading="lazy"></div>
+        <div class="note"><span class="k">4 · 기획</span><h3>대본과 장면표를 쓰고 승인해요</h3>
+          <p class="look">보실 것</p>
+          <ul><li>고치면 덮어쓰지 않고 새 버전(v1, v2…)으로 저장돼요.</li><li>이전 버전과 나란히 비교할 수 있어요.</li><li>승인해야 장면을 만들 수 있어요.</li></ul></div>
+      </li>
+      <li class="step">
+        <div class="shot"><img src="../../tmp/p1-review/flow-05.png" alt="장면 제작 단계. 장면 1 카드에 샘플 표시와 SAMPLE 그림, 0원 표시" width="1280" height="960" loading="lazy"></div>
+        <div class="note"><span class="k">5 · 장면 제작</span><h3>장면을 만들고 쓸 버전을 골라요</h3>
+          <p class="look">보실 것</p>
+          <ul><li>샘플 결과에는 보라색 "샘플" 표시와 "0원(샘플)"이 붙어요.</li><li>새로 만들면 이전 결과는 버전으로 남고, 고른 버전만 쓰여요.</li><li>"결과 없는 장면만 만들기"로 빠진 장면만 채울 수 있어요.</li></ul></div>
+      </li>
+      <li class="step">
+        <div class="shot"><img src="../../tmp/p1-review/flow-06.png" alt="수정·조립 단계. 왼쪽 정지 화면 미리보기에 광고 글자, 오른쪽 글자 레이어 설정" width="1280" height="960" loading="lazy"></div>
+        <div class="note"><span class="k">6 · 수정·조립</span><h3>글자를 얹고 미리 봐요</h3>
+          <p class="look">보실 것</p>
+          <ul><li>"광고" 표기 글자는 지울 수 없고 위치만 바꿀 수 있어요.</li><li>점선 안쪽이 휴대폰에서 가려지지 않는 안전 영역이에요.</li><li>P1은 정지 화면 미리보기까지예요. 실제 영상 조립은 다음 단계(P2)예요.</li></ul></div>
+      </li>
+      <li class="step">
+        <div class="shot"><img src="../../tmp/p1-review/flow-07.png" alt="검수 단계. 필수 13개 중 13개 통과, 항목별 통과·보류 버튼과 메모" width="1280" height="960" loading="lazy"></div>
+        <div class="note"><span class="k">7 · 검수</span><h3>항목마다 통과·보류를 정해요</h3>
+          <p class="look">보실 것</p>
+          <ul><li>필수 항목이 몇 개 통과했는지 위에 보여요.</li><li>자동 확인은 근거만 보여 주고, 통과는 사람이 직접 눌러요.</li><li>장면·글자·순서를 바꾸면 검수를 다시 해야 해요.</li></ul></div>
+      </li>
+      <li class="step">
+        <div class="shot pending"><img src="../../tmp/p1-review/flow-08.png" alt="내보내기 단계. 편집용 묶음 만들기 버튼과 완료된 묶음 카드, 검증된 SHA256" width="1280" height="960" loading="lazy">
+          <div class="flag"><span>수정 후 새 화면으로 바꿀 예정</span></div></div>
+        <div class="note"><span class="k">8 · 내보내기</span><h3>편집용 묶음(ZIP)을 내려받아요</h3>
+          <p class="look">보실 것</p>
+          <ul><li>"편집용 묶음"이라고 불러요. 완성 영상은 들어 있지 않아요.</li><li>묶음을 만든 뒤 모든 파일을 다시 검사해야 내려받기가 열려요.</li></ul>
+          <div class="fix"><b>지금 화면에서 고치는 중</b><span>만들기 전: 들어갈 폴더 목록과 예상 크기를 보여 줘요.</span><span>만든 뒤: 실제 파일 이름·크기·시각을 보여 주고, 긴 확인 번호는 앞 8자리 + "전체 복사"로 줄여요.</span></div></div>
+      </li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="zip-h">
+    <h2 id="zip-h">샘플과 편집용 묶음이 무엇인가요</h2>
+    <div class="card">
+      <h3>샘플 <span class="pill sample">샘플</span></h3>
+      <ul>
+        <li>지금은 실제 AI를 연결하지 않아서 결과 자리에 "샘플 · SAMPLE" 그림이 들어가요. 비용은 0원이에요.</li>
+        <li>샘플 결과에는 늘 보라색 "샘플" 표시가 붙고, 묶음 안 파일 이름에도 <code>_SAMPLE</code>이 붙어요. 실제 결과로 착각하지 않게 하려는 거예요.</li>
+        <li>실제 AI 연결은 P3에서, 은영님이 예산과 계정을 정하신 뒤에 해요.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>편집용 묶음(ZIP) 안에 들어가는 것</h3>
+      <p>캡컷 같은 편집 프로그램에서 이어 작업할 재료 묶음이에요. 한 번 만든 묶음은 나중에 기획을 고쳐도 바뀌지 않아요.</p>
+<dl class="tree" aria-label="편집용 묶음 폴더 구성">
+        <div class="root">가상-민트컵_20261116-0114/</div>
+        <div><dt>scenes/</dt><dd>장면별로 고른 결과 (샘플은 이름에 _SAMPLE)</dd></div>
+        <div><dt>script/</dt><dd>대본과 기획</dd></div>
+        <div><dt>subtitles/</dt><dd>자막 파일 (.srt)</dd></div>
+        <div><dt>edit/</dt><dd>글자 위치·크기 설정</dd></div>
+        <div><dt>provenance/</dt><dd>무엇으로 만들었는지, 권리 메모</dd></div>
+        <div><dt>review/</dt><dd>검수표</dd></div>
+        <div><dt>LICENSES/</dt><dd>함께 넣은 글꼴의 사용 허락서</dd></div>
+        <div><dt>manifest.json</dt><dd>파일 목록과 확인 번호</dd></div>
+      </dl>
+      <p class="muted small">완성 영상(final/)은 P2부터 들어가요. 폴더 이름은 예시예요.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="more-h">
+    <h2 id="more-h">휴대폰 화면과 실패 화면</h2>
+    <div class="pair">
+      <figure><div class="shot"><img src="../../tmp/p1-review/flow-m-scenes.png" alt="휴대폰 너비의 장면 제작 화면. 버튼이 카드 아래로 내려와 있다" width="390" height="844" loading="lazy"></div>
+        <figcaption>휴대폰 · 장면 제작. 버튼이 카드 아래로 내려오고 가로로 넘치지 않아요.</figcaption></figure>
+      <figure><div class="shot pending"><img src="../../tmp/p1-review/flow-m-export.png" alt="휴대폰 너비의 내보내기 화면. 완료된 묶음 두 개" width="390" height="844" loading="lazy">
+          <div class="flag"><span>수정 후 교체 예정</span></div></div>
+        <figcaption>휴대폰 · 내보내기. 지난 묶음에는 "이전 내용" 표시가 붙어요. 파일 정보가 추가되면 새 화면으로 바꿔요.</figcaption></figure>
+    </div>
+      <figure class="wide"><div class="shot pending"><img src="../../tmp/p1-review/flow-fail.png" alt="장면 버전 세 개. 왼쪽 실패 버전에 '결과를 기다리고 있어요.'라고만 적혀 있다" width="1280" height="960" loading="lazy">
+          <div class="flag"><span>수정 후 교체 예정</span></div></div>
+        <figcaption>실패한 장면 버전. 실패 표시는 맞게 나오지만 안내 문장이 "결과를 기다리고 있어요."로 잘못 나와요.</figcaption></figure>
+    <div class="fix"><b>실패 화면에서 고치는 중</b><span>실패한 이유와 다음에 할 일을 한 문장씩 보여 줘요. 예: "결과 파일을 저장하지 못했어요. 선택한 v1은 그대로예요." + "저장 다시 시도" 버튼.</span><span>내용 때문에 거절된 경우는 다시 시도 버튼 대신 "기획 고치기"로 안내해요. 이미 고른 성공 버전은 그대로 남아요.</span></div>
+  </section>
+
+  <section class="later" aria-labelledby="later-h">
+    <h2 id="later-h">나중에 확인하실 때</h2>
+    <p>수정과 독립 재검수가 끝나면 이 페이지의 실패·내보내기 화면을 새로 찍은 화면으로 바꾸고, 위의 상태 칸을 갱신해 다시 알려 드려요.</p>
+    <p>그때 괜찮으시면 <code>P1 확인했어</code>, 고칠 곳이 있으면 화면 번호와 함께 적어 주시면 돼요. 예: <code>5번 샘플 표시가 작아</code></p>
+    <p>디자인 시안(앞으로 만들 화면 전체)도 함께 보실 수 있어요: <a href="../design/prototype.html">디자인 시안 열기</a></p>
+  </section>
+
+  <footer>
+    <p>준비: Claude design (T-024) · 화면 캡처는 독립 검수 때 가상 데이터로 찍은 것이에요. 실제 개인정보·키·PC 경로는 들어 있지 않아요.</p>
+  </footer>
+</main>
+</body>
+</html>
