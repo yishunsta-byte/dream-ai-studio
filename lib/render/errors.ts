@@ -18,3 +18,12 @@ export const RENDER_MESSAGES:Record<RenderErrorCode,string>={
 };
 export const RENDER_RETRYABLE:readonly RenderErrorCode[]=["RENDER_BROWSER_CRASHED","STORAGE_FAILED"];
 export const renderRetryable=(code:string|null|undefined)=>RENDER_RETRYABLE.includes(code as RenderErrorCode);
+// One storage-error rule for every worker write (copying inputs, the work folder, publishing; T-116 F116-3, T-106):
+// no space is DISK_FULL and never retried (the same space would fail again); a lock/busy/handle-limit error is
+// transient and retried within the attempt limit; anything else (permission, missing or invalid path, read-only…)
+// is a permanent storage failure, not retried.
+const TRANSIENT_IO=new Set(["EBUSY","EAGAIN","EMFILE","ENFILE"]);
+export function storageFailure(errno:string|null|undefined):{code:"DISK_FULL"|"STORAGE_FAILED";retryable:boolean}{
+  if(errno==="ENOSPC"||errno==="EDQUOT")return {code:"DISK_FULL",retryable:false};
+  return {code:"STORAGE_FAILED",retryable:!!errno&&TRANSIENT_IO.has(errno)};
+}

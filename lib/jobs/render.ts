@@ -1,5 +1,8 @@
 import "server-only";
-import { existsSync, linkSync, mkdirSync, readdirSync, rmSync, unlinkSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { chmodSync, createReadStream, createWriteStream, existsSync, linkSync, mkdirSync, readdirSync, rmSync, unlinkSync } from "node:fs";
+import { Transform } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { extname, join, relative } from "node:path";
 import type { DatabaseHandle } from "@/lib/db/connection";
 import { jobsRepository } from "@/lib/repo/jobs";
@@ -14,7 +17,7 @@ import { renderProps } from "@/lib/render/props";
 import { runRenderAttempt } from "@/lib/render/run";
 import { checkBrowser, compositionSourceSha256, COMPOSITION_ID, fileSha256 } from "@/lib/render/tools";
 import { verifyRender, type VerifyResult } from "@/lib/render/verify";
-import { RENDER_MESSAGES, RENDER_RETRYABLE, type RenderErrorCode } from "@/lib/render/errors";
+import { RENDER_MESSAGES, RENDER_RETRYABLE, storageFailure, type RenderErrorCode } from "@/lib/render/errors";
 
 // P2-4b worker side of one render attempt (T-101 2.3·2.5·2.7). The claim already set the row running/prepare.
 // prepare: the fixed input is read back and every file it names is measured again (pinned browser, composition
@@ -23,7 +26,11 @@ import { RENDER_MESSAGES, RENDER_RETRYABLE, type RenderErrorCode } from "@/lib/r
 // one transaction. A cancel that arrives after the file passed keeps it as canceled_late (never selected).
 // Failures carry a code; only a crash of the browser/child or a transient storage error is retried (T-105 by cause).
 export const RENDER_TIME_LIMIT_MS=30*60000;
-export class RenderFailure extends Error{constructor(readonly code:RenderErrorCode,message:string,readonly retryable=false,readonly verify:VerifyResult|null=null){super(message);this.name="RenderFailure";}}
+// errno: the original system error code, kept for the activity log (never a path).
+export class RenderFailure extends Error{constructor(readonly code:RenderErrorCode,message:string,readonly retryable=false,readonly verify:VerifyResult|null=null,readonly errno:string|null=null){super(message);this.name="RenderFailure";}}
+const errnoOf=(error:unknown)=>{const code=(error as NodeJS.ErrnoException)?.code;return typeof code==="string"&&/^E[A-Z0-9]+$/.test(code)?code:null;};
+// A failed write, classified once (lib/render/errors storageFailure) with its cause kept.
+export function storageError(error:unknown){const errno=errnoOf(error),kind=storageFailure(errno);return new RenderFailure(kind.code,RENDER_MESSAGES[kind.code],kind.retryable,null,errno);}
 const RETRYABLE=new Set<RenderErrorCode>(RENDER_RETRYABLE);
 const MIME:Record<string,string>={".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".webp":"image/webp",".mp4":"video/mp4",".webm":"video/webm",".mov":"video/quicktime",".woff2":"font/woff2",".woff":"font/woff",".ttf":"font/ttf",".otf":"font/otf"};
 const mimeOf=(path:string)=>MIME[extname(path).toLowerCase()]??"application/octet-stream";
@@ -32,25 +39,45 @@ export const renderFileRel=(projectId:string,renderId:string)=>`projects/${proje
 const fontsRoot=()=>join(/*turbopackIgnore: true*/process.cwd(),"public","fonts");
 const appRoot=()=>/*turbopackIgnore: true*/process.cwd();
 
-// prepare: everything the input names must still be the measured bytes.
-export async function recheckInput(input:RenderInput,signal?:AbortSignal){
+// prepare: the pinned browser and the composition source are measured again, then every media and font file is
+// copied into the attempt's own folder while hashing (T-116 F116-2). The render serves only these copies, through
+// handles the file server opens once; the copies are what matched the fixed input, and they are checked again before
+// the result is published. A source changed after this copy cannot reach the render.
+export type StagedFile=ServedFile&{sha256:string};
+async function copyHashed(source:string,target:string,signal?:AbortSignal){
+  const hash=createHash("sha256");let size=0;
+  const tap=new Transform({transform(chunk:Buffer,_encoding,done){hash.update(chunk);size+=chunk.length;done(null,chunk);}});
+  await pipeline(createReadStream(/*turbopackIgnore: true*/source),tap,createWriteStream(/*turbopackIgnore: true*/target,{flags:"wx"}),{signal});
+  return {size,sha256:hash.digest("hex")};
+}
+const MISSING_ERRNO=new Set(["ENOENT","ENOTDIR","EISDIR"]);
+export async function recheckInput(input:RenderInput,work:string,signal?:AbortSignal){
   const browser=await checkBrowser({fresh:true});
   if(!browser.ok)throw new RenderFailure("RENDER_BROWSER_MISSING",RENDER_MESSAGES.RENDER_BROWSER_MISSING);
   if(browser.sha256!==input.renderer.browserSha256||browser.version!==input.renderer.browser)throw new RenderFailure("RENDER_INPUT_CHANGED",RENDER_MESSAGES.RENDER_INPUT_CHANGED);
   if(compositionSourceSha256()!==input.renderer.compositionSourceSha256)throw new RenderFailure("RENDER_INPUT_CHANGED",RENDER_MESSAGES.RENDER_INPUT_CHANGED);
-  const media:ServedFile[]=[],fonts:ServedFile[]=[];
-  for(const item of input.media){
-    const file=resolveStoredFile(item.relPath);if(!file)throw new RenderFailure("RENDER_INPUT_MISSING",RENDER_MESSAGES.RENDER_INPUT_MISSING);
-    const digest=await fileSha256(file,{fresh:true,signal});if(digest.sha256!==item.sha256||digest.sizeBytes!==item.sizeBytes)throw new RenderFailure("RENDER_INPUT_CHANGED",RENDER_MESSAGES.RENDER_INPUT_CHANGED);
-    media.push({absolute:file,mime:mimeOf(file),sizeBytes:digest.sizeBytes});
-  }
-  for(const font of input.fonts){
+  const folder=join(/*turbopackIgnore: true*/work,"inputs");try{mkdirSync(/*turbopackIgnore: true*/folder,{recursive:true});}catch(error){throw storageError(error);}
+  const stage=async(source:string|null,name:string,expected:{sha256:string;sizeBytes:number},missing:"RENDER_INPUT_MISSING"|"FONT_MISSING"):Promise<StagedFile>=>{
+    if(!source)throw new RenderFailure(missing,RENDER_MESSAGES[missing]);
+    const target=join(folder,name);let copied;
+    try{copied=await copyHashed(source,target,signal);}
+    catch(error){if(signal?.aborted)throw error;if(MISSING_ERRNO.has(errnoOf(error)??""))throw new RenderFailure(missing,RENDER_MESSAGES[missing],false,null,errnoOf(error));throw storageError(error);}
+    if(copied.sha256!==expected.sha256||copied.size!==expected.sizeBytes)throw new RenderFailure("RENDER_INPUT_CHANGED",RENDER_MESSAGES.RENDER_INPUT_CHANGED);
+    try{chmodSync(/*turbopackIgnore: true*/target,0o444);}catch{/* read-only is an extra guard; the check before publishing decides */}
+    return {absolute:target,mime:mimeOf(source),sizeBytes:copied.size,sha256:copied.sha256};
+  };
+  const media:StagedFile[]=[],fonts:StagedFile[]=[];
+  for(const [n,item] of input.media.entries()){const file=resolveStoredFile(item.relPath);media.push(await stage(file,`m${n}${extname(file??"").toLowerCase()}`,item,"RENDER_INPUT_MISSING"));}
+  for(const [n,font] of input.fonts.entries()){
     const file=join(/*turbopackIgnore: true*/fontsRoot(),font.relPath),inside=relative(fontsRoot(),file);
-    if(inside.startsWith("..")||!existsSync(/*turbopackIgnore: true*/file))throw new RenderFailure("FONT_MISSING",RENDER_MESSAGES.FONT_MISSING);
-    const digest=await fileSha256(file,{fresh:true,signal});if(digest.sha256!==font.sha256||digest.sizeBytes!==font.sizeBytes)throw new RenderFailure("RENDER_INPUT_CHANGED",RENDER_MESSAGES.RENDER_INPUT_CHANGED);
-    fonts.push({absolute:file,mime:mimeOf(file),sizeBytes:digest.sizeBytes});
+    fonts.push(await stage(inside.startsWith("..")?null:file,`f${n}${extname(file).toLowerCase()}`,font,"FONT_MISSING"));
   }
   return {browser,media,fonts};
+}
+// Before publishing: the copies the render read are still the accepted bytes.
+export async function verifyStaged(files:readonly StagedFile[]){
+  for(const file of files){let digest;try{digest=await fileSha256(file.absolute,{fresh:true});}catch{throw new RenderFailure("RENDER_INPUT_CHANGED",RENDER_MESSAGES.RENDER_INPUT_CHANGED);}
+    if(digest.sha256!==file.sha256||digest.sizeBytes!==file.sizeBytes)throw new RenderFailure("RENDER_INPUT_CHANGED",RENDER_MESSAGES.RENDER_INPUT_CHANGED);}
 }
 
 // Removes a folder; returns the paths (relative to the runtime root) it could not remove.
@@ -68,7 +95,9 @@ export async function cleanStaleRenderTemps(handle:DatabaseHandle,now:()=>number
   return left;
 }
 
-export type RenderRunOptions={now?:()=>number;bundleRoot?:string;netLog?:boolean;graceMs?:number;pollMs?:number;onChild?:(pid:number)=>void};
+// attempt/link: replaceable only by tests (composition and the final link are the real ones otherwise).
+export type RenderRunOptions={now?:()=>number;bundleRoot?:string;netLog?:boolean;graceMs?:number;pollMs?:number;onChild?:(pid:number)=>void;onBundle?:(result:"hit"|"built",rejected:string|null)=>void;
+  attempt?:typeof runRenderAttempt;link?:(from:string,to:string)=>void};
 export async function runClaimedRender(handle:DatabaseHandle,job:{id:string;attempts:number;refId:string;startedAt:string},options:RenderRunOptions={}){
   const now=options.now??Date.now,service=jobsService(handle,now),renders=rendersRepository(handle),jobs=jobsRepository(handle),stamp=()=>new Date(now()).toISOString();
   const row=renders.row(job.refId);if(!row||row.jobId!==job.id){service.fail(job.id,job.attempts,"RENDER_FAILED",RENDER_MESSAGES.RENDER_FAILED,{retryable:false});return;}
@@ -78,21 +107,24 @@ export async function runClaimedRender(handle:DatabaseHandle,job:{id:string;atte
   let work:string|null=null,server:FileServer|null=null;const cleanup:string[]=[];
   const finishFailure=(failure:RenderFailure)=>{
     if(stop==="cancel"||failure.code==="RENDER_CANCELED"){service.canceled(job.id,job.attempts);return;}
+    if(failure.errno){try{jobs.log(row.projectId,"render.io_error",{renderId:row.id,jobId:job.id,code:failure.code,errno:failure.errno,retryable:failure.retryable});}catch{/* the failure itself is still recorded */}}
     service.fail(job.id,job.attempts,failure.code,failure.message,{retryable:failure.retryable,verifyJson:failure.verify?JSON.stringify(failure.verify):null});
   };
   try{
     if(sha256Text(row.inputJson)!==row.inputSha256)throw new RenderFailure("RENDER_INPUT_CHANGED",RENDER_MESSAGES.RENDER_INPUT_CHANGED);
     const input=renderInputSchema.parse(JSON.parse(row.inputJson));
     if(check())throw new RenderFailure(stop==="timeout"?"TIMEOUT":"RENDER_CANCELED",stop==="timeout"?RENDER_MESSAGES.TIMEOUT:RENDER_MESSAGES.RENDER_CANCELED);
-    const checked=await recheckInput(input,controller.signal);
-    const need=neededBytes(input.durationInFrames,input.output.width,input.output.height),tmp=await storageDirectory("tmp");
+    // The work folder also holds the input copies (T-116 F116-2) and the attempt's bundle.
+    const need=neededBytes(input.durationInFrames,input.output.width,input.output.height)+[...input.media,...input.fonts].reduce((sum,item)=>sum+item.sizeBytes,0),tmp=await storageDirectory("tmp");
     // Frames, the browser profile and the output all live in the work folder under storage/tmp (one volume).
     {let free=Infinity;try{free=await freeBytes(tmp);}catch{/* unknown: the render reports a real ENOSPC */}if(free<need)throw new RenderFailure("DISK_FULL",RENDER_MESSAGES.DISK_FULL);}
-    work=join(/*turbopackIgnore: true*/tmp,renderTempName(row.id,job.attempts));removeAll(work);mkdirSync(/*turbopackIgnore: true*/join(work,"os-tmp"),{recursive:true});
+    work=join(/*turbopackIgnore: true*/tmp,renderTempName(row.id,job.attempts));removeAll(work);
+    try{mkdirSync(/*turbopackIgnore: true*/join(work,"os-tmp"),{recursive:true});}catch(error){throw storageError(error);}
+    const checked=await recheckInput(input,work,controller.signal);
     server=await startFileServer(checked.media,checked.fonts);
     const output=join(work,"out.mp4"),bundleRoot=options.bundleRoot??join(appRoot(),"tmp","render-bundle");let lastWrite=0;
     if(check())throw new RenderFailure(stop==="timeout"?"TIMEOUT":"RENDER_CANCELED",RENDER_MESSAGES.RENDER_CANCELED);
-    const attempt=await runRenderAttempt({appRoot:appRoot(),bundleDir:join(bundleRoot,input.renderer.compositionSourceSha256),sourceSha256:input.renderer.compositionSourceSha256,browserPath:checked.browser.path,output,
+    const attempt=await (options.attempt??runRenderAttempt)({appRoot:appRoot(),bundleRoot,sourceSha256:input.renderer.compositionSourceSha256,workBundle:join(work,"bundle"),fileBase:server.base,onBundle:options.onBundle,browserPath:checked.browser.path,output,
       compositionId:COMPOSITION_ID,props:renderProps(input,{media:server.mediaUrl,font:server.fontUrl}),netLog:options.netLog?join(work,"net-log.json"):null,graceMs:options.graceMs,pollMs:options.pollMs,onChild:options.onChild,tempDir:join(work,"os-tmp"),
       shouldCancel:check,
       onStage:stage=>{if(stage==="compose")renders.progress(row.id,{stage:"compose",progressPermille:0,framesDone:0});},
@@ -105,6 +137,7 @@ export async function runClaimedRender(handle:DatabaseHandle,job:{id:string;atte
       throw new RenderFailure(code,RENDER_MESSAGES[code],RETRYABLE.has(code));
     }
     if(!existsSync(/*turbopackIgnore: true*/output))throw new RenderFailure("RENDER_FAILED",RENDER_MESSAGES.RENDER_FAILED);
+    await verifyStaged([...checked.media,...checked.fonts]);
     renders.progress(row.id,{stage:"verify",progressPermille:1000,framesDone:row.framesTotal});
     let verify:VerifyResult;
     try{verify=await verifyRender(output,{width:input.output.width,height:input.output.height,fps:input.output.fps,frames:input.durationInFrames});}
@@ -115,8 +148,8 @@ export async function runClaimedRender(handle:DatabaseHandle,job:{id:string;atte
     // left the same verified bytes, which are accepted only when their hash matches this attempt's file.
     const rel=renderFileRel(row.projectId,row.id),folder=await storageDirectory(`projects/${row.projectId}/renders`),final=join(/*turbopackIgnore: true*/folder,`${row.id}.mp4`);
     let linked=false;
-    try{linkSync(/*turbopackIgnore: true*/output,final);linked=true;}
-    catch(error){if((error as NodeJS.ErrnoException).code!=="EEXIST")throw new RenderFailure("STORAGE_FAILED",RENDER_MESSAGES.STORAGE_FAILED,true);
+    try{(options.link??linkSync)(/*turbopackIgnore: true*/output,final);linked=true;}
+    catch(error){if(errnoOf(error)!=="EEXIST")throw storageError(error);
       const existing=await fileSha256(final,{fresh:true});if(existing.sha256!==digest.sha256||existing.sizeBytes!==digest.sizeBytes)throw new RenderFailure("STORAGE_FAILED",RENDER_MESSAGES.STORAGE_FAILED);}
     try{
       handle.sqlite.transaction(()=>{
@@ -128,9 +161,8 @@ export async function runClaimedRender(handle:DatabaseHandle,job:{id:string;atte
     }catch(error){if(linked){try{unlinkSync(/*turbopackIgnore: true*/final);}catch{/* the next attempt accepts the same verified bytes */}}throw error;}
   }catch(error){
     const failure=error instanceof RenderFailure?error:stop?new RenderFailure(stop==="timeout"?"TIMEOUT":"RENDER_CANCELED",stop==="timeout"?RENDER_MESSAGES.TIMEOUT:RENDER_MESSAGES.RENDER_CANCELED)
-      :(error as NodeJS.ErrnoException)?.code==="ENOSPC"?new RenderFailure("DISK_FULL",RENDER_MESSAGES.DISK_FULL)
       :error instanceof Error&&error.message.includes("다른 처리기")?null
-      :new RenderFailure("STORAGE_FAILED",RENDER_MESSAGES.STORAGE_FAILED,["EBUSY","EAGAIN"].includes((error as NodeJS.ErrnoException)?.code??""));
+      :storageError(error);
     if(failure){try{finishFailure(failure);}catch{/* the claim moved on: the new owner finishes it */}}
   }finally{
     clearInterval(timer);

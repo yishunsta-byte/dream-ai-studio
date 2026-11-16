@@ -17,7 +17,7 @@ import { startFileServer, type FileServer } from "@/lib/render/file-server";
 import { renderProps } from "@/lib/render/props";
 import { compositionSources, compositionSourceSha256 } from "@/lib/render/tools";
 import { RENDER_MESSAGES, RENDER_RETRYABLE, renderRetryable } from "@/lib/render/errors";
-import { classify, chromiumFlags } from "@/render/child";
+import { classify, chromiumFlags } from "@/render/guard";
 import type { RenderInput } from "@/lib/render/input";
 
 // The fixed s6 input has no colour tags (made before T-108); a tagged 30-frame H.264 is made fresh in the OS temp folder.

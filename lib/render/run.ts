@@ -1,9 +1,11 @@
 import "server-only";
 import { execFile, fork, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import type { ChildMessage, ChildStart } from "@/render/child";
+import type { TrustedBundle } from "@/render/bundle-cache";
+import { REMOTION_VERSION } from "./tools";
 import type { RenderProps } from "./props";
 
 // P2-4b one render attempt in an owned child process (T-101 2.3, T-113 F113-1). Everything Remotion starts (bundler,
@@ -19,7 +21,20 @@ import type { RenderProps } from "./props";
 const run=promisify(execFile);
 export const CANCEL_GRACE_MS=10000;
 export type AttemptResult={ok:true}|{ok:false;code:string;detail:string;signal:string|null;exitCode:number|null};
-export type AttemptOptions={appRoot:string;bundleDir:string;sourceSha256:string;browserPath:string;output:string;props:RenderProps;compositionId:string;netLog?:string|null;
+// Bundle trust (T-116 F116-1): the file list of each cached build lives here, in the worker's memory, never in the
+// cache folder. A new worker builds once and then reuses its own verified builds.
+const trustedBundles=new Map<string,TrustedBundle>();
+const bundleKey=(sourceSha256:string)=>`${sourceSha256}_${REMOTION_VERSION}`;
+export function trustedBundle(bundleRoot:string,sourceSha256:string){return trustedBundles.get(`${bundleRoot}|${bundleKey(sourceSha256)}`)??null;}
+export function forgetTrustedBundles(){trustedBundles.clear();}
+// Other cache folders of the same key (older builds, the earlier name-only layout) are no longer used.
+function pruneBundles(bundleRoot:string,sourceSha256:string,keep:string){
+  try{for(const name of readdirSync(/*turbopackIgnore: true*/bundleRoot)){const path=join(bundleRoot,name);if(path!==keep&&(name===sourceSha256||name.startsWith(`${sourceSha256}.part-`)||name.startsWith(`${bundleKey(sourceSha256)}_`)))rmSync(/*turbopackIgnore: true*/path,{recursive:true,force:true});}}catch{/* best effort */}
+}
+// bundleRoot: cache folder; workBundle: the attempt's own bundle folder (served by the render); fileBase: the attempt's
+// file server, the only origin the props may name.
+export type AttemptOptions={appRoot:string;bundleRoot:string;sourceSha256:string;workBundle:string;fileBase:string;browserPath:string;output:string;props:RenderProps;compositionId:string;netLog?:string|null;
+  onBundle?:(result:"hit"|"built",rejected:string|null)=>void;
   onStage?:(stage:"bundle"|"browser"|"compose")=>void;onProgress?:(value:{renderedFrames:number;encodedFrames:number;progress:number})=>void;
   shouldCancel?:()=>"cancel"|"timeout"|null;pollMs?:number;graceMs?:number;onChild?:(pid:number)=>void;tempDir?:string};
 
@@ -42,18 +57,23 @@ export async function runRenderAttempt(options:AttemptOptions):Promise<AttemptRe
   const script=join(options.appRoot,"render","child.ts");if(!existsSync(/*turbopackIgnore: true*/script))return {ok:false,code:"RENDER_FAILED",detail:"render child missing",signal:null,exitCode:null};
   const started=Date.now();
   const child:ChildProcess=fork(script,[],{cwd:options.appRoot,execArgv:["--import","tsx"],stdio:["ignore","pipe","pipe","ipc"],windowsHide:true,serialization:"json",
-    env:options.tempDir?{...process.env,TEMP:options.tempDir,TMP:options.tempDir,TMPDIR:options.tempDir}:process.env});
+    env:{...process.env,DREAM_RENDER_CHILD:"1",...(options.tempDir?{TEMP:options.tempDir,TMP:options.tempDir,TMPDIR:options.tempDir}:{})}});
   options.onChild?.(child.pid!);
   let tail="";const keep=(chunk:Buffer)=>{tail=(tail+chunk.toString("utf8")).slice(-4000);};child.stdout?.on("data",keep);child.stderr?.on("data",keep);
   let result:{code:string;detail:string}|null=null,done=false,stop:"cancel"|"timeout"|null=null,forced=false;
   child.on("message",(message:ChildMessage)=>{
     if(message.type==="stage")options.onStage?.(message.stage);
+    else if(message.type==="bundle"){
+      if(message.result==="built"){trustedBundles.set(`${options.bundleRoot}|${bundleKey(options.sourceSha256)}`,{dir:message.dir,files:message.files});pruneBundles(options.bundleRoot,options.sourceSha256,message.dir);}
+      options.onBundle?.(message.result,message.result==="built"?message.rejected:null);
+    }
     else if(message.type==="progress")options.onProgress?.({renderedFrames:message.renderedFrames,encodedFrames:message.encodedFrames,progress:message.progress});
     else if(message.type==="done")done=true;
     else if(message.type==="error")result={code:message.code,detail:message.detail};
   });
   const exited=new Promise<{code:number|null;signal:string|null}>(resolve=>child.once("exit",(code,signal)=>resolve({code,signal})));
-  const start:ChildStart={type:"start",appRoot:options.appRoot,entry:join(options.appRoot,"render","entry.tsx"),bundleDir:options.bundleDir,sourceSha256:options.sourceSha256,browserPath:options.browserPath,output:options.output,props:options.props,compositionId:options.compositionId,netLog:options.netLog??null};
+  const start:ChildStart={type:"start",appRoot:options.appRoot,entry:join(options.appRoot,"render","entry.tsx"),bundleRoot:options.bundleRoot,bundleKey:bundleKey(options.sourceSha256),trustedBundle:trustedBundle(options.bundleRoot,options.sourceSha256),workBundle:options.workBundle,
+    browserPath:options.browserPath,output:options.output,props:options.props,fileBase:options.fileBase,compositionId:options.compositionId,netLog:options.netLog??null};
   child.send(start);
   // Cancel / time limit: ask once, then kill the tree after the grace period.
   let deadline:number|null=null;
