@@ -90,6 +90,45 @@ export function planJoin(timeline:TimelineV2,fromId:string,toId:string,durationF
 }
 export function removeJoin(timeline:TimelineV2,fromId:string):TimelineV2{return {...timeline,audioJoins:timeline.audioJoins.filter(join=>join.fromClipId!==fromId)};}
 
+// T-152: the join preview keeps only what the person asked (two songs + overlap) and what they saw (the change list),
+// never a whole timeline. The preview is planned again from the newest draft on every render, and "이대로 연결" plans
+// again on the draft it changes, so later edits (크기·권리·다른 소리·글자) are never overwritten. When the values that
+// would change are not the ones the person saw, the join waits for a new look instead of applying silently.
+export type JoinRequest={fromId:string;toId:string;frames:number;seen:string};
+export const joinChangeKey=(changes:readonly JoinChange[])=>JSON.stringify(changes.map(change=>[change.clipId,change.field,change.from,change.to]));
+export function joinPreview(timeline:Timeline,request:JoinRequest):{plan:JoinPlan;stale:boolean}{
+  if(timeline.schemaVersion!==2)return {plan:{error:"곡 연결은 소리 설정이 있는 초안에서만 써요."},stale:false};
+  const plan=planJoin(timeline,request.fromId,request.toId,request.frames);
+  return {plan,stale:!("error" in plan)&&joinChangeKey(plan.changes)!==request.seen};
+}
+export function applyJoin(current:Timeline,request:JoinRequest):{timeline:TimelineV2}|{error:string}{
+  const {plan,stale}=joinPreview(current,request);
+  if("error" in plan)return plan;
+  if(plan.problems.length)return {error:"곡 연결에 먼저 풀어야 할 문제가 있어요."};
+  if(stale)return {error:"미리 본 뒤 바뀐 값이 있어요. 바뀐 값을 다시 확인해 주세요."};
+  return {timeline:plan.timeline};
+}
+// "이 소리 넣기" puts the one new clip (and its rights row) into the newest draft, not the whole draft it was planned on.
+export function insertClip(current:Timeline,planned:TimelineV2,clipId:string):Timeline{
+  const base=asV2(current),clip=planned.audio.find(item=>item.id===clipId);
+  if(!base||!clip||base.audio.some(item=>item.id===clipId))return current;
+  const row=planned.audioRights.find(item=>item.assetId===clip.assetId);
+  return {...base,audio:[...base.audio,clip],audioRights:row&&!base.audioRights.some(item=>item.assetId===clip.assetId)?[...base.audioRights,row]:base.audioRights};
+}
+// Undo of "이 소리 빼기": puts the clip (and its rights row / joins) back into the newest draft instead of going back
+// to the whole draft of that moment, so edits made after the removal stay.
+export function restoreClip(current:Timeline,before:TimelineV2,clipId:string):Timeline{
+  const index=before.audio.findIndex(clip=>clip.id===clipId);
+  if(current.schemaVersion!==2||index<0||current.audio.some(clip=>clip.id===clipId))return current;
+  const clip=before.audio[index],audio=[...current.audio];audio.splice(Math.min(index,audio.length),0,clip);
+  const ids=new Set(audio.map(item=>item.id)),joins=[...current.audioJoins];
+  for(const join of before.audioJoins)if((join.fromClipId===clipId||join.toClipId===clipId)&&ids.has(join.fromClipId)&&ids.has(join.toClipId)
+    &&!joins.some(other=>other.fromClipId===join.fromClipId||other.toClipId===join.toClipId))joins.push(join);
+  const row=before.audioRights.find(item=>item.assetId===clip.assetId);
+  const audioRights=row&&!current.audioRights.some(item=>item.assetId===clip.assetId)?[...current.audioRights,row]:current.audioRights;
+  return {...current,audio,audioJoins:joins,audioRights};
+}
+
 // Typed fields that are not a valid value yet ("<clipId>:<field>" → raw text + message). The draft keeps the last good
 // value; only fields of clips still in the draft count (like the text time fields).
 export type AudioField="startFrame"|"sourceInFrame"|"durationFrames"|"fadeInFrames"|"fadeOutFrames"|"gainDb"|"join";

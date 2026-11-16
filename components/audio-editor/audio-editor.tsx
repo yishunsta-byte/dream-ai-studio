@@ -7,7 +7,7 @@ import { useEffect, useId, useRef, useState, type Dispatch, type MutableRefObjec
 import { Badge, Button, Callout } from "../ui/primitives";
 import { useToast } from "../ui/interactive";
 import type { PreviewControl } from "../player/player-panel";
-import { addClip, AUDIO_FIELD_LABEL, audioTime, canAddSound, changeRole, fileNote, joinCandidates, parseAudioTime, parseGain, planJoin, removeClip, removeJoin, ROLE_LABEL, sourceFrames, updateClip, updateRights, type AudioField, type AudioProblems, type AudioRawState, type AudioRole, type AudioSource, type JoinPlan } from "@/lib/edit/audio-ops";
+import { addClip, AUDIO_FIELD_LABEL, audioTime, canAddSound, changeRole, fileNote, joinCandidates, parseAudioTime, parseGain, planJoin, removeClip, applyJoin, insertClip, joinChangeKey, joinPreview, restoreClip, type JoinRequest, removeJoin, ROLE_LABEL, sourceFrames, updateClip, updateRights, type AudioField, type AudioProblems, type AudioRawState, type AudioRole, type AudioSource } from "@/lib/edit/audio-ops";
 import { outputFrames, type Timeline, type TimelineAudioClip, type TimelineV2 } from "@/lib/edit/timeline";
 import styles from "./audio-editor.module.css";
 
@@ -60,7 +60,7 @@ function AddSound({draft,setDraft,sources,setSelectedId,busy,announce,onListen}:
   // a file that left the list (archived elsewhere, list read again) is no longer chosen
   const chosen=choices.find(source=>source.id===sourceId);
   function add(){if(!chosen||!role)return;const result=addClip(draft,chosen,role);if("error" in result){setError(result.error);return;}
-    setError("");setDraft(result.timeline);setSelectedId(result.clipId);
+    setError("");setDraft(old=>insertClip(old,result.timeline,result.clipId));setSelectedId(result.clipId);
     announce(`${ROLE_LABEL[role]} '${chosen.title}'를 ${audioTime(result.startFrame)}–${audioTime(result.startFrame+result.durationFrames)}에 넣었어요. 저장해야 남아요.`);
     requestAnimationFrame(()=>document.getElementById(`audio-clip-${result.clipId}`)?.focus());}
   return <div className={styles.box}><h3>소리 넣기</h3>
@@ -95,9 +95,9 @@ function ClipInspector({timeline,clip,saved,setDraft,sources,raw,setRaw,setSelec
     if(parsed.frame<min)return min===1?"1/30초 이상이어야 해요.":"0 이상이어야 해요.";set({[field]:parsed.frame});return null;};
   const note=fileNote(clip,saved,source),issues=problems.clips[clip.id]??[];
   function remove(){const before=timeline;setDraft(old=>old.schemaVersion===2?removeClip(old,clip.id):old);setRaw(old=>Object.fromEntries(Object.entries(old).filter(([key])=>!key.startsWith(`${clip.id}:`))));setSelectedId(null);
-    notify({tone:"success",message:`${ROLE_LABEL[clip.role]} '${source?.title??"파일"}'를 뺐어요. 원본 파일과 저장한 버전은 그대로예요.`,undo:()=>setDraft(current=>current.schemaVersion===2&&!current.audio.some(item=>item.id===clip.id)?before:current)});
+    notify({tone:"success",message:`${ROLE_LABEL[clip.role]} '${source?.title??"파일"}'를 뺐어요. 원본 파일과 저장한 버전은 그대로예요.`,undo:()=>setDraft(current=>restoreClip(current,before,clip.id))});
     requestAnimationFrame(focusList);}
-  function role(next:AudioRole){const result=changeRole(timeline,clip.id,next);setDraft(result.timeline);
+  function role(next:AudioRole){const result=changeRole(timeline,clip.id,next);setDraft(old=>old.schemaVersion===2?changeRole(old,clip.id,next).timeline:old);
     announce(`역할을 ${ROLE_LABEL[next]}(으)로 바꿨어요.${result.duckOff?" 목소리에 맞춰 낮추기를 껐어요.":""}${result.droppedJoins?` 곡 연결 ${result.droppedJoins}개를 풀었어요(겹치는 시간만큼 앞당긴 시작은 그대로예요).`:""}`);}
   return <div className={styles.box} aria-labelledby={`audio-clip-${clip.id}`}>
     <h3 id={`audio-clip-${clip.id}`} tabIndex={-1}>{ROLE_LABEL[clip.role]} · {source?.title??"보관함에 없는 파일"}</h3>
@@ -125,12 +125,20 @@ function ClipInspector({timeline,clip,saved,setDraft,sources,raw,setRaw,setSelec
 // Song join (crossfade) from this song to another: the changed values are listed before the person confirms.
 function JoinBox({timeline,clip,sources,setDraft,raw,setRaw,problems,announce}:{timeline:TimelineV2;clip:TimelineAudioClip;sources:readonly AudioSource[];setDraft:Dispatch<SetStateAction<Timeline>>;raw:AudioRawState;setRaw:Dispatch<SetStateAction<AudioRawState>>;problems:AudioProblems;announce:(text:string)=>void}){
   const outgoing=timeline.audioJoins.find(join=>join.fromClipId===clip.id),incoming=timeline.audioJoins.find(join=>join.toClipId===clip.id),candidates=joinCandidates(timeline,clip.id);
-  const [toId,setToId]=useState(""),[text,setText]=useState("00:01.00"),[plan,setPlan]=useState<JoinPlan|null>(null),key=`${clip.id}:join`;
+  const [toId,setToId]=useState(""),[text,setText]=useState("00:01.00"),[request,setRequest]=useState<JoinRequest|null>(null),key=`${clip.id}:join`;
   const name=(id:string)=>sourceTitle(sources,timeline.audio.find(item=>item.id===id)?.assetId??"");
   const fieldName:Record<string,string>={fadeOutFrames:"끝 서서히",fadeInFrames:"처음 서서히",startFrame:"영상 안 시작"};
   function preview(fromText:string,target:string){const parsed=parseAudioTime(fromText);
-    if("error" in parsed){setRaw(old=>({...old,[key]:{raw:fromText,error:parsed.error}}));setPlan(null);return;}
-    setRaw(old=>{const next={...old};delete next[key];return next;});setPlan(target?planJoin(timeline,clip.id,target,parsed.frame):null);}
+    if("error" in parsed){setRaw(old=>({...old,[key]:{raw:fromText,error:parsed.error}}));setRequest(null);return;}
+    setRaw(old=>{const next={...old};delete next[key];return next;});
+    if(!target){setRequest(null);return;}
+    const first=planJoin(timeline,clip.id,target,parsed.frame);
+    setRequest({fromId:clip.id,toId:target,frames:parsed.frame,seen:"error" in first?"":joinChangeKey(first.changes)});}
+  // planned again from the newest draft on every render (T-152): never a stored whole timeline
+  const view=request?joinPreview(timeline,request):null,plan=view?.plan??null;
+  function apply(){if(!request)return;const checked=applyJoin(timeline,request);if("error" in checked){announce(checked.error);return;}
+    const asked=request;setDraft(old=>{const result=applyJoin(old,asked);return "error" in result?old:result.timeline;});
+    setRequest(null);setToId("");announce(`'${name(clip.id)}' 다음에 '${name(asked.toId)}'를 이어 붙였어요. 다른 값은 그대로예요.`);}
   const issues=problems.joins[clip.id]??[];
   return <div className={styles.box}><h4>곡 연결(부드럽게 겹치기)</h4>
     {incoming&&<p className={styles.meta}>앞 곡 '{name(incoming.fromClipId)}'에서 {audioTime(incoming.durationFrames)} 겹쳐 이어져요.</p>}
@@ -140,7 +148,7 @@ function JoinBox({timeline,clip,sources,setDraft,raw,setRaw,problems,announce}:{
         onChange={event=>{const value=event.target.value,parsed=parseAudioTime(value);
           if("error" in parsed){setRaw(old=>({...old,[key]:{raw:value,error:parsed.error}}));return;}
           const next=planJoin(timeline,clip.id,outgoing.toClipId,parsed.frame);if("error" in next){setRaw(old=>({...old,[key]:{raw:value,error:next.error}}));return;}
-          setRaw(old=>{const copy={...old};delete copy[key];return copy;});setDraft(next.timeline);}}/></div>
+          const toClipId=outgoing.toClipId;setRaw(old=>{const copy={...old};delete copy[key];return copy;});setDraft(old=>{if(old.schemaVersion!==2)return old;const result=planJoin(old,clip.id,toClipId,parsed.frame);return "error" in result?old:result.timeline;});}}/></div>
       <p className={styles.meta}>겹침을 바꾸면 다음 곡 시작이 함께 움직여요(앞 곡 끝 − 겹침).</p>
       {raw[key]&&<p className={styles.problem}>{raw[key].error}</p>}
       <div className={styles.inline}><Button variant="ghost" size="sm" onClick={()=>{setDraft(old=>old.schemaVersion===2?removeJoin(old,clip.id):old);setRaw(old=>{const next={...old};delete next[key];return next;});announce("곡 연결을 풀었어요. 다음 곡 시작은 그대로예요. 두 곡이 겹치면 시작을 옮겨 주세요.");}}>연결 풀기</Button></div>
@@ -156,7 +164,9 @@ function JoinBox({timeline,clip,sources,setDraft,raw,setRaw,problems,announce}:{
         {plan.changes.length>0&&<ul className={styles.changes}>{plan.changes.map(change=><li key={change.clipId+change.field}>'{name(change.clipId)}' {fieldName[change.field]}: {audioTime(change.from)} → {audioTime(change.to)}</li>)}</ul>}
         <p className={styles.meta}>다른 소리·장면·글자 시간은 움직이지 않아요.</p>
         {plan.problems.length>0&&<ul className={styles.problem}>{plan.problems.map(message=><li key={message}>{message}</li>)}</ul>}
-        <Button variant="secondary" size="sm" disabledReason={plan.problems.length?"위 문제를 먼저 풀어 주세요.":undefined} onClick={()=>{setDraft(plan.timeline);setPlan(null);setToId("");announce(`'${name(clip.id)}' 다음에 '${name(plan.timeline.audioJoins.at(-1)!.toClipId)}'를 이어 붙였어요.`);}}>이대로 연결</Button>
+        {view?.stale?<><p className={styles.problem} role="status">미리 본 뒤 두 곡의 값이 바뀌어 위 목록을 새 값으로 바꿨어요. 확인한 뒤 다시 눌러 주세요.</p>
+          <Button variant="secondary" size="sm" onClick={()=>{const changes="error" in plan?[]:plan.changes;setRequest(old=>old&&{...old,seen:joinChangeKey(changes)});}}>바뀐 값 확인</Button></>
+        :<Button variant="secondary" size="sm" disabledReason={plan.problems.length?"위 문제를 먼저 풀어 주세요.":undefined} onClick={apply}>이대로 연결</Button>}
       </div>)}
     </>}
     {issues.length>0&&<ul className={styles.problem}>{issues.map(message=><li key={message}>{message}</li>)}</ul>}
