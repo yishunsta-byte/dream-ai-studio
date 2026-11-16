@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { lstatSync, readFileSync } from "node:fs";
 import { join, posix } from "node:path";
+import { types } from "node:util";
 import vm from "node:vm";
 import type Database from "better-sqlite3";
 import type { Migration } from "./migrate";
@@ -78,7 +79,18 @@ export function codeMigrationSha256(files:readonly {path:string;text:string}[]){
 // exports, the result of `run` or an error are read. Helpers return only primitive strings and are called from inside
 // a timed evaluation; after this point the host never writes to, or reads from, the context's global object.
 const PRELUDE=`"use strict";(()=>{const g=globalThis;const blocked=name=>Object.freeze(function(){throw new Error(name+" is not available in a code migration");});
-const apply=Reflect.apply,toStr=Object.prototype.toString,S=String,define=Object.defineProperty,freeze=Object.freeze;
+const apply=Reflect.apply,toStr=Object.prototype.toString,S=String,define=Object.defineProperty,freeze=Object.freeze,promiseThen=Promise.prototype.then,ignore=()=>undefined;
+// A returned or thrown native Promise is refused like any other value, but its rejection must not outlive the step as
+// an unhandled rejection. Only values the host's internal-slot check (util.types.isPromise: no traps, no getters)
+// calls a native Promise are touched, so a plain thenable or a Proxy never has its then/getters called. The captured
+// intrinsic then attaches a no-op rejection handler; its constructor/Symbol.species lookups run here, inside the
+// timed evaluation. If that lookup throws, an own constructor property set to undefined is defined on the promise (the default
+// %Promise% is then used, no species lookup) and the handler is attached again. A promise that is non-extensible with a
+// throwing lookup, or has a non-configurable throwing constructor property, still cannot be handled (stated limit). The
+// derived promise settles with undefined, so it is never an unhandled rejection itself.
+const settle=value=>{if(!apply(host.isPromise,undefined,[value]))return;
+  try{apply(promiseThen,value,[undefined,ignore]);return;}catch(_){}
+  try{define(value,"constructor",{value:undefined,writable:true,configurable:true,enumerable:false});apply(promiseThen,value,[undefined,ignore]);}catch(_){}};
 const host=g.__dreamHost;delete g.__dreamHost;
 define(g,"Date",{value:blocked("Date"),writable:false,configurable:false,enumerable:false});
 define(Math,"random",{value:blocked("Math.random"),writable:false,configurable:false,enumerable:false});freeze(Math);
@@ -91,8 +103,9 @@ define(g,"__dream",{value:freeze({
     if(apply(toStr,r,[])!=="[object Function]")return "fail\\0run은 동기 함수여야 해요";
     if(sql!==undefined&&typeof sql!=="string")return "fail\\0module.exports.sql은 문자열이어야 해요";
     run=r;return "ok\\0"+(sql===undefined?"":sql);}catch(e){return "error\\0"+describe(e);}},
-  run(){let result;try{result=apply(run,undefined,[apply(host.database,undefined,[])]);}catch(e){return "error\\0"+describe(e);}
-    return result===undefined?"ok\\0":"fail\\0run은 undefined만 돌려줄 수 있어요 (Promise·객체 반환 거부)";},
+  run(){let result;try{result=apply(run,undefined,[apply(host.database,undefined,[])]);}catch(e){settle(e);return "error\\0"+describe(e);}
+    if(result===undefined)return "ok\\0";
+    settle(result);return "fail\\0run은 undefined만 돌려줄 수 있어요 (Promise·객체 반환 거부)";},
 }),writable:false,configurable:false,enumerable:false});
 return ()=>({exports:{}});})();`;
 const cryptoFacade=Object.freeze({createHash:(algorithm:unknown)=>{if(algorithm!=="sha256")throw new MigrationSourceError("node:crypto는 createHash(\"sha256\")만 쓸 수 있어요");return createHash("sha256");}});
@@ -129,7 +142,7 @@ function execute(files:readonly {path:string;text:string}[],options:{runTimeoutM
     return loadModule(target);
   };
   // Host bridge, handed over before any step code runs and then removed from the global object by the prelude.
-  const bridge=Object.freeze({loadEntry:()=>loadModule(entryPath),database:()=>database});
+  const bridge=Object.freeze({loadEntry:()=>loadModule(entryPath),database:()=>database,isPromise:(value:unknown)=>types.isPromise(value)});
   const context=vm.createContext({__dreamHost:bridge},{name:"dream-code-migration",codeGeneration:{strings:false,wasm:false},microtaskMode:"afterEvaluate"});
   const newRecord=new vm.Script(PRELUDE).runInContext(context,{timeout:LOAD_TIMEOUT_MS}) as ()=>{exports:unknown};
   // Runs only inside a timed evaluation: through __dream.load, or when step code calls require.

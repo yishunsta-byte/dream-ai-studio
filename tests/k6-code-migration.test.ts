@@ -218,6 +218,7 @@ describe("반환값 경계: run은 undefined만, 늦은 쓰기 없음 (F052-1·2
     "run-loop":{phase:"run",message:RUN_LIMIT},
     "then-loop":{phase:"run",message:/undefined만 돌려줄 수 있어요/},
     "then-getter-loop":{phase:"run",message:/undefined만 돌려줄 수 있어요/},
+    "thrown-then-loop":{phase:"run",message:/^undefined$/},"proxy-trap-loop":{phase:"run",message:/undefined만 돌려줄 수 있어요/},
     "error-getter-loop":{phase:"run",message:RUN_LIMIT},
     "microtask-loop":{phase:"run",message:RUN_LIMIT},
   };
@@ -228,6 +229,28 @@ describe("반환값 경계: run은 undefined만, 늦은 쓰기 없음 (F052-1·2
     const out=JSON.parse(result.stdout.trim().split("\n").at(-1)!) as {phase:string;message:string;elapsedMs:number;journal?:{version:number}[];result?:string};
     expect(out.result).toBeUndefined();expect(out.phase).toBe(expected.phase);expect(out.message).toMatch(expected.message);expect(out.elapsedMs).toBeLessThan(5000);
     if(expected.phase==="run")expect(out.journal).toEqual([1]);
+  },20000);
+  // T-054 F054-1: a rejected native Promise (returned, queued or thrown) must not end the process after the rollback.
+  const REJECTIONS:Record<string,RegExp>={
+    "ab-reject-immediate":/undefined만 돌려줄 수 있어요/,"ab-reject-queued":/undefined만 돌려줄 수 있어요/,"ab-reject-subclass":/undefined만 돌려줄 수 있어요/,
+    "ab-reject-species-getter":/undefined만 돌려줄 수 있어요/,"ab-throw-rejected":/^undefined: undefined$/,
+    "ab-species-throw":/undefined만 돌려줄 수 있어요/,"ab-constructor-getter-throw":/undefined만 돌려줄 수 있어요/,
+  };
+  for(const [mode,message] of Object.entries(REJECTIONS))it(`거부된 Promise ${mode}: A·B 3회 거부·되돌림, 정상 후속 성공, 100ms 대기 완료 후 자식 status 0`,()=>{
+    const folder=join(root,`reject-${mode}`);mkdirSync(folder,{recursive:true});
+    const result=spawnSync(process.execPath,["--conditions=react-server","--import","tsx",child,process.cwd(),folder,mode],{cwd:process.cwd(),timeout:10000,encoding:"utf8",windowsHide:true});
+    expect(result.error).toBeUndefined();expect(result.signal).toBeNull();expect({status:result.status,stderr:result.stderr}).toEqual({status:0,stderr:""});
+    const out=JSON.parse(result.stdout.trim().split("\n").at(-1)!) as {errors:string[];states:unknown[];after:unknown;final:unknown;waitCompleted:boolean;message?:string};
+    expect(out.message).toBeUndefined();expect(out.errors).toHaveLength(6);for(const error of out.errors)expect(error).toMatch(message);
+    const clean={rows:[],journal:[1],tx:false};for(const each of out.states)expect(each).toEqual({a:clean,b:clean});
+    const done={rows:[{value:1}],journal:[1,2],tx:false};expect(out.after).toEqual({a:done,b:done});expect(out.final).toEqual({a:done,b:done});expect(out.waitCompleted).toBe(true);
+  },20000);
+  // Stated limits (not handled, recorded as they really end): the rejection still ends the process with status 1.
+  const LIMITS:Record<string,string>={"limit-frozen-species-throw":"LIMIT_FROZEN","limit-nonconfigurable-constructor":"LIMIT_NONCONFIGURABLE","limit-species-loop":"LIMIT_SPECIES_LOOP","limit-floating":"LIMIT_FLOATING"};
+  for(const [mode,marker] of Object.entries(LIMITS))it(`명시한 한계 ${mode}: 처리하지 못하고 Node가 스스로 status 1로 끝남(처리로 세지 않음)`,()=>{
+    const folder=join(root,`limit-${mode}`);mkdirSync(folder,{recursive:true});
+    const result=spawnSync(process.execPath,["--conditions=react-server","--import","tsx",child,process.cwd(),folder,mode],{cwd:process.cwd(),timeout:10000,encoding:"utf8",windowsHide:true});
+    expect(result.error).toBeUndefined();expect(result.signal).toBeNull();expect(result.status).toBe(1);expect(result.stderr).toContain(`Error: ${marker}`);
   },20000);
 });
 
