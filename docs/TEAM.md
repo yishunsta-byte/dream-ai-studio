@@ -713,3 +713,9 @@
 - T079 0e4ecbf / msg_201d34db379e returned ready_review, design only. Master read decision table and export/font/spec gaps.
 - Accepted explicit-save policy, no new user-preset DB/history UI, warning evidence scope, screen-only positioning chip, staged P2-3a/b.
 - Sent implementer/design remaining reconciliation: typography units and legacy-value preservation, required disclosure policy, font installation and lossless export scope. Actual P2-3 implementation not yet assigned; do not reinterpret legacy stored values or modify fixed migrations.
+
+### T079 font compatibility supplement accepted (2026-11-16)
+
+- Supplement 5c1efb7 / msg_6c65eea26847 returned, documentation only. Master accepts append-only readable font family identifiers separately from selectable fonts (spec intersect installed and licensed).
+- Existing timeline rows remain readable when an installed font disappears, with explicit preview fallback warning. Preserve registered 0005, fixed fixtures, original P1 values and r1/ZIP bytes.
+- New-font rows are not guaranteed readable by older builds; no downgrade support claim. Implementation still awaits T080 unit/preset/export scope reconciliation.
