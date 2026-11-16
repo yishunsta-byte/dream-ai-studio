@@ -25,3 +25,4 @@
 .pending { display:flex; flex-wrap:wrap; gap:var(--sp-2); align-items:center; }
 .failedVersion { border-style:dashed; border-color:var(--st-danger-line); }
 @media(max-width:639px) { .buttons > * { flex:1 1 100%; } }
+.compactLinks { gap:var(--sp-2); }
