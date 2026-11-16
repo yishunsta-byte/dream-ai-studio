@@ -1244,3 +1244,9 @@
 
 - msg_3ec8fb0473bb /440d1f4: Master inspected v2-only schema diff/report. Author6 new regressions and674/17skip, lint/type; issued SQL/fixtures/v1 unchanged. No independent acceptance yet.
 - T161 original reviewer requested for actual contradictory PCM ZIP/backup/ticket rejection and normal sample/v1 preservation. S3 source packaging still pending s9 and compatibility acceptance.
+### T156 s9 integrated and Master validated
+
+- msg_fc9b9d806f08 /b792123 cherry-picked as887fb7d, only six new fixture/test/report files. Master read report and verified ZIP SHA50e850aec0c2c8a3137c4280943e3de295d32e6bad9b998f0e02cf20af41ca95,1304161bytes.
+- Master current-workspace s9 test run:9 PASS/2 intentional native-generation skips. Stage9 fixed archive preserved; current10 upgrade/row/file preservation controls pass. Master accepts fixed fixture checkpoint for preservation regression; no fresh-native-bitexact or independent-native-rerun claim.
+- Fresh native mix/MP4 byte determinism remains unguaranteed with unknown cause; immutable archive/source/restore SHA remains strict. Existing untracked user reports untouched. T161 sample fix independent review still pending before S3 packaging.
+- Author processes stopped; auto-review blocked author temp deletion and retained artifacts documented without bypass.
