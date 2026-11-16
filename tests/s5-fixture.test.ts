@@ -16,7 +16,7 @@ import { fileDigest } from "@/lib/export/zip";
 import { restoreService, type RestoreOptions, type RestoreStage } from "@/lib/services/restore";
 import { S4_ZIP, s4Ids } from "./fixtures/backups/s4-build";
 import { logicalHash, P_REGEN, schemaHash, snapshotDb, type DbSnap } from "./fixtures/backups/s4-compare";
-import { assembleS5Zip, buildS5Runtime, S5_GENERATOR_VERSION, S5_RECORD, S5_ZIP } from "./fixtures/backups/s5-build";
+import { assembleS5Zip, buildS5Runtime, s5Migrations, S5_GENERATOR_VERSION, S5_RECORD, S5_ZIP } from "./fixtures/backups/s5-build";
 
 type S5Record={fixture:"s5";generatorVersion:number;zip:{sha256:string;sizeBytes:number};backupId:string;migrations:{version:number;name:string;sha256:string}[];logical:{profile:"P_REGEN";all:string;tables:Record<string,string>};schema:string;timeline:{id:string;sha256:string}[]};
 const plain=(list:readonly Migration[])=>list.map(({version,name,sha256})=>({version,name,sha256}));
@@ -50,17 +50,17 @@ describe.skipIf(process.env.S5_WRITE==="1")("고정 백업 s5",()=>{
   const record=()=>JSON.parse(readFileSync(S5_RECORD,"utf8")) as S5Record;
   it("보관 원본: ZIP 해시·마이그레이션 5줄(0005 코드 해시)·논리 내용·스키마가 기록과 같고, 다시 만들어도 같다",async()=>{
     const expected=record();expect(await fileDigest(S5_ZIP)).toEqual(expected.zip);
-    const {manifest,db}=await extract(S5_ZIP,join(root,"a1"));expect(manifest.migrations).toEqual(plain(productMigrations()));expect(manifest.migrations[4]).toEqual({version:5,name:"0005_timeline_revisions.cjs",sha256:PRODUCT_CODE_STEPS[0].sha256});
+    const {manifest,db}=await extract(S5_ZIP,join(root,"a1"));expect(manifest.migrations).toEqual(plain(s5Migrations()));expect(plain(productMigrations()).slice(0,5)).toEqual(manifest.migrations);expect(manifest.migrations[4]).toEqual({version:5,name:"0005_timeline_revisions.cjs",sha256:PRODUCT_CODE_STEPS[0].sha256});
     const described=describeDb(db);expect(described.logical).toEqual({all:expected.logical.all,tables:expected.logical.tables});expect(described.schema).toBe(expected.schema);expect(described.timeline).toEqual(expected.timeline);expect(described.timeline).toHaveLength(1);
     const regen=describeDb((await extract((await generate(join(root,"regen"))).out,join(root,"regen-x"))).db);expect(regen.logical).toEqual(described.logical);expect(regen.schema).toBe(described.schema);
   },60000);
-  it("s4를 제품 목록으로 직접 올린 결과 = s5 (적용 시각 칸만 제외)",async()=>{
-    const {db}=await extract(S4_ZIP,join(root,"s4"));const sqlite=new Database(db);try{sqlite.pragma("foreign_keys = ON");migrateDatabase(sqlite,{migrations:productMigrations(),now});}finally{sqlite.close();}
+  it("s4를 제품 목록 앞 5단계로 직접 올린 결과 = s5 (적용 시각 칸만 제외)",async()=>{
+    const {db}=await extract(S4_ZIP,join(root,"s4"));const sqlite=new Database(db);try{sqlite.pragma("foreign_keys = ON");migrateDatabase(sqlite,{migrations:s5Migrations(),now});}finally{sqlite.close();}
     const expected=record();expect(describeDb(db)).toMatchObject({logical:{all:expected.logical.all},schema:expected.schema,timeline:expected.timeline});
   });
-  it("s5 직접 복원은 같은 버전(same)이고 타임라인 행이 그대로다",async()=>{
-    const zip=await copied(S5_ZIP,"s5.zip"),manifest=await source(productMigrations(),zip),destination=join(root,"restored");
-    const svc=restoreService(handle!,now),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"same",fromVersion:5,toVersion:5});
+  it("s5 직접 복원(5단계 앱)은 같은 버전(same)이고 타임라인 행이 그대로다",async()=>{
+    const zip=await copied(S5_ZIP,"s5.zip"),manifest=await source(s5Migrations(),zip),destination=join(root,"restored");
+    const svc=restoreService(handle!,now,{migrations:s5Migrations()}),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"same",fromVersion:5,toVersion:5});
     await svc.finish(checked.ticketId);expect(describeDb(join(destination,"data/app.db")).timeline).toEqual(record().timeline);expect(await fileDigest(zip)).toEqual(record().zip);
   },60000);
   it("0005 원문이 바뀐 앱은 s5를 BACKUP_SCHEMA_MISMATCH로 거부한다(staging·목적지 없음)",async()=>{
@@ -70,8 +70,8 @@ describe.skipIf(process.env.S5_WRITE==="1")("고정 백업 s5",()=>{
     await expect(restoreService(handle!,now,{migrations:list}).inspect({backupId:manifest.backupId,destination})).rejects.toMatchObject({code:"BACKUP_SCHEMA_MISMATCH"});expect(existsSync(destination)).toBe(false);
   },60000);
   it("s4 올려서 복원: staging에서 올린 직후 DB = s5, 원본 s4 ZIP 그대로",async()=>{
-    const zip=await copied(S4_ZIP,"s4.zip"),manifest=await source(productMigrations(),zip),destination=join(root,"restored"),upgraded:DbSnap[]=[];
-    const options:RestoreOptions={onStage:async(stage:RestoreStage,staging:string)=>{if(stage==="upgraded"){const sqlite=new Database(join(staging,"data/app.db"),{readonly:true,fileMustExist:true});try{upgraded.push(snapshotDb(sqlite));}finally{sqlite.close();}}}};
+    const zip=await copied(S4_ZIP,"s4.zip"),manifest=await source(s5Migrations(),zip),destination=join(root,"restored"),upgraded:DbSnap[]=[];
+    const options:RestoreOptions={migrations:s5Migrations(),onStage:async(stage:RestoreStage,staging:string)=>{if(stage==="upgraded"){const sqlite=new Database(join(staging,"data/app.db"),{readonly:true,fileMustExist:true});try{upgraded.push(snapshotDb(sqlite));}finally{sqlite.close();}}}};
     const svc=restoreService(handle!,now,options),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"upgrade",fromVersion:4,toVersion:5});await svc.finish(checked.ticketId);
     expect(upgraded).toHaveLength(1);expect(logicalHash(upgraded[0],P_REGEN).all).toBe(record().logical.all);
     const restored=describeDb(join(destination,"data/app.db"));expect(restored.timeline).toEqual(record().timeline);expect(restored.snap.get("projects")!.rows.size).toBe(3);

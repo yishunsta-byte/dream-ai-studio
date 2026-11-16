@@ -72,17 +72,18 @@ describe("F065-1: 옮긴 r1이 출처 P1과 다르면 P1로 읽지 않는다",()
     expect(editingService(handle).get(ids.main).savedSrt).toBeNull();
     expect(snapshotDb(handle.sqlite)).toEqual(before);
   });
-  it("재현 그대로: 순서를 바꾸고 manifest까지 맞춘 백업은 복원 단계에서 거부되고 목적지가 생기지 않는다",async()=>{
+  it.each([["5단계 목록(같은 구조)",5,"RESTORE_INVALID"],["제품 목록(0006까지, 올려서 복원)",6,"BACKUP_UPGRADE_FAILED"]] as const)("재현 그대로: 순서를 바꾸고 manifest까지 맞춘 백업은 복원 단계에서 거부되고 목적지가 생기지 않는다 · %s",async(_label,steps,code)=>{
+    const list=productMigrations().slice(0,steps);
     const {into,manifest,db}=await extracted("src");const {after}=rewriteR1(db,reversed);
     const next=backupManifestSchema.parse({...manifest,database:{path:manifest.database.path,...await fileDigest(db)}}),zip=join(root,"archive","changed-order.zip");mkdirSync(dirname(zip),{recursive:true});
     await writeArchive(zip,[{path:next.database.path,filename:db},...next.files.map(file=>({path:file.path,filename:join(into,file.path)})),{path:"backup-manifest.json",bytes:Buffer.from(JSON.stringify(next))}]);
     const runtime=join(root,"source");for(const path of ["data","storage","backups"])mkdirSync(join(runtime,path),{recursive:true});vi.stubEnv("DREAM_DATA_ROOT",runtime);
-    const handle=openDatabase(join(runtime,"data/app.db"));handles.push(handle);migrateDatabase(handle.sqlite,{migrations:productMigrations(),now});const digest=await fileDigest(zip);
+    const handle=openDatabase(join(runtime,"data/app.db"));handles.push(handle);migrateDatabase(handle.sqlite,{migrations:list,now});const digest=await fileDigest(zip);
     handle.sqlite.prepare("INSERT INTO backups(id,kind,path,db_sha256,file_inventory_sha256,status,created_at) VALUES(?,?,?,?,?,?,?)").run(next.backupId,"manual",zip,next.database.sha256,next.inventorySha256,"succeeded",next.createdAt);
     handle.sqlite.prepare("INSERT INTO settings(key,value_json) VALUES(?,?)").run(`backup.${next.backupId}.meta`,JSON.stringify({zipSha256:digest.sha256,sizeBytes:digest.sizeBytes,fileCount:next.files.length+1,verifiedAt:new Date(now()).toISOString()}));
-    const destination=join(root,"restored"),svc=restoreService(handle,now);
+    const destination=join(root,"restored"),svc=restoreService(handle,now,{migrations:list});
     const attempt=async()=>{const checked=await svc.inspect({backupId:next.backupId,destination});return svc.finish(checked.ticketId);};
-    const error=await attempt().then(()=>null,(caught:unknown)=>caught as Error&{code?:string});expect(error).toMatchObject({code:"RESTORE_INVALID"});expect(existsSync(join(destination,"data/app.db"))).toBe(false);expect(await fileDigest(zip)).toEqual(digest);
+    const error=await attempt().then(()=>null,(caught:unknown)=>caught as Error&{code?:string});expect(error).toMatchObject({code});expect(existsSync(join(destination,"data/app.db"))).toBe(false);expect(await fileDigest(zip)).toEqual(digest);
     expect(timelineSha256(after.timeline_json)).toBe(after.timeline_sha256);
   },60000);
 });

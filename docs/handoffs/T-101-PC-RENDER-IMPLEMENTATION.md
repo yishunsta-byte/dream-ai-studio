@@ -189,6 +189,8 @@ ffprobe -v error -count_frames -show_streams -show_format -of json out.mp4
 
 ### 2.6 스키마 0006 안 (구현 안 함, 제출만)
 
+> T-105에서 실제로 넣은 `lib/db/migrations/0006_renders.sql`이 기준이에요. 이 절의 초안과 다른 점은 `docs/handoffs/T-105-CC-DATA-01.md` 2장에 있어요(`job_id` 필수, 작업 계약 트리거, 상태 전이 트리거, 파일 경로 고정 등).
+
 ```sql
 CREATE TABLE renders (
   id TEXT PRIMARY KEY,                              -- uuid v7
@@ -257,8 +259,10 @@ CREATE UNIQUE INDEX renders_one_active ON renders(project_id) WHERE status IN ('
   - 통과한 파일은 보관하되 "취소 뒤 끝남"으로 표시해요.
   - 선택·내보내기 대상이 아니에요(PLAN 9장 "늦은 결과는 저장하되 자동 선택 안 함").
 - 재시도
-  - 결정적 실패는 재시도하지 않아요: `RENDER_VERIFY_FAILED`, `RENDER_INPUT_CHANGED`, `FONT_MISSING`, `RENDER_INPUT_MISSING`.
-  - 자동 재시도는 `RENDER_BROWSER_CRASHED`(브라우저나 자식이 신호로 죽음)와 `STORAGE_FAILED`/`DISK_FULL`만 최대 2회예요. 기존 backoff를 써요.
+  - 결정적 실패는 재시도하지 않아요: `RENDER_VERIFY_FAILED`, `RENDER_INPUT_CHANGED`, `FONT_MISSING`, `RENDER_INPUT_MISSING`, `RENDER_BROWSER_MISSING`.
+  - (T-105 갱신, Master `msg_db483c0fec60`·`msg_f121f3328b05`) 자동 재시도는 **원인으로** 판단하고, 코드 이름만 보고 판단하지 않아요. 최대 2회이고 기존 backoff를 써요.
+    - 재시도하는 것: 브라우저나 자식 프로세스가 신호로 끝남(`RENDER_BROWSER_CRASHED`), lease 만료 뒤 회수, 일시적인 입출력 오류(`EBUSY`·`EAGAIN`·`EPERM` 중 잠금 경합으로 확인된 것, 도구가 신호로 끝남)
+    - 재시도하지 않는 것: 권한 없음, 잘못된 경로, 입력 불변성 위반, **공간 부족(`DISK_FULL`, 시작 전 확인과 도중 실패 모두)**. 사람이 공간을 비운 뒤 "다시 만들기"로 새 행을 만들어요(T-106).
   - 재시도는 새 임시 폴더(`-{attempt}`)에서 처음부터 해요.
 - worker가 다시 시작될 때 (lease 만료 → `recover`)
   - 렌더는 처음부터 다시 해요.

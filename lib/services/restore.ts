@@ -16,6 +16,7 @@ import { physicalPath, rejectForeignDataRoot, removeOwnedStaging, sourceBoundari
 import { fileDigest } from "@/lib/export/zip";
 import { MediaError } from "@/lib/media/inspect";
 import { WorkflowError } from "@/lib/domain/stages";
+import { hasRendersTable } from "@/lib/db/render-data";
 import { checkStartup } from "./startup";
 const inspectSchema=z.strictObject({backupId:z.uuidv7(),destination:z.string().min(1)}),ticketKey=(id:string)=>`restore.check.${id}`;
 function invalid(){return new MediaError("RESTORE_INVALID","복원 검사 정보나 파일이 달라요. 다시 검사해 주세요.",409);}
@@ -56,6 +57,8 @@ export function restoreService(source:DatabaseHandle,now:()=>number=Date.now,opt
   const handle=openDatabase(join(ticket.staging,"data/app.db"),{fileMustExist:true});try{verifyMigrations(handle.sqlite,current);handle.sqlite.transaction(()=>{
    handle.sqlite.prepare("UPDATE jobs SET status='canceled',error_code='RESTORED_NOT_RESUMED',error_message='복원본에서는 작업을 이어서 하지 않아요.',lease_until=NULL,heartbeat_at=NULL,next_run_at=NULL,finished_at=?,updated_at=? WHERE status IN ('queued','running')").run(stamp,stamp);
    handle.sqlite.exec("UPDATE scene_versions SET status='canceled' WHERE status IN ('queued','running'); UPDATE exports SET status='failed',error='RESTORE_INTERRUPTED' WHERE status='running'; UPDATE backups SET status='failed',error='RESTORE_INTERRUPTED' WHERE status='running'; DELETE FROM settings WHERE key='worker.heartbeat' OR key='backup.auto.lastDay' OR key GLOB 'restore.check.*';");
+   // T-105: a render that was queued or running in the backup is not resumed; finished rows and their files stay.
+   if(hasRendersTable(handle.sqlite))handle.sqlite.prepare("UPDATE renders SET status='failed',error_code='RESTORE_INTERRUPTED',error_message='복원본에서는 영상 만들기를 이어서 하지 않아요.',finished_at=? WHERE status IN ('queued','running')").run(stamp);
    const restored=maintenanceRepository(handle);restored.setSetting("backup.directory",join(ticket.destination,"backups"));const inheritedBackupIds=(handle.sqlite.prepare("SELECT id FROM backups ORDER BY id").all() as {id:string}[]).map(row=>row.id);restored.setSetting("restore.info",{ticketId:ticket.id,backupId:ticket.backupId,destination:ticket.destination,backupCreatedAt:ticket.manifest.createdAt,restoredAt:stamp,inheritedBackupIds,protectedRoots});jobsRepository(handle).log(null,"restore.completed",{ticketId:ticket.id,backupId:ticket.backupId,pendingJobs:ticket.pendingJobs},"local-user");
   }).immediate();handle.sqlite.pragma("wal_checkpoint(TRUNCATE)");handle.sqlite.pragma("journal_mode = DELETE");}finally{handle.close();}
  }

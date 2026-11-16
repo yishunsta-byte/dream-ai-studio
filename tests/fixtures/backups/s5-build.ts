@@ -17,11 +17,13 @@ export const S5_GENERATOR_VERSION=1;
 export const S5_BACKUP_ID=labelId("backup.s5",950);
 export const S5_UPGRADED_AT=Date.parse(at(940));
 
-// s4 runtime → product migrations (step 5 applied at a fixed time) under `runtime`.
+// s4 runtime → the first five product steps (step 5 applied at a fixed time) under `runtime`. Later steps (0006, T-105)
+// belong to s6; s5 stays the 5-step backup it was recorded as.
+export const s5Migrations=()=>productMigrations().slice(0,5);
 export async function buildS5Runtime(runtime:string){
   await buildS4Runtime(runtime,await exportBundleBytes(false));
   const handle=openDatabase(join(runtime,"data/app.db"),{fileMustExist:true});
-  try{migrateDatabase(handle.sqlite,{migrations:productMigrations(),now:()=>S5_UPGRADED_AT});if(handle.sqlite.pragma("integrity_check",{simple:true})!=="ok")throw new Error("s5 fixture integrity failed");}finally{handle.close();}
+  try{migrateDatabase(handle.sqlite,{migrations:s5Migrations(),now:()=>S5_UPGRADED_AT});if(handle.sqlite.pragma("integrity_check",{simple:true})!=="ok")throw new Error("s5 fixture integrity failed");}finally{handle.close();}
 }
 // Same steps as assembleS4Zip (snapshot → inventory → manifest → writeArchive) with the s5 id and time.
 export async function assembleS5Zip(runtime:string,workdir:string,out:string){

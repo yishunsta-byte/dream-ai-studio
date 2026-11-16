@@ -1,6 +1,7 @@
 import "server-only";
 import { and, count, desc, eq } from "drizzle-orm";
 import type { DatabaseHandle } from "@/lib/db/connection";
+import { renderFileReferences } from "@/lib/db/render-data";
 import { activityLog, assets, backups, exports as exportRows, generations, jobs, projects, scenes, sceneVersions, settings } from "@/lib/db/schema";
 export function maintenanceRepository(handle:DatabaseHandle){const db=handle.db;return {
  backup:(id:string)=>db.select().from(backups).where(eq(backups.id,id)).get(),
@@ -10,7 +11,7 @@ export function maintenanceRepository(handle:DatabaseHandle){const db=handle.db;
  setting:(key:string)=>db.select().from(settings).where(eq(settings.key,key)).get(),
  insertSetting:(key:string,value:unknown)=>db.insert(settings).values({key,valueJson:JSON.stringify(value)}).run(),
  setSetting:(key:string,value:unknown)=>db.insert(settings).values({key,valueJson:JSON.stringify(value)}).onConflictDoUpdate({target:settings.key,set:{valueJson:JSON.stringify(value)}}).run(),
- fileReferences:()=>[...db.select({filePath:assets.filePath,sha256:assets.sha256,sizeBytes:assets.sizeBytes}).from(assets).all().filter(row=>row.filePath!==null),...db.select({filePath:exportRows.filePath,sha256:exportRows.sha256}).from(exportRows).where(eq(exportRows.status,"succeeded")).all().map(row=>({...row,sizeBytes:null}))],
+ fileReferences:()=>[...db.select({filePath:assets.filePath,sha256:assets.sha256,sizeBytes:assets.sizeBytes}).from(assets).all().filter(row=>row.filePath!==null),...db.select({filePath:exportRows.filePath,sha256:exportRows.sha256}).from(exportRows).where(eq(exportRows.status,"succeeded")).all().map(row=>({...row,sizeBytes:null})),...renderFileReferences(handle.sqlite)],
  projects:()=>db.select({id:projects.id,title:projects.title,archivedAt:projects.archivedAt}).from(projects).orderBy(desc(projects.updatedAt)).all(),
  archiveProject:(id:string,archivedAt:string|null)=>db.update(projects).set({archivedAt,updatedAt:new Date().toISOString()}).where(eq(projects.id,id)).run(),
  generationCount:(projectId?:string)=>db.select({n:count()}).from(generations).innerJoin(jobs,eq(jobs.id,generations.jobId)).where(projectId?eq(jobs.projectId,projectId):undefined).get()!.n,

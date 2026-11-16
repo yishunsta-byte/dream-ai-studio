@@ -70,7 +70,7 @@ describe("시간·정규화·스키마 (lib/edit/timeline.ts)",()=>{
 
 describe("0005 코드 이관 (s4 사본)",()=>{
   it("P1 current 스냅샷만 r1로 옮기고, 값은 spec fromP1Values 그대로, 다른 표·내용 버전·단계는 그대로다",async()=>{
-    const file=await s4Copy("s4"),before=snap(file);expect(migrateFile(file)).toBe(1);const after=snap(file);
+    const file=await s4Copy("s4"),before=snap(file);expect(migrateFile(file,productMigrations().slice(0,5))).toBe(1);const after=snap(file);
     expect(withFile(file,sqlite=>journal(sqlite)!.map(row=>row.name),true)).toEqual([...productSqlMigrations().map(row=>row.name),"0005_timeline_revisions.cjs"]);
     expect(without(after,"__schema_migrations","timeline_revisions","projects")).toEqual(without(before,"__schema_migrations","projects"));
     const projects=(s:ReturnType<typeof snapshotDb>)=>[...s.get("projects")!.rows.values()].map(row=>Object.fromEntries(Object.entries(row).filter(([key])=>key!=="current_timeline_rev_id")));expect(projects(after)).toEqual(projects(before));
@@ -236,10 +236,10 @@ describe("원문·시간 초과 오류 (CLI·시작 점검)",()=>{
     time+=1000;const err:string[]=[];expect(runMigrateCommand({root:folder,migrations:list,now,log:()=>{},error:line=>err.push(line)})).toBe(1);const copy=migrationFailureCopy("MIGRATION_TIMEOUT",null,true);expect(err.slice(0,2)).toEqual([copy.headline,copy.next]);
     expect(checkDatabase(folder,list)).toMatchObject({ok:false,message:copy.headline,code:"MIGRATION_TIMEOUT"});expect(snap(file)).toEqual(before);
   },30000);
-  it("실제 제품 목록 CLI: s4 사본 4→5(복사본 남김)→0, 빈 폴더는 5단계, 시작 점검 통과",async()=>{
+  it("실제 제품 목록 CLI: s4 사본 4→6(0005·0006, 복사본 남김)→0, 빈 폴더는 6단계, 시작 점검 통과",async()=>{
     const folder=join(root,"runtime");mkdirSync(join(folder,"data"),{recursive:true});copyFileSync(await s4Copy("src"),join(folder,"data/app.db"));
-    const out:string[]=[];expect(runMigrateCommand({root:folder,now,log:line=>out.push(line),error:()=>{}})).toBe(0);expect(out[0]).toBe("데이터베이스 준비 완료: 새 마이그레이션 1개");expect(out[1]).toMatch(/^바꾸기 전 복사본: backups\/pre-migrate\/\d{8}T\d{6}Z_s4-s5\.db/);
+    const out:string[]=[];expect(runMigrateCommand({root:folder,now,log:line=>out.push(line),error:()=>{}})).toBe(0);expect(out[0]).toBe("데이터베이스 준비 완료: 새 마이그레이션 2개");expect(out[1]).toMatch(/^바꾸기 전 복사본: backups\/pre-migrate\/\d{8}T\d{6}Z_s4-s6\.db/);
     out.length=0;expect(runMigrateCommand({root:folder,now,log:line=>out.push(line),error:()=>{}})).toBe(0);expect(out).toEqual(["데이터베이스 준비 완료: 새 마이그레이션 0개"]);expect(checkDatabase(folder)).toEqual({ok:true});
-    const fresh=join(root,"fresh");out.length=0;expect(runMigrateCommand({root:fresh,now,log:line=>out.push(line),error:()=>{}})).toBe(0);expect(out).toEqual(["데이터베이스 준비 완료: 새 마이그레이션 5개"]);expect(timelineRows(join(fresh,"data/app.db"))).toEqual([]);
+    const fresh=join(root,"fresh");out.length=0;expect(runMigrateCommand({root:fresh,now,log:line=>out.push(line),error:()=>{}})).toBe(0);expect(out).toEqual(["데이터베이스 준비 완료: 새 마이그레이션 6개"]);expect(timelineRows(join(fresh,"data/app.db"))).toEqual([]);
   });
 });

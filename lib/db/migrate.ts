@@ -17,9 +17,16 @@ export function migrationEntry(version:number,name:string,sql:string):Migration{
 // The files are read from the app folder (cwd) on every use and must match this hash before anything runs.
 export const PRODUCT_CODE_STEPS=[{version:5,name:"0005_timeline_revisions.cjs",files:["lib/db/migrations/0005_timeline_revisions.cjs","lib/db/migrations/0005_timeline_shared.cjs"],sha256:"6a012009fd045439d6d3af8ad2021043fec475aadf10fd942b6585c9e88f0061"}] as const;
 export const productSqlMigrations=()=>productFiles.map((name,index)=>migrationEntry(index+1,name,readFileSync(join(process.cwd(),"lib/db/migrations",name),"utf8")));
+// SQL steps after the code step (T-105): explicit versions, appended after PRODUCT_CODE_STEPS in this order.
+export const LATER_SQL_STEPS=[{version:6,name:"0006_renders.sql"}] as const;
+export const productLaterSqlMigrations=()=>LATER_SQL_STEPS.map(({version,name})=>migrationEntry(version,name,readFileSync(join(process.cwd(),"lib/db/migrations",name),"utf8")));
 // The product list. Tests may pass an isolated list (e.g. product + a test-only step); the product never adds one at runtime.
 // A product file that cannot be read (missing, or the app started outside its folder) is a source error (T-061 D8).
-export function productMigrations():Migration[]{let sql:Migration[];try{sql=productSqlMigrations();}catch{throw new MigrationSourceError("lib/db/migrations: 제품 마이그레이션 파일을 읽지 못했어요");}return [...sql,...PRODUCT_CODE_STEPS.map(step=>codeMigration({...step,verify:verifyTimelineMigration}))];}
+export function productMigrations():Migration[]{let sql:Migration[],later:Migration[];try{sql=productSqlMigrations();later=productLaterSqlMigrations();}catch{throw new MigrationSourceError("lib/db/migrations: 제품 마이그레이션 파일을 읽지 못했어요");}
+  const list=[...sql,...PRODUCT_CODE_STEPS.map(step=>codeMigration({...step,verify:verifyTimelineMigration})),...later];
+  // K-6 ①: the product list is 1..n without gaps, so a recorded journal can only be its exact prefix.
+  if(list.some((step,index)=>step.version!==index+1))throw new MigrationSourceError("lib/db/migrations: 제품 마이그레이션 순서가 맞지 않아요");
+  return list;}
 export function journal(sqlite:Database.Database):AppliedMigration[]|null{
   if(!sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='__schema_migrations'").get())return null;
   return sqlite.prepare("SELECT version,name,sha256 FROM __schema_migrations ORDER BY version").all() as AppliedMigration[];
