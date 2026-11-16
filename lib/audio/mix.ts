@@ -231,10 +231,17 @@ export async function mixAudio(input:unknown,options:MixOptions={}):Promise<MixR
   return {...outcome,cleanup};
 }
 // Removes this call's staging name (after the commit it is only a second name of the published file, so removing it
-// never touches the result) and the work folder unless kept. Never throws: what is left is reported by name.
+// never touches the result) and the work folder unless kept (a kept folder is intended, not "left"). Never throws:
+// what is left is reported by name. T-142 (T-141 F141-1): a removal that throws counts as not removed, whatever a
+// later existence check says (only ENOENT proves the name is gone); after a removal that returned, a name still
+// present is reported too.
 function cleanUp(work:string,staging:string|null,keepWork:boolean):CleanupState{
   const left:CleanupLeft[]=[];
-  if(staging){try{rmSync(staging,{force:true,maxRetries:3});}catch{/* reported below */}if(existsSync(staging))left.push({kind:"staging",name:basename(staging)});}
-  if(!keepWork){try{rmSync(work,{recursive:true,force:true,maxRetries:3});}catch{/* reported below */}if(existsSync(work))left.push({kind:"work",name:basename(work)});}
+  if(staging&&!removed(staging,{force:true,maxRetries:3}))left.push({kind:"staging",name:basename(staging)});
+  if(!keepWork&&!removed(work,{recursive:true,force:true,maxRetries:3}))left.push({kind:"work",name:basename(work)});
   return {complete:left.length===0,left};
+}
+function removed(path:string,options:Parameters<typeof rmSync>[1]):boolean{
+  try{rmSync(path,options);}catch(error){return (error as NodeJS.ErrnoException)?.code==="ENOENT";}
+  return !existsSync(path);
 }

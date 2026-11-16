@@ -13,10 +13,12 @@ import { dirname, join, sep } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only",()=>({}));
 // Fault injection for the publish staging file only (paths ending in ".part"); every other file use is real.
-const faults=vi.hoisted(()=>({write:null as null|string,read:null as null|string,rm:null as null|RegExp}));
+const faults=vi.hoisted(()=>({write:null as null|string,read:null as null|string,rm:null as null|RegExp,hide:false}));
 vi.mock("node:fs",async original=>{const fs=await original<typeof import("node:fs")>();
   return {...fs,
     // a lasting EBUSY for removals of names matching faults.rm (the work folder or the staging file)
+    // with faults.hide the same names also look absent to existsSync (a removal error followed by a false "gone")
+    existsSync:(path:string)=>{if(faults.rm&&faults.hide&&faults.rm.test(String(path).replaceAll("\\","/").split("/").pop()!))return false;return fs.existsSync(path);},
     rmSync:(path:string,options?:object)=>{if(faults.rm&&faults.rm.test(String(path).replaceAll("\\","/").split("/").pop()!))throw Object.assign(new Error("injected busy"),{code:"EBUSY"});return fs.rmSync(path,options as never);},
     createWriteStream:(path:string,options?:object)=>{const stream=fs.createWriteStream(path,options as never);
       if(faults.write&&String(path).endsWith(".part")){const code=faults.write;stream._write=(_chunk,_encoding,done)=>{fs.appendFileSync(path,"PARTIAL-AUDIO");done(Object.assign(new Error("injected"),{code}));};}
@@ -33,8 +35,8 @@ let root:string,installed:{ffmpeg:string;ffprobe:string};
 const fileSha=(file:string)=>createHash("sha256").update(readFileSync(file)).digest("hex");
 beforeAll(()=>{installed={ffmpeg:fileSha(ffmpeg),ffprobe:fileSha(ffprobe)};});
 afterAll(()=>{expect({ffmpeg:fileSha(ffmpeg),ffprobe:fileSha(ffprobe)},"installed tools must stay unchanged").toEqual(installed);});
-beforeEach(()=>{root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t138-")));faults.write=null;faults.read=null;faults.rm=null;});
-afterEach(()=>{faults.write=null;faults.read=null;faults.rm=null;if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temporary boundary rejected");
+beforeEach(()=>{root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t138-")));faults.write=null;faults.read=null;faults.rm=null;faults.hide=false;});
+afterEach(()=>{faults.write=null;faults.read=null;faults.rm=null;faults.hide=false;if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temporary boundary rejected");
   for(const name of readdirSync(root))if(name.endsWith(".exe"))try{chmodSync(join(root,name),0o666);}catch{/* removed below */}
   rmSync(root,{recursive:true,force:true,maxRetries:3});});
 
@@ -188,6 +190,32 @@ describe("F139-1 commit 뒤 정리: 결과와 정리 상태를 따로 알린다"
     const error=await mixAudio(value).then(()=>null,(caught:unknown)=>caught as AudioError);
     expect(error!.code).toBe("VIDEO_MISMATCH");expect(error!.cleanup).toEqual({complete:true,left:[]});
   },60000);
+  it("F141-1 삭제 오류 뒤 존재 확인이 '없음'이어도 정리 완료로 확정하지 않는다(work·staging, commit 뒤·전)",async()=>{
+    // commit 뒤 work: 결과 성공 그대로, work 이름 유지
+    const a=id(),value=request(150,{[a]:tone("a.wav",6)});
+    const result=await mixAudio(value,{link:(from,to)=>{realFs.linkSync(from,to);faults.rm=name;faults.hide=true;}}) as ProcessedMix;
+    faults.rm=null;faults.hide=false;
+    expect(result.accepted).toBe(true);expect(sha(value.outputPath)).toBe(result.output.sha256);
+    expect(result.cleanup.complete).toBe(false);expect(result.cleanup.left.map(item=>item.kind)).toEqual(["work"]);expect(result.cleanup.left[0].name).toMatch(name);
+    rmSync(join(root,result.cleanup.left[0].name),{recursive:true,force:true});
+    // commit 뒤 staging
+    const b=id(),other=request(150,{[b]:tone("b.wav",6)});
+    const second=await mixAudio(other,{link:(from,to)=>{realFs.linkSync(from,to);faults.rm=/\.part$/;faults.hide=true;}}) as ProcessedMix;
+    faults.rm=null;faults.hide=false;
+    expect(sha(other.outputPath)).toBe(second.output.sha256);expect(second.cleanup).toMatchObject({complete:false,left:[{kind:"staging"}]});
+    rmSync(join(root,second.cleanup.left[0].name));
+    // commit 전 실패: 원래 원인 유지
+    const c=id(),movie=video("short3.mp4",60),failing=request(120,{[c]:tone("c.wav",4)},{video:movie,outputPath:join(root,"z.mp4")});faults.rm=name;faults.hide=true;
+    const error=await mixAudio(failing).then(()=>null,(caught:unknown)=>caught as AudioError);faults.rm=null;faults.hide=false;
+    expect(error!.code).toBe("VIDEO_MISMATCH");expect(error!.cleanup).toMatchObject({complete:false,left:[{kind:"work"}]});
+    for(const item of error!.cleanup!.left)rmSync(join(root,item.name),{recursive:true,force:true});expect(left()).toEqual([]);
+  },180000);
+  it("keepWork로 보관한 작업 폴더는 남은 것으로 세지 않는다",async()=>{
+    const a=id(),value=request(150,{[a]:tone("a.wav",6)});let kept="";
+    const result=await mixAudio(value,{keepWork:true,onWork:dir=>{kept=dir;}}) as ProcessedMix;
+    expect(result.cleanup).toEqual({complete:true,left:[]});expect(existsSync(kept)).toBe(true);
+    rmSync(kept,{recursive:true,force:true});expect(left()).toEqual([]);
+  },120000);
 });
 
 describe("도구 변경 시험의 보호 장치",()=>{
