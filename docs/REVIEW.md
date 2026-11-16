@@ -1,5 +1,41 @@
 # 검수 기록
 
+## R-017 · T-027 P1 종료 독립 재검수 (2026-11-16, CX-REVIEW-02)
+
+구현 미참여 새 Codex의 직접 실행이며 자체 검수 아님. 시작/검수 HEAD `2fa66b25853d76c25d9c1d4a4a7373994b752ecc`, 시작 clean. 코드8808928·데이터75c023c·UI bc895cf ancestor 각각 종료0. Orca 격리 child에서 가상 데이터/자기 loopback3036·3037/새TaskSpace22만 사용. Master `5d7907f`는 참고이며 아래 실행을 대체하지 않음.
+
+**보고 작업 완료 / 제품 최종 독립 FAIL. F0162와 V13잔여 closed 가능, 데이터 추가 검증 통과. F0161은 실패 버전비교의 기획·자료 링크 누락(F0171) 때문에 완전 closed 불가.** [전체 실행·증거·한계·캡처·복사문](handoffs/T-027-INDEPENDENT-RECHECK.md).
+
+| 항목 | 이번 직접 결과 |
+|---|---|
+| ci / 새 migrate·seed | 종료0 / 0·0, 설치265·migration4·가상시드1 |
+| build/lint/typecheck | 각각 종료0, 사적자료 추적 없음·lint 경고0 |
+| test | 첫 실행은 검수자 DREAM_DATA_ROOT가 임시cwd fixture와 충돌하여64실패/157통과. 해당 환경변수 제거 후 **25파일221통과·skip0**, ffmpeg/ffprobe 실제 지정. 두 로그 모두 보존 |
+| audit | 운영 종료0/취약점0, 전체 종료1/moderate7(기존Q001 유지) |
+| F0161 | UI 실제CONTENT_REJECTED: 기존성공 선택/파일SHA/다른장면 보존, 기본원인/행동/링크·실패선택/retry불가·대기오표시없음. 실제자기폴더충돌 STORAGE_FAILED→자동대기→시도3소진→UI저장재시도→동일providerID/generation1 성공. 백오프는 now/sleep 가속fixture임을 구분. queued/running/canceled/없음 직접확인, 실패toast1회 |
+| F0162 | 생성전폴더/파일수/예상약크기/샘플/자막유무, 실제새ZIP14/15파일 다운로드·완료이름/actualbytes/시각/revision/SHA 대조. chunked로Content-Length없음 기록, 수신bytes/DTOsize/본문SHA·manifest14/14와15/15 hash/size일치, 완료기록불변/수정후export409/실패행·복사·양폭확인 |
+| V13잔여 | 등록→ZIP다운로드 단일연속키보드(r09~15; DOMclick/API완결없음), 별도한round390×844에서작성가능검수표/빈사유차단/사유저장/13통과/승인실행(r26). 초기round간viewport미유지문제는분리정정.1280/390확인창취소초점·앞뒤Tab순환·Esc·연버튼복귀확인 |
+| T021/22 | 새B1/B2→복원→inherited/local·새local만lastSuccess, marker없는가상행unconfirmed·집계제외. 파일없음경고/disabled/404한글, 기존ZIP재복원hash검증·sourceDB/ZIP/자료목록불변, 원래격리data/storage내목적지거절. 하단목록/옵션실제확인·캡처 |
+
+### [ ] F-017-1 · 실패 버전비교의 행동 링크 누락 (F0161 잔여, 필수)
+
+- 위치 `components/production-panel.tsx:18`의 `!compact && copy.links.length>0`. 버전비교는 compact=true여서 링크를 숨김.
+- 재현: 성공선택이있는장면에서CONTENT_REJECTED 실제요청→버전비교펼침. 한글원인/다음행동·실패자리표시는정상이나기획고치기/자료바꾸기링크가없음. r32.log 직접DOM측정 기본section링크2/비교section링크0, flow-fail-v2.png.
+- 기대: T027 명시조건 “기본카드/버전비교에 … 기획·자료링크”를 둘다충족. 오래된실패가비교에만남아도해당행동에키보드로접근가능해야함. compact시각크기만으로행동을제거하지말것.
+- F0161 원래원인/대기문구/저장재시도문제는수정확인했지만이잔여때문에완전닫지않음. T026 m1좁은상자/m2코드순서/m3날짜/m4예시이름은기존비차단권장유지. 검수자는코드를수정하지않음.
+
+R1~R10은인계의변경영향표에실제근거/회귀테스트/이번수동미재실행을구분했다. 전체V1~V12수동재검증을새로전부통과했다고주장하지않는다. 실다GB·실디스크고갈·실사용자ACL·전원차단·적대적Windows경합·모든보조기기/전면200%확대·네트워크볼륨성능은미검증유지.
+
+새-v2캡처7개만자기tmp/p1-review와허가된source `D:/starwork/dream-ai-studio/tmp/p1-review/`에SHA동일복사, 기존11개불변. 각설명/viewport/실제치수/개인정보확인/SHA는인계표참조. source실제userdata미접근. TaskSpace22·자기worker/서버종료,격리폴더/백업보존이름원위치복구. 코드/TEAM/PROGRESS/사용자확인페이지수정·커밋·푸시·P2진입없음.
+
+**다음: 코드담당F0171수정→해당비교영역키보드링크·선택보존재검수→최종독립통과. 그후에도은영님흐름/디자인승인대기,자동승인/P2진입금지.**
+
+**Claude design/플래너 전달 복사문:** T-027 독립 재검수를 clean 2fa66b2에서 완료했습니다. build/lint/typecheck·221검사(skip0)·운영감사0, 실제키보드등록~ZIP다운로드·390작성가능검수표·저장실패복구/동일providerID/generation1·백업출처/원본보호·ZIP14/14와15/15 hash를 확인했습니다. F0162와V13잔여는닫을수있지만 실패버전비교에서기획/자료링크를숨기는F0171(F0161잔여)을필수로남겨제품최종독립판정은FAIL입니다. 보고는R017/T-027-INDEPENDENT-RECHECK.md,새-v2캡처7개는source tmp/p1-review에SHA동일복사했습니다. 코드담당은production-panel.tsx:18을수정하고오래된실패의키보드링크·선택보존재검수를요청해주세요. 최종독립통과후에도은영님흐름/디자인승인전P2금지입니다.
+
+위문장은복사용초안이며실제coordinator전송은worker_done영수증으로구분한다.
+
+
+
 ## R-016 · P1 종료 독립 검수 (2026-11-16, 새 Codex)
 
 대상 커밋: `dee2d0b1b2d78c565f28317542befbf9493db5da`. 시작 git status clean 및 HEAD 일치 확인. 구현에 참여하지 않은 검수자가 Orca 격리 child worktree에서 실행했으며 **자체 검수 아님**.
