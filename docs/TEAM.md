@@ -1207,3 +1207,9 @@
 - T137/T144 integration restoration acceptance is bounded by T143/T145 evidence; no general all-matrix or P2 completion implied.
 - T154 CC-DATA-01 assigned report-only code-grounded VTT/editable ZIP contract, including audio sources/rights/profile/font preservation and immutable existing exports; no gate unlock or user DB changes.
 - Reviewer processes stopped; auto-review blocked temp deletion, preserved fake runtime/copies documented without bypass.
+### T154 contract reviewed; T155 VTT and T156 fixed s9
+
+- msg_5b1f6d81a687 /5fd72ec report read. Adopt subtitle-only VTT, existing SRT/P1 immutable, audio-only new manifest2, existing size limits with estimate, final-video packaging excluded from this bounded task.
+- Reject proposal to accept old-app misreading new export records: subsequent manifest2 requires new0010 compatibility gate, without rewriting issued1-9. Existing final/publication gates retained.
+- T155 CC-DATA-01 requested msg_3eacef5c4000: VTT pure helper/layout plus actual exported browser textTrack verification; no audioZIP/UI/schema changes yet.
+- T156 ctx_f6a595181bac /task_96c52867840b assigned fixed9 backup generator/fixture/test only, including synthetic source audio and actual successful B render. This worker is now a fixture author, not independent reviewer of its own artifact. Existing fixtures immutable; no unconditional acceptance.

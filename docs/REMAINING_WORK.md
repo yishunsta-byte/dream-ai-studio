@@ -401,3 +401,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - Supersedes older paused-DSP/integration entries: required DSP/restore corrections have been reviewed, U1 accepted and F150-1 editor draft-loss correction accepted in bounded T153 scope.
 - Current assignment T154: VTT and editable ZIP contract with source audio/rights/profile/font/license preservation. Implementation and independent validation follow contract review.
 - Actual listening, physical phone, native tab-hidden, screen reader/200 percent and complete media-role matrix remain unverified. Existing P1/new-data/exports gates preserved; no P2 completion or runtime deployment claimed.
+## Current: VTT implementation and s9 checkpoint
+
+- T155 subtitle VTT implementation/browser-parser evidence requested.
+- T156 new stage9 fixed backup/source-audio/render-B fixture generation assigned in isolated worktree.
+- After verified return: manifest2 with0010 old-app gate and source-audio editable ZIP. Existing SRT/P1/old archives/gates stay protected. Physical-phone/listening/native-hidden evidence remains unverified.
