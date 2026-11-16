@@ -63,6 +63,12 @@ export function verifyMigrations(sqlite: Database.Database,expected:readonly Mig
   if (!Array.isArray(brokenReferences) || brokenReferences.length) throw new Error("데이터 참조 검사에 실패했어요. 백업과 데이터 상태를 확인해 주세요.");
 }
 export type MigrateOptions={ migrations?:readonly Migration[]; now?:()=>number };
+// Runs `check` with PRAGMA query_only on and always restores the caller's previous value.
+function readOnly(sqlite:Database.Database,check:()=>void){
+  const previous=sqlite.pragma("query_only",{simple:true}) as number;
+  sqlite.pragma("query_only = ON");
+  try{check();}finally{sqlite.pragma(`query_only = ${previous?"ON":"OFF"}`);}
+}
 // Applies the remaining steps in one transaction (a savepoint when the caller already holds one).
 export function migrateDatabase(sqlite: Database.Database,options:MigrateOptions={}) {
   const expected=options.migrations??productMigrations(),now=options.now??Date.now;
@@ -80,7 +86,8 @@ export function migrateDatabase(sqlite: Database.Database,options:MigrateOptions
       sqlite.prepare("INSERT INTO __schema_migrations(version,name,sha256,applied_at) VALUES(?,?,?,?)").run(migration.version,migration.name,migration.sha256,new Date(now()).toISOString());
       count++;
     }
-    for(const migration of expected.slice(applied.length))migration.verify?.(sqlite);
+    // `verify` is a check, not a transform (a code step's hash does not cover it): it runs with writes refused.
+    for(const migration of expected.slice(applied.length))if(migration.verify)readOnly(sqlite,()=>migration.verify!(sqlite));
     verifyMigrations(sqlite,expected);
     return count;
   }).immediate();

@@ -1,13 +1,15 @@
-// T-048: the code data migration contract (K-6 ⑤ / T-017 3.4) proven with a test-only step 5; no product 0005.
+// T-048/T-051: the code data migration contract (K-6 ⑤ / T-017 3.4) proven with a test-only step 5; no product 0005.
+// The executed `run`/`sql` are loaded from the very text whose hash matched the declaration (contract v2).
 import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { isDeepStrictEqual } from "node:util";
 import { dirname, join } from "node:path";
 import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only",()=>({}));
 import { openDatabase, type DatabaseHandle } from "@/lib/db/connection";
-import { checkCodeStepSource, codeMigration, codeMigrationSha256, CODE_MIGRATION_FORMAT, isCertifiedCodeMigration, MigrationSourceError } from "@/lib/db/code-migration";
+import { checkSqlText, codeMigration, codeMigrationSha256, CODE_MIGRATION_FORMAT, isCertifiedCodeMigration, MigrationSourceError, type CodeStepDefinition } from "@/lib/db/code-migration";
 import { journal, migrateDatabase, migrationEntry, productMigrations, type Migration } from "@/lib/db/migrate";
 import { migrateLiveDatabase } from "@/lib/db/live-migrate";
 import { readBackupManifest, verifyBackupArchive } from "@/lib/backup/archive";
@@ -16,73 +18,163 @@ import { fileDigest, writeArchive } from "@/lib/export/zip";
 import { restoreService, type RestoreOptions, type RestoreStage } from "@/lib/services/restore";
 import { S4_ZIP } from "./fixtures/backups/s4-build";
 import { P_JOURNAL_AFTER_4, snapshotDb } from "./fixtures/backups/s4-compare";
-import * as step from "./fixtures/migrations/test5-code";
 import { TEST5_CODE_FILES, TEST5_CODE_SHA256, test5Code } from "./fixtures/migrations/test5-registry";
 
 let root:string,time:number,committed:{sha256:string;sizeBytes:number},handle:DatabaseHandle|undefined;
 const now=()=>time;
-beforeEach(async()=>{root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t048-")));time=Date.parse("2026-11-16T07:00:00Z");committed=await fileDigest(S4_ZIP);});
+beforeEach(async()=>{root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t051-")));time=Date.parse("2026-11-16T07:00:00Z");committed=await fileDigest(S4_ZIP);});
 afterEach(async()=>{vi.unstubAllEnvs();handle?.close();handle=undefined;expect(await fileDigest(S4_ZIP)).toEqual(committed);if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temporary boundary rejected");rmSync(root,{recursive:true,force:true});});
 
 const sha=(text:string)=>createHash("sha256").update(text).digest("hex");
+const lf=(text:string)=>text.replace(/\r\n/g,"\n");
 const CODE_LIST=()=>[...productMigrations(),test5Code()];
 async function s4(name:string){const into=join(root,name);const manifest=await readBackupManifest(S4_ZIP);await verifyBackupArchive(S4_ZIP,manifest,into);return join(into,"data/app.db");}
 const snap=(file:string)=>{const sqlite=new Database(file,{readonly:true,fileMustExist:true});try{return snapshotDb(sqlite);}finally{sqlite.close();}};
 const without=(snapshot:ReturnType<typeof snapshotDb>,...names:string[])=>{const copy=new Map(snapshot);for(const name of names)copy.delete(name);return copy;};
 function migrateFile(file:string,migrations:readonly Migration[]){const sqlite=new Database(file);try{sqlite.pragma("foreign_keys = ON");sqlite.pragma("recursive_triggers = ON");return migrateDatabase(sqlite,{migrations,now});}finally{sqlite.close();}}
+const thrown=(fn:()=>unknown)=>{try{fn();}catch(error){return error as Error;}throw new Error("expected a throw");};
 // A copy of the step's files under another root, to change them without touching the repository.
 function copySources(target:string){for(const path of TEST5_CODE_FILES){const to=join(target,...path.split("/"));mkdirSync(dirname(to),{recursive:true});cpSync(join(process.cwd(),...path.split("/")),to);}}
+const readAll=(base:string,files:readonly string[])=>files.map(path=>({path,text:readFileSync(join(base,...path.split("/")),"utf8")}));
+// A probe step written under its own root, declared with the hash of exactly what was written.
+function probe(name:string,files:Record<string,string>,extra:Partial<CodeStepDefinition>={}){
+  const base=join(root,name);for(const [path,text] of Object.entries(files)){const to=join(base,...path.split("/"));mkdirSync(dirname(to),{recursive:true});writeFileSync(to,text);}
+  const list=Object.keys(files);return ()=>codeMigration({version:5,name:"0005_probe.cjs",files:list,sha256:codeMigrationSha256(readAll(base,list)),root:base,...extra});
+}
+const PROOF="module.exports.sql='CREATE TABLE proof (value TEXT) STRICT;';\n";
+const proofRows=(file:string)=>{const sqlite=new Database(file,{readonly:true});try{return sqlite.prepare("SELECT value FROM proof").all();}catch{return null;}finally{sqlite.close();}};
 
-describe("계약: 원문 해시와 SQL 단계 호환",()=>{
+describe("계약: 원문 해시, 실행은 해시한 원문에서만",()=>{
   it("SQL 단계 해시는 그대로(파일 원문 sha256, 고정 백업 s4 기록과 같음)",async()=>{
     const product=productMigrations();
-    for(const migration of product){expect(migration.kind).toBeUndefined();expect(migration.run).toBeUndefined();expect(migration.sha256).toBe(sha(readFileSync(join(process.cwd(),"lib/db/migrations",migration.name),"utf8").replace(/\r\n/g,"\n")));}
+    for(const migration of product){expect(migration.kind).toBeUndefined();expect(migration.run).toBeUndefined();expect(migration.sha256).toBe(sha(lf(readFileSync(join(process.cwd(),"lib/db/migrations",migration.name),"utf8"))));}
     expect((await readBackupManifest(S4_ZIP)).migrations).toEqual(product.map(({version,name,sha256})=>({version,name,sha256})));
     expect(migrationEntry(1,product[0].name,product[0].sql).sha256).toBe(product[0].sha256);
   });
-  it("코드 단계 해시는 형식·SQL·파일 경로·내용에 묶이고 줄바꿈만 다르면 같다",()=>{
-    const migration=test5Code(),files=TEST5_CODE_FILES.map(path=>({path,text:readFileSync(join(process.cwd(),...path.split("/")),"utf8")}));
-    expect(migration).toMatchObject({version:5,name:"0005_test_only_code.ts",kind:"code",sha256:TEST5_CODE_SHA256,sources:[...TEST5_CODE_FILES]});
-    expect(Object.isFrozen(migration)).toBe(true);expect(isCertifiedCodeMigration(migration)).toBe(true);expect(migration.run).toBe(step.run);
-    const base=codeMigrationSha256({sql:step.sql,files});expect(base).toBe(TEST5_CODE_SHA256);
-    expect(codeMigrationSha256({sql:step.sql,files:files.map(file=>({...file,text:file.text.replace(/\n/g,"\r\n")}))})).toBe(base);
-    expect(codeMigrationSha256({sql:step.sql,files:[...files].reverse()})).toBe(base);
-    expect(codeMigrationSha256({sql:`${step.sql} `,files})).not.toBe(base);
-    expect(codeMigrationSha256({sql:step.sql,files:files.map((file,index)=>index?{...file,text:`${file.text}\n`}:file)})).not.toBe(base);
-    expect(codeMigrationSha256({sql:step.sql,files:files.map((file,index)=>index?{...file,path:"tests/fixtures/migrations/ids.ts"}:file)})).not.toBe(base);
-    expect(CODE_MIGRATION_FORMAT).toBe("dream-code-migration/v1");
+  it("v2 해시는 형식·경로·내용(LF)에 묶이고, 받은 저장소의 줄바꿈(LF/CRLF)이나 목록 순서만 다르면 같다",()=>{
+    const files=readAll(process.cwd(),TEST5_CODE_FILES),normalized=files.map(file=>({...file,text:lf(file.text)}));
+    expect(CODE_MIGRATION_FORMAT).toBe("dream-code-migration/v2");
+    expect(codeMigrationSha256(files)).toBe(TEST5_CODE_SHA256);
+    expect(codeMigrationSha256(normalized.map(file=>({...file,text:file.text.replace(/\n/g,"\r\n")})))).toBe(TEST5_CODE_SHA256);
+    expect(codeMigrationSha256(normalized)).toBe(TEST5_CODE_SHA256);expect(codeMigrationSha256([...files].reverse())).toBe(TEST5_CODE_SHA256);
+    expect(codeMigrationSha256(normalized.map(file=>({...file,text:`${file.text}\n`})))).not.toBe(TEST5_CODE_SHA256);
+    expect(codeMigrationSha256(normalized.map((file,index)=>index?{...file,path:"tests/fixtures/migrations/ids.cjs"}:file))).not.toBe(TEST5_CODE_SHA256);
+    // A checkout with CRLF (core.autocrlf) and one with LF both register with the same declaration.
+    for(const eol of ["\r\n","\n"]){const other=join(root,`eol-${eol.length}`);copySources(other);for(const path of TEST5_CODE_FILES){const full=join(other,path);writeFileSync(full,lf(readFileSync(full,"utf8")).replace(/\n/g,eol));}expect(test5Code({root:other}).sha256).toBe(TEST5_CODE_SHA256);}
+    // Independent vector: the hash input written out by hand.
+    const vector=sha(["dream-code-migration/v2",...[...normalized].sort((a,b)=>a.path<b.path?-1:1).map(file=>`file\0${file.path}\0${sha(file.text)}`)].join("\n"));
+    expect(vector).toBe(TEST5_CODE_SHA256);
   });
-  it("원문이 선언 해시와 다르면(도우미 한 글자, 실행 모듈 변경) 목록을 만들지 않는다",()=>{
+  it("정상 등록: run·sql은 원문에서 읽혀 실제로 실행된다",async()=>{
+    const migration=test5Code(),entry=lf(readFileSync(join(process.cwd(),TEST5_CODE_FILES[0]),"utf8"));
+    expect(migration).toMatchObject({version:5,name:"0005_test_only_code.cjs",kind:"code",sha256:TEST5_CODE_SHA256,sources:[...TEST5_CODE_FILES]});
+    expect(Object.isFrozen(migration)).toBe(true);expect(isCertifiedCodeMigration(migration)).toBe(true);
+    expect(entry).toContain(JSON.stringify(migration.sql));
+    // A copy whose entry really changes: its new text is what runs (rows carry the new source label).
+    const other=join(root,"edited");copySources(other);const path=join(other,TEST5_CODE_FILES[0]);writeFileSync(path,readFileSync(path,"utf8").replace('"p1-migration"','"p1-edited"'));
+    const edited=test5Code({root:other,sha256:codeMigrationSha256(readAll(other,TEST5_CODE_FILES))});expect(edited.sha256).not.toBe(TEST5_CODE_SHA256);
+    const file=await s4("edited-run");migrateFile(file,[...productMigrations(),edited]);
+    const sqlite=new Database(file,{readonly:true});try{expect(sqlite.prepare("SELECT DISTINCT source FROM test_k6_timeline").all()).toEqual([{source:"p1-edited"}]);}finally{sqlite.close();}
+  });
+  it("F050-1: 실행 함수·모듈을 넘길 수 없다(module·run·sql·entry 항목 거부)",()=>{
+    const base={version:5,name:"x",files:TEST5_CODE_FILES,sha256:TEST5_CODE_SHA256};
+    for(const extra of [{module:{entry:TEST5_CODE_FILES[0],run:()=>{}}},{run:()=>{}},{sql:"CREATE TABLE x(a)"},{entry:TEST5_CODE_FILES[0]}])
+      expect(()=>codeMigration({...base,...extra} as CodeStepDefinition)).toThrow(/알 수 없는 항목/);
+  });
+  it("선언 해시와 다르면 원문을 한 줄도 실행하지 않고 거부(도우미 한 글자, 실행 모듈 변경, 파일 없음)",()=>{
     const other=join(root,"src");copySources(other);expect(test5Code({root:other}).sha256).toBe(TEST5_CODE_SHA256);
-    const helper=join(other,"tests/fixtures/migrations/test5-ids.ts");writeFileSync(helper,readFileSync(helper,"utf8").replace("test5:","test6:"));
-    expect(()=>test5Code({root:other})).toThrow(MigrationSourceError);
-    copySources(other);const entry=join(other,"tests/fixtures/migrations/test5-code.ts");writeFileSync(entry,readFileSync(entry,"utf8").replace('"p1-migration"','"p1-moved"'));
+    const helper=join(other,TEST5_CODE_FILES[1]);writeFileSync(helper,readFileSync(helper,"utf8").replace("test5:","test6:"));
     expect(()=>test5Code({root:other})).toThrow(/원문 해시/);
+    copySources(other);const entry=join(other,TEST5_CODE_FILES[0]);writeFileSync(entry,`throw new Error("EXECUTED");\n${readFileSync(entry,"utf8")}`);
+    expect(thrown(()=>test5Code({root:other})).message).toMatch(/원문 해시/);
+    const declared=codeMigrationSha256(readAll(other,TEST5_CODE_FILES));expect(thrown(()=>test5Code({root:other,sha256:declared})).message).toMatch(/EXECUTED/);
     rmSync(entry);expect(()=>test5Code({root:other})).toThrow(/파일을 읽지 못했어요/);
   });
-  it("목록·모듈 모양이 다르면 거부(첫 파일≠실행 모듈, 중복, 절대·상위 경로, run 없음, 빈 목록)",()=>{
-    const base={version:5,name:"x",module:step,files:TEST5_CODE_FILES,sql:step.sql,sha256:TEST5_CODE_SHA256};
-    for(const change of [{files:[...TEST5_CODE_FILES].reverse()},{files:[TEST5_CODE_FILES[0],TEST5_CODE_FILES[0]]},{files:["D:/abs/test5-code.ts"]},{files:["tests/../tests/fixtures/migrations/test5-code.ts"]},{files:[]},{module:{entry:step.entry,run:undefined as never}},{module:{entry:"tests/other.ts",run:step.run}}])
+  it("목록 모양이 다르면 거부(첫 파일에 run 없음, 중복, 절대·상위 경로, .ts, 빈 목록, 시간 제한 범위)",()=>{
+    const base={version:5,name:"x",files:TEST5_CODE_FILES,sha256:TEST5_CODE_SHA256};
+    const reversed=[...TEST5_CODE_FILES].reverse();
+    expect(()=>codeMigration({...base,files:reversed,sha256:codeMigrationSha256(readAll(process.cwd(),reversed))})).toThrow(/run이 없어요/);
+    for(const change of [{files:[TEST5_CODE_FILES[0],TEST5_CODE_FILES[0]]},{files:["D:/abs/test5-code.cjs"]},{files:["tests/../tests/fixtures/migrations/test5-code.cjs"]},{files:["tests/fixtures/migrations/test5-registry.ts"]},{files:[]},{runTimeoutMs:0},{runTimeoutMs:10**9}])
       expect(()=>codeMigration({...base,...change})).toThrow(MigrationSourceError);
   });
-  it("숨은 의존·비결정 요소를 거부한다",()=>{
-    const listed=new Set(["lib/a.ts","lib/b.ts"]);
-    expect(()=>checkCodeStepSource("lib/a.ts",'import { x } from "./b";\nimport type Database from "better-sqlite3";\nimport { createHash } from "node:crypto";\nexport type { Y } from "zod";',listed)).not.toThrow();
-    for(const text of ['import { x } from "./c";','import { x } from "@/lib/c";','import { z } from "zod";','import fs from "node:fs";','export { x } from "../lib/c";','import "./side-effect";','const m=require("./b");','const m=await import("./b");','const t=Date.now();','const t=new Date();','const r=Math.random();','import { randomUUID } from "node:crypto"; randomUUID();','const k=process.env.KEY;','globalThis.x=1;','eval("1");','new Function("return 1");','const u=import.meta.url;',`sqlite.exec("UPDATE t SET at=datetime('now')");`,'sqlite.exec("INSERT INTO t VALUES (CURRENT_TIMESTAMP)");','sqlite.exec("SELECT random()");','sqlite.exec("SELECT randomblob(16)");'])
-      expect(()=>checkCodeStepSource("lib/a.ts",text,listed),text).toThrow(MigrationSourceError);
-  });
-  it("목록 파일·SQL에 숨은 비결정 요소가 있으면 해시가 맞아도 만들지 않는다",()=>{
-    const other=join(root,"nd");copySources(other);const helper=join(other,"tests/fixtures/migrations/test5-ids.ts");writeFileSync(helper,`${readFileSync(helper,"utf8")}\nexport const stamp=()=>Date.now();\n`);
-    const texts=()=>TEST5_CODE_FILES.map(path=>({path,text:readFileSync(join(other,...path.split("/")),"utf8")}));
-    expect(()=>test5Code({root:other,sha256:codeMigrationSha256({sql:step.sql,files:texts()})})).toThrow(/clock/);
-    copySources(other);const sql=`${step.sql}\nINSERT INTO test_k6_timeline SELECT 'x','p',1,1,'{}','s',datetime('now') WHERE 0;`;
-    expect(()=>codeMigration({version:5,name:"x",module:step,files:TEST5_CODE_FILES,sql,sha256:codeMigrationSha256({sql,files:texts()}),root:other})).toThrow(/SQL clock/);
-  });
   it("codeMigration이 만들지 않은 실행 코드는 어떤 단계도 적용하기 전에 거부한다",async()=>{
-    const file=await s4("forged"),before=snap(file);
-    const forged:Migration[]=[{...test5Code()},{...migrationEntry(5,"0005_test_only_code.ts",step.sql),run:step.run},{...migrationEntry(5,"0005_x.sql",step.sql),kind:"code"}];
+    const file=await s4("forged"),before=snap(file),real=test5Code();
+    const forged:Migration[]=[{...real},{...migrationEntry(5,"0005_test_only_code.cjs",real.sql),run:real.run},{...migrationEntry(5,"0005_x.sql",real.sql),kind:"code"}];
     for(const five of forged)expect(()=>migrateFile(file,[...productMigrations(),five])).toThrow(MigrationSourceError);
     expect(snap(file)).toEqual(before);
+  });
+});
+
+describe("로더: 목록 안 원문만, 정해진 형식만 (F050-2)",()=>{
+  const outside={"p/outside.cjs":"module.exports.value=10;\n"};
+  it("import·export 문법(주석 끼움, type 이름 기본 바인딩 포함)은 실행 graph를 만들 수 없어 거부",()=>{
+    for(const text of ["import/* module dependency */ { value } from './outside.cjs';\nmodule.exports.run=function(db){};","export/* c */ { value } from './outside.cjs';","import type from './outside.cjs';\nmodule.exports.run=function(db){};","import './outside.cjs';","export const run=function(db){};"]){
+      const make=probe(`imp-${sha(text).slice(0,8)}`,{"p/entry.cjs":text,...outside});expect(()=>make(),text).toThrow(/정해진 .cjs 형식이 아니에요/);
+    }
+  });
+  it("require는 목록 안 정확한 상대 경로와 node:crypto sha256 창구만",()=>{
+    const ok=probe("req-ok",{"p/entry.cjs":"const {value}=require('./helper.cjs');const {createHash}=require('node:crypto');module.exports.v=value+createHash('sha256').update('a').digest('hex').length;module.exports.run=function(db){};","p/helper.cjs":"module.exports.value=1;"});
+    expect(ok().kind).toBe("code");
+    const cases:Record<string,string>={unlisted:"require('./outside.cjs');",noExtension:"require('./helper');",escape:"require('../outside.cjs');",alias:"require('@/p/helper.cjs');",fs:"require('node:fs');",pkg:"require('better-sqlite3');",bare:"require('crypto');",md5:"require('node:crypto').createHash('md5');",random:"require('node:crypto').randomUUID();"};
+    for(const [name,line] of Object.entries(cases)){const make=probe(`req-${name}`,{"p/entry.cjs":`${line}\nmodule.exports.run=function(db){};`,"p/helper.cjs":"module.exports.value=1;"});expect(()=>make(),name).toThrow(MigrationSourceError);}
+    // `../p/helper.cjs` normalizes to a listed path and is the same module; only escaping the list fails.
+  });
+  it("run 안에서 늦게 부르는 목록 밖 require도 실패하고 전부 되돌린다",async()=>{
+    const make=probe("lazy",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES ('x')");require('./outside.cjs');};`});
+    const file=await s4("lazy-db"),before=snap(file);expect(()=>migrateFile(file,[...productMigrations(),make()])).toThrow(/목록 밖 의존/);expect(snap(file)).toEqual(before);
+  });
+  it("모듈은 한 번만 불러오고 순환은 CommonJS처럼 부분 exports를 본다",()=>{
+    const make=probe("cycle",{"p/entry.cjs":"const a=require('./a.cjs');const again=require('./a.cjs');if(a!==again)throw new Error('not cached');if(a.loads!==1)throw new Error('loaded twice');if(a.sawPartial!==true)throw new Error('cycle');module.exports.run=function(db){};","p/a.cjs":"module.exports.loads=(module.exports.loads||0)+1;module.exports.early=true;require('./b.cjs');module.exports.sawPartial=require('./b.cjs').saw;","p/b.cjs":"module.exports.saw=require('./a.cjs').early===true;"});
+    expect(make().kind).toBe("code");
+  });
+  it("시각·난수·코드 생성·호스트 전역은 실행 중에 막힌다",()=>{
+    for(const line of ["Date.now();","new Date(0);","Math.random();","new Intl.DateTimeFormat().format();","Temporal.Now.instant();","eval('1');","(function(){}).constructor('return 1')();","process.env.X;","setTimeout(()=>{},1);","performance.now();","new WeakRef({});","globalThis.require('node:fs');"]){
+      const make=probe(`rt-${sha(line).slice(0,8)}`,{"p/entry.cjs":`${line}\nmodule.exports.run=function(db){};`});expect(()=>make(),line).toThrow(MigrationSourceError);
+    }
+  });
+  it("시간 제한: 최상위 무한 반복은 불러오기에서, run 무한 반복은 실행에서 끊고 되돌린다",async()=>{
+    expect(()=>probe("loop-load",{"p/entry.cjs":"for(;;){}\nmodule.exports.run=function(db){};"})()).toThrow(/불러오는 중 실패/);
+    const make=probe("loop-run",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES ('x')");for(;;){}};`},{runTimeoutMs:200});
+    const file=await s4("loop-db"),before=snap(file);expect(()=>migrateFile(file,[...productMigrations(),make()])).toThrow(/timed out/);expect(snap(file)).toEqual(before);
+  });
+  it("비동기: async run은 등록 거부, Promise를 돌려주면 대기 작업까지 트랜잭션 안에서 끝낸 뒤 거부하고 되돌린다(늦은 쓰기 없음)",async()=>{
+    expect(()=>probe("async",{"p/entry.cjs":"module.exports.run=async function(db){};"})()).toThrow(/동기 함수/);
+    // The queued write targets an existing table and the connection stays open, so a write after rollback would land.
+    const make=probe("thenable",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){return Promise.resolve().then(()=>db.exec("INSERT INTO settings(key,value_json) VALUES ('late.write','1')"));};`});
+    const file=await s4("thenable-db"),before=snap(file),sqlite=new Database(file);
+    try{expect(()=>migrateDatabase(sqlite,{migrations:[...productMigrations(),make()],now})).toThrow(/Promise/);await new Promise(resolve=>setTimeout(resolve,50));expect(sqlite.prepare("SELECT key FROM settings WHERE key='late.write'").all()).toEqual([]);}finally{sqlite.close();}
+    expect(snap(file)).toEqual(before);expect(proofRows(file)).toBeNull();
+  });
+});
+
+describe("SQL 시각·난수 검출 규칙과 단계별 결정성 확인 (F050-3)",()=>{
+  it("검출 규칙: 인자 생략 시각 함수·'now'·CURRENT_*·random을 거부하고 시각 값이 있으면 허용",()=>{
+    for(const sql of ["strftime('%Y-%m-%dT%H:%M:%fZ')","datetime()","date( )","time()","julianday()","unixepoch()","datetime('now')","date(\"now\",'+1 day')","CURRENT_TIMESTAMP","current_date","random()","randomblob(4)"])
+      expect(()=>checkSqlText("x",`SELECT ${sql}`),sql).toThrow(MigrationSourceError);
+    for(const sql of ["strftime('%Y', created_at)","datetime(created_at)","date('2026-01-01')","julianday(value_json->>'$.at')"])expect(()=>checkSqlText("x",`SELECT ${sql}`),sql).not.toThrow();
+  });
+  it("T050 재현 문구(strftime 인자 생략)와 조립한 sql export는 해시가 맞아도 등록 거부",()=>{
+    expect(()=>probe("clock-run",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES(strftime('%Y-%m-%dT%H:%M:%fZ'))");};`})()).toThrow(/SQL clock/);
+    expect(()=>probe("clock-sql",{"p/entry.cjs":"module.exports.sql='CREATE TABLE proof AS SELECT date'+'time() AS at;';module.exports.run=function(db){};"})()).toThrow(/SQL clock/);
+  });
+  // Determinism is proved per step: same input, two runs at different real times, identical result except the journal time.
+  async function sameAcrossClocks(name:string,list:()=>readonly Migration[]){
+    const one=await s4(`${name}-1`),two=await s4(`${name}-2`);migrateFile(one,list());await new Promise(resolve=>setTimeout(resolve,1100));migrateFile(two,list());
+    return isDeepStrictEqual(without(snap(one),"__schema_migrations"),without(snap(two),"__schema_migrations"));
+  }
+  it("시험 5단계는 같은 입력·다른 시각에서 같은 결과",async()=>{expect(await sameAcrossClocks("t5",CODE_LIST)).toBe(true);},20000);
+  it("규칙이 못 잡는 시각 표현은 등록되지만 단계별 동등성 확인이 잡는다(규칙은 증명이 아님)",async()=>{
+    const make=probe("hidden-clock",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES (strftime('%s', 'n' || 'ow'))");};`});
+    expect(make().kind).toBe("code");expect(await sameAcrossClocks("hidden",()=>[...productMigrations(),make()])).toBe(false);
+  },20000);
+});
+
+describe("verify는 읽기 전용 검사",()=>{
+  it("verify가 쓰려 하면 거부되고 전부 되돌리며, 끝나면 query_only를 원래 값으로 돌린다",async()=>{
+    const file=await s4("verify-write"),before=snap(file);
+    expect(()=>migrateFile(file,[...productMigrations(),test5Code({verify:sqlite=>{sqlite.exec("DELETE FROM test_k6_timeline");}})])).toThrow(/readonly/);expect(snap(file)).toEqual(before);
+    const ok=await s4("verify-ok"),sqlite=new Database(ok);
+    try{let inside:unknown;migrateDatabase(sqlite,{migrations:[...productMigrations(),test5Code({verify:db=>{inside=db.pragma("query_only",{simple:true});}})],now});expect(inside).toBe(1);expect(sqlite.pragma("query_only",{simple:true})).toBe(0);sqlite.prepare("INSERT INTO settings(key,value_json) VALUES('after.verify','1')").run();}finally{sqlite.close();}
   });
 });
 
@@ -95,7 +187,7 @@ describe("실행: 같은 트랜잭션·결정적·옛 행 보존·실패 시 전
     expect(without(a,"__schema_migrations","test_k6_timeline")).toEqual(without(before,"__schema_migrations"));
     const sqlite=new Database(one,{readonly:true});
     try{
-      expect(journal(sqlite)?.at(-1)).toEqual({version:5,name:"0005_test_only_code.ts",sha256:TEST5_CODE_SHA256});
+      expect(journal(sqlite)?.at(-1)).toEqual({version:5,name:"0005_test_only_code.cjs",sha256:TEST5_CODE_SHA256});
       const rows=sqlite.prepare("SELECT id,project_id,revision,source,created_at FROM test_k6_timeline ORDER BY id").all() as {id:string;source:string}[];
       const snapshots=(sqlite.prepare("SELECT COUNT(*) n FROM settings WHERE key GLOB 'project.*.edit.*' AND key NOT GLOB '*.current'").get() as {n:number}).n;
       expect(rows).toHaveLength(snapshots);expect(rows.length).toBeGreaterThan(0);expect(new Set(rows.map(row=>row.source))).toEqual(new Set(["p1-migration"]));
@@ -104,17 +196,17 @@ describe("실행: 같은 트랜잭션·결정적·옛 행 보존·실패 시 전
   });
   it("변환 중 실패·데이터 검사 실패는 SQL 단계까지 전부 되돌린다",async()=>{
     const file=await s4("broken"),raw=new Database(file);try{raw.prepare("INSERT INTO settings(key,value_json) VALUES(?,?)").run(`project.${"0".repeat(8)}-0000-7000-8000-${"0".repeat(12)}.edit.zz`,"{\"content_revision\":1,\"created_at\":\"2026-01-01T00:00:00.000Z\"}");}finally{raw.close();}
-    const before=snap(file);expect(()=>migrateFile(file,CODE_LIST())).toThrow(TypeError);expect(snap(file)).toEqual(before);
+    const before=snap(file);expect(thrown(()=>migrateFile(file,CODE_LIST())).name).toBe("TypeError");expect(snap(file)).toEqual(before);
     const clean=await s4("verify"),cleanBefore=snap(clean);
     expect(()=>migrateFile(clean,[...productMigrations(),test5Code({verify:()=>{throw new Error("injected");}})])).toThrow("injected");expect(snap(clean)).toEqual(cleanBefore);
   });
   it("지금 DB 올리기: 바꾸기 전 사본을 남기고 같은 결과, 실패하면 DB 그대로·사본 남음",async()=>{
     const direct=await s4("direct");migrateFile(direct,CODE_LIST());
-    const file=await s4("live"),before=snap(file),handle=openDatabase(file,{fileMustExist:true},{wal:false});
+    const file=await s4("live"),before=snap(file),live=openDatabase(file,{fileMustExist:true},{wal:false});
     try{
-      const result=migrateLiveDatabase(handle,{snapshotDirectory:join(root,"pre"),migrations:CODE_LIST(),now});expect(result).toMatchObject({applied:1,from:4,to:5});
+      const result=migrateLiveDatabase(live,{snapshotDirectory:join(root,"pre"),migrations:CODE_LIST(),now});expect(result).toMatchObject({applied:1,from:4,to:5});
       expect(snap(result.snapshot!)).toEqual(before);
-    }finally{handle.close();}
+    }finally{live.close();}
     const strip=(value:ReturnType<typeof snapshotDb>)=>without(without(value,"__schema_migrations"),"activity_log");
     expect(strip(snap(file))).toEqual(strip(snap(direct)));
     const failing=await s4("live-fail"),failingBefore=snap(failing),other=openDatabase(failing,{fileMustExist:true},{wal:false});
@@ -125,16 +217,17 @@ describe("실행: 같은 트랜잭션·결정적·옛 행 보존·실패 시 전
 
 // A changed step 5 whose source really differs (helper text) and whose declaration matches that source.
 function changedStep(){
-  const other=join(root,"changed-src");copySources(other);const helper=join(other,"tests/fixtures/migrations/test5-ids.ts");writeFileSync(helper,readFileSync(helper,"utf8").replace("test5:","test5b:"));
-  const sha256=codeMigrationSha256({sql:step.sql,files:TEST5_CODE_FILES.map(path=>({path,text:readFileSync(join(other,...path.split("/")),"utf8")}))});
-  expect(sha256).not.toBe(TEST5_CODE_SHA256);return test5Code({root:other,sha256});
+  const other=join(root,"changed-src");copySources(other);const helper=join(other,TEST5_CODE_FILES[1]);writeFileSync(helper,readFileSync(helper,"utf8").replace("test5:","test5b:"));
+  const sha256=codeMigrationSha256(readAll(other,TEST5_CODE_FILES));expect(sha256).not.toBe(TEST5_CODE_SHA256);return test5Code({root:other,sha256});
 }
 
 describe("기록 일치: DB·백업 기록 해시와 지금 코드 원문",()=>{
-  it("지금 DB 기록의 코드 해시가 지금 원문과 다르면 아무 단계도 적용하지 않고 거부",async()=>{
+  it("지금 DB 기록의 코드 해시가 지금 원문과 다르면 아무 단계도 적용하지 않고 거부, 바뀐 원문은 실제로 다른 결과를 낸다",async()=>{
     const file=await s4("recorded");migrateFile(file,CODE_LIST());const before=snap(file);
     expect(()=>migrateFile(file,[...productMigrations(),changedStep()])).toThrow();expect(snap(file)).toEqual(before);
     expect(migrateFile(file,CODE_LIST())).toBe(0);expect(snap(file)).toEqual(before);
+    const fresh=await s4("changed-run");migrateFile(fresh,[...productMigrations(),changedStep()]);
+    expect(snap(fresh).get("test_k6_timeline")).not.toEqual(before.get("test_k6_timeline"));
   });
 });
 
@@ -156,7 +249,7 @@ describe("백업 복원: staging에서 코드 단계로 올리기와 기록 불�
     const destination=join(root,"restored"),checked=await svc.inspect({backupId:manifest.backupId,destination});expect(checked).toMatchObject({compat:"upgrade",fromVersion:4,toVersion:5});
     await svc.finish(checked.ticketId);expect(upgraded).toHaveLength(1);
     const direct=await s4("direct");migrateFile(direct,list);expect(strip(upgraded[0])).toEqual(strip(snap(direct)));
-    const restored=new Database(join(destination,"data/app.db"),{readonly:true});try{expect(journal(restored)?.at(-1)).toEqual({version:5,name:"0005_test_only_code.ts",sha256:TEST5_CODE_SHA256});expect((restored.prepare("SELECT COUNT(*) n FROM test_k6_timeline").get() as {n:number}).n).toBeGreaterThan(0);}finally{restored.close();}
+    const restored=new Database(join(destination,"data/app.db"),{readonly:true});try{expect(journal(restored)?.at(-1)).toEqual({version:5,name:"0005_test_only_code.cjs",sha256:TEST5_CODE_SHA256});expect((restored.prepare("SELECT COUNT(*) n FROM test_k6_timeline").get() as {n:number}).n).toBeGreaterThan(0);}finally{restored.close();}
     expect(await fileDigest(zip)).toEqual(before);
   },60000);
   it("코드 단계로 만든 백업: 같은 원문이면 같은 버전, 원문이 바뀌면 BACKUP_SCHEMA_MISMATCH, 코드 단계가 없으면 BACKUP_TOO_NEW",async()=>{
