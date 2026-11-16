@@ -40,7 +40,7 @@
 
 → T-101의 사실 기록과 같음.
 
-### 2.2 공식 문서 (2026-11-16 읽음, 페이지에 갱신 날짜 없음)
+### 2.2 공식 문서 (2026-11-16 읽음)
 
 - telemetry: "Server-side rendering only sends telemetry when a license key is set, and only for successful renders" / "Telemetry never throttles, blocks, or fails renders".
 - licenseKey 설명: 무료 대상이면 `"free-license"`를 넘겨 "declare your eligibility". **이 값으로 서버 렌더가 사용 기록을 보내는지는 문서에 적혀 있지 않음.**
@@ -75,8 +75,8 @@
 | 기존 파일 불변 | 새로 만들기·재시도·취소·실패·복원 어느 것도 예전 MP4를 덮거나 지우지 않음. 같은 버전 둘째부터 `-2` |
 | 백업 포함 상태 | 통과·취소 뒤 끝난 MP4 = 백업 포함. 그래서 복원 뒤 "파일 없음"은 **오류**로 보이고 원인 확인 안내. 확인 실패·취소로 정리된 임시 파일은 결과 행 기록만 |
 | 디스크 부족 | 시작 전 확인에서 막음(필요·남은 공간). 도중이면 실패 행. **자동 재시도 없음** — 사람이 공간을 비운 뒤 "다시 만들기" |
-| 무한 반복 금지 | 자동 재시도는 도구 중단(`RENDER_BROWSER_CRASHED`·lease 만료)과 `STORAGE_FAILED`만 최대 2번. 그 뒤엔 실패 행 + 사람이 다시 만들기. 결정적 실패(`RENDER_VERIFY_FAILED`·`RENDER_INPUT_CHANGED`·`FONT_MISSING`·`RENDER_INPUT_MISSING`·`DISK_FULL`)는 자동 재시도 0 |
-| 도구 없음 | `RENDER_BROWSER_MISSING`이면 시작 전 막고 설치 안내(스크립트 실행은 승인 뒤) |
+| 무한 반복 금지 | 자동 재시도는 도구 중단(`RENDER_BROWSER_CRASHED`·lease 만료)과 **일시적 입출력** `STORAGE_FAILED`만 최대 2번. 권한 없음·경로 없음·공간 부족 같은 영구 오류는 같은 원인으로 반복하지 않고 바로 실패 + 원인 안내. 그 뒤엔 실패 행 + 사람이 다시 만들기. 결정적 실패(`RENDER_VERIFY_FAILED`·`RENDER_INPUT_CHANGED`·`FONT_MISSING`·`RENDER_INPUT_MISSING`·`DISK_FULL`)는 자동 재시도 0 |
+| 도구 없음 | `RENDER_BROWSER_MISSING`이면 시작 전 막고 설치 안내(스크립트 실행은 Master 배정 뒤) |
 | 전체 동시 1 | 렌더가 도는 동안 다른 작업 화면에 "영상 만드는 중이라 기다려요" |
 | 수용 조건 | T-102 R-13~16 추가(외부 요청 0, 디스크 부족, 백업 복원 뒤 재생, 다른 작업 대기 표시) |
 
@@ -91,4 +91,4 @@
 ## 5. 미확인
 
 - 렌더를 실제로 돌려 외부 요청 0건을 본 것은 아님(T-101 완료 조건 6의 CDP 감사로 확인 예정).
-- 문서 페이지에 갱신 날짜가 없어, 읽은 날(2026-11-16) 기준.
+- 공식 문서 갱신 날짜: 내가 읽은 화면(가져오기 도구)에는 보이지 않았고, Master가 연 화면에는 Nov 16으로 표시됨(T-106 보충). 문서는 바뀔 수 있으므로 **판단 근거는 버전별 배포 코드(2.1)를 우선**함.
