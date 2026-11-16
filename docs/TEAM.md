@@ -985,6 +985,6 @@
 
 - CX-MASTER-01 is the sole overall coordinator, responsible for all work assignments/integration/testing/reports.
 - CX-DESIGN-01 / Codex design / term_bcdf8896-08ec-4087-b70f-8396c47841b3 discovered connected Codex session. New design/UI owner, T122 intake requested; acknowledgment pending.
-- CC-DESIGN-01 prior design owner: T121 handover requested (msg_479 if absent use actual request receipt, not assumed acceptance); no new design/UI assignment. Existing work preserved.
-- Actual handover request msg_cfc-placeholder must not be treated as delivery ID; authoritative tool receipts for this transition are msg IDs in the conversation. New intake request and coding-owner notice were actually sent.
 - T120 backend and T119 existing bounded UI work remain with their assigned writer until coordinated transfer; no concurrent edits.
+
+- T121 handover, T122 intake and coding-owner role-change notices were sent through Orca with terminal mailbox receipts; acceptance and completed handover remain unconfirmed.
