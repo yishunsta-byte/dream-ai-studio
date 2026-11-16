@@ -48,11 +48,15 @@
 - 범위: 백업/복원·migrate 실행 보조/DTO·최소 복원 UI·관련 tests와 가상 고정 s4/README/고유 T035 보고. 기존 migration0001~0004 변경·0005 추가·타임라인·실사용 data/storage/backups 접근 금지. planner 문서와 공용 상태는 별도 담당.
 - 완료 조건: 정확 prefix/manifest-DB 일치·staging 이관/후검증·원본 해시 보존·실패 정리·일관 사전스냅샷/동시 접근/배타 새파일·고정자료 회귀 및 전체 tests/lint/typecheck/build. upgrade는 테스트 전용 격리 migration 입력으로 검증. 커밋·근거·한계 반환 후 Master 통합과 독립 검수. 실제 사용자 DB 이관은 실행하지 않음.
 
-### T-036 · 사용자 승인·P1 종료 기준 반영 (parent=P1 종료) — ready
+### T-036 · 사용자 승인·P1 종료 기준 반영 (parent=P1 종료) — ready_review
+
+- 회수 msg_d584bbc7c47b / 375d9d7. Master 실제 diff에서 승인 근거/PLAN 종료/K6 선행을 확인해 채택했다. 확인페이지 지난 승인요청 문구와 고유 WORK-HISTORY의 T015 물리 정지 단정만 정정 요청했다. 히스토리는 사용자 별도 요청에 따라 Claude design 소유이며 Master가 덮어쓰지 않는다.
 
 - 담당 CC-DESIGN-01. 실제 요청 msg_3f0545fe3bb3. PLAN2.1/18 최소 이력·P1-USER-REVIEW.html 승인 상태·고유 보고서만 수정. 사용자 전달 msg_4b845849ef02 근거. 캡처/제품코드/TEAM/REVIEW/PROGRESS 불가침. 완료 조건은 두 승인과 독립PASS/P1 종료의 일관 반영 및 K6 준비 우선순위 보존.
 
-### T-037 · Remotion 공식 사용 조건 검증 (parent=P2 준비) — ready
+### T-037 · Remotion 공식 사용 조건 검증 (parent=P2 준비) — running
+
+- msg_d584bbc7c47b에서 담당의 실제 조사 착수 확인. 사용자 추가 지휘 지침 전달 수신: Claude design은 범위 내 기본 판단·후속 협조를 직접 진행하고 Master에 참조한다. 공통 범위/인터페이스/점유는 조정하고 통합·검증 책임은 Master가 유지한다.
 
 - 담당 CC-DESIGN-01, T036 뒤 순차. 같은 실제 요청 msg_3f0545fe3bb3. 허용 docs/handoffs/T-037-REMOTION-CONDITIONS.md만. 최신 공식 출처·확인일·player/render 및 사용자/조직 조건·비용·미확인 조직 정보·추천을 Master에 반환. 법률 확정/유료 구매/설치/계정 연결/사용자 중복 질문 금지. 실제 조사와 추정 구분.
 
