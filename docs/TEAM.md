@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-048 · 코드 데이터 이관 실행·소스 해시 계약 (parent=P2-1 준비, priority=P1) — ready
+### T-048 · 코드 데이터 이관 실행·소스 해시 계약 (parent=P2-1 준비, priority=P1) — running
+
+- 실제 수락·점유 msg_db6545646014 수신, 시작HEAD744cc34. 담당이 migration실행·소스해시보조/필요최소백업연결·관련tests/README·고유보고 범위를 확인했고 설계안 먼저 공유 예정이다.
 
 - CC-DATA-01 임시코딩, lib/db migration실행·명시적소스/해시보조·필요최소manifest연결/관련tests/README/고유보고. 기존SQL1~4/hash불변, 제품0005/타임라인/사용자DB/고정fixture덮기금지. verify와실행을구분하고실제소스·영향의존범위를versioned결합hash로기록,같은트랜잭션·결정성·옛행보존·직접/복원동등·실패rollback/사전snapshot·ZIP보존을테스트전용5단계로입증한다.
 - 관련/전체tests/lint/typecheck/build·근거·선택커밋반환후독립검수. 이번계약은0005전미완료조건이며현재SQL K6통과와구분한다.
