@@ -2,7 +2,8 @@
 .wrap { display:flex; flex-direction:column; gap:var(--sp-2); min-width:0; }
 .help { margin:0; font-size:var(--text-sm); color:var(--fg-muted); }
 .body { position:relative; min-width:0; user-select:none; }
-.ruler { position:relative; height:40px; border-bottom:1px solid var(--line); cursor:pointer; touch-action:none; }
+/* overflow:clip (T-103): ticks are placed from the measured width; until the new width is measured after the window narrows, they stay inside the ruler instead of widening the page. */
+.ruler { position:relative; height:40px; border-bottom:1px solid var(--line); cursor:pointer; touch-action:none; overflow:clip; }
 .ruler:focus { outline:none; }
 .ruler:focus-visible { outline:2px solid var(--line-focus); outline-offset:2px; border-radius:var(--radius-sm); }
 .tick, .major { position:absolute; bottom:0; width:1px; height:6px; background:var(--line); pointer-events:none; }

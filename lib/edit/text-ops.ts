@@ -164,7 +164,7 @@ export const hasLaterChanges=(changes:LaterChanges)=>changes.texts.length>0||cha
 // The recovery file (T-098): everything this screen had when a newer version from elsewhere came back, so nothing typed
 // is lost. It is only shown, copied or downloaded by the person; the app never saves or applies it.
 type VersionRef={revision:number;timelineId:string|null;timelineRevision:number|null};
-export type RecoveryInput={projectId:string;createdAt:string;sentFrom:VersionRef;ownSave:{revision:number;timelineId:string};
+export type RecoveryInput={projectId:string;createdAt:string;sentFrom:VersionRef;ownSave:{revision:number;timelineId:string;timelineRevision:number|null};
   shown:VersionRef;sent:Timeline;draft:Timeline;timeFields:Readonly<Record<string,{raw:string;error:string}>>;selectedTextId:string|null;selectedAtSend:string|null};
 export function recoveryJson(input:RecoveryInput):string{
   return JSON.stringify({format:"dream-ai-studio.timeline-recovery",version:1,

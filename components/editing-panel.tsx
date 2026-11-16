@@ -36,8 +36,8 @@ export async function finishingRequest(projectId:string,revision:number,action:s
 // what was changed after sending is listed for the person, never laid over it (no silent rebase, no merge), and the
 // whole last state of the screen (draft, typed time fields, selection, versions) stays available as a recovery file
 // to copy or download until the person closes it (T-098). The app never saves or applies that file.
-type Handover={owner:symbol;projectId:string;sentFrom:{revision:number;timelineId:string|null;timelineRevision:number|null};sent:Timeline;sentSelectedId:string|null;arrived:{revision:number;timelineId:string}|null;draft:Timeline;times:TimeState;selectedId:string|null};
-type Recovery={changes:LaterChanges;times:TimeState;selectionChanged:boolean;texts:Timeline["text"];json:string;fromRevision:number|null;shownRevision:number|null};
+type Handover={owner:symbol;projectId:string;sentFrom:{revision:number;timelineId:string|null;timelineRevision:number|null};sent:Timeline;sentSelectedId:string|null;arrived:{revision:number;timelineId:string;timelineRevision:number|null}|null;draft:Timeline;times:TimeState;selectedId:string|null};
+type Recovery={changes:LaterChanges;times:TimeState;selectionChanged:boolean;texts:Timeline["text"];json:string;fromRevision:number|null;ownRevision:number|null;shownRevision:number|null};
 let handover:Handover|null=null;
 const CONFLICT="다른 창에서 먼저 저장했어요. 지금 고친 내용은 그대로 있어요. 새로고침하면 고친 내용이 사라지니, 필요한 문구를 따로 적어 둔 뒤 새로고침해 주세요.";
 export function EditingPanel({data}:{data:EditingData}){return <Editor key={data.projectId} data={data}/>;}
@@ -55,7 +55,7 @@ function Editor({data}:{data:EditingData}){
   if(!hasLaterChanges(changes)&&!Object.keys(from.times).length&&!selectionChanged)return null;
   const json=recoveryJson({projectId:data.projectId,createdAt:new Date().toISOString(),sentFrom:from.sentFrom,ownSave:from.arrived,shown:{revision:data.revision,timelineId:data.timelineId,timelineRevision:data.current?.revision??null},
    sent:from.sent,draft:from.draft,timeFields:from.times,selectedTextId:from.selectedId,selectedAtSend:from.sentSelectedId});
-  const missed:Recovery={changes,times:from.times,selectionChanged,texts:[...from.draft.text,...from.sent.text],json,fromRevision:from.sentFrom.timelineRevision,shownRevision:data.current?.revision??null};
+  const missed:Recovery={changes,times:from.times,selectionChanged,texts:[...from.draft.text,...from.sent.text],json,fromRevision:from.sentFrom.timelineRevision,ownRevision:from.arrived.timelineRevision,shownRevision:data.current?.revision??null};
   return {draft:initial,kept:false,times:{},selectedId:from.selectedId,missed};});
  const [draft,setDraft]=useState<Timeline>(took?.draft??initial),[frameStore]=useState(createFrameStore);
  const [selectedId,setSelectedId]=useState<string|null>(took?.selectedId&&(took.draft.text.some(layer=>layer.id===took.selectedId))?took.selectedId:initial.text[0]?.id??null);
@@ -109,7 +109,7 @@ function Editor({data}:{data:EditingData}){
    if(!response.ok)throw new Error(response.status===409?CONFLICT:result.error??"저장하지 못했어요.");
    if(result.result?.created===false){if(handover?.owner===me)handover=null;setSaving(null);notify({tone:"success",message:"바뀐 내용이 없어 새 버전을 만들지 않았어요."});statusRef.current?.focus();return;}
    notify({tone:"success",message:"새 타임라인 버전을 저장했어요. 현재 내용으로 다시 검수해 주세요."});
-   const arrived=result.result&&typeof result.result.revision==="number"&&typeof result.result.timelineId==="string"?{revision:result.result.revision as number,timelineId:result.result.timelineId as string}:null;
+   const arrived=result.result&&typeof result.result.revision==="number"&&typeof result.result.timelineId==="string"?{revision:result.result.revision as number,timelineId:result.result.timelineId as string,timelineRevision:typeof result.result.timelineRevision==="number"?result.result.timelineRevision as number:null}:null;
    if(handover?.owner===me)handover=arrived?{...handover,arrived}:null;setSaving("refresh");startRefresh(()=>router.refresh());
   }catch(error){if(!mounted.current)return;if(handover?.owner===me)handover=null;setSaving(null);setError((error as Error).message);requestAnimationFrame(()=>errorRef.current?.focus());}
   finally{posting.current=false;}}
@@ -130,7 +130,7 @@ function Editor({data}:{data:EditingData}){
   {stale&&<Callout title="선택한 장면 결과가 바뀌었어요." tone="warning">저장한 타임라인과 지금 선택이 달라요. 이 화면은 지금 선택으로 보여 줘요. 저장해야 검수로 넘어갈 수 있어요.</Callout>}
   {empty>0&&<Callout title={`결과를 선택하지 않은 장면이 ${empty}개 있어요.`} tone="warning">빈 자리로 순서와 길이만 지켜요. 내보내기 전에 만들기 단계에서 결과를 선택해 주세요.</Callout>}
   {error&&<p role="alert" ref={errorRef} tabIndex={-1}>{error}</p>}
-  {missed&&<div ref={missedRef} tabIndex={-1} className={editorStyles.missed}><RecoveryBox recovery={missed} onClose={()=>{setMissed(null);requestAnimationFrame(()=>statusRef.current?.focus());}}/></div>}
+  {missed&&<div ref={missedRef} tabIndex={-1} className={editorStyles.missed} role="region" aria-label="저장하는 동안 다른 창에서 더 새 버전을 저장했어요."><RecoveryBox recovery={missed} onClose={()=>{setMissed(null);requestAnimationFrame(()=>statusRef.current?.focus());}}/></div>}
   <div className={styles.editor}>
    <Card><div className="stack"><h2>미리보기</h2>
     <PlayerLoader projectId={data.projectId} timeline={draft} savedAspect={data.aspect as Timeline["aspect"]} assets={assets} dirty={dirty} timeInvalid={timeInvalid} fonts={data.fonts} selectedTextId={selectedId} textWarnings={warned} controlRef={controlRef} frameStore={frameStore}/>
@@ -155,27 +155,31 @@ function MissedItem({item}:{item:LaterChange}){
  return <li><span className={editorStyles.missedHead}>{CHANGE_LABEL[item.change]}</span> · {kindLabel(item.kind)} · {formatFrameTime(item.timing.startFrame)}–{formatFrameTime(item.timing.endFrame)}{item.parts.length>0&&<> · 바뀐 것: {item.parts.map(part=>TEXT_PART_LABEL[part]).join(", ")}</>}<br/><span className={editorStyles.missedText}>{item.content||"문구 없음"}</span></li>;
 }
 // T-098: what was done after sending, kept as a recovery file (copy / download) until the person closes it.
+// T-099 C-1~5: a failed copy is announced and moves to the full text (selected); a download is only "started".
 function RecoveryBox({recovery,onClose}:{recovery:Recovery;onClose:()=>void}){
- const [said,setSaid]=useState(""),[blocked,setBlocked]=useState(false);
+ const [said,setSaid]=useState(""),[blocked,setBlocked]=useState(0),areaRef=useRef<HTMLTextAreaElement>(null);
  const {changes,times}=recovery,typed=Object.entries(times);
  const textName=(id:string)=>{const layer=recovery.texts.find(item=>item.id===id);return layer?`${kindLabel(layer.kind)} "${layer.content.slice(0,20)}"`:"글자";};
+ useEffect(()=>{if(blocked){areaRef.current?.focus();areaRef.current?.select();}},[blocked]);
  function copy(){
-  const failed=()=>{setBlocked(true);setSaid("");};
-  try{void navigator.clipboard.writeText(recovery.json).then(()=>{setBlocked(false);setSaid("복사했어요. 메모장 같은 곳에 붙여 두세요.");},failed);}catch{failed();}
+  const failed=()=>{setSaid("복사하지 못했어요. 아래 칸의 내용을 모두 골라 복사해 주세요.");setBlocked(count=>count+1);};
+  try{void navigator.clipboard.writeText(recovery.json).then(()=>setSaid("복사했어요. 메모장 같은 곳에 붙여 두세요."),failed);}catch{failed();}
  }
  function download(){const url=URL.createObjectURL(new Blob([recovery.json],{type:"application/json"})),link=document.createElement("a");
   link.href=url;link.download=recoveryFileName(recovery.fromRevision,recovery.shownRevision,new Date());document.body.append(link);link.click();link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),10_000);setSaid("파일을 받았어요. 브라우저의 내려받기 폴더를 확인해 주세요.");}
+  setTimeout(()=>URL.revokeObjectURL(url),10_000);setSaid("내려받기를 시작했어요. 브라우저의 내려받기 목록에서 파일을 확인해 주세요.");}
+ const r=(n:number|null)=>n===null?"":` r${n}`;
  return <Callout tone="warning" title="저장하는 동안 다른 창에서 더 새 버전을 저장했어요.">
-  <p>지금 화면은 그 새 버전{recovery.shownRevision!==null?` (타임라인 r${recovery.shownRevision})`:""}이에요.</p>
+  <p>보낸 내용은 타임라인{r(recovery.ownRevision)}로 저장됐고, 그 뒤 다른 창이{r(recovery.shownRevision)}을 저장했어요. 지금 화면은 그 새 버전이에요.</p>
   <p>저장을 보낸 뒤 고친 내용은 이 버전에 넣지 않았어요. 아래 복구 자료를 복사하거나 파일로 받아 두고, 필요한 것만 다시 고쳐 주세요. 복구 자료는 자동으로 저장하거나 적용하지 않아요.</p>
   <ul>{changes.texts.map(item=><MissedItem key={item.change+item.id} item={item}/>)}
    {changes.order&&<li>장면 순서를 바꿨어요.</li>}{changes.textOrder&&<li>글자 순서(앞으로·뒤로)를 바꿨어요.</li>}{changes.other&&<li>그 밖의 타임라인 설정을 바꿨어요.</li>}
    {typed.map(([key,field])=><li key={key}>시간 칸에 적다 만 값 · {textName(key.split(":")[0])} {key.endsWith(":start")?"시작":"끝"}: <span className={editorStyles.missedText}>{field.raw||"(빈 칸)"}</span></li>)}
    {recovery.selectionChanged&&<li>고른 글자를 바꿨어요.</li>}</ul>
   <div className={editorStyles.recoveryActions}><Button variant="secondary" size="sm" onClick={copy}>복구 자료 복사</Button><Button variant="secondary" size="sm" onClick={download}>파일로 받기</Button></div>
+  <p className="muted">복구 자료에는 적은 문구가 그대로 들어 있어요. 다른 사람에게 보낼 때 확인해 주세요.</p>
   <p role="status" className="muted">{said}</p>
-  {blocked&&<div className="stack"><p>복사하지 못했어요. 아래 내용을 모두 골라 복사해 주세요.</p><textarea className={editorStyles.recoveryText} readOnly value={recovery.json} aria-label="복구 자료 (JSON)" onFocus={event=>event.currentTarget.select()}/></div>}
+  {blocked>0&&<textarea ref={areaRef} className={editorStyles.recoveryText} readOnly value={recovery.json} aria-label="복구 자료 (JSON) · 모두 골라 복사해 주세요" onFocus={event=>event.currentTarget.select()}/>}
   <p>닫으면 이 목록과 복구 자료는 다시 볼 수 없어요. 다른 화면으로 가거나 새로고침해도 사라져요.</p>
   <Button variant="secondary" size="sm" onClick={onClose}>확인했어요</Button>
  </Callout>;

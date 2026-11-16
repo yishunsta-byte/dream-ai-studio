@@ -128,13 +128,22 @@ describe("복구 자료 (T-098)",()=>{
   });
   it("복구 자료는 보낸 것·마지막 초안 전체·시간 칸 입력·고른 글자·버전을 그대로 담음",()=>{
     const sent=tl([layer("a","A")]),draft=tl([layer("a","A2",{style:{fontSize:44,color:"#f00"}})]);
-    const json=recoveryJson({projectId:"p",createdAt:"2026-11-16T00:00:00.000Z",sentFrom:{revision:1,timelineId:"t1",timelineRevision:1},ownSave:{revision:2,timelineId:"t2"},
+    const json=recoveryJson({projectId:"p",createdAt:"2026-11-16T00:00:00.000Z",sentFrom:{revision:1,timelineId:"t1",timelineRevision:1},ownSave:{revision:2,timelineId:"t2",timelineRevision:2},
       shown:{revision:3,timelineId:"t3",timelineRevision:3},sent,draft,timeFields:{"a:start":{raw:"bad",error:"x"}},selectedTextId:"a",selectedAtSend:null});
     const back=JSON.parse(json);expect(back.format).toBe("dream-ai-studio.timeline-recovery");expect(back.draft).toEqual(draft);expect(back.sent).toEqual(sent);
-    expect(back.timeFields).toEqual({"a:start":{raw:"bad",error:"x"}});expect(back.ownSave).toEqual({revision:2,timelineId:"t2"});expect(back.selectedAtSend).toBeNull();
+    expect(back.timeFields).toEqual({"a:start":{raw:"bad",error:"x"}});expect(back.ownSave).toEqual({revision:2,timelineId:"t2",timelineRevision:2});expect(back.selectedAtSend).toBeNull();
   });
   it("파일 이름: 보낸 기준 r에서 새 r, 로컬 시각",()=>{
     expect(recoveryFileName(14,16,new Date(2026,10,16,9,5))).toBe("dream-timeline-recovery-r14-to-r16-20261116-0905.json");
     expect(recoveryFileName(null,3,new Date(2026,0,2,23,59))).toBe("dream-timeline-recovery-rnew-to-r3-20260102-2359.json");
+  });
+});
+
+describe("복구 상자·눈금 줄 표시 (T-103)",()=>{
+  it("눈금 줄은 잰 폭보다 늦게 줄어도 화면을 넓히지 않음, 복사 실패는 알리고 칸으로 초점, 내려받기는 시작만 알림",()=>{
+    const css=readFileSync("components/text-editor/text-timeline.module.css","utf8"),panel=readFileSync("components/editing-panel.tsx","utf8");
+    expect(css).toMatch(/\.ruler \{[^}]*overflow:clip;/);
+    expect(panel).toContain('role="region" aria-label="저장하는 동안 다른 창에서 더 새 버전을 저장했어요."');
+    expect(panel).toContain("if(blocked){areaRef.current?.focus();areaRef.current?.select();}");expect(panel).toContain("내려받기를 시작했어요.");expect(panel).not.toContain("파일을 받았어요");
   });
 });
