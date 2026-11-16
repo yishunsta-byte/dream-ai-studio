@@ -68,6 +68,31 @@
 
 - 2026-11-16 Claude design → CC-DATA-01: 문구 안 4개·Tab 정정(Master 참조). Master도 G-1~G-9를 T-071 담당에 전달함(내용 같음). 이후 작은 협조는 직접 보내고 Master에는 메시지 ID·결과만 공유.
 
+## 2.4 조기 읽기 (Master msg_dad0ee27ddd1)
+
+- **읽은 시점:** HEAD `b8d723c` + 커밋 전 T-071 작업 트리(`components/player/*`, `lib/edit/preview.ts`, `components/editing-panel.tsx`, `components/ui/{primitives,Icon}.tsx`·`ui.module.css`, `tests/p2-2-preview.test.ts`, `package.json`). 구현 중이라 **이후 바뀔 수 있고 확정 결함이 아니다.** 코드 읽기만으로 S 항목을 통과로 쓰지 않는다.
+- **전달:** CC-DATA-01에 `msg_48f395580cbe`(Master 참조).
+
+| 체크 | 읽은 결과 |
+|---|---|
+| R1 | `remotion`·`@remotion/player` `4.0.543` 정확, 다른 Remotion 패키지 없음 |
+| R2 | `controls`·`spaceKeyToPlayOrPause`·`clickToPlay` false, `acknowledgeRemotionLicense`, `document` 키 처리기 없음(`visibilitychange`만) |
+| R3 | 미리보기 파일에 fetch·router·POST 0 |
+| R4 | `formatFrameTime` 0·31·254·749·750 시험 있음 |
+| R5 | G-1·G-3·G-4·G-6 문구 반영, G-5 움직이는 글자 있을 때만. 아래 B-3 |
+| R6 | 아이콘 4개(play·pause·step-back·step-forward)·`Badge variant="dashed"`만 추가, 토큰만 |
+| R7 | 버전 목록·영상 만들기 버튼 추가 없음 |
+| 390 구조 | 문구 칸만 보이고 종류·크기·색·위치·시간·추가·빼기·장면 순서는 `pcOnly` |
+
+| # | 구분 | 근거 | 내용 | 추천 |
+|---|---|---|---|---|
+| B-1 | B 후보 | `player-panel.tsx:98` | "원래 비율로"를 누르면 그 줄이 사라져 초점이 body로 빠짐(G-7) | 누른 뒤 비율 무리의 저장 비율 버튼(또는 무대)으로 초점 이동 |
+| B-2 | B 후보 | `player-panel.tsx:100` | 무대 `aria-label`에 지금 시간이 들어가 재생 중 1초에 30번 바뀜 → 초점이 무대에 있으면 화면 읽기가 이름 변경을 읽을 수 있어 "재생 중 시간 안 읽힘"과 충돌. **원인은 T-068 4.2 문장(Claude design 명세 오류)** | 이름은 "미리보기 · 9:16"만, 시간은 기존 알림 칸(멈춤·키 0.3초 뒤)으로. 화면 읽기 실제 확인 전까지 미확인 |
+| B-3 | B 후보(뜻 오류) | `player-panel.tsx:128·129` | 키 안내 "글자 칸: 글자 고치기(앱이 가로채지 않음) · Space 재생·멈춤(글자 칸 제외)"가 서로 반대 뜻(시안 세 줄 중 클립 줄이 빠지며 섞임) | "재생 화면: Space 재생·멈춤 · ←/→ 1/30초 · Shift+←/→ 1초 · Home/End 처음·끝" / "글자 칸: 글자만 고쳐요. 미리보기가 키를 가로채지 않아요." |
+| C-1 | C | `player-loader.tsx:8` | 불러오는 중 칸이 늘 9:16 → 16:9·1:1 프로젝트는 준비 뒤 높이가 튐 | 저장 비율 사용 |
+| C-2 | C | `editing-panel.tsx` 휴대폰 Callout | "타임라인 편집은 PC에서 해요." — P2-2에는 타임라인 화면이 없음 | "장면 순서·글자 모양·시간은 PC에서 바꿔요." |
+| C-3 | 기록 | `player-panel.tsx:123` | 미리보기 위치 안내가 1회 Toast 대신 계속 보이는 줄 | 지금 방식 수용 가능 |
+
 ## 3. 반환 뒤 결과
 
 (T-071 완료 신호 뒤 작성)
