@@ -48,6 +48,29 @@
 - P1 정적 편집기 스키마 `lib/edit/schema.ts`(`textLayerSchema`, 0003 스냅샷 읽기용)는 **고치지 않아요.** 0005 원문과 그 등록 해시도 그대로예요.
 - 시험: 옛 고정 백업 s4·s5를 0005로 옮긴 행이 새 스키마에서도 그대로 읽히고 해시가 같은지 확인해요.
 
+### 2.1.1 `fontFamily` 넓히기가 0005·고정 r1·역호환에 미치는 영향 (Master `msg_9b3ecc4aa9ac` 요청 보충)
+
+| 대상 | 영향 | 근거(코드) |
+|---|---|---|
+| 0005 원문·등록 해시 | **없음.** 0005는 `0005_timeline_shared.cjs`가 `"Pretendard"`를 직접 써요. TS 스키마를 import하지 않아요. 파일을 고치지 않으므로 선언 해시도 같아요 | `0005_timeline_shared.cjs` 33행 |
+| 고정 r1(s4·s5) 읽기 | **없음.** `readTimelineRow`는 `timelineSchema.parse` 후 `canonicalJson`·sha256이 저장 바이트와 같은지 봐요. 허용 목록을 넓혀도 `"Pretendard"`는 그대로 통과하고, zod enum은 값을 바꾸지 않아 바이트·해시가 같아요 | `lib/db/timeline-data.ts` 39~42행 |
+| 옮긴 r1 대조 | **없음.** `checkP1MigratedRow`는 `textFromP1`(Pretendard 고정, 바꾸지 않음)과 글자를 통째로 비교해요. 그래서 다른 글꼴이 들어간 `p1-migration` 행은 지금처럼 "text" 불일치로 거절돼요 | 같은 파일 59행 |
+| 기존 ZIP·SRT | **없음.** 옛 묶음은 manifest 해시로 재검증해요. `text_overlays.json`·SRT를 만드는 경로(`editView`)는 바뀌지 않아요 | `lib/services/exports.ts` |
+| P1 값 해석 | **없음.** P1 `textLayerSchema`(`lib/edit/schema.ts`)와 `fromP1Values` 변환은 고치지 않아요. 새 단위(예: letterSpacing px)를 정하더라도 P1에서 옮긴 값은 모두 0·null이라 해석이 달라질 값이 없어요 | `textFromP1` |
+| **되돌린 앱(옛 빌드)** | **있음.** P2-3 이후 Pretendard가 아닌 글꼴로 저장한 행이나 그 백업을 P2-3 이전 빌드에서 열면 `timelineSchema.parse`가 실패해요. 그러면 "저장한 타임라인을 확인해 주세요."로 막혀요(조용히 바꾸지는 않음) | — |
+| **글꼴을 목록에서 뺄 때** | **있음.** 스키마 enum을 `fonts.json`에서 바로 만들면, 나중에 spec에서 글꼴을 빼는 순간 그 글꼴로 저장된 옛 버전을 **읽을 수 없게** 돼요 | — |
+
+추천(구현 배정 때 반영):
+- **읽기 허용 목록과 선택 목록을 나눠요.**
+  - `READABLE_FONT_FAMILIES`(코드 상수): 한 번 넣으면 빼지 않아요. 지금은 `fonts.json` 8종과 같은지 시험으로 확인해요.
+  - **선택 가능** = `fonts.json` ∩ 설치·라이선스 통과: 서버 저장 검사와 화면 목록에만 써요.
+- 시험을 추가해요.
+  - ① s4·s5를 0005로 옮긴 r1의 `timeline_json`·sha256이 넓히기 전후로 바이트 단위 같아요.
+  - ② `checkTimelineRows`·`verifyTimelineMigration`이 그대로 통과해요.
+  - ③ 다른 글꼴로 바꾼 `p1-migration` 행은 `P1SourceMismatchError`예요.
+  - ④ `READABLE_FONT_FAMILIES`는 `fonts.json`을 모두 포함해요(빼면 실패).
+- 옛 빌드로 되돌리는 경우는 PLAN에 앱 되돌리기 절차가 없어서 막지 않아요. 문서에는 "P2-3 이후 다른 글꼴로 저장한 백업은 P2-3 이전 앱에서 열리지 않음"을 적어 둬요.
+
 ### 2.2 화면·데이터 함수 (새 파일 `lib/edit/text-ops.ts`, 순수·클라이언트 안전)
 
 모든 함수는 입력을 바꾸지 않고 새 `Timeline`을 돌려줘요(얼린 입력으로 시험).
