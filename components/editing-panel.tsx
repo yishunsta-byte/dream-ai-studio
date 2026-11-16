@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type 
 import { useRouter } from "next/navigation";
 import type { EditingData } from "@/lib/services/editing";
 import { canonicalJson, framesToSeconds, textEndLimit, timelineSrt, totalFrames, type Timeline } from "@/lib/edit/timeline";
-import { afterSave, beyondVideo, laterChanges, liveTimeFields, replaceText, safeViolations, type LaterChange } from "@/lib/edit/text-ops";
+import { afterSave, beyondVideo, hasLaterChanges, laterChanges, liveTimeFields, recoveryFileName, recoveryJson, replaceText, safeViolations, TEXT_PART_LABEL, type LaterChange, type LaterChanges } from "@/lib/edit/text-ops";
 import { kindLabel } from "@/lib/edit/presets";
 import { formatFrameTime } from "@/lib/edit/preview";
 import { Badge, Button, Card, Callout } from "./ui/primitives";
@@ -33,8 +33,11 @@ export async function finishingRequest(projectId:string,revision:number,action:s
 // (F093-2). No time limit: a slow refresh keeps everything.
 // It is taken over only by the editor of exactly the version this save made (content revision + timeline id from the
 // save's answer, T-096 F096-1). If the refresh brings a newer version saved elsewhere, that version is shown as it is:
-// what was changed after sending is listed for the person, never laid over it (no silent rebase, no merge).
-type Handover={owner:symbol;projectId:string;sent:Timeline;arrived:{revision:number;timelineId:string}|null;draft:Timeline;times:TimeState;selectedId:string|null};
+// what was changed after sending is listed for the person, never laid over it (no silent rebase, no merge), and the
+// whole last state of the screen (draft, typed time fields, selection, versions) stays available as a recovery file
+// to copy or download until the person closes it (T-098). The app never saves or applies that file.
+type Handover={owner:symbol;projectId:string;sentFrom:{revision:number;timelineId:string|null;timelineRevision:number|null};sent:Timeline;sentSelectedId:string|null;arrived:{revision:number;timelineId:string}|null;draft:Timeline;times:TimeState;selectedId:string|null};
+type Recovery={changes:LaterChanges;times:TimeState;selectionChanged:boolean;texts:Timeline["text"];json:string;fromRevision:number|null;shownRevision:number|null};
 let handover:Handover|null=null;
 const CONFLICT="다른 창에서 먼저 저장했어요. 지금 고친 내용은 그대로 있어요. 새로고침하면 고친 내용이 사라지니, 필요한 문구를 따로 적어 둔 뒤 새로고침해 주세요.";
 export function EditingPanel({data}:{data:EditingData}){return <Editor key={data.projectId} data={data}/>;}
@@ -47,12 +50,17 @@ function Editor({data}:{data:EditingData}){
  // Taken over from the saving editor of the previous revision (read, not cleared: a thrown-away render may read again).
  const [took]=useState(()=>{const from=handover;if(!from||!from.arrived||from.owner===me||from.projectId!==data.projectId)return null;
   if(from.arrived.revision===data.revision&&from.arrived.timelineId===data.timelineId)return {...afterSave(from.draft,from.sent,initial),times:from.times,selectedId:from.selectedId,missed:null};
-  // A newer version from elsewhere: shown as it is. Changes made after sending (if any) are only listed.
-  const missed=laterChanges(from.sent,from.draft);return missed.texts.length||missed.order?{draft:initial,kept:false,times:{},selectedId:from.selectedId,missed}:null;});
+  // A newer version from elsewhere: shown as it is. Anything done after sending is kept as a recovery file, never applied.
+  const changes=laterChanges(from.sent,from.draft),selectionChanged=from.selectedId!==from.sentSelectedId;
+  if(!hasLaterChanges(changes)&&!Object.keys(from.times).length&&!selectionChanged)return null;
+  const json=recoveryJson({projectId:data.projectId,createdAt:new Date().toISOString(),sentFrom:from.sentFrom,ownSave:from.arrived,shown:{revision:data.revision,timelineId:data.timelineId,timelineRevision:data.current?.revision??null},
+   sent:from.sent,draft:from.draft,timeFields:from.times,selectedTextId:from.selectedId,selectedAtSend:from.sentSelectedId});
+  const missed:Recovery={changes,times:from.times,selectionChanged,texts:[...from.draft.text,...from.sent.text],json,fromRevision:from.sentFrom.timelineRevision,shownRevision:data.current?.revision??null};
+  return {draft:initial,kept:false,times:{},selectedId:from.selectedId,missed};});
  const [draft,setDraft]=useState<Timeline>(took?.draft??initial),[frameStore]=useState(createFrameStore);
  const [selectedId,setSelectedId]=useState<string|null>(took?.selectedId&&(took.draft.text.some(layer=>layer.id===took.selectedId))?took.selectedId:initial.text[0]?.id??null);
  const [times,setTimes]=useState<TimeState>(took?.times??{}),[measure,setMeasure]=useState<MeasureResult|null>(null),[placeCheck,setPlaceCheck]=useState<ReadonlySet<string>>(()=>new Set());
- const [completing,setCompleting]=useState(false),[error,setError]=useState(""),[kept,setKept]=useState(!!took?.kept),[missed,setMissed]=useState(took?.missed??null),missedRef=useRef<HTMLDivElement>(null);const router=useRouter(),notify=useToast(),controlRef=useRef<PreviewControl|null>(null),statusRef=useRef<HTMLParagraphElement>(null),errorRef=useRef<HTMLParagraphElement>(null),formRef=useRef<HTMLFormElement>(null);
+ const [completing,setCompleting]=useState(false),[error,setError]=useState(""),[kept,setKept]=useState(!!took?.kept),[missed,setMissed]=useState<Recovery|null>(took?.missed??null),missedRef=useRef<HTMLDivElement>(null);const router=useRouter(),notify=useToast(),controlRef=useRef<PreviewControl|null>(null),statusRef=useRef<HTMLParagraphElement>(null),errorRef=useRef<HTMLParagraphElement>(null),formRef=useRef<HTMLFormElement>(null);
  const [saving,setSaving]=useState<"post"|"refresh"|null>(null),[refreshing,startRefresh]=useTransition(),mounted=useRef(true),posting=useRef(false);
  useEffect(()=>{mounted.current=true;
   // The saved version is on screen: focus on its saved-state line (T-084 C-2).
@@ -88,12 +96,13 @@ function Editor({data}:{data:EditingData}){
   timeErrors:new Set(Object.keys(liveTimes).map(key=>key.split(":")[0]))}),[draft.text,savedText,warnings,liveTimes]);
  const scenes=useMemo(()=>draft.video.map((clip,index)=>({startFrame:totalFrames(draft.video.slice(0,index)),label:`장면 ${index+1}`})),[draft.video]);
  const rowFrames=Math.max(limitFrames,videoFrames,30,...draft.text.map(layer=>layer.timing.endFrame));
- useEffect(()=>{if(!dirty)return;const onLeave=(event:BeforeUnloadEvent)=>{event.preventDefault();};window.addEventListener("beforeunload",onLeave);return ()=>window.removeEventListener("beforeunload",onLeave);},[dirty]);
+ // Unsaved changes, or a recovery file not closed yet: the browser asks before a reload or closing the window.
+ useEffect(()=>{if(!dirty&&!missed)return;const onLeave=(event:BeforeUnloadEvent)=>{event.preventDefault();};window.addEventListener("beforeunload",onLeave);return ()=>window.removeEventListener("beforeunload",onLeave);},[dirty,missed]);
  // Typed text is trimmed when saved; a text whose words did not change keeps its saved bytes (outer spaces too).
  function forSave():Timeline{const saved=new Map(initial.text.map(layer=>[layer.id,layer.content]));return {...draft,text:draft.text.map(layer=>saved.get(layer.id)===layer.content?layer:{...layer,content:layer.content.trim()})};}
  async function save(event?:FormEvent){event?.preventDefault();// Clicks before the screen shows the busy button (double click, Enter + click) send one POST only.
   if(timeInvalid||emptyText||busy||posting.current)return;posting.current=true;const sent=draft;setSaving("post");setError("");
-  handover={owner:me,projectId:data.projectId,sent,arrived:null,draft,times,selectedId};
+  handover={owner:me,projectId:data.projectId,sentFrom:{revision:data.revision,timelineId:data.timelineId,timelineRevision:data.current?.revision??null},sent,sentSelectedId:selectedId,arrived:null,draft,times,selectedId};
   try{const response=await fetch(`/api/projects/${data.projectId}/timeline`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"save",revision:data.revision,timelineId:data.timelineId,timeline:forSave()})});const result=await response.json();
    // An editor that is gone (the page was left) does nothing with a late answer.
    if(!mounted.current)return;
@@ -121,11 +130,7 @@ function Editor({data}:{data:EditingData}){
   {stale&&<Callout title="선택한 장면 결과가 바뀌었어요." tone="warning">저장한 타임라인과 지금 선택이 달라요. 이 화면은 지금 선택으로 보여 줘요. 저장해야 검수로 넘어갈 수 있어요.</Callout>}
   {empty>0&&<Callout title={`결과를 선택하지 않은 장면이 ${empty}개 있어요.`} tone="warning">빈 자리로 순서와 길이만 지켜요. 내보내기 전에 만들기 단계에서 결과를 선택해 주세요.</Callout>}
   {error&&<p role="alert" ref={errorRef} tabIndex={-1}>{error}</p>}
-  {missed&&<div ref={missedRef} tabIndex={-1} className={editorStyles.missed}><Callout tone="warning" title="저장하는 동안 다른 창에서 더 새 버전을 저장했어요.">
-   <p>지금 화면은 그 새 버전{data.current?` (타임라인 r${data.current.revision})`:""}이에요. 저장을 보낸 뒤 고친 내용은 이 버전에 넣지 않았어요. 아래를 보고 필요한 것만 다시 고쳐 주세요.</p>
-   <ul>{missed.texts.map(item=><MissedItem key={item.change+item.id} item={item}/>)}{missed.order&&<li>장면 순서를 바꿨어요.</li>}</ul>
-   <Button variant="secondary" size="sm" onClick={()=>{setMissed(null);requestAnimationFrame(()=>statusRef.current?.focus());}}>확인했어요</Button>
-  </Callout></div>}
+  {missed&&<div ref={missedRef} tabIndex={-1} className={editorStyles.missed}><RecoveryBox recovery={missed} onClose={()=>{setMissed(null);requestAnimationFrame(()=>statusRef.current?.focus());}}/></div>}
   <div className={styles.editor}>
    <Card><div className="stack"><h2>미리보기</h2>
     <PlayerLoader projectId={data.projectId} timeline={draft} savedAspect={data.aspect as Timeline["aspect"]} assets={assets} dirty={dirty} timeInvalid={timeInvalid} fonts={data.fonts} selectedTextId={selectedId} textWarnings={warned} controlRef={controlRef} frameStore={frameStore}/>
@@ -147,5 +152,31 @@ function Editor({data}:{data:EditingData}){
 }
 const CHANGE_LABEL={changed:"고친 글자",added:"새로 넣은 글자",removed:"뺀 글자"} as const;
 function MissedItem({item}:{item:LaterChange}){
- return <li><span className={editorStyles.missedHead}>{CHANGE_LABEL[item.change]}</span> · {kindLabel(item.kind)} · {formatFrameTime(item.timing.startFrame)}–{formatFrameTime(item.timing.endFrame)}<br/><span className={editorStyles.missedText}>{item.content||"문구 없음"}</span></li>;
+ return <li><span className={editorStyles.missedHead}>{CHANGE_LABEL[item.change]}</span> · {kindLabel(item.kind)} · {formatFrameTime(item.timing.startFrame)}–{formatFrameTime(item.timing.endFrame)}{item.parts.length>0&&<> · 바뀐 것: {item.parts.map(part=>TEXT_PART_LABEL[part]).join(", ")}</>}<br/><span className={editorStyles.missedText}>{item.content||"문구 없음"}</span></li>;
+}
+// T-098: what was done after sending, kept as a recovery file (copy / download) until the person closes it.
+function RecoveryBox({recovery,onClose}:{recovery:Recovery;onClose:()=>void}){
+ const [said,setSaid]=useState(""),[blocked,setBlocked]=useState(false);
+ const {changes,times}=recovery,typed=Object.entries(times);
+ const textName=(id:string)=>{const layer=recovery.texts.find(item=>item.id===id);return layer?`${kindLabel(layer.kind)} "${layer.content.slice(0,20)}"`:"글자";};
+ function copy(){
+  const failed=()=>{setBlocked(true);setSaid("");};
+  try{void navigator.clipboard.writeText(recovery.json).then(()=>{setBlocked(false);setSaid("복사했어요. 메모장 같은 곳에 붙여 두세요.");},failed);}catch{failed();}
+ }
+ function download(){const url=URL.createObjectURL(new Blob([recovery.json],{type:"application/json"})),link=document.createElement("a");
+  link.href=url;link.download=recoveryFileName(recovery.fromRevision,recovery.shownRevision,new Date());document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),10_000);setSaid("파일을 받았어요. 브라우저의 내려받기 폴더를 확인해 주세요.");}
+ return <Callout tone="warning" title="저장하는 동안 다른 창에서 더 새 버전을 저장했어요.">
+  <p>지금 화면은 그 새 버전{recovery.shownRevision!==null?` (타임라인 r${recovery.shownRevision})`:""}이에요.</p>
+  <p>저장을 보낸 뒤 고친 내용은 이 버전에 넣지 않았어요. 아래 복구 자료를 복사하거나 파일로 받아 두고, 필요한 것만 다시 고쳐 주세요. 복구 자료는 자동으로 저장하거나 적용하지 않아요.</p>
+  <ul>{changes.texts.map(item=><MissedItem key={item.change+item.id} item={item}/>)}
+   {changes.order&&<li>장면 순서를 바꿨어요.</li>}{changes.textOrder&&<li>글자 순서(앞으로·뒤로)를 바꿨어요.</li>}{changes.other&&<li>그 밖의 타임라인 설정을 바꿨어요.</li>}
+   {typed.map(([key,field])=><li key={key}>시간 칸에 적다 만 값 · {textName(key.split(":")[0])} {key.endsWith(":start")?"시작":"끝"}: <span className={editorStyles.missedText}>{field.raw||"(빈 칸)"}</span></li>)}
+   {recovery.selectionChanged&&<li>고른 글자를 바꿨어요.</li>}</ul>
+  <div className={editorStyles.recoveryActions}><Button variant="secondary" size="sm" onClick={copy}>복구 자료 복사</Button><Button variant="secondary" size="sm" onClick={download}>파일로 받기</Button></div>
+  <p role="status" className="muted">{said}</p>
+  {blocked&&<div className="stack"><p>복사하지 못했어요. 아래 내용을 모두 골라 복사해 주세요.</p><textarea className={editorStyles.recoveryText} readOnly value={recovery.json} aria-label="복구 자료 (JSON)" onFocus={event=>event.currentTarget.select()}/></div>}
+  <p>닫으면 이 목록과 복구 자료는 다시 볼 수 없어요. 다른 화면으로 가거나 새로고침해도 사라져요.</p>
+  <Button variant="secondary" size="sm" onClick={onClose}>확인했어요</Button>
+ </Callout>;
 }

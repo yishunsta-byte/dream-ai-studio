@@ -138,17 +138,45 @@ export function rulerSteps(totalFrames:number,widthPx:number){
 export function afterSave(current:Timeline,sent:Timeline,saved:Timeline):{draft:Timeline;kept:boolean}{
   const kept=canonicalJson(current)!==canonicalJson(sent);return {draft:kept?current:saved,kept};
 }
-// What was changed after a save was sent (T-096 F096-1): listed for the person when the version that came back is not
-// this save's, never put into that version. Texts in the order of the newer draft; removed texts after them.
-export type LaterChange={id:string;change:"changed"|"added"|"removed";kind:TextKind;content:string;timing:TimelineText["timing"]};
-export function laterChanges(sent:Timeline,later:Timeline):{texts:LaterChange[];order:boolean}{
+// What was changed after a save was sent (T-096 F096-1, T-098): listed for the person when the version that came back
+// is not this save's, never put into that version. Texts in the order of the newer draft; removed texts after them.
+// Every field counts (words, time, look, box, motion, ...); the full data goes into the recovery file below.
+export type TextPart="content"|"timing"|"style"|"box"|"animation"|"kind"|"locked"|"speakerCharacterId"|"other";
+export const TEXT_PART_LABEL:Record<TextPart,string>={content:"문구",timing:"시간",style:"모양(글꼴·크기·색·외곽선·띠·그림자)",box:"위치",animation:"움직임",kind:"종류",locked:"잠금",speakerCharacterId:"말하는 사람",other:"그 밖의 설정"};
+export type LaterChange={id:string;change:"changed"|"added"|"removed";kind:TextKind;content:string;timing:TimelineText["timing"];parts:TextPart[]};
+export type LaterChanges={texts:LaterChange[];order:boolean;textOrder:boolean;other:boolean};
+function changedParts(a:TimelineText,b:TimelineText):TextPart[]{
+  const keys=new Set([...Object.keys(a),...Object.keys(b)]),parts=new Set<TextPart>();
+  for(const key of keys){if(key==="id")continue;const x=(a as Record<string,unknown>)[key],y=(b as Record<string,unknown>)[key];
+    if(canonicalJson(x??null)===canonicalJson(y??null))continue;parts.add(key in TEXT_PART_LABEL?key as TextPart:"other");}
+  return [...parts];
+}
+export function laterChanges(sent:Timeline,later:Timeline):LaterChanges{
   const before=new Map(sent.text.map(layer=>[layer.id,layer])),now=new Set(later.text.map(layer=>layer.id)),texts:LaterChange[]=[];
-  for(const layer of later.text){const old=before.get(layer.id);if(old&&canonicalJson(old)===canonicalJson(layer))continue;
-    texts.push({id:layer.id,change:old?"changed":"added",kind:layer.kind,content:layer.content,timing:layer.timing});}
-  for(const layer of sent.text)if(!now.has(layer.id))texts.push({id:layer.id,change:"removed",kind:layer.kind,content:layer.content,timing:layer.timing});
-  return {texts,order:canonicalJson(sent.video)!==canonicalJson(later.video)};
+  for(const layer of later.text){const old=before.get(layer.id);const parts=old?changedParts(old,layer):[];if(old&&!parts.length)continue;
+    texts.push({id:layer.id,change:old?"changed":"added",kind:layer.kind,content:layer.content,timing:layer.timing,parts});}
+  for(const layer of sent.text)if(!now.has(layer.id))texts.push({id:layer.id,change:"removed",kind:layer.kind,content:layer.content,timing:layer.timing,parts:[]});
+  const kept=(timeline:Timeline)=>timeline.text.filter(layer=>before.has(layer.id)&&now.has(layer.id)).map(layer=>layer.id).join("\n");
+  const rest=(timeline:Timeline)=>canonicalJson({...timeline,text:null,video:null});
+  return {texts,order:canonicalJson(sent.video)!==canonicalJson(later.video),textOrder:kept(sent)!==kept(later),other:rest(sent)!==rest(later)};
+}
+export const hasLaterChanges=(changes:LaterChanges)=>changes.texts.length>0||changes.order||changes.textOrder||changes.other;
+// The recovery file (T-098): everything this screen had when a newer version from elsewhere came back, so nothing typed
+// is lost. It is only shown, copied or downloaded by the person; the app never saves or applies it.
+type VersionRef={revision:number;timelineId:string|null;timelineRevision:number|null};
+export type RecoveryInput={projectId:string;createdAt:string;sentFrom:VersionRef;ownSave:{revision:number;timelineId:string};
+  shown:VersionRef;sent:Timeline;draft:Timeline;timeFields:Readonly<Record<string,{raw:string;error:string}>>;selectedTextId:string|null;selectedAtSend:string|null};
+export function recoveryJson(input:RecoveryInput):string{
+  return JSON.stringify({format:"dream-ai-studio.timeline-recovery",version:1,
+    note:"저장하는 동안 다른 창에서 더 새 버전을 저장해서, 저장을 보낸 뒤 고친 내용을 그 버전에 넣지 않았어요. draft가 이 화면의 마지막 내용 전체예요. 앱은 이 파일을 저장하거나 적용하지 않아요.",
+    ...input},null,2)+"\n";
 }
 // Typed time fields ("<id>:start" / "<id>:end") count only for texts that are still there (T-093 F093-3A).
 export function liveTimeFields<T>(fields:Readonly<Record<string,T>>,texts:readonly {id:string}[]):Record<string,T>{
   const ids=new Set(texts.map(text=>text.id));return Object.fromEntries(Object.entries(fields).filter(([key])=>ids.has(key.split(":")[0])));
+}
+// Recovery file name (T-098, design): dream-timeline-recovery-r{sent from}-to-r{shown}-{YYYYMMDD-HHmm}.json, local time.
+export function recoveryFileName(from:number|null,to:number|null,at:Date):string{
+  const two=(n:number)=>String(n).padStart(2,"0"),stamp=`${at.getFullYear()}${two(at.getMonth()+1)}${two(at.getDate())}-${two(at.getHours())}${two(at.getMinutes())}`;
+  return `dream-timeline-recovery-r${from??"new"}-to-r${to??"new"}-${stamp}.json`;
 }

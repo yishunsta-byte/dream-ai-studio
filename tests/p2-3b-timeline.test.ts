@@ -3,7 +3,7 @@
 // the frame store, and the boundaries (no page-wide keys, no server code, no fetch in the row).
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { afterSave, barKeyAction, clipKeyAction, laterChanges, liveTimeFields, rulerSteps, shiftTiming } from "@/lib/edit/text-ops";
+import { afterSave, barKeyAction, clipKeyAction, hasLaterChanges, laterChanges, liveTimeFields, recoveryFileName, recoveryJson, rulerSteps, shiftTiming } from "@/lib/edit/text-ops";
 import type { Timeline } from "@/lib/edit/timeline";
 import { createFrameStore } from "@/components/player/frame-store";
 
@@ -67,8 +67,10 @@ describe("경계",()=>{
     // T-093: one handover owned by the saving editor, gone with it; no time limit; a late answer of a gone editor does nothing.
     expect(panel.match(/^let /gm)).toEqual(["let "]);expect(panel).toContain("let handover:Handover|null=null;");expect(panel).toContain("if(!mounted.current)return;");
     expect(panel).toContain("return ()=>{mounted.current=false;if(handover?.owner===me)handover=null;};");// T-096 F096-1: taken over only by the editor of exactly the version this save made (its answer's revision + timeline id).
-    expect(panel).not.toContain("fromRevision");expect(panel).toContain("from.arrived.revision===data.revision&&from.arrived.timelineId===data.timelineId");
-    expect(panel).toContain("{draft:initial,kept:false,times:{},selectedId:from.selectedId,missed}");expect(panel).toContain("handover=arrived?{...handover,arrived}:null");
+    expect(panel).not.toContain("fromRevision!==data.revision");expect(panel).toContain("from.arrived.revision===data.revision&&from.arrived.timelineId===data.timelineId");
+    expect(panel).toContain("return {draft:initial,kept:false,times:{},selectedId:from.selectedId,missed};");
+    // T-098: the recovery file is only copied or downloaded, never sent; leaving asks while it is open.
+    expect(panel).toContain("if(!dirty&&!missed)return;");expect(panel.slice(panel.indexOf("function RecoveryBox"))).not.toMatch(/fetch\(|router\.|setDraft/);expect(panel).toContain("handover=arrived?{...handover,arrived}:null");
     expect(panel).toContain("startRefresh(()=>router.refresh())");expect(panel).not.toMatch(/Date\.now\(\)|30_000/);expect(panel).toContain("저장하는 동안 고친 내용은 아직 저장하지 않았어요.");
     expect(panel).toContain('response.status===409?CONFLICT');expect(panel).toContain("busy||posting.current)return;posting.current=true;");expect(panel).toContain("finally{posting.current=false;}");expect(panel).toContain('role="alert" ref={errorRef} tabIndex={-1}');
   });
@@ -110,6 +112,29 @@ describe("다른 창의 더 새 버전이 돌아왔을 때 (T-096 F096-1)",()=>{
   });
   it("시간만 옮겨도 고친 글자, 아무것도 안 고쳤으면 빈 목록",()=>{
     const sent=tl([layer("a","A")]);expect(laterChanges(sent,tl([layer("a","A",5)])).texts[0]).toMatchObject({change:"changed",timing:{startFrame:5,endFrame:35}});
-    expect(laterChanges(sent,sent)).toEqual({texts:[],order:false});
+    expect(laterChanges(sent,sent)).toEqual({texts:[],order:false,textOrder:false,other:false});
+  });
+});
+
+describe("복구 자료 (T-098)",()=>{
+  const layer=(id:string,content:string,extra:Record<string,unknown>={})=>({id,kind:"subtitle",content,speakerCharacterId:null,timing:{startFrame:0,endFrame:30},style:{fontSize:40,color:"#fff"},box:{x:0.5,y:0.8},animation:{in:"none"},locked:false,...extra});
+  const tl=(text:ReturnType<typeof layer>[],extra:Record<string,unknown>={}):Timeline=>({schemaVersion:1,aspect:"9:16",video:[],audio:[],text,...extra} as unknown as Timeline);
+  it("모양·위치·움직임만 바꿔도, 글자 순서만 바꿔도, 그 밖의 설정만 바꿔도 빠지지 않음",()=>{
+    const sent=tl([layer("a","A"),layer("b","B")]);
+    expect(laterChanges(sent,tl([layer("a","A",{style:{fontSize:44,color:"#fff"}}),layer("b","B")])).texts[0]?.parts).toEqual(["style"]);
+    expect(laterChanges(sent,tl([layer("a","A",{box:{x:0.4,y:0.8},animation:{in:"fade"}}),layer("b","B")])).texts[0]?.parts).toEqual(["box","animation"]);
+    const swapped=laterChanges(sent,tl([layer("b","B"),layer("a","A")]));expect(swapped.texts).toEqual([]);expect(swapped.textOrder).toBe(true);expect(hasLaterChanges(swapped)).toBe(true);
+    expect(laterChanges(sent,tl([layer("a","A"),layer("b","B")],{aspect:"1:1"})).other).toBe(true);
+  });
+  it("복구 자료는 보낸 것·마지막 초안 전체·시간 칸 입력·고른 글자·버전을 그대로 담음",()=>{
+    const sent=tl([layer("a","A")]),draft=tl([layer("a","A2",{style:{fontSize:44,color:"#f00"}})]);
+    const json=recoveryJson({projectId:"p",createdAt:"2026-11-16T00:00:00.000Z",sentFrom:{revision:1,timelineId:"t1",timelineRevision:1},ownSave:{revision:2,timelineId:"t2"},
+      shown:{revision:3,timelineId:"t3",timelineRevision:3},sent,draft,timeFields:{"a:start":{raw:"bad",error:"x"}},selectedTextId:"a",selectedAtSend:null});
+    const back=JSON.parse(json);expect(back.format).toBe("dream-ai-studio.timeline-recovery");expect(back.draft).toEqual(draft);expect(back.sent).toEqual(sent);
+    expect(back.timeFields).toEqual({"a:start":{raw:"bad",error:"x"}});expect(back.ownSave).toEqual({revision:2,timelineId:"t2"});expect(back.selectedAtSend).toBeNull();
+  });
+  it("파일 이름: 보낸 기준 r에서 새 r, 로컬 시각",()=>{
+    expect(recoveryFileName(14,16,new Date(2026,10,16,9,5))).toBe("dream-timeline-recovery-r14-to-r16-20261116-0905.json");
+    expect(recoveryFileName(null,3,new Date(2026,0,2,23,59))).toBe("dream-timeline-recovery-rnew-to-r3-20260102-2359.json");
   });
 });
