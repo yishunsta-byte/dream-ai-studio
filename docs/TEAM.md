@@ -802,3 +802,9 @@
 - T092 / CC-DESIGN-01 requested final TL/C5 design checks (msg_4250d4a4c0ee), unique report/history only.
 - T093 independent Codex dispatched ready: ctx_07aeaa8488e9 / task_58814ed0ed27 / term_b09f1d37-cf82-4ad1-a360-05e3036677d0; child p2-3b-track-review. Original-CRLF full checks, actual pointer/key queue/cancel/focus and delayed-save retention/CAS/cache boundary runtime verification. Report-only.
 - P2-3b not accepted yet; no further feature progression until mandatory findings resolved.
+
+### T092 final design review returned (2026-11-16)
+
+- c7addfc / msg_0e730478813c: B0; actual pointer/keys, delayed-save draft preservation/resave, conflict retention, preview-only DB equality on 1280/390. Direction accepted.
+- Minor C1 end-of-video label occlusion, C2 saving/conflict focus, C3 refresh guidance vs preserved draft noted. Shared with T093 for boundary assessment; current target held fixed, no uncoordinated product edits.
+- Actual device/screen reader/touch-pen remain unverified. Independent T093 verdict pending.
