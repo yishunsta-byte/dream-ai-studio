@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-050 · 코드 데이터 이관 해시 계약 독립 검수 (parent=T048, priority=P1) — ready
+### T-050 · 코드 데이터 이관 해시 계약 독립 검수 (parent=T048, priority=P1) — running
+
+- 실제worker ready dispatch ctx_08601a9a11e1 / task task_3c33bac20050 / terminal term_b273d3a7-3b37-4d24-b856-6ffd7084bcbb / child code-migration-contract-review. Orca wake로결과회수.
 
 - 새구현미참여Codex child 기준80ed292. 해시원문과실제run일치/인증객체위조·등록경계·의존목록정규식한계/결정성/트랜잭션·사전사본/직접복원동등/SQL1~4·s4불변을독립검증한다. 고유T050보고만, 제품/fixture/사용자DB/공용문서불변.
 - 관련+전체tests/lint/typecheck/build·실제가상CLI·모듈/원문불일치재현, 필수결함과신뢰된개발자등록의전제구분하여PASS/FAIL·근거반환. 제품0005/P2타임라인진입은통과후별도배정.
