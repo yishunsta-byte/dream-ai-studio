@@ -14,7 +14,7 @@ import { generationInputSchema } from "@/lib/jobs/schema";
 import { exportJobSchema, manifestSchema, type BundleManifest } from "@/lib/export/schema";
 import { fileDigest, verifyZip, writeZip, type BundleSource } from "@/lib/export/zip";
 import { srtText } from "@/lib/edit/schema";
-import { timelineSchema } from "@/lib/edit/timeline";
+import { timelineSchema, timelineVtt } from "@/lib/edit/timeline";
 import { FONT_MIME, fontStatuses } from "@/lib/fonts/registry";
 import { finishingRepository } from "@/lib/repo/finishing";
 import { jobsRepository } from "@/lib/repo/jobs";
@@ -45,7 +45,7 @@ export function bundleLayout(handle:DatabaseHandle,input:LayoutInput):BundleEntr
  input.selected.forEach((item,index)=>entries.push({path:scenePath(index,item),mime:item.asset.mime??"application/octet-stream",source:"scene",index,item}));
  // P2-3 (Master D-8): a user or restored timeline also gives its stored bytes and the font files it names. A moved P1
  // r1 (timelineJson null) keeps exactly the P1 layout, so bundles of that version stay the same byte for byte.
- const timelineJson=input.edit.timelineJson??null,families=timelineJson?[...new Set(timelineSchema.parse(JSON.parse(timelineJson)).text.map(layer=>layer.style.fontFamily as string))].filter(family=>family!=="Pretendard"):[];
+ const timelineJson=input.edit.timelineJson??null,timelineText=timelineJson?timelineSchema.parse(JSON.parse(timelineJson)).text:[],families=timelineJson?[...new Set(timelineText.map(layer=>layer.style.fontFamily as string))].filter(family=>family!=="Pretendard"):[];
  const fonts=families.length?fontStatuses().filter(font=>families.includes(font.family)&&font.installed):[],absent=families.filter(family=>!fonts.some(font=>font.family===family));
  text("README.txt",`${timelineJson?"":"P1 "}편집용 묶음입니다. 완성 영상은 포함하지 않습니다.\n${input.selected.some(item=>item.asset.isMock)?"샘플 포함 · 실제 생성 결과가 아닌 시험용 자료입니다.\n":""}영상 조립과 글자 합성은 P2 범위입니다. SRT는 직접 입력한 시간만 사용합니다.\n${timelineJson?"글자 모양·위치·움직임은 edit/timeline.json에 있어요.\n":""}${absent.map(family=>`글꼴 ${family} 파일을 찾지 못해 넣지 못했어요. 직접 확인해 주세요.\n`).join("")}`);
  text("script/script.txt",input.plan.script);
@@ -60,6 +60,8 @@ export function bundleLayout(handle:DatabaseHandle,input:LayoutInput):BundleEntr
  entries.push({path:"fonts/PretendardVariable.woff2",mime:"font/woff2",source:"file",filename:fontFile()});
  text("LICENSES/Pretendard-OFL.txt",readFileSync(licenseFile(),"utf8"));
  if(timelineJson){text("edit/timeline.json",timelineJson,"application/json");
+  // P2-6 (T-155): WebVTT of the same subtitle layers, only when there is at least one (like the SRT). P1 r1 has none.
+  const vtt=timelineVtt(timelineText);if(vtt)text("subtitles/timeline.vtt",vtt,"text/vtt");
   for(const font of fonts){const name=basename(font.file!);entries.push({path:`fonts/${font.folder}/${name}`,mime:FONT_MIME[extname(name).slice(1).toLowerCase()]??"application/octet-stream",source:"file",filename:font.file!});text(`LICENSES/${font.folder}-OFL.txt`,readFileSync(font.license!,"utf8"));}}
  return entries;
 }

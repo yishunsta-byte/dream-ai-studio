@@ -172,6 +172,19 @@ export function applyEditView(base:Timeline,view:EditInput,clips:readonly Timeli
   return {...base,video:view.sceneOrder.map(sceneId=>{const clip=bySceneId.get(sceneId);if(!clip)throw new Error("장면 순서를 확인해 주세요.");return clip;}),text:[...text,...kept]};
 }
 export const sameClip=(a:TimelineClip,b:TimelineClip)=>a.sceneId===b.sceneId&&a.sceneVersionId===b.sceneVersionId&&a.assetId===b.assetId&&a.durationFrames===b.durationFrames&&a.trimInFrames===b.trimInFrames&&a.trimOutFrames===b.trimOutFrames;
+// WebVTT from frames (P2-6, T-155): the same subtitle layers as the SRT, for timeline bundles only. UTF-8 without BOM,
+// LF only; cue id = layer id; order start, end, id; overlapping cues kept (VTT shows them together); times are the
+// same rounded milliseconds as the SRT (≤0.5 ms from the 30 fps frame edge). Cue text: trimmed like the SRT, line
+// breaks made LF, empty lines dropped (an empty line would end the cue), & < > escaped (so "-->" cannot appear).
+export function vttCueText(content:string){
+  return content.trim().replace(/\r\n?/g,"\n").split("\n").filter(line=>line.trim()!=="").join("\n").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+export function timelineVtt(text:readonly TimelineText[]):string|null{
+  const time=(frames:number)=>{const ms=framesToMs(frames);return `${String(Math.floor(ms/3600000)).padStart(2,"0")}:${String(Math.floor(ms/60000)%60).padStart(2,"0")}:${String(Math.floor(ms/1000)%60).padStart(2,"0")}.${String(ms%1000).padStart(3,"0")}`;};
+  const cues=text.filter(layer=>layer.kind==="subtitle").sort((a,b)=>a.timing.startFrame-b.timing.startFrame||a.timing.endFrame-b.timing.endFrame||(a.id<b.id?-1:a.id>b.id?1:0));
+  if(!cues.length)return null;
+  return "WEBVTT\n\n"+cues.map(layer=>`${layer.id}\n${time(layer.timing.startFrame)} --> ${time(layer.timing.endFrame)}\n${vttCueText(layer.content)}\n`).join("\n");
+}
 // SRT from frames (subtitle layers only), the same format as the P1 bundle.
 export function timelineSrt(text:readonly TimelineText[]){
   const time=(frames:number)=>{const ms=framesToMs(frames);return `${String(Math.floor(ms/3600000)).padStart(2,"0")}:${String(Math.floor(ms/60000)%60).padStart(2,"0")}:${String(Math.floor(ms/1000)%60).padStart(2,"0")},${String(ms%1000).padStart(3,"0")}`;};

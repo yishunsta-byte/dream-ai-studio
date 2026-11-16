@@ -207,8 +207,9 @@ describe("옮긴 s4 프로젝트 (서버 규칙·저장·묶음)",()=>{
     const font=entries.find(entry=>entry.path==="fonts/noto-serif-kr/NotoSerifKR[wght].ttf");expect(font).toMatchObject({source:"file",mime:"font/ttf",filename:resolve("public/fonts/noto-serif-kr/NotoSerifKR[wght].ttf")});
     const license=entries.find(entry=>entry.path==="LICENSES/noto-serif-kr-OFL.txt");expect(license&&license.source==="text"?license.text:null).toBe(readFileSync("public/fonts/noto-serif-kr/OFL.txt","utf8"));
     expect(entries.find(entry=>entry.path==="README.txt")).toMatchObject({text:expect.stringMatching(/^편집용 묶음입니다\.[\s\S]*edit\/timeline\.json에 있어요/)});
-    // text_overlays.json and the SRT stay on the P1-shaped view (same paths as before).
-    expect(paths.filter(path=>path.startsWith("edit/")||path.startsWith("subtitles/"))).toEqual(["edit/text_overlays.json","subtitles/manual.srt","edit/timeline.json"]);
+    // text_overlays.json and the SRT stay on the P1-shaped view (same paths as before); T-155 adds the VTT after timeline.json.
+    expect(paths.filter(path=>path.startsWith("edit/")||path.startsWith("subtitles/"))).toEqual(["edit/text_overlays.json","subtitles/manual.srt","edit/timeline.json","subtitles/timeline.vtt"]);
+    expect(p1.map(entry=>entry.path)).not.toContain("subtitles/timeline.vtt");
   });
 });
 
