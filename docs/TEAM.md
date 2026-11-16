@@ -44,6 +44,8 @@
 
 ### T-058 · 동기 전용 이관의 비동기 생성 제한 (parent=T055/T054, priority=P1) — running
 
+- 추천설계 msg_5560b54fc140 검토채택: 해시검증후동일원문전체 async/await/import 보수거부(주석/문자열오탐명시), Promise/fromAsync등동기제한·require/crypto context함수/원시값창구로축소·settle복잡성제거. dbhost신뢰한계별도, 정상/오류경로host객체유출·이스케이프구문실측·기존crash시험안전거부status0·동기정상회귀를검증조건으로전달했다. 임의JS sandbox/모든비동기증명으로과장안함.
+
 - 실제수락·점유 msg_e4e5e1145d2e 수신. 담당시작HEAD4f543e0(문서최신과제품동일), loader·관련tests/deadlinechild/README·고유보고범위확인, 실행환경조사후설계공유예정.
 
 - CC-DATA-01 임시코딩, loader/필요검증보조/회귀/README·고유보고. Promise글로벌·async/dynamicimport 등통상비동기생성을실행전/런타임좁은.cjs계약으로failclosed하는추천안공유후구현. 일반Promise species처리범위확장을추가하지않는다.
