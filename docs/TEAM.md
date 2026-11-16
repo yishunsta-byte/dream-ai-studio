@@ -42,15 +42,19 @@
 
 ## 요청 기록
 
-### T-032 · 현재 P1 구현과 기준 문서 정합 정리 (parent=P1 종료, priority=P2) — prepared
+### T-032 · 현재 P1 구현과 기준 문서 정합 정리 (parent=P1 종료, priority=P2) — running
+
+- 수락msg_d19ce48f7a16, 담당이T032→T033순차수행/허용문서점유확인. 코드/캡처/TEAM미변경.
 
 - 담당CC-DESIGN-01. 사용자순차계속지시전달msg_424e8b9ed697에따른Master배정. 허용DESIGN6.7현재표시규칙·PLAN13실제묶음예시/최소변경이력·본인T032인계. 구현된상태/파일명/README/fonts만정정하고새미구현요구/날짜형식/삭제흐름추가금지. 현재독립PASS와사용자게이트유지, 제품코드/캡처/공용TEAM미변경.
 
-### T-033 · 다음 타임라인·미리보기·글자 편집 명세 준비 (parent=차기준비, priority=P2) — prepared
+### T-033 · 다음 타임라인·미리보기·글자 편집 명세 준비 (parent=차기준비, priority=P2) — ready (T032 후)
 
 - 담당CC-DESIGN-01, T032후순차. 허용 docs/handoffs/T-033-P2-DESIGN-INPUT.md만. 기존PLAN/DESIGN/spec의P2-1~3을화면/상태/인터랙션/접근성/비율·시간·안전영역/기존값이관·완료조건으로정리한미승인입력초안. 코드/스키마/기준변경/P2착수없음. 충돌/미정은구체근거와추천으로Master에제출.
 
-### T-034 · K6 호환·고정 s4 백업 회귀 자료 설계 (parent=차기준비, priority=P2) — prepared
+### T-034 · K6 호환·고정 s4 백업 회귀 자료 설계 (parent=차기준비, priority=P2) — running
+
+- 실제수락msg_fabe058d2c36, HEAD0db4d7b·고유설계문서1파일만점유. 코드/SQL/실제ZIP/기존fixture/실사용data미접근.
 
 - 담당CC-DATA-01. 허용 docs/handoffs/T-034-S4-FIXTURE-PLAN.md만. 현4마이그레이션·백업/복원tests를읽고가상fixture구성/고정ID·시각/참조·불변hash·prefix/미래/변조/실패·이관전스냅샷 시험 계획과생성재현절차를명세. 실제ZIP생성/DB이관/코드수정은게이트후별도배정, 현재실사용·기존fixture접근금지. 미구현/미실행을명확히표시.
 
