@@ -234,3 +234,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T108 exact renderer/bundler/browser setup and isolated actual MP4 smoke assigned.
 - Next: fix foundation findings if any, verify tools, implement app render worker/composition/API/UI, then independent end-to-end validation.
 - User real DB remains untouched; P2-4 application rendering incomplete.
+
+## Latest: foundation FAIL; T109 priority correction
+
+- T107 found three mandatory DB/restore contract gaps despite485 green tests.
+- T109: protect linked-job identities, reject partial/NULL success-file tuple, validate saved-timeline binding during restore.
+- Preserve issued0006/s6; add0007/s7 rather than rewriting migration history.
+- T108 toolchain partial work preserved; foundation correction first. Next independent recheck, then worker/UI implementation.

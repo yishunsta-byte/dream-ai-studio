@@ -897,3 +897,9 @@
 - T107 independent Codex dispatched ready: ctx_89788796d84a / task_0ee242b32c9a / term_e5cc8217-f1b8-440b-b51a-91c9e262e061; child render-foundation-review. Report-only exact mixed migration prefix/contracts/fixed fixtures/CLI/restore/MP4 inventory verification.
 - T108 author assigned parallel exact4.0.543 renderer/bundler dependencies, dedicated official pinned browser setup with provenance, isolated actual3-aspect short render/ffprobe/network/cleanup smoke. No app worker/UI/DB changes. Request msg_32246b8cfd36.
 - Design informed msg_00622f2588e4. Foundation acceptance pending independent review; no actual user-data migration or application rendering claim.
+
+### T107 foundation FAIL; T109 corrective migration assigned (2026-11-16)
+
+- msg_6f644f6fb13d report imported. Independent485 passed/3 skips and lint/type/build plus normal CLI/restore do not cover mandatory F107-1 linked job identity mutation, F107-2 NULL success SHA tuple, F107-3 false saved-timeline binding accepted by real restore.
+- T109 author assigned ahead of T108: preserve issued0006/s6 bytes, add0007 guards and strict host semantic validation, fail atomic on invalid old rows, add fixeds7 and migration/restore regressions. No actual user DB migration. Partial toolchain work retained, separate commits.
+- Foundation remains unaccepted pending focused independent recheck; design informed.
