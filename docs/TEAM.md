@@ -863,3 +863,9 @@
 - T101 / implementation author: PC renderer technical preparation, unique report only, official exact4.0.543 renderer license/API/runtime and immutable job/temp/ffprobe/cancel/retry design, no installs or product edits. Request msg_8a53f06b4650.
 - T102 / design: renderer state/progress/cancel/retry/success UX preparation, unique report/history only. Request msg_060a4ca21910.
 - T103 / implementation author: first reproduce bulk overflow and correct minimal display/accessibility issues without recovery-data loss; then continue T101. No duplicate broad review requested.
+
+### T102 renderer UX preparation returned (2026-11-16)
+
+- 8a393c4 / msg_e3f398dc4f1a report reviewed; design-only, no runtime validation.
+- Master accepts render subroute within edit (no added workflow stage), one active render per project under existing global worker lease, requests permitted at390, immutable result naming with original T057 base and collision suffix.
+- Existing P1 manual-edit ZIP/review flow must not be retroactively gated on new rendering. Technical output/completion contract awaits T101. No renderer implementation/install authorized by this design record alone.
