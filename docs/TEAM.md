@@ -1230,3 +1230,8 @@
 - T159 ctx_b234432713c9 /task_d4cf096e60f3 dispatched: independent row/trigger/rollback/actual old9-app and real ZIP restore verification. Acceptance pending.
 - T156 informed msg_1ca745e4e312: fixed9 generation remains on frozen stage9; current restore9->10 is upgrade, not same. Fixture/test scope must distinguish both rather than relabel old fixture.
 - Source audio packaging waits for verified compatibility and s9 checkpoint. User DB/deployment unchanged.
+### T156 regeneration comparison decision
+
+- Question msg_b56899113a4b: fixed9 backup candidate exact preservation PASS; native fresh mix/AAC bytes vary despite matching pinned input/tool/video/sample and passing loudness. Master approved separating fresh execution evidence from immutable archive restoration checks.
+- Fixed ZIP/source/restore bytes remain strict SHA acceptance. Fresh render compares existing pinned identities, exact samples/codec/frame and unchanged loudness policy; fresh hashes recorded without bitexact regeneration claim. Cause of fresh-byte variation unconfirmed, original failures retained.
+- No criterion relaxation for output policy; negative controls must still reject corrupted archive/source pins/out-of-policy measurement. Stage9 generation and current9->10 restoration remain separate.
