@@ -2,7 +2,6 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { lstatSync, readFileSync } from "node:fs";
 import { join, posix } from "node:path";
-import { types } from "node:util";
 import vm from "node:vm";
 import type Database from "better-sqlite3";
 import type { Migration } from "./migrate";
@@ -23,23 +22,28 @@ import type { Migration } from "./migrate";
 // - `codeMigration` reads each file once, hashes those strings and compares with the `sha256` declared in the
 //   registry. Only after that match does it execute the very same strings. There is no way to pass a function in:
 //   `run` and `sql` always come from the hashed text.
+// - Step code is synchronous only (T-058, a narrower accepted subset; the v2 hash inputs are unchanged): after the
+//   hash matched and before anything runs, every listed file is refused if the words async, await or import appear
+//   in it (checkSyncSource, conservative: strings and comments too), and the context blocks Promise and
+//   Array.fromAsync and removes AsyncDisposableStack, so step code cannot create a Promise at all.
 // - Execution happens in a fresh node:vm context with this loader's `require` only: a listed file by its exact
-//   relative path (with `.cjs`, no extension guessing), and "node:crypto" as a facade exposing createHash("sha256").
-//   Everything else fails. `import`/`export` syntax is a syntax error and dynamic import() has no loader, so there is
-//   no second module graph next to the hashed one. String code generation and wasm are off; Date, Math.random,
-//   Intl, Temporal, WeakRef/FinalizationRegistry, SharedArrayBuffer/Atomics and WebAssembly are blocked or removed.
+//   relative path (with `.cjs`, no extension guessing), and "node:crypto" as a facade exposing
+//   createHash("sha256").update(string).digest("hex"|"base64"|"base64url"). Both are functions of the context and
+//   answer primitives or context objects; everything else fails. `export` syntax is a syntax error, so there is no
+//   second module graph next to the hashed one. String code generation and wasm are off; Date, Math.random, Intl,
+//   Temporal, WeakRef/FinalizationRegistry, SharedArrayBuffer/Atomics and WebAssembly are blocked or removed.
 // - Every use gets a fresh context: registration loads once to check the entry and read its `sql`, and each `run`
 //   loads the same captured strings again. Module top level runs under LOAD_TIMEOUT_MS; `run` runs synchronously
-//   under RUN_TIMEOUT_MS inside the migration transaction. Microtasks queued by step code drain inside that timed
-//   evaluation (afterEvaluate), and the context is never evaluated again, so nothing can reach a later database.
-// - `run` must return undefined. The check is a primitive comparison inside the VM; any other value (a Promise, a
-//   thenable, any object) is refused without being read, and the transaction rolls back. Reading the entry exports,
-//   the async-function check and turning an error into name/message text all happen inside timed evaluations with
-//   intrinsics captured before step code runs; the host only ever receives primitive strings. A timeout is
-//   recognised from the timeout error's own `code` data property only.
+//   under RUN_TIMEOUT_MS inside the migration transaction. The context is never evaluated again afterwards.
+// - `run` must return undefined. The check is a primitive comparison inside the VM; any other value (a thenable, any
+//   object) is refused without being read, and the transaction rolls back. Reading the entry exports and turning an
+//   error into name/message text happen inside timed evaluations with intrinsics captured before step code runs;
+//   the host only ever receives primitive strings. A timeout is recognised from the timeout error's own `code` data
+//   property only.
 // - This is a trusted-migration loader, not a security sandbox: the host `sqlite` object handed to `run` can reach
-//   the host realm. It catches wrong registrations, stale or edited sources and ordinary hidden inputs; it does not
-//   prove that arbitrary hostile code is deterministic.
+//   the host realm (and its async APIs such as backup(); reviewed steps do not use them). It catches wrong
+//   registrations, stale or edited sources and ordinary hidden inputs; it does not prove that arbitrary hostile
+//   code is deterministic or synchronous.
 // - SQL clock/randomness is detected by the text rules in SQL_RULES only (see there). Determinism of a step is proved
 //   per step by running it on the same input at different times and comparing, plus review.
 // - Hash inputs do not include Node/V8/SQLite/better-sqlite3 versions or `verify`. Same input → same output is
@@ -74,42 +78,55 @@ export function codeMigrationSha256(files:readonly {path:string;text:string}[]){
   return sha([CODE_MIGRATION_FORMAT,`entry\0${files[0].path}`,...sorted.map(file=>`file\0${file.path}\0${sha(lf(file.text))}`)].join("\n"));
 }
 
-// Runs in every fresh context before any step code. It blocks clocks/randomness, takes the host bridge off the global
-// object, and keeps private helpers built from intrinsics captured now, so step code cannot change how the entry
-// exports, the result of `run` or an error are read. Helpers return only primitive strings and are called from inside
-// a timed evaluation; after this point the host never writes to, or reads from, the context's global object.
+// Code steps are synchronous only (T-058). Applied to every listed file, on the very strings whose hash matched and
+// before anything runs: the words async, await and import are refused anywhere in the text. V8 rejects these keywords
+// when written with \u escapes, so a literal word check covers async functions/arrows/methods/generators, await,
+// `for await`, `await using` and dynamic import(). It is deliberately conservative: the same words inside strings,
+// comments or property names are refused too (rename or rephrase them).
+const ASYNC_WORD=/\b(async|await|import)\b/;
+export function checkSyncSource(where:string,text:string){
+  const found=ASYNC_WORD.exec(text);
+  if(found)throw new MigrationSourceError(`${where}: 동기 코드만 쓸 수 있어요 ('${found[1]}' 단어 사용, 문자열·주석·속성 이름 안에서도 거부)`);
+}
+
+// Runs in every fresh context before any step code. It blocks clocks/randomness and every built-in that creates a
+// Promise (with async syntax refused by checkSyncSource, step code has no way to make one, so nothing can be left
+// queued or rejected after the step), takes the host bridge off the global object, and keeps private helpers built
+// from intrinsics captured now. `require` and the "node:crypto" facade are functions of this context, so step code
+// gets no host-realm object from the loader (the only one it gets is the `sqlite` handed to `run`). Helpers return
+// only primitive strings to the host and are called from inside a timed evaluation; after this point the host never
+// writes to, or reads from, the context's global object.
 const PRELUDE=`"use strict";(()=>{const g=globalThis;const blocked=name=>Object.freeze(function(){throw new Error(name+" is not available in a code migration");});
-const apply=Reflect.apply,toStr=Object.prototype.toString,S=String,define=Object.defineProperty,freeze=Object.freeze,promiseThen=Promise.prototype.then,ignore=()=>undefined;
-// A returned or thrown native Promise is refused like any other value, but its rejection must not outlive the step as
-// an unhandled rejection. Only values the host's internal-slot check (util.types.isPromise: no traps, no getters)
-// calls a native Promise are touched, so a plain thenable or a Proxy never has its then/getters called. The captured
-// intrinsic then attaches a no-op rejection handler; its constructor/Symbol.species lookups run here, inside the
-// timed evaluation. If that lookup throws, an own constructor property set to undefined is defined on the promise (the default
-// %Promise% is then used, no species lookup) and the handler is attached again. A promise that is non-extensible with a
-// throwing lookup, or has a non-configurable throwing constructor property, still cannot be handled (stated limit). The
-// derived promise settles with undefined, so it is never an unhandled rejection itself.
-const settle=value=>{if(!apply(host.isPromise,undefined,[value]))return;
-  try{apply(promiseThen,value,[undefined,ignore]);return;}catch(_){}
-  try{define(value,"constructor",{value:undefined,writable:true,configurable:true,enumerable:false});apply(promiseThen,value,[undefined,ignore]);}catch(_){}};
+const apply=Reflect.apply,toStr=Object.prototype.toString,S=String,define=Object.defineProperty,freeze=Object.freeze,Failure=Error;
 const host=g.__dreamHost;delete g.__dreamHost;
-define(g,"Date",{value:blocked("Date"),writable:false,configurable:false,enumerable:false});
-define(Math,"random",{value:blocked("Math.random"),writable:false,configurable:false,enumerable:false});freeze(Math);
-for(const name of ["Intl","Temporal","WeakRef","FinalizationRegistry","SharedArrayBuffer","Atomics","WebAssembly","eval"])delete g[name];
+const block=(target,name,label)=>define(target,name,{value:blocked(label),writable:false,configurable:false,enumerable:false});
+block(g,"Date","Date");block(Math,"random","Math.random");freeze(Math);
+block(g,"Promise","Promise");block(Array,"fromAsync","Array.fromAsync");
+for(const name of ["Intl","Temporal","WeakRef","FinalizationRegistry","SharedArrayBuffer","Atomics","WebAssembly","AsyncDisposableStack","eval"])delete g[name];
 const describe=e=>{try{if(e!==null&&(typeof e==="object"||typeof e==="function"))return S(e.name)+"\\0"+S(e.message);return "Error\\0"+S(e);}catch(_){return "Error\\0unreadable error";}};
+const newHash=()=>{let text="",done=false;const hash=freeze({
+  update(data){if(done||typeof data!=="string")throw new Failure("createHash: update는 문자열만, digest 전에만 쓸 수 있어요");text+=data;return hash;},
+  digest(encoding){if(done||(encoding!=="hex"&&encoding!=="base64"&&encoding!=="base64url"))throw new Failure("createHash: digest는 hex·base64·base64url 한 번만 쓸 수 있어요");done=true;return apply(host.sha256,undefined,[text,encoding]);},
+});return hash;};
+const crypto=freeze({createHash(algorithm){if(algorithm!=="sha256")throw new Failure('node:crypto는 createHash("sha256")만 쓸 수 있어요');return newHash();}});
+const makeRequire=from=>freeze(function require(specifier){
+  if(specifier==="node:crypto")return crypto;
+  const exports=apply(host.require,undefined,[from,specifier]);
+  if(exports===host.refused)throw new Failure("목록 밖 의존이거나 정해진 .cjs 형식이 아니에요: "+(typeof specifier==="string"?specifier:"("+typeof specifier+")"));
+  return exports;});
 let run;
 define(g,"__dream",{value:freeze({
-  load(){try{const entry=apply(host.loadEntry,undefined,[]);const r=entry.run,sql=entry.sql;
+  load(){try{const entry=apply(host.loadEntry,undefined,[]);if(entry===host.refused)return "fail\\0불러오기 거부";const r=entry.run,sql=entry.sql;
     if(typeof r!=="function")return "fail\\0module.exports.run이 없어요";
     if(apply(toStr,r,[])!=="[object Function]")return "fail\\0run은 동기 함수여야 해요";
     if(sql!==undefined&&typeof sql!=="string")return "fail\\0module.exports.sql은 문자열이어야 해요";
     run=r;return "ok\\0"+(sql===undefined?"":sql);}catch(e){return "error\\0"+describe(e);}},
-  run(){let result;try{result=apply(run,undefined,[apply(host.database,undefined,[])]);}catch(e){settle(e);return "error\\0"+describe(e);}
-    if(result===undefined)return "ok\\0";
-    settle(result);return "fail\\0run은 undefined만 돌려줄 수 있어요 (Promise·객체 반환 거부)";},
+  run(){let result;try{result=apply(run,undefined,[apply(host.database,undefined,[])]);}catch(e){return "error\\0"+describe(e);}
+    return result===undefined?"ok\\0":"fail\\0run은 undefined만 돌려줄 수 있어요 (Promise·객체 반환 거부)";},
 }),writable:false,configurable:false,enumerable:false});
-return ()=>({exports:{}});})();`;
-const cryptoFacade=Object.freeze({createHash:(algorithm:unknown)=>{if(algorithm!=="sha256")throw new MigrationSourceError("node:crypto는 createHash(\"sha256\")만 쓸 수 있어요");return createHash("sha256");}});
+return freeze({newRecord:()=>({exports:{}}),makeRequire});})();`;
 const LOAD_SCRIPT=new vm.Script("__dream.load()"),RUN_SCRIPT=new vm.Script("__dream.run()");
+type ContextHelpers={newRecord:()=>{exports:unknown};makeRequire:(from:string)=>unknown};
 
 // A timed evaluation that did not return: the timeout error is created in the context realm, so only its own data
 // property `code` is read (no getter or prototype lookup); any other escape is reported without reading it.
@@ -127,24 +144,29 @@ function failure(outcome:string,where:string){
 }
 
 // One fresh context per use: load the verified texts (LOAD_TIMEOUT_MS) and, when `sqlite` is given, run the step
-// (runTimeoutMs). Microtasks queued by step code drain inside these evaluations (afterEvaluate); the context is never
-// evaluated again afterwards, so nothing queued in it can reach a later database. Never called before the hash matched.
-// A loader refusal (out-of-list require, bad format) is final even if step code caught it.
+// (runTimeoutMs). The context is never evaluated again afterwards. Never called before the hash matched and the
+// sync-only rule passed. A loader refusal (out-of-list require, bad format) is final even if step code caught it.
 function execute(files:readonly {path:string;text:string}[],options:{runTimeoutMs:number;sqlite?:Database.Database}){
   const texts=new Map(files.map(file=>[file.path,file.text])),cache=new Map<string,{exports:unknown}>(),entryPath=files[0].path;
   let sourceError:MigrationSourceError|undefined,database:Database.Database|undefined;
-  const refuse=(error:MigrationSourceError)=>{sourceError??=error;throw error;};
-  const requireFrom=(from:string)=>(specifier:unknown)=>{
-    if(specifier==="node:crypto")return cryptoFacade;
+  const refused=Object.freeze({});
+  const refuse=(error:MigrationSourceError)=>{sourceError??=error;return refused;};
+  // Called by the context's require with primitives only (the context answers "node:crypto" itself).
+  const requireFrom=(from:string,specifier:unknown):unknown=>{
     if(typeof specifier!=="string"||!/^\.\.?\//.test(specifier))return refuse(new MigrationSourceError(`${from}: 목록 밖 의존 ${typeof specifier==="string"?specifier:`(${typeof specifier})`}`));
     const target=posix.normalize(posix.join(posix.dirname(from),specifier));
     if(!texts.has(target))return refuse(new MigrationSourceError(`${from}: 목록 밖 의존 ${specifier}`));
     return loadModule(target);
   };
+  const sha256=(text:unknown,encoding:unknown)=>{
+    if(typeof text!=="string"||(encoding!=="hex"&&encoding!=="base64"&&encoding!=="base64url"))throw new MigrationSourceError("node:crypto 창구에 잘못된 값이 왔어요");
+    return createHash("sha256").update(text,"utf8").digest(encoding);
+  };
   // Host bridge, handed over before any step code runs and then removed from the global object by the prelude.
-  const bridge=Object.freeze({loadEntry:()=>loadModule(entryPath),database:()=>database,isPromise:(value:unknown)=>types.isPromise(value)});
+  const bridge=Object.freeze({loadEntry:()=>loadModule(entryPath),database:()=>database,require:requireFrom,sha256,refused});
   const context=vm.createContext({__dreamHost:bridge},{name:"dream-code-migration",codeGeneration:{strings:false,wasm:false},microtaskMode:"afterEvaluate"});
-  const newRecord=new vm.Script(PRELUDE).runInContext(context,{timeout:LOAD_TIMEOUT_MS}) as ()=>{exports:unknown};
+  const helpers=new vm.Script(PRELUDE).runInContext(context,{timeout:LOAD_TIMEOUT_MS}) as ContextHelpers;
+  const newRecord=helpers.newRecord,makeRequire=helpers.makeRequire;
   // Runs only inside a timed evaluation: through __dream.load, or when step code calls require.
   const loadModule=(path:string):unknown=>{
     const hit=cache.get(path);if(hit)return hit.exports;
@@ -152,7 +174,7 @@ function execute(files:readonly {path:string;text:string}[],options:{runTimeoutM
     try{fn=vm.compileFunction(texts.get(path)!,["exports","require","module"],{parsingContext:context,filename:path}) as (...args:unknown[])=>unknown;}
     catch(error){return refuse(new MigrationSourceError(`${path}: 정해진 .cjs 형식이 아니에요 (${error instanceof SyntaxError?"SyntaxError":"문법"})`));}
     const record=newRecord();cache.set(path,record);
-    fn(record.exports,requireFrom(path),record);
+    fn(record.exports,makeRequire(path),record);
     return record.exports;
   };
   let loaded:string;
@@ -187,7 +209,7 @@ export function codeMigration(definition:CodeStepDefinition):Migration{
   // 1) hash the strings just read and compare with the declaration; nothing has been executed yet.
   const sha256=codeMigrationSha256(read);
   if(sha256!==definition.sha256)throw new MigrationSourceError(`${definition.version} ${definition.name}: 원문 해시 ${sha256}가 선언 ${definition.sha256}와 달라요`);
-  for(const file of read)checkSqlText(file.path,file.text);
+  for(const file of read){checkSqlText(file.path,file.text);checkSyncSource(file.path,file.text);}
   // 2) only now execute those same strings.
   //    A validation load in its own context gives the entry shape and its SQL (a string); that context is dropped.
   const sql=execute(read,{runTimeoutMs});

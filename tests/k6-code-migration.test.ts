@@ -121,7 +121,7 @@ describe("로더: 목록 안 원문만, 정해진 형식만 (F050-2)",()=>{
   const outside={"p/outside.cjs":"module.exports.value=10;\n"};
   it("import·export 문법(주석 끼움, type 이름 기본 바인딩 포함)은 실행 graph를 만들 수 없어 거부",()=>{
     for(const text of ["import/* module dependency */ { value } from './outside.cjs';\nmodule.exports.run=function(db){};","export/* c */ { value } from './outside.cjs';","import type from './outside.cjs';\nmodule.exports.run=function(db){};","import './outside.cjs';","export const run=function(db){};"]){
-      const make=probe(`imp-${sha(text).slice(0,8)}`,{"p/entry.cjs":text,...outside});expect(()=>make(),text).toThrow(/정해진 .cjs 형식이 아니에요/);
+      const make=probe(`imp-${sha(text).slice(0,8)}`,{"p/entry.cjs":text,...outside});expect(()=>make(),text).toThrow(/\bimport\b/.test(text)?/동기 코드만 쓸 수 있어요 \('import'/:/정해진 .cjs 형식이 아니에요/);
     }
   });
   it("require는 목록 안 정확한 상대 경로와 node:crypto sha256 창구만",()=>{
@@ -149,8 +149,8 @@ describe("로더: 목록 안 원문만, 정해진 형식만 (F050-2)",()=>{
     const make=probe("loop-run",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES ('x')");for(;;){}};`},{runTimeoutMs:200});
     const file=await s4("loop-db"),before=snap(file);expect(()=>migrateFile(file,[...productMigrations(),make()])).toThrow(/시간 제한 200ms/);expect(snap(file)).toEqual(before);
   });
-  it("비동기: async run은 등록 거부, Promise를 돌려주면 대기 작업까지 트랜잭션 안에서 끝낸 뒤 거부하고 되돌린다(늦은 쓰기 없음)",async()=>{
-    expect(()=>probe("async",{"p/entry.cjs":"module.exports.run=async function(db){};"})()).toThrow(/동기 함수/);
+  it("비동기: async run은 등록 거부(동기 전용 규칙), Promise는 만들 수 없어 거부하고 되돌린다(늦은 쓰기 없음)",async()=>{
+    expect(()=>probe("async",{"p/entry.cjs":"module.exports.run=async function(db){};"})()).toThrow(/동기 코드만 쓸 수 있어요 \('async'/);
     // The queued write targets an existing table and the connection stays open, so a write after rollback would land.
     const make=probe("thenable",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){return Promise.resolve().then(()=>db.exec("INSERT INTO settings(key,value_json) VALUES ('late.write','1')"));};`});
     const file=await s4("thenable-db"),before=snap(file),sqlite=new Database(file);
@@ -169,7 +169,7 @@ describe("반환값 경계: run은 undefined만, 늦은 쓰기 없음 (F052-1·2
   const cases:Record<string,string>={
     "T052 원문: then이 microtask를 예약하는 일반 thenable":"return {then(resolve){Promise.resolve().then(()=>db.exec('INSERT INTO proof VALUES(7)'));resolve();}};",
     "getter가 microtask를 예약하는 then":"return {get then(){Promise.resolve().then(()=>db.exec('INSERT INTO proof VALUES(8)'));return undefined;}};",
-    "native Promise":"return Promise.resolve().then(()=>db.exec('INSERT INTO proof VALUES(9)'));",
+    "native Promise(T-058: Promise 차단으로 만들기 전에 거부)":"return Promise.resolve().then(()=>db.exec('INSERT INTO proof VALUES(9)'));",
     "일반 객체":"db.exec('INSERT INTO proof VALUES(10)');return {};",
     "null":"db.exec('INSERT INTO proof VALUES(11)');return null;",
   };
@@ -177,7 +177,7 @@ describe("반환값 경계: run은 undefined만, 늦은 쓰기 없음 (F052-1·2
     const step=STEP2(`ret-${sha(label).slice(0,8)}`,run)(),[a,b]=opened();
     try{
       for(let round=0;round<3;round++)for(const db of [a,b]){
-        expect(()=>migrateDatabase(db,{migrations:[BASE,step],now})).toThrow(/undefined만 돌려줄 수 있어요/);
+        expect(()=>migrateDatabase(db,{migrations:[BASE,step],now})).toThrow(label.startsWith("native Promise")?/Promise.resolve is not a function/:/undefined만 돌려줄 수 있어요/);
         expect(state(a)).toEqual({rows:[],journal:[{version:1}],inTransaction:false});expect(state(b)).toEqual({rows:[],journal:[{version:1}],inTransaction:false});
       }
       await settle();expect(state(a).rows).toEqual([]);expect(state(b).rows).toEqual([]);
@@ -193,7 +193,7 @@ describe("반환값 경계: run은 undefined만, 늦은 쓰기 없음 (F052-1·2
   });
   it("판정 도우미는 사용자 코드 전에 잡아 둔다: 전역·내장 함수를 바꿔도 async run 거부, 호스트 연결은 보이지 않음",()=>{
     const tamper="try{globalThis.__dream={load(){return 'ok\\\\0'},run(){return 'ok\\\\0'}};}catch(e){}Object.prototype.toString=function(){return '[object Function]'};Reflect.apply=function(){return undefined};";
-    expect(()=>STEP2("tamper-async",`};${tamper}module.exports.run=async function(db){`)()).toThrow(/동기 함수/);
+    expect(()=>STEP2("tamper-async",`};${tamper}module.exports.run=async function(db){`)()).toThrow(/동기 코드만 쓸 수 있어요/);
     const make=probe("tamper-return",{"p/entry.cjs":`${tamper}module.exports.run=function(db){db.exec('INSERT INTO proof VALUES(3)');return {};};`},{version:2,name:"0002_probe.cjs"});
     const [a,b]=opened();try{expect(()=>migrateDatabase(a,{migrations:[BASE,make()],now})).toThrow(/undefined만/);expect(state(a).rows).toEqual([]);}finally{a.close();b.close();}
     expect(()=>STEP2("bridge",`};if(typeof __dreamHost!=="undefined"||typeof globalThis.__dreamHost!=="undefined")throw new Error("bridge visible");module.exports.run=function(db){`)()).not.toThrow();
@@ -202,6 +202,14 @@ describe("반환값 경계: run은 undefined만, 늦은 쓰기 없음 (F052-1·2
     expect(()=>probe("swallow-top",{"p/entry.cjs":"try{require('./outside.cjs');}catch(e){}module.exports.run=function(db){};"})()).toThrow(/목록 밖 의존/);
     const make=STEP2("swallow-run","db.exec('INSERT INTO proof VALUES(4)');try{require('node:fs');}catch(e){}");
     const [a,b]=opened();try{expect(()=>migrateDatabase(a,{migrations:[BASE,make()],now})).toThrow(/목록 밖 의존/);expect(state(a)).toEqual({rows:[],journal:[{version:1}],inTransaction:false});}finally{a.close();b.close();}
+  });
+  it("require·node:crypto 창구는 실행 공간 안 함수: 호스트 함수·Hash·오류 객체를 내주지 않고 원시 문자열만",()=>{
+    const checks=["Object.getPrototypeOf(require)===Function.prototype","require.constructor===Function","Object.getPrototypeOf(c)===Object.prototype","Object.getPrototypeOf(h)===Object.prototype","Object.getPrototypeOf(module)===Object.prototype","Object.getPrototypeOf(exports)===Object.prototype","h.update('a')===h","h.digest('hex')==='ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'","c.createHash('sha256').update('a').digest('base64')==='ypeBEsobvcr6wjGzmiPcTaeG7/gUfE5yuYB3ha/uSLs='","typeof c.createHash('sha256').digest('base64url')==='string'","fails(()=>h.update('b'))","fails(()=>h.digest('hex'))","fails(()=>c.createHash('md5'))","fails(()=>c.createHash('sha256').update(1))","fails(()=>c.createHash('sha256').digest())","fails(()=>c.createHash('sha256').digest('latin1'))","Object.isFrozen(c)&&Object.isFrozen(h)&&Object.isFrozen(require)"];
+    const text=`const c=require('node:crypto'),h=c.createHash('sha256');
+const fails=f=>{try{f();return false;}catch(e){return e instanceof Error&&Object.getPrototypeOf(e)===Error.prototype;}};
+const results=[${checks.join(",")}];
+module.exports.run=function(db){const bad=results.map((ok,i)=>ok?-1:i).filter(i=>i>=0);if(bad.length)throw new Error("FAILED "+bad.join(","));db.exec("INSERT INTO proof VALUES(1)");};`;
+    const [a,b]=opened();try{expect(migrateDatabase(a,{migrations:[BASE,probe("facade",{"p/entry.cjs":text},{version:2,name:"0002_probe.cjs"})()],now})).toBe(1);expect(state(a).rows).toEqual([{value:1}]);}finally{a.close();b.close();}
   });
   it("실행마다 새 실행 공간: 최상위 상태가 다음 실행으로 넘어가지 않고 sql은 등록 값과 같다",()=>{
     const step=probe("fresh",{"p/entry.cjs":"let count=0;module.exports.run=function(db){count++;db.prepare('INSERT INTO proof VALUES (?)').run(count);};"},{version:2,name:"0002_probe.cjs"})();
@@ -220,7 +228,7 @@ describe("반환값 경계: run은 undefined만, 늦은 쓰기 없음 (F052-1·2
     "then-getter-loop":{phase:"run",message:/undefined만 돌려줄 수 있어요/},
     "thrown-then-loop":{phase:"run",message:/^undefined$/},"proxy-trap-loop":{phase:"run",message:/undefined만 돌려줄 수 있어요/},
     "error-getter-loop":{phase:"run",message:RUN_LIMIT},
-    "microtask-loop":{phase:"run",message:RUN_LIMIT},
+    "microtask-loop":{phase:"run",message:/Promise.resolve is not a function/},
   };
   for(const [mode,expected] of Object.entries(MODES))it(`끝나지 않는 ${mode}: 외부 마감(10초) 전에 내부 제한이나 거부로 스스로 끝나고 기록 그대로`,()=>{
     const folder=join(root,`deadline-${mode}`);mkdirSync(folder,{recursive:true});
@@ -230,27 +238,33 @@ describe("반환값 경계: run은 undefined만, 늦은 쓰기 없음 (F052-1·2
     expect(out.result).toBeUndefined();expect(out.phase).toBe(expected.phase);expect(out.message).toMatch(expected.message);expect(out.elapsedMs).toBeLessThan(5000);
     if(expected.phase==="run")expect(out.journal).toEqual([1]);
   },20000);
-  // T-054 F054-1: a rejected native Promise (returned, queued or thrown) must not end the process after the rollback.
-  const REJECTIONS:Record<string,RegExp>={
-    "ab-reject-immediate":/undefined만 돌려줄 수 있어요/,"ab-reject-queued":/undefined만 돌려줄 수 있어요/,"ab-reject-subclass":/undefined만 돌려줄 수 있어요/,
-    "ab-reject-species-getter":/undefined만 돌려줄 수 있어요/,"ab-throw-rejected":/^undefined: undefined$/,
-    "ab-species-throw":/undefined만 돌려줄 수 있어요/,"ab-constructor-getter-throw":/undefined만 돌려줄 수 있어요/,
-  };
-  for(const [mode,message] of Object.entries(REJECTIONS))it(`거부된 Promise ${mode}: A·B 3회 거부·되돌림, 정상 후속 성공, 100ms 대기 완료 후 자식 status 0`,()=>{
-    const folder=join(root,`reject-${mode}`);mkdirSync(folder,{recursive:true});
+  // T-054 F054-1 / T-058: a step cannot make a Promise (blocked built-ins, sync-only source), so nothing is left
+  // rejected after the rollback. Includes the T-054 originals and the four cases that were stated limits in T-055.
+  const BLOCKED=/^(?:TypeError: (?:Promise|P)\.(?:reject|resolve) is not a function|Error: (?:Promise|Array\.fromAsync) is not available in a code migration|ReferenceError: AsyncDisposableStack is not defined|EvalError: Code generation from strings disallowed for this context)$/;
+  const REFUSED_AT_RUN=["ab-reject-immediate","ab-reject-queued","ab-reject-subclass","ab-reject-species-getter","ab-throw-rejected","ab-species-throw","ab-constructor-getter-throw","ab-new-promise","ab-from-async","ab-async-disposable","ab-require-constructor","ab-crypto-constructor","limit-frozen-species-throw","limit-nonconfigurable-constructor","limit-species-loop","limit-floating"];
+  const spawnChild=(folderName:string,mode:string)=>{const folder=join(root,folderName);mkdirSync(folder,{recursive:true});
     const result=spawnSync(process.execPath,["--conditions=react-server","--import","tsx",child,process.cwd(),folder,mode],{cwd:process.cwd(),timeout:10000,encoding:"utf8",windowsHide:true});
     expect(result.error).toBeUndefined();expect(result.signal).toBeNull();expect({status:result.status,stderr:result.stderr}).toEqual({status:0,stderr:""});
-    const out=JSON.parse(result.stdout.trim().split("\n").at(-1)!) as {errors:string[];states:unknown[];after:unknown;final:unknown;waitCompleted:boolean;message?:string};
-    expect(out.message).toBeUndefined();expect(out.errors).toHaveLength(6);for(const error of out.errors)expect(error).toMatch(message);
+    return JSON.parse(result.stdout.trim().split("\n").at(-1)!) as {errors:string[];states:unknown[];after:unknown;final:unknown;waitCompleted:boolean;message?:string;regError?:string;registered?:boolean};};
+  const done={rows:[{value:1}],journal:[1,2],tx:false};
+  for(const mode of REFUSED_AT_RUN)it(`Promise를 만들 수 없음 ${mode}: A·B 3회 거부·되돌림, 정상 후속 성공, 100ms 대기 완료 후 자식 status 0`,()=>{
+    const out=spawnChild(`reject-${mode}`,mode);
+    expect(out.message).toBeUndefined();expect(out.errors).toHaveLength(6);for(const error of out.errors)expect(error).toMatch(BLOCKED);
     const clean={rows:[],journal:[1],tx:false};for(const each of out.states)expect(each).toEqual({a:clean,b:clean});
-    const done={rows:[{value:1}],journal:[1,2],tx:false};expect(out.after).toEqual({a:done,b:done});expect(out.final).toEqual({a:done,b:done});expect(out.waitCompleted).toBe(true);
+    expect(out.after).toEqual({a:done,b:done});expect(out.final).toEqual({a:done,b:done});expect(out.waitCompleted).toBe(true);
   },20000);
-  // Stated limits (not handled, recorded as they really end): the rejection still ends the process with status 1.
-  const LIMITS:Record<string,string>={"limit-frozen-species-throw":"LIMIT_FROZEN","limit-nonconfigurable-constructor":"LIMIT_NONCONFIGURABLE","limit-species-loop":"LIMIT_SPECIES_LOOP","limit-floating":"LIMIT_FLOATING"};
-  for(const [mode,marker] of Object.entries(LIMITS))it(`명시한 한계 ${mode}: 처리하지 못하고 Node가 스스로 status 1로 끝남(처리로 세지 않음)`,()=>{
-    const folder=join(root,`limit-${mode}`);mkdirSync(folder,{recursive:true});
-    const result=spawnSync(process.execPath,["--conditions=react-server","--import","tsx",child,process.cwd(),folder,mode],{cwd:process.cwd(),timeout:10000,encoding:"utf8",windowsHide:true});
-    expect(result.error).toBeUndefined();expect(result.signal).toBeNull();expect(result.status).toBe(1);expect(result.stderr).toContain(`Error: ${marker}`);
+  // Sync-only rule on the verified text (also in a helper file and inside strings), and V8's own refusal of escaped keywords.
+  const REFUSED_AT_REGISTRATION:Record<string,RegExp>={
+    "reg-async-run":/p\/entry\.cjs: 동기 코드만 쓸 수 있어요 \('async'/,"reg-nested-async":/p\/entry\.cjs: 동기 코드만 쓸 수 있어요 \('async'/,
+    "reg-async-method":/p\/entry\.cjs: 동기 코드만 쓸 수 있어요 \('async'/,"reg-async-generator":/p\/entry\.cjs: 동기 코드만 쓸 수 있어요 \('async'/,
+    "reg-dynamic-import":/p\/entry\.cjs: 동기 코드만 쓸 수 있어요 \('import'/,"reg-helper-async":/p\/helper\.cjs: 동기 코드만 쓸 수 있어요 \('async'/,
+    "reg-word-in-string":/p\/entry\.cjs: 동기 코드만 쓸 수 있어요 \('async'/,
+    "reg-escaped-async":/p\/entry\.cjs: 정해진 \.cjs 형식이 아니에요/,"reg-escaped-import":/p\/entry\.cjs: 정해진 \.cjs 형식이 아니에요/,"reg-escaped-await":/p\/entry\.cjs: 정해진 \.cjs 형식이 아니에요/,
+  };
+  for(const [mode,message] of Object.entries(REFUSED_AT_REGISTRATION))it(`등록 거부 ${mode}: 실행 전에 거부, 열린 A·B에 쓰기 없음, 정상 후속 성공, 대기 완료 status 0`,()=>{
+    const out=spawnChild(`reg-${mode}`,mode);
+    expect(out.registered).toBeUndefined();expect(out.regError).toMatch(/^MigrationSourceError: /);expect(out.regError).toMatch(message);
+    expect(out.errors).toEqual([]);expect(out.after).toEqual({a:done,b:done});expect(out.final).toEqual({a:done,b:done});expect(out.waitCompleted).toBe(true);
   },20000);
 });
 
