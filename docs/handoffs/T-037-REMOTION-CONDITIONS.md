@@ -82,7 +82,7 @@
 
 1. **P2-1(타임라인 저장)은 Remotion과 무관** — 이 확인과 별개로 진행 가능.
 2. 설치할 때 **4.0.543 정확한 버전 고정**(`^` 없이, `remotion`·`@remotion/player`·`@remotion/renderer` 등 모두 같은 버전). 버전을 바꿀 때마다 그 배포본 LICENSE.md 해시를 이 문서 S0과 대조, 5.0으로 올리기 전에는 S5·S7 다시 확인.
-3. 개인 무료 대상으로 확정되면: 렌더 옵션 `licenseKey: "free-license"`, Player `acknowledgeRemotionLicense`는 그 확인 뒤에만 넣는다(확인 전에 경고를 끄지 않음). 키 입력 화면은 만들지 않는다.
+3. 개인 무료 대상으로 확정되면: ~~렌더 옵션 `licenseKey: "free-license"`~~ → **렌더 옵션 `licenseKey: null`(넘기지 않음)** (2026-11-16 T-106 갱신, Master T-101 회수 결정: 4.0.543 배포 코드에서 `"free-license"`도 성공한 렌더마다 `https://www.remotion.pro/api/track/register-usage-point`로 사용 기록을 보내고 `null`이면 보내지 않음을 확인. 근거·문서와의 차이는 `docs/handoffs/T-106-RENDER-DECISIONS.md` 2장. 4.x 동안 서버 렌더 사용 기록은 무료 대상에게 "voluntary"(공식 문서). 5.0으로 올리기 전 2번대로 다시 확인), Player `acknowledgeRemotionLicense`는 그 확인 뒤에만 넣는다(확인 전에 경고를 끄지 않음). 키 입력 화면은 만들지 않는다.
 4. 조직 4명 이상 영리·교육기관 등이면: (가) Remotion 측 조건 확인 후 유료 여부 결정(은영님), 또는 (나) Remotion 없이 미리보기(브라우저 캔버스)·MP4(ffmpeg 직접 합성) 대안 — T-033 설계 이름(PlayerPanel 등) 영향은 Master 범위 판단.
 
 ## 9. 한계
