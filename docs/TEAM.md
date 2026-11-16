@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-062 · K6 준비 통과·P2-1 구현 가능 상태 기준 반영 (parent=T059) — ready
+### T-062 · K6 준비 통과·P2-1 구현 가능 상태 기준 반영 (parent=T059) — done
+
+- cda67a4 / msg_a657618a5644 회수. Master실제PLAN diff·고유보고검토: restricted계약379+1skip/SQL독립통과·신뢰한계·0005미추가/다음통합완료조건을구분해기준문서정합완료로채택했다. 문서검증만이며새앱시험/제품구현주장없음.
 
 - CC-DESIGN-01, PLAN K6/18 상태·최소이력/고유보고·히스토리만. SQL/s4 T047 + restricted코드계약 T059 독립PASS와P1두승인완료로준비게이트충족, P2-1실제미구현/T060설계검토후배정구분. source동봉/cwd/CLI·productionNext/errorUI/고정s5는다음제품통합완료조건, hostDB신뢰한계·step별clock비교유지. 제품/시안/spec/공용상태불변.
 
