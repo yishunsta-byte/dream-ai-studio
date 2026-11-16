@@ -19,6 +19,7 @@ import { runtimeRoot } from "@/lib/config/runtime";
 import { currentClips } from "@/lib/db/timeline-data";
 import { sameClip } from "@/lib/edit/timeline";
 import { assertPreviousApproved, WorkflowError, type StageState } from "@/lib/domain/stages";
+import { audioSourceBytes, audioSourceFile, audioSourceIds, audioSourceRange, type AudioSourceIssue } from "@/lib/media/audio-sources";
 import { checkBrowser, compositionSourceSha256, fileSha256, REMOTION_VERSION, type BrowserCheck } from "./tools";
 
 // P2-4b fixed render input (T-101 2.2). Built once when a render is requested and stored in renders.input_json as
@@ -150,19 +151,16 @@ export async function prepareRender(handle:DatabaseHandle,projectId:string,deps:
   // for every part used; the output within the 10-minute bound; the tools measured now and pinned by hash.
   let plan:Extract<RenderInputAudio["audioPlan"],{mode:"mix"}>|null=null;
   if(timeline.schemaVersion===2&&timeline.audio.length){
-    const ids=[...new Set(timeline.audio.map(clip=>clip.assetId))].sort(),found=new Map(jobs.assets(ids).map(asset=>[asset.id,asset])),sources:Extract<RenderInputAudio["audioPlan"],{mode:"mix"}>["sources"]=[];
-    const firstClip=(assetId:string)=>timeline.audio.find(clip=>clip.assetId===assetId)!.id;let complete=true;
+    // The checks are the shared source rule (lib/media/audio-sources.ts, T-162); same order and reasons as before.
+    const ids=audioSourceIds(timeline.audio),found=new Map(jobs.assets(ids).map(asset=>[asset.id,asset])),sources:Extract<RenderInputAudio["audioPlan"],{mode:"mix"}>["sources"]=[];let complete=true;
+    const block=(issue:AudioSourceIssue)=>{blockers.push({code:"AUDIO_SOURCE_MISSING",params:{reason:issue.reason,clipId:issue.clipId,assetId:issue.assetId}});complete=false;};
     for(const assetId of ids){
-      const asset=found.get(assetId),where={clipId:firstClip(assetId),assetId};
-      if(!asset){blockers.push({code:"AUDIO_SOURCE_MISSING",params:{reason:"file_missing",...where}});complete=false;continue;}
-      if(asset.kind!=="audio"){blockers.push({code:"AUDIO_SOURCE_MISSING",params:{reason:"not_audio",...where}});complete=false;continue;}
-      const file=resolveStoredFile(asset.filePath);
-      if(!file||!asset.filePath||!asset.sha256||!asset.sizeBytes||!asset.durationMs){blockers.push({code:"AUDIO_SOURCE_MISSING",params:{reason:"file_missing",...where}});complete=false;continue;}
-      let digest;try{digest=await fileSha256(file,{fresh:true});}catch{blockers.push({code:"AUDIO_SOURCE_MISSING",params:{reason:"file_missing",...where}});complete=false;continue;}
-      if(digest.sha256!==asset.sha256||digest.sizeBytes!==asset.sizeBytes){blockers.push({code:"AUDIO_SOURCE_MISSING",params:{reason:"file_changed",...where}});complete=false;continue;}
-      const available=Math.floor(asset.durationMs*FPS/1000),over=timeline.audio.find(clip=>clip.assetId===assetId&&clip.sourceInFrame+clip.durationFrames>available);
-      if(over){blockers.push({code:"AUDIO_SOURCE_MISSING",params:{reason:"range",clipId:over.id,assetId}});complete=false;continue;}
-      sources.push({assetId,relPath:asset.filePath,sha256:digest.sha256,sizeBytes:digest.sizeBytes,durationMs:asset.durationMs,isMock:asset.isMock});
+      const asset=found.get(assetId),located=audioSourceFile(timeline.audio,assetId,asset,resolveStoredFile);
+      if("issue" in located){block(located.issue);continue;}
+      let digest:{sha256:string;sizeBytes:number}|null;try{digest=await fileSha256(located.file,{fresh:true});}catch{digest=null;}
+      const changed=audioSourceBytes(timeline.audio,asset!,digest);if(changed){block(changed);continue;}
+      const over=audioSourceRange(timeline.audio,asset!);if(over){block(over);continue;}
+      sources.push({assetId,relPath:asset!.filePath!,sha256:digest!.sha256,sizeBytes:digest!.sizeBytes,durationMs:asset!.durationMs!,isMock:asset!.isMock});
     }
     if(durationInFrames>MAX_OUTPUT_FRAMES){blockers.push({code:"AUDIO_TOO_LONG",params:{frames:durationInFrames,maxFrames:MAX_OUTPUT_FRAMES}});complete=false;}
     const tools=await (deps.audioTools??checkAudioTools)();
