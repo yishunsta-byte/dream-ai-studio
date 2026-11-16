@@ -761,3 +761,8 @@
 - F085-1 is the same font timeout/retry issue already assigned T086; no duplicate work.
 - F085-2: existing locked disclosure non-box changes accepted by new-disclosure P1/preset fallback. T087 assigned to same author sequentially with T086, unique report and separate commit; existing id/non-box fields immutable, new creation distinct, actual HTTP rejection/DB unchanged and box-only success required.
 - T084 UI findings and T085 server findings remain distinct. Product acceptance FAIL pending fixes and independent focused recheck.
+
+### User AGY instruction routed to verified session (2026-11-16)
+
+- Terminal inventory shows connected AG-UI-01 titled session term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390, actual agentIdentity claude; this is the existing CC-DATA-01 temporary implementation assignee.
+- User's AGY task instruction routed there, retaining T086/T087 priorities/scopes rather than duplicating edits. No separate Antigravity runtime was discovered or claimed.
