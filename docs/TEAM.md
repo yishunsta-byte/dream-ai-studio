@@ -699,3 +699,11 @@
 - T077 235055a returned msg_1ee162eb6bf9. Master inspected exact test diff: only read-text CRLF normalization added; required assertions preserved. Author 425 passed / 2 generation skips, focused13 and LF/CRLF mutation evidence reported.
 - T078 independent Codex dispatched ready: ctx_2d11df377bc8 / task_d1369b0aa645 / term_e68292cd-2628-4fe8-a542-9996814cfc35, child p2-2-crlf-recheck. Report-only scope, fresh original CRLF full tests and focused check. Product runtime evidence inherited from T073/T076 because no product change.
 - P2-2 acceptance waits for T078 green; no further product fix currently identified.
+
+### P2-2 accepted; P2-3 design assignments (2026-11-16)
+
+- T078 imported msg_8ae86339a94f: original CRLF146/LF-only0, full425 passed/2 generation skips, focused13, mutation detects missing effect. F076-1 closed. T075/T077/T078 done.
+- Master accepts P2-2 within combined T073 broad runtime + T076 error/recovery and T074 visuals + T078 green tests + T072 design scope. Actual phone, screen reader, real hidden and long font-checking delay remain unverified; no deployment or full-P2 completion claimed.
+- T079 / CC-DATA-01 / ready (ack pending): P2-3 technical implementation design only, unique T-079-TEXT-EDITOR-IMPLEMENTATION.md. No product/schema/package changes. Request msg_d53eab9932b0.
+- T080 / CC-DESIGN-01 / ready (ack pending): P2-3 UX specification unique T-080-TEXT-EDITOR-UX.md, own history, minimal PLAN P2-1/P2-2 status correction only. Request msg_b102ec965cf8.
+- Design tasks coordinate directly; Master resolves scope, then assigns actual implementation and validation. Existing explicit save remains recommendation; no unilateral new auto-save/user-preset database feature.

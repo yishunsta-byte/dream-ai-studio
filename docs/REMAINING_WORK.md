@@ -107,3 +107,10 @@ Supersedes T075-fix-pending entries.
 - T077 235055a returned; Master confirmed assertion meaning preserved.
 - T078 independent original-CRLF full test check started (ctx_2d11df377bc8).
 - Next: accept P2-2 if green within T073/T076/T078 scope; retain actual-device, screen-reader and real-hidden verification limits.
+
+## Latest: P2-2 accepted; P2-3 preparation assigned
+
+- P2-2 accepted within T073/T076/T078 independent and T072 design scope. Full original-CRLF suite425 passed /2 generation skips. F073-1 and F076-1 closed.
+- T079 technical text-editor design requested from implementation author.
+- T080 text-editor UX and minimal stale PLAN status correction requested from Claude design.
+- Next: reconcile both designs, assign P2-3 implementation, test and independently review. Actual-phone/screen-reader/real-hidden verification limits remain; P2 overall is incomplete.

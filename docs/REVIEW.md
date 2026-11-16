@@ -382,3 +382,7 @@ P1-1 진행 가능. DB/워커 등 후속 기능의 통과를 의미하지 않는
 ## P2-1 independent acceptance (2026-11-16)
 
 T065 broad review found F065-1; T069 01f81f9 fixed it. T070 independently confirmed actual inspect/finish rejection, normal P1 SRT byte compatibility, r2 and stale/review/export behavior, 412 passed / 2 generation skips, lint/typecheck/build and 14 focused checks. Master accepts P2-1 within this combined scope. Historical archived membership and snapshot-external appended order are not fully authenticated; see T-070-P2-1-FOCUSED-RECHECK.md. No production deployment or actual-user-data migration is claimed.
+
+## P2-2 independent acceptance (2026-11-16)
+
+Combined T073 broad runtime, T076 changed error/recovery/development warning/visual checks and T078 original-CRLF425 passed/2 generation skips close F073-1 and F076-1. T072 design review and T074 refinements are integrated. Master accepts this local P2-2 scope. Actual phone/screen reader/real hidden and long font-checking delay remain unverified; no deployment, user-data migration or complete P2 claim. Next is P2-3 design preparation T079/T080.
