@@ -406,3 +406,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T155 subtitle VTT implementation/browser-parser evidence requested.
 - T156 new stage9 fixed backup/source-audio/render-B fixture generation assigned in isolated worktree.
 - After verified return: manifest2 with0010 old-app gate and source-audio editable ZIP. Existing SRT/P1/old archives/gates stay protected. Physical-phone/listening/native-hidden evidence remains unverified.
+## Latest: VTT accepted within native-cue/ZIP scope
+
+- T157 independent bounded PASS accepted: native exported cue timing max0.333ms, overlap and old byte preservation. Independent build incomplete; author build separate.
+- T158 manifest2/0010 and T156 fixed9 remain active. Source-audio editable ZIP follows their validation.
+- Physical phone/listening/native-hidden/general burn-in requirements remain open, not P2 completion.

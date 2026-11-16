@@ -1218,3 +1218,9 @@
 - msg_87c6698d9c09 /0c49bad: VTT author661/17skip and actual exported native textTrack evidence; independent acceptance pending.
 - T157 ctx_320c7a02a436 /task_9a4e2ae92f33 dispatched isolated VTT reviewer, reports only. T156 separate fixed9 author remains independent scope.
 - T158 requested manifest2 strict reader/verification plus new0010 old-app compatibility gate, no audio packaging/UI yet. Preserve existing archives/issued migrations. No user DB/deployment modifications.
+### T157 VTT bounded acceptance
+
+- msg_bb80f85bdd83 independent report read/imported. Related88 + independent1 tests, lint/type and actual exported native cues max0.333ms/overlap2/backward seek pass; P1/r1/SRT/old export bytes preserved.
+- Master accepts VTT behavior in this scope. Independent build incomplete due cross-drive dependency path; author build remains separate evidence. Burn-in/device/general media sync not accepted.
+- T158 compatibility implementation and T156 fixed9 generation continue; observed their WIP protected and excluded from Master staging.
+- Reviewer browser/processes stopped, auto-review denied temp cleanup. Copies/fake DB/dependency junction retained; no bypass or cleanup-complete claim.
