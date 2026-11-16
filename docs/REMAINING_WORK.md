@@ -396,3 +396,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T139 original DSP fixes pass, but F139-1 cleanup EBUSY overrides committed success. T140 correction requested; no module acceptance yet.
 - Installed FFmpeg hash difference independently observed and confirmed by Master; actor/time not established. Evidence-preserving audit and exact-known-hash restoration requested before further product execution.
 - T137 integration stays paused with WIP protected. Next: focused independent cleanup/tool recheck then resume.
+## Current authoritative state: editor fix accepted; P2-6 preparation
+
+- Supersedes older paused-DSP/integration entries: required DSP/restore corrections have been reviewed, U1 accepted and F150-1 editor draft-loss correction accepted in bounded T153 scope.
+- Current assignment T154: VTT and editable ZIP contract with source audio/rights/profile/font/license preservation. Implementation and independent validation follow contract review.
+- Actual listening, physical phone, native tab-hidden, screen reader/200 percent and complete media-role matrix remain unverified. Existing P1/new-data/exports gates preserved; no P2 completion or runtime deployment claimed.

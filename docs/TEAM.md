@@ -1201,3 +1201,9 @@
 - msg_2b8c853e5b89 /9127cf2023799561d0984f25fd52a3ebb4c20365 report/stat read. Latest-draft join recomputation/explicit re-confirmation and narrow undo/insert updates; author7 tests plus655/17skip and actual1280 save lifecycle evidence, no independent PASS yet.
 - T153 ctx_f2add742edff /task_91e47798218f dispatched: original stale-preview loss, confirmation invalidation, save/raw/recovery and bounded390/keyboard review, report only.
 - U2/U3 acceptance still withheld. Existing untracked T122/T137 reports preserved. No user DB/deployment changes.
+### T153 bounded PASS accepted; P2-6 contract assigned
+
+- msg_a906e8dd8635 /e1345bc5041190d6a43cfca57b981c6b53c91cff: report read/imported. Independent34/lint/type and actual original preview/apply/save/recovery/409 controls confirm F150-1 fixed. Master accepts focused correction and T149 verified editor scope with prior T150 evidence; native hidden/listening/device/accessibility gaps retained.
+- T137/T144 integration restoration acceptance is bounded by T143/T145 evidence; no general all-matrix or P2 completion implied.
+- T154 CC-DATA-01 assigned report-only code-grounded VTT/editable ZIP contract, including audio sources/rights/profile/font preservation and immutable existing exports; no gate unlock or user DB changes.
+- Reviewer processes stopped; auto-review blocked temp deletion, preserved fake runtime/copies documented without bypass.
