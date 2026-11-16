@@ -8,3 +8,11 @@ export const restoreTicketSchema=z.strictObject({id:z.uuidv7(),backupId:z.uuidv7
 export type RestoreTicket=z.infer<typeof restoreTicketSchema>;
 export const restoreInfoSchema=z.strictObject({schemaVersion:z.literal(1),ticketId:z.uuidv7(),backupId:z.uuidv7(),destination:z.string(),backupCreatedAt:z.iso.datetime(),restoredAt:z.iso.datetime(),sourceDatabaseSha256:z.string().regex(/^[a-f0-9]{64}$/),database:inventoryFileSchema});
 export type RestoreInfo=z.infer<typeof restoreInfoSchema>;
+// Private state of a restored instance (DB setting `restore.info`). Paths stay server-side.
+export const restoreStateSchema=z.object({ticketId:z.uuidv7(),backupId:z.uuidv7(),destination:z.string(),backupCreatedAt:z.iso.datetime(),restoredAt:z.iso.datetime(),inheritedBackupIds:z.array(z.string().min(1)).max(1000000).optional(),protectedRoots:z.array(z.string().min(1)).max(256).optional()});
+export type RestoreState=z.infer<typeof restoreStateSchema>;
+// Marks which instance requested a backup row: null for a never-restored instance, else that instance's restore ticket.
+export const backupOriginSchema=z.strictObject({schemaVersion:z.literal(1),restoreTicketId:z.uuidv7().nullable()});
+export const backupOriginKey=(id:string)=>`backup.${id}.origin`;
+// `present` without `state` means a restored instance whose record cannot be read: callers stay conservative.
+export function parseRestoreState(valueJson:string|undefined):{present:boolean;state:RestoreState|null}{if(valueJson===undefined)return {present:false,state:null};try{const parsed=restoreStateSchema.safeParse(JSON.parse(valueJson));return {present:true,state:parsed.success?parsed.data:null};}catch{return {present:true,state:null};}}

@@ -34,3 +34,27 @@ export async function removeOwnedStaging(staging:string,parent:string,ownerId:st
  await rm(candidate,{recursive:true,force:true});
 }
 
+const missing=(error:unknown)=>["ENOENT","ENOTDIR"].includes((error as NodeJS.ErrnoException)?.code??"");
+function boundaryUnknown(){return new MediaError("INVALID_INPUT","복원 폴더 위치를 확인하지 못했어요. 다른 새 빈 폴더를 골라 주세요.");}
+// Physical boundaries of the instance that is being restored from. A restored copy keeps
+// them (and those it inherited) privately so a later restore cannot land inside them.
+export async function sourceBoundaries(databaseFile:string,inherited:readonly string[]=[]){
+ const {root,data,storage,backups}=await runtimeBoundaries(),roots=new Set<string>([root,data,storage,backups,await physicalPath(dirname(resolve(databaseFile)))]);
+ for(const path of inherited)roots.add(path);
+ if(roots.size>256)throw boundaryUnknown();
+ return [...roots];
+}
+// Stored roots may be missing on this PC (other machine, unplugged drive): compare the stored
+// physical path lexically then. Any other resolution error fails closed.
+export async function validateInheritedBoundaries(target:string,roots:readonly string[]){
+ for(const root of roots){let actual=root;try{actual=await physicalPath(root);}catch(error){if(!missing(error))throw boundaryUnknown();}
+  if(overlaps(root,target)||overlaps(actual,target))throw new MediaError("INVALID_INPUT","원래 환경의 데이터·자료·백업 폴더와 겹치지 않는 새 복원 폴더를 골라 주세요.");}
+}
+// Stat-only guard for copies restored before boundaries were recorded: refuse any physical
+// ancestor that holds data/app.db, i.e. another Dream data folder. The target itself is skipped:
+// it is empty before publish and is this restore's own copy after it.
+export async function rejectForeignDataRoot(target:string){
+ let current=dirname(resolve(target));if(current===resolve(target))return;
+ for(;;){try{await lstat(join(current,"data","app.db"));throw new MediaError("INVALID_INPUT","다른 데이터 폴더 안에는 복원할 수 없어요. 데이터 폴더 바깥의 새 빈 폴더를 골라 주세요.");}catch(error){if(error instanceof MediaError)throw error;if(!missing(error))throw boundaryUnknown();}
+  const parent=dirname(current);if(parent===current)return;current=parent;}
+}
