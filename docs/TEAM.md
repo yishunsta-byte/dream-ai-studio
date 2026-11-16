@@ -670,3 +670,8 @@
 - T072 63eda92 / msg_633306b0fc8c: no mandatory UX defect; independent fake-production keyboard/1280/390 and DB unchanged evidence. Master read report and current Slot/CSS.
 - T074 assigned CC-DATA-01: dark placeholder backgrounds preserve stored white text, safe-area visibility using existing tokens without changing geometry, remove duplicate mobile guidance. Separate bounded commit/report and focused visual checks; no data/package/schema changes.
 - T073 continues independently on ad0501b; informed not to auto-integrate refinements. Final acceptance still pending independent results and relevant refinement checks.
+
+### T074 returned, final visual confirmation requested (2026-11-16)
+
+- T074 9e94316 returned msg_45f71927e32a. Master read report and checked four-file scope: three display-only product changes plus unique report. Author targeted 12 tests, component lint/typecheck/build and 1280/390 evidence passed; stored text/data/packages unchanged.
+- Requested design confirmation of tmp/t074-evidence in T072. T073 independent target remains ad0501b; worker informed of separate visual-only follow-up. Overall P2-2 acceptance pending independent report.
