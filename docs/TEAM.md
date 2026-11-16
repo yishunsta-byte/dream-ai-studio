@@ -1050,3 +1050,9 @@
 - Master decision: accept T120 fixes within personal local application's existing trust model: trusted app/source/tools and worker-owned attempt directories have no active adversarial same-privilege writer. No normal application writer to these attempt objects was identified. Original cache/source mutations and publication/retry/URL failures are closed.
 - Preserve reviewer FAIL findings verbatim; this is scoped acceptance, not an unconditional executed-byte immutability or OS sandbox guarantee. Same-user chmod/write-restore ABA and attempt JS mutation are not defended. Multi-user/untrusted-code/remote production requires separate reviewed isolation.
 - No unsolicited broad ACL/sandbox rewrite assigned. T126 integrated UI review remains pending; P2-4 overall and subtitle/device validation remain incomplete.
+
+### T127 actual subtitle-boundary measurement assigned (2026-11-17)
+
+- msg_05c0fd808b70 / 794040b confirms T120 trust boundary documented; product/reviewer findings unchanged.
+- T127 implementation author assigned isolated measurement script/tests/report: actual app-rendered three-aspect video, manual cues vs detected pixel/ROI start/end, maximum0.2s, negative/shift controls. No product DB/API/UI or measured-state flags changed.
+- T126 UI independent check and T125 three design alternatives continue separately. Real-phone and semantic voice synchronization remain unverified.

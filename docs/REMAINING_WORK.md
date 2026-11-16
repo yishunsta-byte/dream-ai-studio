@@ -324,3 +324,9 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - Stronger same-user malicious attempt-file mutation findings F124-1/2 remain documented, not claimed fixed or OS-isolated.
 - T126 render UI final check pending; T125 design three alternatives in progress.
 - Next: finish UI integration review, actual rendered subtitle-boundary measurement and end-to-end acceptance. P2-4 overall not yet complete.
+
+## Current: actual subtitle timing verification underway
+
+- T127 actual rendered-frame subtitle onset/end detection and0.2s criterion assigned, not JSON-only comparison.
+- T126 UI review pending; T125 three design alternatives in progress.
+- After results: resolve required findings, integrate P2-4 acceptance, then audio P2-5 and SRT/VTT/editable delivery P2-6. Actual-device evidence remains separate.
