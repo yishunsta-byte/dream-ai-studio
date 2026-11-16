@@ -1012,3 +1012,9 @@
 - msg_d1c3c1f3f5af: Codex design on fixed3580883 repeated UI-injected running→verify/success transition causes focused progress region removal and body focus. Explicitly not a real renderer completion-cause test.
 - Master adds R10 focus correction to T119 before its final return: transfer focus only if disappearing progress area owned focus; do not steal unrelated user focus. T120 backend priority unchanged.
 - Play button opens paused media observed as minor naming/behavior follow-up. T123 remaining UX checks continue, no product edits by design.
+
+### T123 focus finding corrected after hydration control (2026-11-17)
+
+- msg_23c56957b1e6 supersedes prior interim classification: after actual dialog interaction confirms hydration, two short verify/success transitions focus new H3 correctly and outside-link focus remains. Earlier body cases occurred after reload with DOM selector only.
+- Master withdraws definite normal R10 mandatory-defect classification and tells author not to change focus logic based solely on the earlier uncertain harness. Initial hydration boundary remains an observation for final report, not proven general runtime failure.
+- T120 priority and confirmed T119 scope unchanged.
