@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-060 · 타임라인 구현 설계 입력 (parent=P2-1 준비) — ready
+### T-060 · 타임라인 구현 설계 입력 (parent=P2-1 준비) — running
+
+- 실제 수락·점유 msg_d2bdd5aa7b9e 수신, 시작HEAD424471d. 담당이 고유 설계 문서 한 파일만 수정하고 코드/SQL/fixture/PLAN/공용문서 불변 및 T059 필수 수정 우선을 확인했다.
 
 - 사용자 남은작업확인·계속진행 지시에 따라 CC-DATA-01 배정. 허용 docs/handoffs/T-060-TIMELINE-IMPLEMENTATION.md 한파일만. P1 snapshot→불변timeline r1 결정적이관·CAS/current·revision/검수무효·저장/되돌리기·오류/미완성프로젝트·s4/s5·CLI/productionNext source통합을구체설계, U1/U3/U7기존결정유지·U4초안분리.
 - T059 통과 전 코드/제품0005/SQL/fixture원본/기준·공용문서수정금지. 관련파일/완료조건/검증명령·미정추천·선택문서커밋반환후Master검토. T059필수수정이오면그작업우선.
