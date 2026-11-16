@@ -50,7 +50,9 @@
 - D1 durationFrames/null빈자리,D2기획·영상길이max상한/무절단경고,D4읽기무쓰기,D5깨진pointer실패,D6이관기존내용version/검수불변,D7스냅샷revision,D8오류코드,D9s5,D10명시저장채택. D3는현재편집UI저장신API전환완료때만410허용. pointer INSERT/UPDATE·같은projectrestore참조/REPLACE불변·중복ID/hash·stale선택검증 추가.
 - 기존SQL1~4/s4/실사용DB/기준문서불변,제품0005는가상사본에서만적용. 전체tests/lint/typecheck/build·CLI/productionNext실제code실행/source동봉/cwd·오류안내·원본/옛행/ZIP보존·s4upgrade/s5/직접복원동등·양폭키보드현재편집→검수→ZIP동작·P1모양이관비교 증거와선택커밋반환후독립검수. Remotion/본격P2-3추가없음.
 
-### T-063 · 타임라인 상세 명세·기존값 이관 정합 (parent=T061) — ready
+### T-063 · 타임라인 상세 명세·기존값 이관 정합 (parent=T061) — done
+
+- 2d284e4 / msg_9ba1f43e53c2 회수, Master고유보고/PLAN·spec실제diff/JSON파싱검증후채택. 좌표/스타일·빈자리·상한·정수반올림·착수/완료조건을T061담당에실제전달, 원문고정값과spec대조·무절단경고/저장상한관계·현재UI저장경로전환조건유지. 문서검증이며앱테스트아님. 예전text_presets기본행note는후속최소정정으로분리하고이번구현요구확장안함.
 
 - 담당CC-DESIGN-01. PLAN11.2/11.3·18최소와text-presets migration.fromP1·고유보고/히스토리만. T060채택결정·U1실제P1좌표/스타일숫자·초프레임반올림·빈자리/글자상한·무절단경고를정합. 코드파일·공용상태·시안불변, 구현자필드차이는공유후조정. P2-1착수이며완료/Remotion시작아님.
 
