@@ -687,3 +687,9 @@
 
 - T075 3e24c71 returned msg_85b23c714b08, ready_review. Master read report and fallback/effect integration source. Author 425 passed / 2 skips, lint/typecheck/build and actual production initial/aspect/retry failure and recovery evidence. Production console cannot prove absence of development warnings.
 - T076 independent Codex dispatched, ready: ctx_ef9168b270dd / task_a678c4a15c03 / term_26392f19-bedc-471d-bf57-36d5b1a28cb7, child p2-2-error-recheck. Report-only scope. Direct runtime reproduction of changed failure/recovery/focus/save/read-only paths plus T074 visuals, development-warning check where feasible. Inherit clearly identified T073 broad checks. P2-2 acceptance pending.
+
+### T076 returned; T077 test portability fix assigned (2026-11-16)
+
+- T076 report imported msg_bf3b66db3cac. Independent actual error/retry/recovery/focus/save and development warning checks PASS; T074 visuals and preview read-only semantics PASS.
+- Overall review FAIL F076-1: LF-only source assertion fails on original CRLF checkout. Independent 424 passed / 1 failed / 2 skips; lint/typecheck/build passed. Keep author 425 result separate.
+- T077 / CC-DATA-01 / ready (ack pending): newline-tolerant assertion preserving semantic checks, only tests/p2-2-preview.test.ts and unique report. No product/migration newline changes or test disabling. Related/full tests and LF/CRLF evidence required; Master independently confirms CRLF green before acceptance.

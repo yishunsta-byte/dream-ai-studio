@@ -95,3 +95,9 @@ Supersedes T075-fix-pending entries.
 - T075 3e24c71 fixes initial/aspect/retry Player error handling; author 425 passed / 2 generation skips and runtime checks.
 - T076 independent focused recheck dispatched (ctx_ef9168b270dd), including error/recovery and T074 visual refinements.
 - Next: collect independent verdict; required defects need fixes/recheck before P2-2 acceptance. Actual phone/screen-reader/real hidden remain explicitly unverified.
+
+## Latest: functionality recheck PASS; F076-1 test portability pending
+
+- T076 independently passed changed error recovery and T074 visuals, including development-mode warning check.
+- Overall suite remains 424 passed / 1 failed / 2 skipped because an LF-only source assertion rejects CRLF.
+- T077 bounded test fix assigned. Next: verify original-CRLF tests green; then decide P2-2 acceptance. No product functionality failure claimed for F076-1.
