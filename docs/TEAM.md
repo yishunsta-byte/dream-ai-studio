@@ -42,7 +42,15 @@
 
 ## 요청 기록
 
-### T-048 · 코드 데이터 이관 실행·소스 해시 계약 (parent=P2-1 준비, priority=P1) — running
+### T-050 · 코드 데이터 이관 해시 계약 독립 검수 (parent=T048, priority=P1) — ready
+
+- 새구현미참여Codex child 기준80ed292. 해시원문과실제run일치/인증객체위조·등록경계·의존목록정규식한계/결정성/트랜잭션·사전사본/직접복원동등/SQL1~4·s4불변을독립검증한다. 고유T050보고만, 제품/fixture/사용자DB/공용문서불변.
+- 관련+전체tests/lint/typecheck/build·실제가상CLI·모듈/원문불일치재현, 필수결함과신뢰된개발자등록의전제구분하여PASS/FAIL·근거반환. 제품0005/P2타임라인진입은통과후별도배정.
+
+
+### T-048 · 코드 데이터 이관 실행·소스 해시 계약 (parent=P2-1 준비, priority=P1) — ready_review
+
+- 80ed292 / msg_97c78b09e60c 결과회수. Master가code-migration구현/시험registry/보고를읽고관련2파일44검사를직접실행해통과. 실제run과해시원문간등록자신뢰경계·정규식검사의한계를핵심검토사항으로T050독립검수에배정한다. source root=현소스cwd/시험root만허용방향채택, 제품0005등록·표시연결은현재승인아님. 담당전체320통과/생성1skip·lint/typecheck/build는작성자증거와구분.
 
 - 실제 수락·점유 msg_db6545646014 수신, 시작HEAD744cc34. 담당이 migration실행·소스해시보조/필요최소백업연결·관련tests/README·고유보고 범위를 확인했고 설계안 먼저 공유 예정이다.
 
