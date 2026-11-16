@@ -41,7 +41,9 @@
 
 ## 요청 기록
 
-### T-021 · 복원본 백업 출처·파일 누락·다른 환경 경계 보완 (parent=T019, priority=P1) — prepared
+### T-021 · 복원본 백업 출처·파일 누락·다른 환경 경계 보완 (parent=T019, priority=P1) — running
+
+- 실제수락 msg_2082a301212c 확인. 담당점유 backup/restore 서비스·보조schema/paths·관련tests(backup-origin.test.ts 예정)·고유인계로확정. UI/공용문서/lockfile/migration과실데이터는미접근. Master는해당파일을동시에수정하지않고반환후DTO화면연결과검증을수행한다.
 
 - Master가T019전체보고를읽고재현3건을확인할수있는구체수정으로채택. 데이터담당 CC-DATA-01에 데이터서비스/회귀구현을명시위임(이번작업만코드수정허용). 코딩T015의production/export와비중첩. 허용 backup/restore 서비스·보조schema/paths·관련tests와고유인계. UI/공용문서/lockfile/SQL마이그레이션변경금지. Master가후속DTO화면통합/실행검증한다.
 - 완료조건: 복원전이력과현환경백업구분/lastSuccess거짓보호표시방지, 파일없음명확한오류·복원불가, 원래환경data/storage내목적지거절·원본불변, 정상같은PC의기존성공백업읽기복원유지. legacy복원본의분류불확실성은보수적으로표시하며시계순서만으로확정하지않는다. P2호환구현/기능확장아님.
