@@ -60,9 +60,11 @@
 
 - 담당CC-DESIGN-01, T032후순차. 허용 docs/handoffs/T-033-P2-DESIGN-INPUT.md만. 기존PLAN/DESIGN/spec의P2-1~3을화면/상태/인터랙션/접근성/비율·시간·안전영역/기존값이관·완료조건으로정리한미승인입력초안. 코드/스키마/기준변경/P2착수없음. 충돌/미정은구체근거와추천으로Master에제출.
 
-### T-034 · K6 호환·고정 s4 백업 회귀 자료 설계 (parent=차기준비, priority=P2) — ready_review
+### T-034 · K6 호환·고정 s4 백업 회귀 자료 설계 (parent=차기준비, priority=P2) — done
 
-- 보완 4c1b67d / msg_c88b855ce82d 실제 diff 검토: 표 전체 제외 제거·원본 ZIP 바이트 보존·startedAt 보존은 반영됐다. 다만 재생성 시 migration applied_at과 서로 다른 복원 목적지의 경로/티켓 값 때문에 전체 H3 동일 조건이 성립하지 않는다. 비교 목적별 프로파일·정규화 전 결정성/후 기대값 분리와 settings upsert 시각 칸 확인을 추가 요청했다. 문서 검토 중이며 실제 테스트 통과로 보고하지 않는다.
+- 최종 a32666c·08fe734 / msg_90ed9a9dbaa1·msg_2805c3412f08 회수. Master가 실제 diff·maintenance upsert·settings 스키마를 확인했다. 재생성/보관본 복원/이관 직후/정규화 후 비교를 분리하고 실행별 차이는 정확한 기대값 검사 후에만 제외하도록 보완됨. settings는 key/value_json만 있어 Master의 updated_at 가능성 지적은 적용 대상이 아님을 확인했다. T034는 명세 검토 완료이며 fixture 생성·코드/SQL 변경·회귀 실행은 하지 않았다. 사용자 두 게이트 대기, P2 미착수.
+
+- 이전 검토: 보완 4c1b67d / msg_c88b855ce82d 실제 diff 검토: 표 전체 제외 제거·원본 ZIP 바이트 보존·startedAt 보존은 반영됐다. 다만 재생성 시 migration applied_at과 서로 다른 복원 목적지의 경로/티켓 값 때문에 전체 H3 동일 조건이 성립하지 않는다. 비교 목적별 프로파일·정규화 전 결정성/후 기대값 분리와 settings upsert 시각 칸 확인을 추가 요청했다. 문서 검토 중이며 실제 테스트 통과로 보고하지 않는다.
 
 - 25c77eb / msg_52330a97a85e 회수. Master가 restore.normalize와 대조해 표 전체 해시 제외의 검출 누락, 내부 export ZIP 가변성/H2 모순, startedAt 제외 근거를 발견했다. 정확한 변경 행·칸 허용 목록과 나머지 원본 보존 검사로 보완 요청을 실제 전송했다. 문서 보완 대기, 구현·fixture 생성·P2 착수 없음.
 
