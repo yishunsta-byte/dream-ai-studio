@@ -15,8 +15,8 @@
 | ID | 플랫폼/실제 연결 | 역할·작업 | 확인 상태 |
 |---|---|---|---|
 | CX-MASTER-01 | Codex CLI / term_3831c608-dc70-4b7f-aaba-742095a2481e | Master, T-012 운영구성/통합검증 | busy, 이 세션 |
-| CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, 기준·시안 정합·T064 읽기 대조 | T064 실제 요청, 수락 확인 대기 |
-| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터/임시 코딩 T061 | 구현 미커밋 확인·진행 상태 회신 요청 |
+| CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, T066 완료·T068 미리보기 UX | T068 실제 요청, 수락 확인 대기 |
+| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터/임시 코딩 T061 반환·T067 Player 설계 | T067 실제 요청, 수락 확인 대기 |
 | CC-ENG-01 | Claude CLI acceptEdits / term_cc667bc2-39ee-4648-bc6b-3bb000a9ab47 | 옛코딩T015 | 배정철회/fence·별도자원보존, 물리종료미확인 |
 | CX-REVIEW-01 | Codex / dispatch ctx_fa91b94b9d65 | 독립검수, 격리 child worktree | returned, 제품 FAIL/F0161·2/V13부분 |
 | CX-REVIEW-03 | Codex / dispatch ctx_35f31485cffe | 최종집중독립검수T029 | returned, R018최종P1독립PASS |
@@ -41,6 +41,17 @@
 4. 터미널 번호가 바뀌면 `orca terminal list --json`으로 찾아 이 표를 고친다.
 
 ## 요청 기록
+
+### T-067 · Player 기술 연결 설계 (parent=P2-2 준비) — ready
+
+- 사용자 남은목록/타세션지휘 지시로 CC-DATA-01에 실제 배정. 고유 T067 문서 한파일만. 현재 timeline/자산/폰트·공식 Remotion 정확버전/peer·라이선스·Composition/Player API·SSR/client경계·프레임/비율미저장·검증 파일/명령을 구체화한다.
+- 제품소스/package/lock/설치/0005/기준·공용문서 변경금지, T065 필수수정 우선. T068과 역할협조 가능, 실제P2-2 구현 착수 아님.
+
+### T-068 · Player UX 상태·조작 명세 (parent=P2-2 준비) — ready
+
+- CC-DESIGN-01에 실제 배정. 고유T068문서/히스토리만. 기존시안/T033 기반 재생·seek·초프레임·focus키/입력비간섭·비율미저장·로딩/오류/폰트/390·Tab/기존컴포넌트/양폭수용을 정리한다. T066 시간값혼동은 설명문구로 통합, 새자동저장/제품요구 추가없음.
+- 제품·시안·PLAN/DESIGN/spec·공용상태 수정/서버·브라우저 신규실행 금지. T067기술설계와질문협조는Master참조. T065검수중제품HEAD고정.
+
 
 ### T-065 · P2-1 최종 독립 검수 (parent=T061, priority=P1) — running
 
