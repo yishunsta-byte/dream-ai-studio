@@ -707,3 +707,9 @@
 - T079 / CC-DATA-01 / ready (ack pending): P2-3 technical implementation design only, unique T-079-TEXT-EDITOR-IMPLEMENTATION.md. No product/schema/package changes. Request msg_d53eab9932b0.
 - T080 / CC-DESIGN-01 / ready (ack pending): P2-3 UX specification unique T-080-TEXT-EDITOR-UX.md, own history, minimal PLAN P2-1/P2-2 status correction only. Request msg_b102ec965cf8.
 - Design tasks coordinate directly; Master resolves scope, then assigns actual implementation and validation. Existing explicit save remains recommendation; no unilateral new auto-save/user-preset database feature.
+
+### T079 design returned; cross-spec decisions pending T080 (2026-11-16)
+
+- T079 0e4ecbf / msg_201d34db379e returned ready_review, design only. Master read decision table and export/font/spec gaps.
+- Accepted explicit-save policy, no new user-preset DB/history UI, warning evidence scope, screen-only positioning chip, staged P2-3a/b.
+- Sent implementer/design remaining reconciliation: typography units and legacy-value preservation, required disclosure policy, font installation and lossless export scope. Actual P2-3 implementation not yet assigned; do not reinterpret legacy stored values or modify fixed migrations.
