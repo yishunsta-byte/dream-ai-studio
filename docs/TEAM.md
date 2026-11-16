@@ -42,7 +42,15 @@
 
 ## 요청 기록
 
-### T-046 · 신규 경로 경합·legacy 사본 안내 잔여 수정 (parent=T045/T035, priority=P1) — running
+### T-047 · 잔여 두 조건 집중 독립 재검수 (parent=T046/T045, priority=P1) — ready
+
+- b586d66 제품2파일최소변경에대해 F0451 absent-path afterProbe rawDELETE 원본bytes/논리보존, F0452 legacy digest없음은진짜/다른업무사본모두unconfirmed·새digest정상confirmed를독립재현한다. 관련4파일98회귀·실제1280/390안내·원본/fixture보존, 새결함없으면T045기존통과증거와합쳐현재SQL K6범위판정. 전체307을재실행했다고과장하지않는다.
+- 고유T047보고만, 제품/사용자DB/fixture원본/공용문서불변. 미래코드이관hash는0005전별도미완료조건유지.
+
+
+### T-046 · 신규 경로 경합·legacy 사본 안내 잔여 수정 (parent=T045/T035, priority=P1) — ready_review
+
+- 결과b586d66 / msg_0cc97ad29f7a 회수. Master가제품2파일diff·보고를검토하고관련4파일98검사를직접실행해통과했다. 담당전체307통과/생성1skip·lint/typecheck/build는별도증거, 독립T047집중재검수전done아님.
 
 - 실제 수락·점유 msg_edcd3701766f 수신, 시작 HEAD4e60460. 담당이 migrate-command/migration-record·필요최소호출·관련회귀·고유T046보고 범위를 확인했다.
 
