@@ -495,18 +495,22 @@ H.264 + AAC, 30fps. 최종 음량 약 -14 LUFS(`loudnorm` 2단계), 음성 구�
 서버는 내보내기 직전에 **승인된 기획 버전, 현재 revision의 검수 승인, 선택된 결과, 파일 존재**를 다시 확인한다.
 
 ```
-{slug}_{YYYYMMDD-HHmm}/
-├─ final/        {slug}_9x16.mp4                 ← P2부터. P1에는 없음
-├─ scenes/       01_{장면}.{ext} …               ← 선택된 장면 결과 (mock은 파일명에 _SAMPLE)
+editing-{내보내기ID}_SAMPLE.zip   ← P1 실제 이름(T-032 as-built). 샘플 결과가 없으면 _SAMPLE 없음. 상위 폴더 없이 바로 아래 항목이 들어 있다
+├─ README.txt                    편집용 묶음 안내(완성 영상 아님, 샘플 포함 여부)
+├─ manifest.json                 E-2
+├─ scenes/       {nn}_{장면ID}_v{n}_SAMPLE.{ext} … ← 선택된 장면 결과 (샘플이 아니면 _SAMPLE 없음)
 ├─ script/       script.txt, plan.md
-├─ subtitles/    {slug}.srt                      ← P1: 수동 시간 / P2: 타임라인 기준
 ├─ edit/         text_overlays.json (P1) · timeline.json (P2)
-├─ captions/     채널별 문구 (P5)
+├─ subtitles/    manual.srt      ← 수동 자막을 적었을 때만 (P1) / P2: 타임라인 기준
 ├─ provenance/   generations.json, rights.md
 ├─ review/       checklist.md
-├─ LICENSES/     (글꼴 동봉 시)
-└─ manifest.json
+├─ fonts/        PretendardVariable.woff2
+├─ LICENSES/     Pretendard-OFL.txt
+├─ final/        {slug}_9x16.mp4 ← P2부터. P1에는 없음
+└─ captions/     채널별 문구 (P5)
 ```
+
+P1 실제 묶음(가상 샘플 5장면 기준): 파일 15개(자막이 없으면 14개), 약 2.4MB. 압축하지 않고 담는다(stored ZIP64). 화면의 "묶음에 들어갈 것" 미리보기와 실제 묶음은 같은 경로 목록 함수를 쓴다. P2 이후 이름·구성을 바꾸려면 이 장을 먼저 고친다.
 
 | 규칙 | 내용 |
 |---|---|
@@ -725,6 +729,7 @@ P7-1 Postgres 이전(검증·롤백 계획 포함) · P7-2 Storage(Pro, TUS, 브
 | v2.4 보완 | 2026-11-16 | 14장 K-5 복원본의 대기 작업·백업 위치 처리(T-006, Codex 요청) |
 | v2.4 보완 | 2026-11-15 | 15장 B-7 통화·비교 규칙 (T-005, Codex 교차 확인) |
 | v2.4 보완 | 2026-11-15 | P2 글자 기준: 11.3 예시 위치를 안전영역 안으로(y 0.82→0.72), T-5 글꼴 목록 파일, T-6 글자 프리셋 파일 |
+| v2.4 보완 | 2026-11-16 | 13장 내보내기 ZIP 예시를 P1 실제 구성으로 정정: `editing-{ID}_SAMPLE.zip`, README·fonts 포함, 자막은 있을 때만 (T-032) |
 | v2.4 보완 | 2026-11-16 | 14장 K-6 이전 백업 호환 준비 기준, 18장 P2-1 시작 전 준비 기준 추가(T-018, 근거 T-017 D-3, Master 채택). 미구현 |
 | v2.4 보완 | 2026-11-15 | 14장 K-5에 P1 복원 범위 명시: 새 폴더 복원까지, 현재 데이터 교체는 P1 밖(T-003, Codex 요청) |
 | v2.3 | 2026-11-15 | 역할 변경(은영님 지정): 검수·테스트는 검수 담당(Codex), 플래너는 플랜·디자인. 20.1에 기준 문서 이의 절차(7·8번), 20.3에 디자인 대조 추가. P0-1 디자인 산출물 완료 |
