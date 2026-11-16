@@ -6,9 +6,10 @@ import type { PreviewClip, PreviewProps, PreviewText } from "@/lib/edit/preview"
 // P2-2 preview composition (T-067 3.2). Drawn at the project's real pixel size and scaled by the Player, so text
 // sizes are the stored px values. Imports only `remotion` and the pure preview module.
 const FONT="var(--font-pretendard), system-ui, sans-serif";
-// Gray slot with one line in the middle (empty slot, missing file, text-only tail) — T-068 2.3, T-072 G-1.
+// Dark slot with one line in the middle (empty slot, missing file, text-only tail) — T-068 2.3, T-072 G-1. Dark so the
+// usual white text stays readable over it (T-074, T-072 C-4); the saved text values are not touched.
 function Slot({message,scale}:{message:string;scale:number}){
-  return <AbsoluteFill style={{background:"var(--bg-sunken)",color:"var(--fg-muted)",alignItems:"center",justifyContent:"center",padding:`${48*scale}px`,textAlign:"center",fontFamily:FONT,fontSize:`${40*scale}px`,fontWeight:600}}><span data-preview-slot>{message}</span></AbsoluteFill>;
+  return <AbsoluteFill style={{background:"var(--bg-sidebar)",color:"var(--fg-on-sidebar-muted)",alignItems:"center",justifyContent:"center",padding:`${48*scale}px`,textAlign:"center",fontFamily:FONT,fontSize:`${40*scale}px`,fontWeight:600}}><span data-preview-slot>{message}</span></AbsoluteFill>;
 }
 // A dashed chip inside the frame (composition px, scaled with the picture).
 function Chip({children,scale}:{children:string;scale:number}){

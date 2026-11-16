@@ -7,8 +7,9 @@
 .stage:focus-visible { outline:2px solid var(--line-focus); outline-offset:2px; box-shadow:0 0 0 1px var(--line), var(--focus-ring); border-radius:var(--radius-md); }
 .loading { position:absolute; inset:0; display:flex; flex-direction:column; gap:var(--sp-2); align-items:center; justify-content:center; padding:var(--sp-4); text-align:center; color:var(--fg-muted); font-size:var(--text-sm); }
 .safe { position:absolute; inset:0; pointer-events:none; }
-.safe > span { position:absolute; background:var(--st-danger-bg); opacity:.35; }
-.safe > i { position:absolute; border:1px dashed var(--st-danger-line); }
+/* T-074 (T-072 C-5): red tint and a 2px dashed line with a 1px dark edge, visible on light and dark pictures. */
+.safe > span { position:absolute; background:var(--st-danger-fg); opacity:.18; }
+.safe > i { position:absolute; border:2px dashed var(--st-danger-line); outline:1px solid var(--bg-sidebar); }
 .sample { position:absolute; left:var(--sp-2); top:var(--sp-2); }
 .waiting { position:absolute; right:var(--sp-2); top:var(--sp-2); display:inline-grid; place-items:center; width:28px; height:28px; border-radius:var(--radius-md); background:var(--bg-surface); color:var(--fg-muted); }
 .spin { animation:previewSpin 1.2s linear infinite; }
