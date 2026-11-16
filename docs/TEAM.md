@@ -44,6 +44,8 @@
 
 ### T-055 · 거부 Promise 오류 생명주기 최소 보완 (parent=T054/T053, priority=P1) — running
 
+- 설계 msg_5f6592619f9d 검토후 capturedPromise.then intrinsic을timedVM내적용하는안채택. 일반then/getter미접촉·거부/rollback·freshcontext유지, nativeconstructor/species 예외때handler미부착·종료여부를subprocess로별도확인하도록조건추가. floating미반환rejection은현재잔여반환값범위와분리해한계를보고하되검증전해결로표시하지않음. 전역listener/warnflag금지유지.
+
 - 실제 수락·점유 msg_291e7c47749d 수신, 시작HEADcf8424b. loader·관련tests/deadlinechild/README·고유보고 범위를담당이확인했고독립보고검토후설계공유예정.
 
 - CC-DATA-01 임시코딩, loader/관련회귀/deadlinechild/고유보고·README필요최소. nativePromise거부를timedVM내안전intrinsic으로처리하되undefined계약유지/일반thenable·getter host미접촉·freshcontext·롤백후무쓰기유지. 전역unhandledRejection억제/Nodewarn플래그금지.
