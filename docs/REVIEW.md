@@ -1,5 +1,21 @@
 # 검수 기록
 
+## R-018 · T-029 F0171 집중 독립 재검수 (2026-11-16, 구현 미참여 Codex)
+
+**PASS. F-017-1 닫힘 및 F-016-1 마지막 잔여 해소. R016의 기타 증거와 R017의 F0162/V13잔여/데이터 독립 통과, 이번 집중 통과를 합친 P1 최종 독립 PASS로 판정한다. 은영님 흐름 확인·디자인 시안 승인은 미완료이므로 P2 진입 금지 유지.**
+
+- 시작/실제 대상 `a86f8f4c6967718969490e1444110a0ed4d835b3`, 시작 clean. `b9c926c7b5241d56df7ecc26eb0346610f0d08df` ancestor 종료0. 새 child에서 자기 가상 fixture/loopback3046/새TaskSpace23만 사용. 제품 수정·커밋·푸시 없음.
+- 직접 실행: `npm.cmd ci` 종료0, `npm.cmd test -- tests/production-panel-render.test.ts` **1파일2검사 통과**, lint/typecheck/build 각각 종료0, lint 경고0·사적자료 추적 없음. 전체223검사는 Master의 별도 실행이며 이번에 반복하지 않았다. 작성자의 과거코드2실패는 T028 보고 이력이고 본인은 수정후2성공을 실행했다.
+- 실제 서비스/UI로 v1성공선택→v2 CONTENT_REJECTED→v3성공 재현. 최근v2일 때 기본/비교 양쪽 링크2개, 후속v3 뒤 거절안내는 비교에만1개·링크2개. 거절retry/실패버전되돌리기 없음, 실제서비스retry 거절. v1선택/기존파일SHA/다른장면 전체 불변 확인.
+- 1280×960/390×844 각각 비교 summary 초기 focus→Enter→실제Tab으로 “기획 고치기”/“자료 바꾸기” 도달→Enter 이동 **총4회**. 정확한 `/projects/01a1e24d-80ff-7523-bdc0-e047a627ce44/plan` 및 `/library`, 주요 콘텐츠와HTTP200 확인. 링크 도달을 DOM click/focus로 대체하지 않음. 펼친상자/문서 가로넘침없음, 링크접근이름/줄맞춤/잘림없음 확인. SSR만으로 브라우저를 대체하지 않음.
+- 새 `flow-fail-v3.png`, `flow-m-scenes-v3.png`만 자기tmp/source tmp/p1-review에 복사, SHA2/2동일·기존18PNG SHA불변·개인정보/키/절대경로없음 직접열람. 서버/TaskSpace종료 및3046해제 확인, 상시worker미실행. 사용자확인HTML/TEAM/PROGRESS 변경없음.
+
+세부 명령·로그·캡처 SHA·도구시도·보존증거·복사용 전달문: [T029 집중 검수 인계](handoffs/T-029-INDEPENDENT-FOCUSED-RECHECK.md). R017의221검사·F0162·V13연속키보드/390작성가능검수표·백업 직접 통과는 **기존 이력**으로 유지하며 이번 전부 재실행으로 과장하지 않는다. 신규 필수수정 없음, T026 m1~m4 비차단권장 유지. 실대용량/디스크고갈/실사용자ACL/전원차단/적대적Windows경합/모든보조기기·전면200%확대/네트워크볼륨성능 미검증 한계 유지.
+
+**Claude design/플래너 전달 복사문:** clean a86f8f4(b9c926c 포함)에서 T029 직접 렌더2건·lint/typecheck/build와 실제1280/390 비교링크 Tab/Enter·정확URL/200·선택/해시/다른장면보존을 통과했습니다. F0171/F0161잔여를 닫고 기존R016/R017 통과증거와 합쳐 P1 최종 독립PASS로 판정합니다. R018/T029인계와 새-v3캡처두장을 확인하고 은영님흐름/디자인승인을 이어주세요. 이번전체223/백업/ZIP/V13재실행을 뜻하지 않으며 승인전P2금지입니다.
+
+
+
 ## R-017 · T-027 P1 종료 독립 재검수 (2026-11-16, CX-REVIEW-02)
 
 구현 미참여 새 Codex의 직접 실행이며 자체 검수 아님. 시작/검수 HEAD `2fa66b25853d76c25d9c1d4a4a7373994b752ecc`, 시작 clean. 코드8808928·데이터75c023c·UI bc895cf ancestor 각각 종료0. Orca 격리 child에서 가상 데이터/자기 loopback3036·3037/새TaskSpace22만 사용. Master `5d7907f`는 참고이며 아래 실행을 대체하지 않음.

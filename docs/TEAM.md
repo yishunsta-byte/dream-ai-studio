@@ -41,11 +41,17 @@
 
 ## 요청 기록
 
+### T-030 · 독립 통과 후 사용자 확인 자료 최종 갱신 (parent=T029/P1 종료, priority=P1) — queued
+
+- 담당CC-DESIGN-01, 전송msg_e014202eeb59. 허용P1-USER-REVIEW.html·고유T030인계만. R018최종독립PASS/필수0/V13완료·사용자2확인대기를정확히표시, 새-v2/-v3캡처원본보존·프로젝트/환경구분·독립221+집중2와Master전체223구분. 실제로드/개인정보/1280·390검증후반환. Master검토후구체사용자확인요청, 그전P2금지.
+
 ### T-028 · F0171 실패 비교영역 행동 링크 최소 수정 (parent=T023/T027, priority=P1) — ready_review
 
 - 실제수락msg_9c5197a1eb05→회수msg_5933dd19892f/b9c926c. production-panel조건/CSS최소수정·실제서비스데이터서버렌더2검사추가(수정전실패확인). Master가4파일diff/보고검토하고build경고0/private0·l int0·전체26파일223검사를재실행했다. 브라우저비교링크/키보드/선택보존은T029독립영역재검수로남긴다.
 
-### T-029 · F0171 비교영역 링크 집중 독립 재검수 (parent=T028/T027, priority=P1) — prepared
+### T-029 · F0171 비교영역 링크 집중 독립 재검수 (parent=T028/T027, priority=P1) — done
+
+- 회수msg_0fdac6da96f6/dispatchctx_35f31485cffe. 구현미참여Codex clean a86f8f4의실제비교링크Tab/Enter4회·정확URL/200·選択v1/기존SHA/다른장면보존·양폭넘침0, 직접render2/lint/typecheck/build성공. R018·고유인계를Master가읽고원문통합. F0171/F0161잔여닫힘, R016/R017기존독립증거와합친P1최종독립PASS. 이번전체223/ZIP/V13재실행아님. -v3새2장SHA동일·기존18장보존. 사용자흐름/시안승인미완료로P2금지유지.
 
 - 구현미참여Codex를새Orca격리child에배정. 대상b9c926c포함시작HEAD, 허용REVIEW새절/고유인계/-v3새캡처만. 이전R017에서통과한F0162/V13/데이터는증거이력으로유지하고이번에반복수행했다고주장하지않는다. 오래된거절이비교에만남는상태·두링크/정확주소/Tab-Enter접근·거절retry없음/선택·원본불변·1280/390을직접검증한다. 최종판정후에도사용자흐름/디자인승인은별도다.
 
