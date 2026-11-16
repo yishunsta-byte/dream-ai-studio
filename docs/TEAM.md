@@ -1182,3 +1182,8 @@
 - msg_c68994b9600c independent bounded PASS, related29/lint/type/build and actual AAC/none/late Next/DB/native playback connections checked; report imported. Master accepts U1 within verified scope, no listening/device claim.
 - T149 CC-DATA-01 U2/U3 audio editor/source audition implementation requested msg_effcb34c69f6, narrow shared-draft/CAS/raw recovery/read-only sources scope, render UI/DSP/DB unchanged. Acknowledgment pending.
 - Reviewer processes/browser stopped. Auto-review blocked OS-temp deletion; fake runtime/copies retained, no bypass or cleanup-complete claim. User DB untouched.
+### T149 returned; T150 independent editor review and T151 copy correction
+
+- msg_b815ce232a65 /395d9dd: audio editing/source audition ready_review; author648/17skip and actual fake-project save/recovery/upload/keyboard evidence. Listening/device/native visibility gaps explicit.
+- T150 ctx_d9ef33c7c387 /task_1b64914b081f independent editor/save/raw recovery/native audition review dispatched. Product acceptance pending.
+- T151 outdated Player audio description correction requested msg_ebbf0f510da0, single component copy only. No synchronous mixed preview claim. Shared user server3013 protected, no deployment/user DB changes.
