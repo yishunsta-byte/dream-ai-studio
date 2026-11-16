@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-055 · 거부 Promise 오류 생명주기 최소 보완 (parent=T054/T053, priority=P1) — ready
+### T-055 · 거부 Promise 오류 생명주기 최소 보완 (parent=T054/T053, priority=P1) — running
+
+- 실제 수락·점유 msg_291e7c47749d 수신, 시작HEADcf8424b. loader·관련tests/deadlinechild/README·고유보고 범위를담당이확인했고독립보고검토후설계공유예정.
 
 - CC-DATA-01 임시코딩, loader/관련회귀/deadlinechild/고유보고·README필요최소. nativePromise거부를timedVM내안전intrinsic으로처리하되undefined계약유지/일반thenable·getter host미접촉·freshcontext·롤백후무쓰기유지. 전역unhandledRejection억제/Nodewarn플래그금지.
 - 즉시/queuedRejected 원문 A/B3회열린DB·journal/rollback·정상후속·100ms대기완료·status0, T052late/deadline·관련/전체tests/lint/typecheck/build증거후집중독립검수. SQL/s4/사용자DB/제품0005/공용문서불변.
