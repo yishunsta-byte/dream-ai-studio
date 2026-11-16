@@ -1,5 +1,9 @@
 # 검수 기록
 
+## T047 현재 SQL K6 독립 PASS·잔여 계약 착수 (2026-11-16)
+
+T047이 b586d66 제품동일기준에서독립98관련검사·실제CLI/1280·390시작안내·원본/fixture보존을확인해F0451/2를닫았다. T045독립전체305/생성1skip·lint/typecheck/build및기존F039/F043통과증거와합쳐현재SQL K6범위PASS를Master가채택했다. T047전체307/production빌드/복원UI를재실행했다고주장하지않는다. 상세 handoffs/T-047-K6-FOCUSED-RECHECK.md. 코드데이터이관소스/hash계약은별도T048구현·검수전미완료,제품0005/타임라인은그뒤배정. 기존P1사용자두승인완료상태유지.
+
 ## R-021 · T045 K6 DB 보호 재검수 — scoped FAIL (2026-11-16)
 
 독립305통과/생성1skip·lint/typecheck/build와기존F043/F039실행범위PASS. 잔여F0451 최초없는경로에검사후unknownDB생성시거부전WAL변경/F0452 digest없는legacy사본의동일schema/journal·상이업무데이터확인표현 실제재현. T046최소수정배정, legacy확인근거없으면unconfirmed로결정. 상세 handoffs/T-045-K6-INDEPENDENT-RECHECK.md. 수정후독립재검수전K6수용/0005보류, 미래code이관hash계약미구현조건유지.

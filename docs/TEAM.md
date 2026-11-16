@@ -42,7 +42,19 @@
 
 ## 요청 기록
 
-### T-047 · 잔여 두 조건 집중 독립 재검수 (parent=T046/T045, priority=P1) — running
+### T-048 · 코드 데이터 이관 실행·소스 해시 계약 (parent=P2-1 준비, priority=P1) — ready
+
+- CC-DATA-01 임시코딩, lib/db migration실행·명시적소스/해시보조·필요최소manifest연결/관련tests/README/고유보고. 기존SQL1~4/hash불변, 제품0005/타임라인/사용자DB/고정fixture덮기금지. verify와실행을구분하고실제소스·영향의존범위를versioned결합hash로기록,같은트랜잭션·결정성·옛행보존·직접/복원동등·실패rollback/사전snapshot·ZIP보존을테스트전용5단계로입증한다.
+- 관련/전체tests/lint/typecheck/build·근거·선택커밋반환후독립검수. 이번계약은0005전미완료조건이며현재SQL K6통과와구분한다.
+
+### T-049 · SQL K6 통과·남은 코드 이관 계약 기준 반영 (parent=T047) — ready
+
+- CC-DESIGN-01, PLAN K6/18 최소상태주석·고유보고/히스토리만. T047독립98와T045독립305계승을구분, 현재SQL호환/s4통과와T048 codehash미구현분리. 제품코드/공용상태불변, 사용자승인재요청없음.
+
+
+### T-047 · 잔여 두 조건 집중 독립 재검수 (parent=T046/T045, priority=P1) — done (현재 SQL 범위)
+
+- 결과msg_a383f345e06f 회수·원문검토/취합. 독립98관련검사·actualCLI/실제dev앱1280·390/원본보존으로F0451·2닫힘, T045독립전체305/lint/typecheck/build계승과합쳐현재SQL K6범위PASS를Master가채택했다. 이번독립전체307/production빌드/복원UI재실행으로과장하지않음. code-data migration source/hash는미구현별도T048,0005전선행조건유지.
 
 - 실제worker ready dispatch ctx_7d04d5a8942c / task task_746652d7daad / terminal term_b7e19858-6845-464f-97b2-5c042a01d90a / child k6-residual-focused-recheck. 결과Orca wake로회수.
 
@@ -50,7 +62,7 @@
 - 고유T047보고만, 제품/사용자DB/fixture원본/공용문서불변. 미래코드이관hash는0005전별도미완료조건유지.
 
 
-### T-046 · 신규 경로 경합·legacy 사본 안내 잔여 수정 (parent=T045/T035, priority=P1) — ready_review
+### T-046 · 신규 경로 경합·legacy 사본 안내 잔여 수정 (parent=T045/T035, priority=P1) — done (현재 SQL 범위)
 
 - 결과b586d66 / msg_0cc97ad29f7a 회수. Master가제품2파일diff·보고를검토하고관련4파일98검사를직접실행해통과했다. 담당전체307통과/생성1skip·lint/typecheck/build는별도증거, 독립T047집중재검수전done아님.
 
@@ -70,7 +82,7 @@
 - 제품코드/fixture원본/사용자DB/공용문서불변, 고유T045보고만. 전체tests/lint/typecheck/build·직접재현증거·PASS/FAIL·미검증한계 반환. 미래code-data-migrationhash미구현은0005전 별도선행조건으로유지.
 
 
-### T-044 · DB 비변경·정규 journal·사본 유효성 필수 수정 (parent=T043/T035, priority=P1) — ready_review
+### T-044 · DB 비변경·정규 journal·사본 유효성 필수 수정 (parent=T043/T035, priority=P1) — done (현재 SQL 범위)
 
 - 디자인 msg_52c2e6e93493 읽기대조 수신: T042 실패/미확인사본 문구·코드줄은 채택 기준과 일치. 데이터 폴더 지정방법 도움말은 비차단 후속으로 분리하고 T044 필수3결함 범위를 늘리지 않기로 결정했다. 제품 동작 시험 근거로 취급하지 않는다.
 
@@ -92,7 +104,7 @@
 - 전체tests/lint/typecheck/build 및 실제실패→재검사/준비replay·unrecorded거부/진짜fresh·시작안내를독립검증하고 PASS/FAIL·잔여조건·미실행한계를반환한다. Master전체280통과와독립실행은구분. 코드이관hash는미래0005전별도조건으로유지.
 
 
-### T-042 · 독립 검수 DB 신규 판정·시작 안내·검증 보완 (parent=T035, priority=P1) — ready_review
+### T-042 · 독립 검수 DB 신규 판정·시작 안내·검증 보완 (parent=T035, priority=P1) — done (현재 SQL 범위)
 
 - 결과 f8e4e28 / msg_227a56e788d9 회수. Master가 보고·실제sidecar검증코드를검토하고 전체29파일280통과/생성1skip를직접재실행했다. T041과묶어T043독립재검수전done아님. 코드데이터이관hash미구현은0005전추가조건,복원활동시각의시스템시계/주입시계차이는기존한계로구분한다.
 
@@ -104,7 +116,7 @@
 - 범위 migration실행/CLI/startup·필요최소부품/관련tests/고유T042보고·README. 기존SQL/고정fixture원본/사용자data/공용문서 불변. 전체tests/lint/typecheck/build·격리실패/원본보존 증거·별도선택커밋 반환 후 독립재검수. 미래코드이관hash/0005는별도선행계약.
 
 
-### T-041 · 복원 확정 실패 뒤 재검사 경로 (parent=T035, priority=P1) — ready_review
+### T-041 · 복원 확정 실패 뒤 재검사 경로 (parent=T035, priority=P1) — done (현재 SQL 범위)
 
 - 결과9c56033 / msg_68b81d622a76 회수. Master가 실제상태기반 retryable/terminal ticket clear·sessionStorage/초점·선택복구 diff와 보고를 검토했고 restore/maintenance-routes 2파일28검사를 직접 실행해 통과했다. 담당 전체261통과/생성1skip·lint/typecheck/build 및 실제원본변경1280/390/키보드 증거와 응답흉내 UI검증을 구분해 기록. T042수정후 독립재검수 전 done 아님.
 
@@ -142,7 +154,7 @@
 - 완료 조건: local 백업 집계·출처3종·파일없음/검증이력·복원 비활성/복원본 안내를 1280/390 실제 표시·넘침 검사 후 증거/한계 반환. T037 보완과 같은 담당이 순차 진행. 새 사용자 승인 요구 없음.
 
 
-### T-035 · K6 이전 백업 호환·고정 s4 구현 (parent=P2-1 준비, priority=P1) — ready_review
+### T-035 · K6 이전 백업 호환·고정 s4 구현 (parent=P2-1 준비, priority=P1) — done (현재 SQL 범위)
 
 - 구현 ebd0dff / msg_3ae2016fac5d 회수. Master가 핵심 migration/복원 코드를 읽고 전체 tests를 직접 재실행: 28파일258통과, 생성모드1skip. 새 라이브 DB 이관은 실행하지 않았다. T039 독립 검수 전 done 아님.
 
