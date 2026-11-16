@@ -1173,3 +1173,7 @@
 - msg_51c6517ae21f /a775a47: Master read report. Author33/33 plus isolated618/13skip; commit and cleanup separate, new explicit cleanup state. No independent acceptance yet.
 - Master directly confirms installed ffmpeg3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec. Author backed up e957 and candidate matched original package exactly; source attribution remains strong inference, not proven.
 - T141 requested for commit/cleanup failure semantics and regression preservation; installed tools read-only. T137 remains paused pending verdict.
+### T141 bounded fixes pass; T142 cleanup uncertainty (2026-11-17)
+
+- Report imported/read. F139-1 resolved, independent33 PASS; F141-1 false-complete remains. T142 conservative deletion-error reporting requested without scope expansion. Render WIP unchanged.
+- Installed tools independently match package bytes. R141-1 report correction requested. No overall acceptance yet.
