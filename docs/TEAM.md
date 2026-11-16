@@ -664,3 +664,9 @@
 - T071 ad0501b ready_review, msg_3513d8b569c2. Master read author report: 424 passed / 2 generation skips, lint/typecheck/build, production preview keyboard/ratio/DB/requests evidence. Author explicitly lacks actual video, Player-level error and scene-zero browser checks; actual phone/screen-reader also unverified.
 - T072 final UX validation requested from CC-DESIGN-01 (msg_49c6a9fcf07b), unique report/history only, no shared build or product changes.
 - T073 independent Codex dispatched: ctx_9874bc63970e / task_ea10b850a124 / term_c9315d8f-d0de-487f-b08c-695e4efe7b63, child p2-2-player-review, ready receipt. Scope report-only; independent suite/runtime plus actual MP4, Player error/reload and empty UI gap closure in own fake environment. Product acceptance pending.
+
+### T072 final UX returned; T074 bounded refinement (2026-11-16)
+
+- T072 63eda92 / msg_633306b0fc8c: no mandatory UX defect; independent fake-production keyboard/1280/390 and DB unchanged evidence. Master read report and current Slot/CSS.
+- T074 assigned CC-DATA-01: dark placeholder backgrounds preserve stored white text, safe-area visibility using existing tokens without changing geometry, remove duplicate mobile guidance. Separate bounded commit/report and focused visual checks; no data/package/schema changes.
+- T073 continues independently on ad0501b; informed not to auto-integrate refinements. Final acceptance still pending independent results and relevant refinement checks.
