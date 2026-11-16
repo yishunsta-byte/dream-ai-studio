@@ -1080,3 +1080,12 @@
 - 8fb888d / msg_8c9875372cb7 returned. Master read report and viewed all three desktop home captures directly.
 - New options:01 Studio Desk,02 Flow Control,03 Focus Canvas; comparison docs/design/codex-options/index.html. Author18 desktop/mobile combinations and22 PNG checks are self-QA, not independent certification.
 - Master recommends01 for existing workflow continuity and clear next actions;03 emphasizes creative preview,02 multi-project operations. User review request fulfilled by presenting all three. Existing deployed T115 A remains unchanged, no automatic new publication.
+
+### T128 independent timing review integrated; T129/T130 assigned (2026-11-17)
+
+- CX-MASTER-01 imported final T128 report, including threshold supplement (msg_60d1085565d5). Earlier follow-up delivery escalation is superseded by the actual returned supplement; no duplicate request sent.
+- Fixed synthetic 3-aspect/4-cue matrix independently reproduced: video max5/30=0.166667s at threshold48/min40; SRT max1/3000=0.000333s, rounded display0.000. Per-aspect image/video hashes differ; only font hash is shared. R128-1/2 report corrections required.
+- Threshold96 fade0.233333s remains FAIL for that criterion. Pixel difference is not text recognition or human visibility calibration. Author's pre-first-run threshold chronology remains author testimony, not independent preregistration.
+- T129 owner CC-DATA-01 (temporary implementation): only measurement script/tests, T127 corrections and unique T129 report. Fix invalid ROI/threshold/minimum/frame/CLI validation and automation result semantics; preserve fixed matrix and product DB/API/UI. Request sent msg_e4e8d7de260b to live terminal mailbox; acknowledgment not yet confirmed. Complete when corrections and meaningful input/normal-path checks return for Master review.
+- T130 owner CX-DESIGN-01: unique docs/handoffs/T-130-AUDIO-UX-PLAN.md only; P2-5 current-code-grounded UX, interfaces and smallest implementation/validation stages. No product/schema/shared document/deployment changes. Request sent msg_c0f7665250bb to live terminal mailbox; acknowledgment not yet confirmed. Complete when actionable plan returns to Master.
+- Existing user WIP docs/handoffs/T-122-CODEX-DESIGN-INTAKE.md left untouched. No real-user DB migration or automatic new-design publication.

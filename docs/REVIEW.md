@@ -398,3 +398,9 @@ Master combines T100 exact ownership/full recovery/lifecycle/CDP preservation PA
 ## Render foundation acceptance (2026-11-17)
 
 T110 independently closes F107-1/2/3, verifies immutable migrations/fixtures, actual rollback/restore and terminal MP4 preservation. T112 closes F110-1 with safe actual CLI diagnosis and future-step validation, full500/5skips plus separate media9 and inherited T110 build/restore evidence. Master accepts the local render-record/migration/backup-restore foundation. No actual-user migration, renderer runtime/UI or P2-4 overall acceptance claimed. T108 tooling remains in progress.
+
+## T128 controlled subtitle timing review (2026-11-17)
+
+Master imported final independent report docs/handoffs/T-128-SUBTITLE-MEASUREMENT-REVIEW.md. Accept reproduced fixed synthetic matrix only: three ratios, four cues, 120 frames; max video boundary error0.166667s at48/40. SRT max0.000333s is rounded0.000, not exact zero. Report source-hash wording needs per-aspect correction. Threshold96 fade0.233333s and image-difference false positives remain explicit limitations. Invalid-input/CLI findings require bounded T129 correction before tool reuse. Reviewer ran59 related tests plus lint/type; inherited backend/build/UI evidence is identified separately, not rerun by Master.
+
+T124 trusted-local backend scope and T126 bounded UI acceptance stand. VTT, real-device playback, voice semantic sync and user-project measurement remain unverified; subtitleMeasure/phonePlayback remain null. This is not overall P2-4/P2 completion. T129 fixes and T130 audio preparation proceed without new human approval gates.

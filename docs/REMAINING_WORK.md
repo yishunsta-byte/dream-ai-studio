@@ -344,3 +344,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T125 three new UI options completed screen checks; final report/cleanup awaited.
 - T127 actual subtitle timing report returned; T128 independent detector/actual-render verification started.
 - Next: show three options, integrate measurement scope and gaps, then audio P2-5 preparation. VTT/user-video/device checks remain distinct.
+
+## Latest: controlled timing reviewed; measurement fixes and audio preparation
+
+- T128 fixed3-ratio/4-cue measurement independently reproduced (video0.166667s at48/40; SRT0.000333s). Universal human visibility is unproved; threshold96 fade0.233333s FAIL remains.
+- T129 sent to implementation owner: report corrections and measurement tool input/CLI/frame/result validation; review pending, no acknowledgment claimed.
+- T130 sent to Codex design: current-code-grounded P2-5 audio UX/interface/implementation plan; review pending, no acknowledgment claimed.
+- Next: review fixes, then assign smallest audio implementation and independent verification. VTT/editable delivery, real-phone playback and semantic voice sync remain open. Product measured flags stay null and real-user DB untouched.
