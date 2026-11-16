@@ -49,6 +49,9 @@ export function parseFrameTime(value:string):{frame:number}|{error:"format"|"fra
 
 // Measured outer box of a drawn text in composition px (glyphs + stroke + shadow + band, T-080 2.2).
 export type MeasuredRect={left:number;top:number;right:number;bottom:number};
+// A text that ends after the video is warned about (kept, never cut). A locked required disclosure is fixed to the
+// plan length by rule, so a video shorter than the plan is a normal state with nothing to fix (T-084 B-2).
+export const beyondVideo=(layer:Pick<TimelineText,"locked"|"timing">,videoFrames:number)=>!layer.locked&&layer.timing.endFrame>videoFrames;
 export type SafeSide="top"|"bottom"|"left"|"right";
 const TOLERANCE=0.5;
 export function safeAreaRect(aspect:Timeline["aspect"],width:number,height:number):MeasuredRect{

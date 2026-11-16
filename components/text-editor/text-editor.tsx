@@ -8,6 +8,7 @@ import { applyPreset, changeKind, insertText, moveInsideSafeArea, moveText, newT
 import { canonicalJson, framesToSeconds, TEXT_KINDS, type Timeline, type TimelineText } from "@/lib/edit/timeline";
 import type { MeasureResult } from "@/components/player/text-measure";
 import type { PreviewControl } from "@/components/player/player-panel";
+import type { FontState } from "@/components/player/font-loader";
 import { Badge, Button, Callout, EmptyState } from "@/components/ui/primitives";
 import { Field, useToast } from "@/components/ui/interactive";
 import { Icon } from "@/components/ui/Icon";
@@ -17,7 +18,7 @@ import styles from "./text-editor.module.css";
 // to the draft timeline the preview shows; nothing is saved until the page's save button. Keys are the browser's own
 // (buttons, fields); there is no page-wide shortcut.
 export type TimeState=Record<string,{raw:string;error:string}>;
-export type TextWarning={sides:SafeSide[];lines:number|null;maxLines:number;font:"ok"|"missing"|"timeout"|"checking";beyond:boolean};
+export type TextWarning={sides:SafeSide[];lines:number|null;maxLines:number;font:FontState|"checking";beyond:boolean};
 type Props={draft:Timeline;initial:Timeline;setDraft:Dispatch<SetStateAction<Timeline>>;selectedId:string|null;setSelectedId:(id:string|null)=>void;
   fonts:readonly FontRef[];required:readonly string[];plannedFrames:number;videoFrames:number;limitFrames:number;aspect:Timeline["aspect"];
   warnings:Record<string,TextWarning>;measure:MeasureResult|null;placeCheck:ReadonlySet<string>;setPlaceCheck:Dispatch<SetStateAction<ReadonlySet<string>>>;
@@ -33,7 +34,8 @@ const edgeTitle:[string,string]=["화면 가장자리(5%)에 너무 붙어 있�
 const shortTime=(frame:number)=>formatFrameTime(frame);
 export function warningLines(warning:TextWarning|undefined,aspect:Timeline["aspect"]):[string,string][]{
   if(!warning)return [];const out:[string,string][]=[];
-  if(warning.font==="missing"||warning.font==="timeout")out.push(["글꼴을 불러오지 못해 크기를 확인하지 못했어요.","대신 그린 글꼴로는 경고를 판단하지 않아요."]);
+  if(warning.font==="timeout")out.push(["글꼴을 받는 중이라 아직 크기를 확인하지 못했어요.","다 받으면 저절로 다시 확인해요."]);
+  else if(warning.font==="failed"||warning.font==="unavailable")out.push(["글꼴을 불러오지 못해 크기를 확인하지 못했어요.","대신 그린 글꼴로는 경고를 판단하지 않아요."]);
   else if(warning.font==="ok"){
     const sides=aspect==="9:16"?warning.sides.map(side=>SIDE_TITLE["9:16"][side]):warning.sides.length?[edgeTitle]:[];out.push(...sides);
     if(warning.lines!==null&&warning.lines>warning.maxLines)out.push([`글자가 길어 ${warning.lines}줄이 돼요. 최대 ${warning.maxLines}줄이에요.`,"문구를 줄이거나 크기를 줄여 주세요."]);
@@ -135,7 +137,7 @@ function TextInspector({layer,index,draft,initial,setDraft,fonts,aspect,warnings
     <div className={styles.pcOnly}><Field label="종류"><select value={layer.kind} disabled={layer.locked} onChange={event=>update(current=>changeKind(current,event.target.value as TextKind))}>{TEXT_KINDS.filter(kind=>kind!=="disclosure"||layer.kind==="disclosure").map(kind=><option key={kind} value={kind}>{kindLabel(kind)}</option>)}</select></Field>
       {saved&&saved.kind!==layer.kind&&canonicalJson({...saved.style,maxLines:0})===canonicalJson({...layer.style,maxLines:0})&&<p className={styles.note}>종류만 바꿨어요. 모양은 빠른 모양에서 골라요.</p>}</div>
     {layer.locked?<div><p className={styles.note}>문구</p><p>{layer.content}</p></div>:
-    <Field label="문구" required help={`최대 ${layer.style.maxLines}줄 · ${measured&&warning?.font==="ok"?`지금 ${measured.lines}줄`:"줄 수 확인 중"} · 한 줄에 ${preset.recommendedCharsPerLine}자 안팎이 읽기 좋아요.`} error={layer.content.trim()?undefined:"문구를 적어 주세요."}>
+    <Field label="문구" required help={`최대 ${layer.style.maxLines}줄 · ${!layer.content.trim()?"문구를 적으면 줄 수를 알려 드려요.":measured&&warning?.font==="ok"?`지금 ${measured.lines}줄`:"줄 수 확인 중"} · 한 줄에 ${preset.recommendedCharsPerLine}자 안팎이 읽기 좋아요.`} error={layer.content.trim()?undefined:"문구를 적어 주세요."}>
       <textarea id={`text-content-${layer.id}`} value={layer.content} maxLength={500} placeholder={`${label} 문구를 적어 주세요`} onChange={event=>update(current=>({...current,content:event.target.value}))}/></Field>}
     {!layer.locked&&<fieldset className={`${styles.group} ${styles.pcOnly}`}><legend>빠른 모양</legend>
       {fromP1Look&&<p className={styles.note}>P1에서 옮긴 모양 그대로예요. 누르기 전까지 바뀌지 않아요.</p>}
@@ -170,7 +172,7 @@ function TextInspector({layer,index,draft,initial,setDraft,fonts,aspect,warnings
       <Field label="사라질 때"><select value={layer.animation.out} onChange={event=>setMotion("out",event.target.value)}>{OUT.map(value=><option key={value} value={value}>{ANIMATION_LABELS[value]}</option>)}</select></Field>
     </div></fieldset>}
     <fieldset className={`${styles.group} ${styles.pcOnly}`}><legend>시간</legend>
-      {layer.locked?<p className={styles.note}>{shortTime(layer.timing.startFrame)}–{shortTime(layer.timing.endFrame)} · 표기는 영상 처음부터 끝까지 보여요.</p>:<div className={styles.timeRow}>{timeField("start")}{timeField("end")}</div>}
+      {layer.locked?<p className={styles.note}>{shortTime(layer.timing.startFrame)}–{shortTime(layer.timing.endFrame)} · 표기는 기획 길이만큼 보여요. 영상이 이보다 짧아도 고칠 것은 없어요.</p>:<div className={styles.timeRow}>{timeField("start")}{timeField("end")}</div>}
       {p1Note("start")}{p1Note("end")}</fieldset>
     <div className={styles.pcOnly}>{layer.locked?<p className={styles.note}>필수 표기라 지울 수 없어요. {DISCLOSURE_REASON[layer.content]??"등록값이 요구하는 표기예요."}</p>:
       <Button variant="ghost" onClick={()=>{const removed=layer,at=index,next=draft.text[index+1]?.id??draft.text[index-1]?.id??null;setDraft(old=>removeText(old,removed.id));onRemoved(next);

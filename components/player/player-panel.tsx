@@ -5,7 +5,7 @@ import { Player, type ErrorFallback, type PlayerRef } from "@remotion/player";
 import { clampFrame, formatFrameTime, PREVIEW_ASPECTS, previewProps, SAFE_AREA, spokenFrameTime, type PreviewAspect, type PreviewAsset, type PreviewProps } from "@/lib/edit/preview";
 import type { Timeline } from "@/lib/edit/timeline";
 import type { FontRef } from "@/lib/edit/fonts";
-import { fontKey, fontUses, loadFonts, type FontState } from "./font-loader";
+import { retryFonts, useFontStates, type FontState } from "./font-loader";
 import { Badge, Button, Callout, EmptyState, IconButton, SampleBadge } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { TimelineComposition } from "./timeline-composition";
@@ -18,7 +18,7 @@ import styles from "./player-panel.module.css";
 // its own P2-2 frame check.
 export type PreviewControl={frame:()=>number;seek:(frame:number)=>void};
 export type PlayerPanelProps={projectId:string;timeline:Timeline|null;savedAspect:PreviewAspect;assets:ReadonlyMap<string,PreviewAsset>;dirty:boolean;timeInvalid:boolean;fonts?:readonly FontRef[];selectedTextId?:string|null;textWarnings?:ReadonlySet<string>;controlRef?:MutableRefObject<PreviewControl|null>};
-const NO_FONTS:readonly FontRef[]=[];
+const NO_FONTS:readonly FontRef[]=[],NO_TEXTS:readonly Timeline["text"][number][]=[];
 type Status="paused"|"playing"|"waiting"|"error";
 // F073-1: a render error on the first mount, after an aspect change or on a retry happens before the event listeners
 // below are attached, so the Player error event is lost. The fallback the Player draws in place of the picture tells
@@ -58,11 +58,9 @@ export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInv
   const playerRef=useRef<PlayerRef|null>(null),stageRef=useRef<HTMLDivElement>(null),quiet=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
   // Fonts of the texts on the stage, loaded before the Player is first drawn (delayRender has no effect in the Player,
   // T-067 3.5). Later font changes keep the Player up and redraw when the new face arrives.
-  const key=useMemo(()=>fontKey(fontUses(shown?.text??[])),[shown]);
-  const [fontResult,setFontResult]=useState<{key:string;states:Record<string,FontState>}|null>(null);
-  useEffect(()=>{let live=true;const uses=new Map(key?key.split("|").map(part=>{const [family,weights]=part.split(":");return [family,weights.split("/").map(Number)] as const;}):[]);
-    void loadFonts(uses,fonts).then(states=>{if(live)setFontResult({key,states});});return ()=>{live=false;};},[key,fonts]);
+  const {result:fontResult}=useFontStates(shown?.text??NO_TEXTS,fonts);
   const missing=useMemo(()=>Object.entries(fontResult?.states??{}).filter(([,state])=>state!=="ok"),[fontResult]);
+  const named=(state:FontState)=>missing.filter(([,value])=>value===state).map(([family])=>family).join(", ");
   const props=useMemo(()=>shown?previewProps(shown,assets,{aspect,reducedMotion,missingFamilies:missing.map(([family])=>family),selectedTextId,warnings:textWarnings}):null,[shown,assets,aspect,reducedMotion,missing,selectedTextId,textWarnings]);
   const ready=fontResult!==null&&props!==null,last=props?props.durationInFrames-1:0;
 
@@ -135,7 +133,10 @@ export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInv
     </div>
     <p className="sr-only" aria-live="polite">{announce}</p>
     {outside&&<Callout tone="warning" title="글자가 안전 영역을 벗어났어요.">{`문구 길이·크기·위치를 고치고 미리보기를 다시 확인해 주세요.${missing.length?" (대신 그린 글꼴 기준)":""}`}</Callout>}
-    {missing.length>0&&<Callout tone="warning" title={`${missing.map(([family])=>family).join(", ")} 글꼴을 불러오지 못해 기본 글꼴로 대신 보여 줘요.`}>{missing.some(([,state])=>state==="timeout")?"글꼴 파일이 커서 20초 안에 다 읽지 못했어요. 미리보기를 다시 불러와 보세요. ":""}영상 만들기 전에 글꼴을 확인해 주세요.</Callout>}
+    {/* T-084 B-1: each font state says what is true now; only a failed file can be fetched again. */}
+    {named("timeout")&&<Callout tone="warning" title={`${named("timeout")} 글꼴을 아직 다 불러오지 못했어요.`}>파일이 커서 시간이 걸려요. 그동안은 기본 글꼴로 보여 줘요. 다 받으면 저절로 바뀌어요.</Callout>}
+    {named("failed")&&<Callout tone="warning" title={`${named("failed")} 글꼴을 불러오지 못해 기본 글꼴로 대신 보여 줘요.`}>글꼴 파일을 읽지 못했어요. 영상 만들기 전에 글꼴을 확인해 주세요. <Button variant="secondary" size="sm" onClick={retryFonts}>글꼴 다시 불러오기</Button></Callout>}
+    {named("unavailable")&&<Callout tone="warning" title={`${named("unavailable")} 글꼴은 지금 쓸 수 없어 기본 글꼴로 대신 보여 줘요.`}>저장한 값은 그대로 둬요. 다른 글꼴을 고르면 바뀌어요.</Callout>}
     <div className={styles.notes}>
       {timeInvalid&&<p>시간 칸을 고칠 때까지 마지막으로 맞았던 내용으로 보여 줘요.</p>}
       {dirty&&!timeInvalid&&<p>저장하지 않은 고침도 미리보기에 보여요.</p>}
