@@ -66,3 +66,9 @@ Supersedes earlier T070-pending entries.
 - T071 implementation request sent to CC-DATA-01: Remotion Player preview, local keyboard/frame controls, preview-only ratios and state handling.
 - T072 design request sent to Claude design: checklist preparation and read-only UX validation when implementation returns.
 - Next: collect T071 implementation and evidence, T072 UX findings, then Master tests/review and independent verification. P2-2 is not complete or deployed.
+
+### Current role checkpoint
+
+- T071: implementation WIP observed; author owns product files and final validation/report.
+- T072: early read-only code/UX review requested now; final visual checks after T071 return.
+- Master: collect reports, resolve findings, verify and assign independent review. Product acceptance remains pending.

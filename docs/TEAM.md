@@ -645,3 +645,10 @@
 - G1-G9 reconciliation accepted: preview duration includes text tails; existing native-disabled buttons leave Tab order with visible reason; last-valid preview notice; reduced-motion notice only when relevant; ratio switch preserves position/focus; missing media cannot remain buffering; unsaved notice only while dirty.
 - Sent implementation criteria to CC-DATA-01 msg_071475e7edb4 and direct-cooperation authorization reminder to design msg_c50f0ffd44bb. No additional user decision required.
 - Video synchronization default is a package configuration reference, not measured app quality; do not expose 0.45 seconds as an acceptance result. Actual render caption timing remains a later-stage validation.
+
+### T071/T072 work allocation checkpoint (2026-11-16)
+
+- Observed uncommitted T071-scope editor/player/preview/UI/package/test changes; protected as implementation WIP. Files alone do not prove agent liveness or completion.
+- CC-DATA-01 remains sole product writer for T071; requested current stage/blockers and final production/test evidence (msg_193b909a2839).
+- CC-DESIGN-01 instructed to perform one bounded read-only early review of current WIP now, share concrete findings directly with implementer, and update only own T072 report/history (msg_dad0ee27ddd1). Final visual review still follows implementation return.
+- Master owns scope/conflict coordination, result integration and independent validation dispatch. No duplicate product implementation assigned.
