@@ -19,6 +19,9 @@ export const manifestV2Schema=manifestV1Schema.extend({manifestVersion:z.literal
     if(new Set(file.audio.roles).size!==file.audio.roles.length)context.addIssue({code:"custom",path:["files"],message:"sound roles repeated"});
   }
   if(manifest.files.some(file=>!("audio" in file)&&file.path.startsWith("audio/")))context.addIssue({code:"custom",path:["files"],message:"file under audio/ without its sound source"});
+  // T-160 (T-154 4.3): a sample sound makes the whole bundle a sample. One way only: real sounds may still sit in a
+  // bundle that is a sample because of its scenes or other files.
+  if(audio.some(file=>file.audio.isMock)&&!manifest.isMock)context.addIssue({code:"custom",path:["isMock"],message:"a sample sound source needs a sample bundle"});
 });
 export const manifestSchema=z.union([manifestV1Schema,manifestV2Schema]);
 export const exportJobSchema=z.strictObject({schemaVersion:z.literal(1),projectId:z.uuidv7(),revision:z.number().int().positive(),planId:z.uuidv7(),exportId:z.uuidv7()});
