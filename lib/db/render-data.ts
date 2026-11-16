@@ -2,8 +2,8 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type Database from "better-sqlite3";
 import { z } from "zod";
-import { timelineSchema } from "@/lib/edit/timeline";
-import { MAX_OUTPUT_FRAMES, PROFILE_ID } from "@/lib/audio/profile";
+import { canonicalJson, timelineSchema } from "@/lib/edit/timeline";
+import { ACCEPT, LOUDNESS, MAX_OUTPUT_FRAMES, MIN_NORMALIZE_FRAMES, PROFILE_ID, SAMPLES_PER_FRAME } from "@/lib/audio/profile";
 
 // T-105/T-109: checks of stored render rows, run after a migration step (0007's data check) and on every restore
 // that reads the current structure. They read every rule back from the stored rows instead of trusting that the
@@ -56,15 +56,34 @@ export function renderEnvelope(record:Record<string,unknown>):Envelope|"input en
   if(!plan.success||!parsed.success||parsed.data.schemaVersion!==2||!Number.isSafeInteger(record.durationInFrames)||(output.audio!=="none"&&output.audio!=="aac"))return "input envelope is not known";
   return audioPlanIssue({timeline:parsed.data,output:{audio:output.audio as string},durationInFrames:record.durationInFrames as number,audioPlan:plan.data})?"input audio plan differs from its timeline":{kind:"B",mode:plan.data.mode};
 }
-const AUDIO_STATUSES=new Set(["normalized","silent","too_short"]);
-const measured=(value:unknown)=>value===null||(typeof value==="number"&&Number.isFinite(value));
-// verify_json.audio of a kept AAC file: the processing result as recorded (non-finite values are null, a normalized
-// result is accepted, a silent or too-short one is not judged).
-function audioVerifyOk(audio:unknown){
-  if(!isRecord(audio)||audio.mode!=="aac"||audio.profile!==PROFILE_ID||!AUDIO_STATUSES.has(audio.status as string))return false;
-  if(audio.status==="normalized"?audio.accepted!==true:audio.accepted!==null)return false;
-  const final=isRecord(audio.final)?audio.final:null;
-  return !!final&&measured(final.integrated)&&measured(final.truePeak)&&measured(final.range)&&(audio.status!=="normalized"||(final.integrated!==null&&final.truePeak!==null));
+// T-144 (T-143 F137-1): verify_json.audio of a kept AAC file, read back by an exact schema and checked against the
+// plan and the fixed profile: the tools and sources are the pinned ones, the target is the profile's, the mix and the
+// decoded output are exactly the requested length, a normalized result is accepted only when its recorded final
+// measurement is inside the acceptance (-14 ±1 LUFS, true peak <= -1 dBTP), and a silent / too-short result keeps
+// accepted null and no loudness pass (silent: a zero peak; too short: under 3 s). Non-finite values are null.
+const num=z.number().refine(Number.isFinite),nullableNum=num.nullable();
+const measureSchema=z.strictObject({integrated:nullableNum,range:nullableNum,truePeak:nullableNum});
+export const renderAudioRecordSchema=z.strictObject({
+  mode:z.literal("aac"),profile:z.literal(PROFILE_ID),tools:z.strictObject({ffmpeg:z.string().min(1).max(200),ffmpegSha256:hex64s,ffprobeSha256:hex64s}),
+  status:z.enum(["normalized","silent","too_short"]),accepted:z.boolean().nullable(),
+  target:z.strictObject({integrated:num,truePeak:num,range:num,tolerance:num,truePeakMax:num}),
+  sources:z.array(z.strictObject({assetId:z.uuid(),sha256:hex64s,channels:z.union([z.literal(1),z.literal(2)]),decodedSamples:z.number().int().min(1)})).min(1).max(100),
+  mix:z.strictObject({sha256:hex64s,samples:z.number().int().min(1),peak:num}),
+  loudness:z.strictObject({preGainDb:num,inputI:nullableNum,inputTp:nullableNum,inputLra:nullableNum,inputThresh:nullableNum,targetOffset:nullableNum,normalizationType:z.string().max(40),outputI:nullableNum,outputTp:nullableNum}).nullable(),
+  final:measureSchema,childFinal:measureSchema,
+  output:z.strictObject({decodedSamples:z.number().int().min(1),initialPadding:z.number().int().min(0).nullable(),videoStreamSha256:hex64s}),
+});
+function audioVerifyOk(audio:unknown,plan:Extract<AudioPlan,{mode:"mix"}>,frames:number){
+  const parsed=renderAudioRecordSchema.safeParse(audio);if(!parsed.success)return false;const value=parsed.data;
+  if(value.tools.ffmpegSha256!==plan.tools.ffmpegSha256||value.tools.ffprobeSha256!==plan.tools.ffprobeSha256)return false;
+  const pinned=new Map(plan.sources.map(source=>[source.assetId,source.sha256]));
+  if(value.sources.length!==pinned.size||value.sources.some(source=>pinned.get(source.assetId)!==source.sha256)||new Set(value.sources.map(source=>source.assetId)).size!==pinned.size)return false;
+  const t=value.target;if(t.integrated!==LOUDNESS.integrated||t.truePeak!==LOUDNESS.truePeak||t.range!==LOUDNESS.range||t.tolerance!==ACCEPT.integratedTolerance||t.truePeakMax!==ACCEPT.truePeakMax)return false;
+  const samples=frames*SAMPLES_PER_FRAME;if(value.mix.samples!==samples||value.output.decodedSamples!==samples)return false;
+  if(value.status==="normalized"){const {integrated,truePeak}=value.final;
+    return value.accepted===true&&value.loudness!==null&&frames>=MIN_NORMALIZE_FRAMES&&value.mix.peak>0&&integrated!==null&&truePeak!==null&&Math.abs(integrated-LOUDNESS.integrated)<=ACCEPT.integratedTolerance&&truePeak<=ACCEPT.truePeakMax;}
+  if(value.accepted!==null||value.loudness!==null)return false;
+  return value.status==="silent"?value.mix.peak===0:frames<MIN_NORMALIZE_FRAMES&&value.mix.peak>0;
 }
 export type RenderRowReason=typeof renderRowReasons[number];
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -89,6 +108,12 @@ export function checkRenderRow(sqlite:Database.Database,row:Row){
   if(!timeline)fail("saved timeline is missing");
   if(timeline!.project_id!==row.project_id||timeline!.revision!==row.timeline_revision||timeline!.content_revision!==row.content_revision)fail("saved timeline binding differs");
   if(record.timelineSha256!==timeline!.timeline_sha256)fail("input timeline hash differs from the saved timeline");
+  // T-144 (T-143 F137-2): an envelope B input carries the saved timeline itself; its canonical text must be the saved
+  // revision's text (so its hash is the claimed one). Envelope A rows keep the rules of their time.
+  if(typeof envelope!=="string"&&envelope.kind==="B"){
+    const saved=sqlite.prepare("SELECT timeline_json FROM timeline_revisions WHERE id=?").get(row.timeline_rev_id) as {timeline_json:string};
+    if(canonicalJson(record.timeline)!==saved.timeline_json||renderInputSha256(saved.timeline_json)!==record.timelineSha256)fail("input timeline hash differs from the saved timeline");
+  }
   // Linked job (F107-1): kind, reference and project.
   const job=sqlite.prepare("SELECT kind,ref_type,ref_id,project_id FROM jobs WHERE id=?").get(row.job_id) as {kind:string;ref_type:string;ref_id:string;project_id:string|null}|undefined;
   if(!job||job.kind!=="render"||job.ref_type!=="render"||job.ref_id!==row.id||job.project_id!==row.project_id)fail("job differs");
@@ -106,7 +131,10 @@ export function checkRenderRow(sqlite:Database.Database,row:Row){
   // A kept file of a sound mix carries its processing record; every other verify record has none.
   const mix=typeof envelope!=="string"&&envelope.kind==="B"&&envelope.mode==="mix";
   if(isObject(verify)){const audio=(verify as Record<string,unknown>).audio;
-    if(mix&&full?!audioVerifyOk(audio):audio!==undefined&&!(mix&&!full))fail("audio verify record differs");}
+    if(mix&&full){const plan=audioPlanSchema.parse(record.audioPlan) as Extract<AudioPlan,{mode:"mix"}>;
+      // a kept AAC file passed every check when it was published
+      if((verify as Record<string,unknown>).result!=="passed"||!audioVerifyOk(audio,plan,record.durationInFrames as number))fail("audio verify record differs");}
+    else if(audio!==undefined&&!(mix&&!full))fail("audio verify record differs");}
 }
 export function checkRenderRows(sqlite:Database.Database){
   if(!hasRendersTable(sqlite))return;
