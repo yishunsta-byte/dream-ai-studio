@@ -790,3 +790,8 @@
 - Limits: actual phone/screen reader, exhaustive saved-wide/square measurements and real-hidden behavior remain unverified. C5 retry focus minor follow-up and sticky deferred.
 - T090 / CC-DATA-01 / ready (ack pending): actual P2-3b PC timeline text tracks, pointer and local keyboard controls, explicit save remains. Existing API/server/migrations/packages/assets unchanged. C5 focus may be included and identified separately. Request msg_978c464582b0.
 - T091 / CC-DESIGN-01 / ready (ack pending): bounded interaction specification and direct author collaboration, unique report/history and minimal PLAN status only. Final UI review follows return. Request msg_fd7ee24bd98c.
+
+### T091 interaction specification accepted (2026-11-16)
+
+- 706d387 / msg_37f5d8a63f17 returned. Local pointer/keyboard/roving-focus/locked-text/cancel/mobile criteria accepted for T090. No autosave or extra media tracks introduced.
+- Save-response race is a code-review concern, not yet reproduced: author instructed to inject delayed POST and ensure edits during save are either prevented with clear state or preserved across refresh/remount; failed/409 saves must retain draft. Final review includes this condition.
