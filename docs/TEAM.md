@@ -988,3 +988,8 @@
 - T120 backend and T119 existing bounded UI work remain with their assigned writer until coordinated transfer; no concurrent edits.
 
 - T121 handover, T122 intake and coding-owner role-change notices were sent through Orca with terminal mailbox receipts; acceptance and completed handover remain unconfirmed.
+### Codex design acknowledgment confirmed (2026-11-17)
+
+- msg_a4e8969c3c86 acknowledges request msg_15ac1be46580: CX-DESIGN-01 accepts design/UI role and T122 report-only intake scope; required docs read and existing A static-preview vs product distinction understood.
+- New design directly requested missing T118/T121 evidence and T119 coding status. Handover itself is not yet complete. Browser/render UI not executed by new owner yet; no inherited runtime claims.
+- Master confirmed role acceptance and preserves T120 backend priority and all existing WIP. Further product UI changes require a bounded assignment after intake.
