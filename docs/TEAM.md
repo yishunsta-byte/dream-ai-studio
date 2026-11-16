@@ -1213,3 +1213,8 @@
 - Reject proposal to accept old-app misreading new export records: subsequent manifest2 requires new0010 compatibility gate, without rewriting issued1-9. Existing final/publication gates retained.
 - T155 CC-DATA-01 requested msg_3eacef5c4000: VTT pure helper/layout plus actual exported browser textTrack verification; no audioZIP/UI/schema changes yet.
 - T156 ctx_f6a595181bac /task_96c52867840b assigned fixed9 backup generator/fixture/test only, including synthetic source audio and actual successful B render. This worker is now a fixture author, not independent reviewer of its own artifact. Existing fixtures immutable; no unconditional acceptance.
+### T155 ready_review; T157 independent and T158 compatibility
+
+- msg_87c6698d9c09 /0c49bad: VTT author661/17skip and actual exported native textTrack evidence; independent acceptance pending.
+- T157 ctx_320c7a02a436 /task_9a4e2ae92f33 dispatched isolated VTT reviewer, reports only. T156 separate fixed9 author remains independent scope.
+- T158 requested manifest2 strict reader/verification plus new0010 old-app compatibility gate, no audio packaging/UI yet. Preserve existing archives/issued migrations. No user DB/deployment modifications.
