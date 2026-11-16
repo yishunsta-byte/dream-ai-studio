@@ -386,6 +386,12 @@ tr.chg td{background:var(--st-warning-bg)}
 .p2stage .sz.right{top:12%;bottom:20%;right:0;width:12%;border-left:1.5px dashed rgba(23,38,54,.35)}
 .p2stage .ad{top:14%}
 .p2stage .warnbox{outline:2px solid #FFD84D;outline-offset:3px;border-radius:4px;color:#FFD84D}
+.p2stage .warnbox.band{left:13%;right:13%;background:#FFD84D;color:#111111;font-weight:800;text-shadow:none;font-size:19px;line-height:1.2;padding:4px 8px;outline:2px dashed #B7791F;outline-offset:3px}
+.p2note{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);border:1px dashed var(--line-strong);border-radius:var(--radius-sm)}
+.p2keys{line-height:1.6}
+.p2warn{margin-top:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--radius-sm);background:var(--st-warning-bg);color:var(--st-warning-fg);font-size:var(--text-sm)}
+.p2pc{display:flex;flex-direction:column;gap:var(--sp-4)}
+@media (max-width:639px){ .p2pc{display:none} }
 .transport{display:flex;align-items:center;gap:var(--sp-2);justify-content:center;flex-wrap:wrap}
 .transport .tc{font-family:var(--font-mono);font-size:var(--text-sm);color:var(--fg-strong);margin-left:var(--sp-2)}
 .insp{min-width:0}
@@ -1475,8 +1481,9 @@ fonts/PretendardVariable.woff2           2.0MB</pre></div></details>
   <div class="ph"><div class="tx">
     <div class="chips"><span class="phase" style="background:var(--phase-2)">P2</span><span class="badge">쇼핑숏츠·제품 광고</span><span class="badge num">25초 · 30fps</span><span class="badge num">내용 버전 r14</span></div>
     <h1>핸드크림 3종 비교</h1></div>
-    <div class="act"><span class="small muted num pc-only" style="align-self:center">저장됨 · 타임라인 r4 · 14:20</span><a class="btn pri" href="#p2-render"><svg class="i"><use href="#i-eye"/></svg>영상 만들기</a></div>
+    <div class="act"><span class="small muted num pc-only" style="align-self:center">저장됨 · 타임라인 r4 · 14:20</span><button class="btn sec sm pc-only" type="button" aria-haspopup="dialog">버전 목록</button><a class="btn pri" href="#p2-render"><svg class="i"><use href="#i-eye"/></svg>영상 만들기</a></div>
   </div>
+  <p class="small muted">저장하면 새 내용 버전으로 검수를 다시 해야 해요. 버전 목록에서 고른 버전으로 되돌리면 그 내용으로 새 버전이 만들어지고, 예전 버전은 그대로 남아요. (시안: 버튼만 표시, 목록 동작 없음)</p>
   <div class="tabs" role="tablist" aria-label="프로젝트 단계" data-tabs="edit" data-locked="review,export"></div>
 
   <div class="callout info m-only"><svg class="i"><use href="#i-eye"/></svg><div class="tx"><b>타임라인 편집은 PC에서 해요.</b> 휴대폰에서는 미리보기를 보고 글자 문구를 고치거나 수정 요청을 남길 수 있어요.</div></div>
@@ -1488,12 +1495,13 @@ fonts/PretendardVariable.woff2           2.0MB</pre></div></details>
         <div class="seg" role="group" aria-label="화면 비율"><button class="nt" aria-pressed="true">9:16</button><button class="nt" aria-pressed="false">16:9</button><button class="nt" aria-pressed="false">1:1</button></div>
         <label class="check small" style="align-items:center"><input type="checkbox" checked> 안전 영역 보기</label>
       </div>
+      <div class="p2note small"><span class="muted">다른 비율을 누르면 미리보기에서만 바뀌고 이렇게 표시돼요 (시안 예시 · 지금 화면은 저장된 9:16):</span><span class="chips"><span class="pill warning">미리보기 비율 16:9 · 저장 안 됨</span><button class="btn ghost sm" type="button">원래 비율로(9:16)</button></span></div>
       <div class="player">
         <div class="stage p2stage" aria-label="미리보기 8.3초">
           <span class="sz top" aria-hidden="true"></span><span class="sz bottom" aria-hidden="true"></span><span class="sz right" aria-hidden="true"></span>
           <span class="ad">광고</span>
           <span class="ov" style="top:34%">3종 다 써 봤어요</span>
-          <span class="ov warnbox" style="bottom:12%;font-size:17px">촉촉함은 2번이 제일 오래가요</span>
+          <span class="ov warnbox band" style="bottom:9%">촉촉함은 2번이<br>제일 오래가요</span>
           <span class="pill sample" style="position:absolute;left:8px;bottom:8px">샘플</span>
         </div>
       </div>
@@ -1503,33 +1511,41 @@ fonts/PretendardVariable.woff2           2.0MB</pre></div></details>
         <button class="iconbtn" aria-label="한 프레임 앞으로"><svg class="i"><use href="#i-redo"/></svg></button>
         <span class="tc num">00:08.10 <span class="muted">/ 00:25.00</span></span>
       </div>
-      <div class="small muted pc-only">스페이스 재생·멈춤 · ←/→ 한 프레임 · Shift+←/→ 1초</div>
+      <div class="small muted pc-only p2keys"><b>키는 초점이 있는 곳 하나만 움직여요.</b><br>재생 화면: ←/→ 한 프레임 · Shift 1초 · Home/End 처음·끝<br>고른 글자 조각: ←/→ 조각 옮기기 · Alt 끝 시간만 · Enter 편집 칸으로<br>글자 칸: 글자 고치기(앱이 가로채지 않음) · Space 재생·멈춤(글자 칸 제외)</div>
     </div>
 
     <!-- 글자 편집 -->
     <div class="card insp">
-      <div class="ln" style="padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line)"><h3 class="sub">글자 · 강조 자막</h3><span class="chips"><span class="badge num">8.0–11.5초</span></span></div>
-      <div class="callout warn" style="margin:var(--sp-3) var(--sp-4) 0"><svg class="i"><use href="#i-alert"/></svg><div class="tx"><b>아래 안전 영역(20%)에 걸쳐 있어요.</b> 휴대폰 앱 버튼에 가려질 수 있어요. <button class="btn ghost sm" style="height:auto;padding:0">안전 영역 안으로 옮기기</button></div></div>
+      <div class="ln" style="padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line)"><h3 class="sub">글자 · 강조</h3><span class="chips"><span class="badge num">00:08.00–00:11.15</span></span></div>
+      <div class="callout warn" style="margin:var(--sp-3) var(--sp-4) 0"><svg class="i"><use href="#i-alert"/></svg><div class="tx"><b>아래 안전 영역(20%)에 걸쳐 있어요.</b> 휴대폰 앱 버튼에 가려질 수 있어요. <button class="btn ghost sm pc-only" style="height:auto;padding:0">안전 영역 안으로 옮기기</button></div></div>
       <div style="padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-4)">
-        <div class="field"><label for="p2-txt">문구</label><textarea class="inp" id="p2-txt" style="min-height:64px">촉촉함은 2번이 제일 오래가요</textarea><div class="help num">2줄까지 · 지금 1줄</div></div>
+        <div class="field"><label for="p2-txt">문구</label><textarea class="inp" id="p2-txt" style="min-height:64px">촉촉함은 2번이 제일 오래가요</textarea><div class="help num">1줄까지 · 지금 2줄</div><div class="p2warn"><b>글자가 길어 2줄이 돼요. 최대 1줄이에요.</b> 미리보기에 노란 테두리로 보여요. 영상 만들기는 막지 않고 검수 "글자 잘림" 항목에 남겨요.</div></div>
+        <div class="callout info m-only"><div class="tx">휴대폰에서는 문구만 고쳐요. 모양·위치·시간은 PC에서 바꿔요.</div></div>
+        <div class="p2pc">
         <div class="field"><span class="lab">빠른 모양</span>
-          <div class="chips"><button class="ver" aria-pressed="false">예능 자막</button><button class="ver" aria-pressed="true">강조 노랑</button><button class="ver" aria-pressed="false">제목 크게</button><button class="ver" aria-pressed="false">엔딩</button></div></div>
+          <div class="chips"><button class="ver" aria-pressed="false">자막</button><button class="ver" aria-pressed="false">훅</button><button class="ver" aria-pressed="true">강조</button><button class="ver" aria-pressed="false">제목</button><button class="ver" aria-pressed="false">엔딩</button><button class="ver" aria-pressed="false">가사</button><button class="ver" aria-pressed="false">브랜드</button></div><div class="help">새 글자는 고른 모양의 기본값으로 만들어요. P1에서 옮겨 온 글자는 누르기 전까지 바뀌지 않아요.</div></div>
         <div class="row2">
-          <div class="field"><label for="p2-font">글꼴</label><select class="inp" id="p2-font"><option>프리텐다드 · 굵게</option><option>노토 산스 · 굵게</option></select><div class="help">상업 이용이 확인된 글꼴만 보여요</div></div>
-          <div class="field"><label for="p2-size">크기</label><select class="inp" id="p2-size"><option>64</option></select></div>
+          <div class="field"><label for="p2-font">글꼴</label><select class="inp" id="p2-font"><option>Pretendard · 아주 굵게(800)</option><option>Noto Sans KR</option><option>Noto Serif KR</option><option>Black Han Sans</option><option>Do Hyeon</option><option>Jua</option><option>Gowun Dodum</option><option>Nanum Pen Script</option></select><div class="help">상업 이용이 확인된 글꼴만 보여요</div></div>
+          <div class="field"><label for="p2-size">크기</label><select class="inp" id="p2-size"><option>76</option></select></div>
         </div>
-        <div class="field"><span class="lab" id="p2-col">글자 색 · 외곽선</span>
+        <div class="field"><span class="lab" id="p2-col">글자 색 · 띠</span>
           <div class="chips" role="group" aria-labelledby="p2-col">
             <button class="swatch" aria-label="흰색" aria-pressed="false" style="background:#FFFFFF"></button>
-            <button class="swatch" aria-label="노랑" aria-pressed="true" style="background:#FFD84D"></button>
+            <button class="swatch" aria-label="검정" aria-pressed="true" style="background:#111111"></button>
+            <button class="swatch" aria-label="노랑" aria-pressed="false" style="background:#FFD84D"></button>
             <button class="swatch" aria-label="민트" aria-pressed="false" style="background:#7FE0D6"></button>
             <button class="swatch" aria-label="남색" aria-pressed="false" style="background:#243B53"></button>
-            <span class="small muted">외곽선 검정 6</span>
+            <span class="small muted">띠 노랑 #FFD84D · 외곽선 없음</span>
           </div></div>
         <div class="row3">
-          <div class="field"><label for="p2-in">나타날 때</label><select class="inp" id="p2-in"><option>톡 튀어나옴</option><option>없음</option><option>서서히</option><option>아래에서 위로</option><option>타자 치듯</option></select></div>
-          <div class="field"><label for="p2-emp">강조</label><select class="inp" id="p2-emp"><option>통통 튐</option><option>없음</option><option>흔들림</option><option>커졌다 작아짐</option></select></div>
-          <div class="field"><label for="p2-out">사라질 때</label><select class="inp" id="p2-out"><option>서서히</option><option>없음</option><option>아래로</option></select></div>
+          <div class="field"><label for="p2-in">나타날 때</label><select class="inp" id="p2-in"><option>톡 튀어나옴</option><option>없음</option><option>서서히</option><option>아래에서 위로</option><option>위에서 아래로</option><option>타자 치듯</option></select></div>
+          <div class="field"><label for="p2-emp">강조</label><select class="inp" id="p2-emp"><option>커졌다 작아짐</option><option>없음</option><option>통통 튐</option><option>흔들림</option></select></div>
+          <div class="field"><label for="p2-out">사라질 때</label><select class="inp" id="p2-out"><option>서서히</option><option>없음</option><option>아래에서 위로</option><option>위에서 아래로</option></select></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="p2-st">시작</label><input class="inp num" id="p2-st" value="00:08.00" inputmode="decimal"><div class="help">초.프레임 (30fps)</div></div>
+          <div class="field"><label for="p2-en">끝</label><input class="inp num" id="p2-en" value="00:11.15" inputmode="decimal"><div class="help">시작보다 1프레임 이상 뒤</div></div>
+        </div>
         </div>
       </div>
     </div>
@@ -1550,7 +1566,7 @@ fonts/PretendardVariable.woff2           2.0MB</pre></div></details>
       <span class="clip t" style="left:80%;width:20%">링크에서 만나요</span></div></div>
     <div class="playhead" style="left:calc(var(--sp-4) + var(--tn-w) + (100% - 2 * var(--sp-4) - var(--tn-w)) * .332)" aria-hidden="true"></div>
   </div>
-  <div class="anno">타임라인 규칙: 시간은 모두 프레임(30fps)으로 저장 (11.2). 글자는 영상에 굽지 않음 — 문구를 고쳐도 장면을 다시 만들지 않는다 (T-1). 안전 영역 9:16 위 12%·아래 20%·오른쪽 12%, 걸치면 노란 테두리 + 경고 + "안으로 옮기기" (T-3). 광고·AI·가상인물 표기 글자는 자물쇠, 지우려 하면 확인 패널 + 검수 항목 경고 (T-4). 비율을 바꾸면 글자를 안전 영역 안으로 다시 놓고 "위치를 바꿨어요, 확인해 주세요" 표시 (T-2). 저장할 때마다 타임라인 버전(r4)이 쌓이고 되돌릴 수 있다. 휴대폰에서는 타임라인 숨김 (PLAN 17장).</div>
+  <div class="anno">타임라인 규칙: 시간은 모두 프레임(30fps)으로 저장 (11.2). 글자는 영상에 굽지 않음 — 문구를 고쳐도 장면을 다시 만들지 않는다 (T-1). 안전 영역 9:16 위 12%·아래 20%·오른쪽 12%, 걸치면 노란 테두리 + 경고 + "안으로 옮기기" (T-3). 광고·AI·가상인물 표기 글자는 자물쇠, 지우려 하면 확인 패널 + 검수 항목 경고 (T-4). 저장된 비율을 실제로 바꿀 때(U-2 결정 뒤 "이 비율로 새 버전 만들기")는 글자를 안전 영역 안으로 다시 놓고 "위치를 바꿨어요, 확인해 주세요" 표시 (T-2). 지금 비율 버튼은 미리보기 전용이라 이 표시를 쓰지 않는다. 저장할 때마다 타임라인 버전(r4)이 쌓이고 되돌릴 수 있다. 휴대폰에서는 타임라인 숨김 (PLAN 17장).<br><b>T-056 정합(T-033·spec):</b> 빠른 모양 이름·강조 값(검정 800·76·노란 띠·1줄)·애니메이션 이름은 spec 그대로. 시간은 초.프레임. 키는 초점 하나만(T-033 3.2.1). 비율 버튼은 <b>미리보기 전용</b> — 저장된 비율·위치·버전은 바뀌지 않고 "저장 안 됨" 칩·"원래 비율로"로 되돌림(3.2.2). "위치 확인 필요"는 저장 위치가 실제로 바뀐 글자에만(비율 미리보기에는 붙지 않음). 휴대폰은 문구만(4.4). 글꼴 목록은 fonts.json 중 라이선스 검사 통과분, 실제 앱은 이름을 그 글꼴로 그린다. 자동 저장 간격은 미정(U-4)이라 시안에 넣지 않음. 이 시안은 정적 예시라 경고·버전·비율 표시는 모양만 보여 준다 — 예시 글자는 두 경고(안전 영역·글자 길이)가 함께 난 상태다.</div>
 </section>
 
 <!-- ═════════ P2 영상 만들기·내보내기 (P2-4·6) ═════════ -->
