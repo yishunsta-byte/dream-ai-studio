@@ -1,5 +1,6 @@
 // T-071 (P2-2): preview input is a pure function of the timeline on screen (T-067 6장 T1·T2·T3).
 import { readdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { clampFrame, formatFrameTime, previewProps, SAFE_AREA, spokenFrameTime, type PreviewAsset } from "@/lib/edit/preview";
@@ -100,9 +101,19 @@ describe("import 경계 (T3)",()=>{
     expect(panel).toContain("function PlayerFailed({onFailed}:{onFailed:()=>void}){\n  useEffect(()=>{onFailed();},[onFailed]);");
     expect(panel).toContain("errorFallback={fallback}");expect(panel).toContain("onFailed={failed}");
   });
-  it("패키지는 remotion·@remotion/player 4.0.543 정확 고정 두 개만",()=>{
+  // T-108: the render toolchain adds @remotion/renderer and @remotion/bundler. Exactly these four, exact 4.0.543,
+  // the same in the lock file, and each ships the Remotion License text compared in T-108 (LICENSE.md, LF-normalized).
+  it("패키지는 remotion·@remotion/player·renderer·bundler 4.0.543 정확 고정 네 개만, lock·라이선스 원문 같음",()=>{
     const pkg=JSON.parse(readFileSync("package.json","utf8")) as {dependencies:Record<string,string>;devDependencies:Record<string,string>};
     const all={...pkg.dependencies,...pkg.devDependencies},remotion=Object.entries(all).filter(([name])=>name==="remotion"||name.startsWith("@remotion/"));
-    expect(Object.fromEntries(remotion)).toEqual({"remotion":"4.0.543","@remotion/player":"4.0.543"});
+    const expected={"remotion":"4.0.543","@remotion/player":"4.0.543","@remotion/renderer":"4.0.543","@remotion/bundler":"4.0.543"};
+    expect(Object.fromEntries(remotion)).toEqual(expected);
+    const lock=JSON.parse(readFileSync("package-lock.json","utf8")) as {packages:Record<string,{version?:string;license?:string}>};
+    for(const name of Object.keys(expected)){
+      expect(lock.packages[`node_modules/${name}`],name).toMatchObject({version:"4.0.543",license:"SEE LICENSE IN LICENSE.md"});
+      const installed=JSON.parse(readFileSync(`node_modules/${name}/package.json`,"utf8")) as {version:string;license:string};expect(installed).toMatchObject({version:"4.0.543",license:"SEE LICENSE IN LICENSE.md"});
+      const text=readFileSync(`node_modules/${name}/LICENSE.md`,"utf8").replace(/\r\n/g,"\n");
+      expect(createHash("sha256").update(text).digest("hex"),name).toBe("53e92b6560f26f9d913a8ac97e4861e013c99ee9164fa0b11c25d8a02672fc09");
+    }
   });
 });

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Chrome Headless Shell for @remotion/renderer 4.0.543 (TESTED_VERSION). Installed only by scripts/remotion/install-browser.ps1; renders never download it.",
+  "version": "158.0.8127.2",
+  "chromeMode": "headless-shell",
+  "platform": "win64",
+  "source": "https://remotion.media/chromium-headless-shell-win-x64-158.0.8127.2.zip",
+  "sourceNote": "The archive @remotion/renderer 4.0.543 itself downloads on win64 (dist/browser/get-chrome-download-url.js). Google Chrome for Testing publishes the same version at https://storage.googleapis.com/chrome-for-testing-public/158.0.8127.2/win64/chrome-headless-shell-win64.zip (a different archive, 128504099 bytes); it is not used.",
+  "archive": { "fileName": "chromium-headless-shell-win-x64-158.0.8127.2.zip", "sizeBytes": 137435497, "sha256": "58afb19b136b32c36a9b879cedde3d8a05d0f5cfb2e60b6f17b7c0301e10299a", "entries": 19, "unpackedBytes": 317670418 },
+  "executable": { "path": "chrome-headless-shell-win64/chrome-headless-shell.exe", "sha256": "40fcceffa39380a1188ead560d9dea125d1075284ad56448be0c1282e4f652a7", "versionOutput": "Chromium 158.0.8127.2" },
+  "license": { "path": "chrome-headless-shell-win64/LICENSE.headless_shell", "sha256": "cc6e35dcf31e3c8f72714c87c4b2f14486e2085a5e956a8ddd1421ffbab3d18b" },
+  "installDir": ".tools/remotion-browser/158.0.8127.2"
+}
