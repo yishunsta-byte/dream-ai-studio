@@ -1272,6 +1272,7 @@ fonts/PretendardVariable.woff2           2.0MB</pre></div></details>
 <!-- ═════════ 설정 (P1-9) ═════════ -->
 <section class="view" data-view="settings" hidden>
   <div class="ph"><div class="tx"><h1>설정</h1><div class="d">작업 모드, 연결, 백업을 관리해요.</div></div></div>
+  <div class="callout info"><svg class="i"><use href="#i-shield"/></svg><div class="tx"><b>검증한 백업에서 복원한 데이터예요.</b> <span class="num">출처 백업: 2026. 11. 14. 오전 9:02:40 · 복원: 2026. 11. 16. 오후 1:37:55</span><br><span class="small">아래 성공·실패 시각은 이 복원본에 기록된 백업 작업 기준이에요. 백업 당시 실행 중이던 작업은 복원본에서 이어서 하지 않으며, 출처 백업의 검증 실패나 사용자의 취소를 뜻하지 않아요.</span> <span class="muted small">(시안: 복원본에서만 보임)</span></div></div>
   <div class="card">
     <div class="set"><div><h3>작업 모드</h3><div class="d">설정 파일의 값이에요</div></div>
       <div class="c"><div class="ln"><span>지금은 샘플 결과로만 만들어요. 실제 AI 연결은 P3부터예요.</span><span class="pill sample"><svg class="i sm"><use href="#i-flask"/></svg>샘플 모드 켜짐</span></div></div></div>
@@ -1285,18 +1286,27 @@ fonts/PretendardVariable.woff2           2.0MB</pre></div></details>
       <div class="c"><div class="ln"><span class="muted">이번 달 사용액·예약액·한도는 실제 AI 연결부터 보여요.</span><span class="pill locked"><svg class="i sm"><use href="#i-lock"/></svg>잠김</span></div></div></div>
     <div class="set"><div><h3>백업</h3><div class="d">앱이 켜져 있으면 하루 한 번</div></div>
       <div class="c">
-        <div class="ln"><span class="num">마지막 백업 · 오늘 09:00</span><span class="chips"><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>성공</span><button class="btn sec sm">지금 백업</button></span></div>
-        <div class="field"><label for="bk-dir">외부 백업 위치</label><div style="display:flex;gap:var(--sp-2)"><input class="inp" id="bk-dir" value="E:\DreamBackup" readonly><button class="btn sec">바꾸기</button></div><div class="help">외장 디스크나 동기화 폴더를 골라 주세요. PC 안에만 두면 PC가 고장 날 때 백업도 함께 잃어요.</div></div>
-        <div class="tblw"><table class="t" style="min-width:420px"><thead><tr><th>날짜</th><th>크기</th><th>검사</th></tr></thead><tbody>
-          <tr><td class="num">11월 15일 09:00</td><td class="num">212MB</td><td><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>검사 통과</span></td></tr>
-          <tr><td class="num">11월 14일 09:02</td><td class="num">198MB</td><td><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>검사 통과</span></td></tr>
-          <tr><td class="num">11월 13일 21:40</td><td class="num">—</td><td><span class="pill danger"><svg class="i sm"><use href="#i-alert"/></svg>실패 · 백업 폴더 쓰기 불가</span></td></tr>
-        </tbody></table></div>
+        <div class="ln"><span class="chips"><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>작업 처리기 켜짐</span><a href="#queue">작업 대기열</a><a href="#queue">생성·활동 기록</a></span></div>
+        <div class="ln"><span class="num">이 환경의 마지막 성공 · 2026. 11. 16. 오전 9:00:12</span><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>완료</span></div>
+        <div class="ln"><span class="num">마지막 실패 · 2026. 11. 13. 오후 9:40:05 · 백업 폴더에 쓸 수 없어요.</span><span class="pill danger"><svg class="i sm"><use href="#i-alert"/></svg>실패</span></div>
+        <div class="small muted">이 환경에서 만든 백업만 세요. 이전 환경 백업, 출처 확인 안 된 백업, 복원으로 멈춘 백업은 넣지 않아요. 마지막 성공 파일이 이 PC에 없으면 " · 이 PC에 파일 없음"이 붙어요.</div>
+        <div class="field"><label for="bk-dir">외부 백업 위치 (절대 경로)</label><input class="inp" id="bk-dir" value="E:&#92;DreamBackup"><div class="help">외장 디스크나 동기화 폴더 경로를 적어 주세요. 위치 저장은 백업 완료가 아니에요 — "지금 백업"으로 실제 백업을 만들어 주세요.</div></div>
+        <div style="display:flex;gap:var(--sp-2);flex-wrap:wrap"><button class="btn sec">백업 위치 저장</button><button class="btn pri">지금 백업</button><button class="btn sec">상태 새로고침</button></div>
+        <h4 class="small">백업 목록</h4>
+        <ul class="bk-list" style="list-style:none;margin:0;padding:0;display:grid;gap:var(--sp-3)">
+          <li class="bk-row"><div class="chips"><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>완료</span><span class="badge">이 환경에서 만든 백업</span><span class="small muted num">자동 · 2026. 11. 16. 오전 9:00:12</span><span class="badge">검증 이력 · 파일 312개 · 216,904KB</span></div></li>
+          <li class="bk-row"><div class="chips"><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>완료</span><span class="badge">이전 환경 백업</span><span class="badge">이 PC에 파일 없음</span><span class="small muted num">수동 · 2026. 11. 14. 오전 9:02:40</span><span class="badge">검증 이력 · 파일 298개 · 202,752KB</span></div><div class="small muted">이전 환경에서 가져온 기록이에요. 이 환경의 마지막 성공·실패에는 포함하지 않아요. 백업 파일을 이 PC에서 찾지 못했어요. 원래 백업 위치나 연결한 저장 장치를 확인해 주세요.</div></li>
+          <li class="bk-row"><div class="chips"><span class="pill locked"><svg class="i sm"><use href="#i-undo"/></svg>복원으로 멈춤</span><span class="badge">이전 환경 백업</span><span class="small muted num">자동 · 2026. 11. 14. 오후 9:00:03</span></div><div class="small muted">복원본에서 이어서 실행하지 않은 백업 작업이에요. 출처 백업의 검증 실패를 뜻하지 않아요.</div></li>
+          <li class="bk-row"><div class="chips"><span class="pill danger"><svg class="i sm"><use href="#i-alert"/></svg>실패</span><span class="badge">이 환경에서 만든 백업</span><span class="small muted num">자동 · 2026. 11. 13. 오후 9:40:05</span></div><div class="small muted">백업 폴더에 쓸 수 없어요. 외부 백업 위치의 쓰기 권한이나 남은 공간을 확인해 주세요.</div></li>
+          <li class="bk-row"><div class="chips"><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>완료</span><span class="badge">출처 확인 안 됨</span><span class="small muted num">수동 · 2026. 11. 12. 오후 6:11:27</span><span class="badge">검증 이력 · 파일 280개 · 190,310KB</span></div><div class="small muted">이 기록이 만들어진 환경을 확인하지 못했어요. 마지막 성공·실패에는 포함하지 않아요.</div></li>
+        </ul>
+        <div class="small muted">목록에서는 파일이 있는지만 봐요. 파일 내용은 복원의 "검사하기"에서 다시 검증해요.</div>
       </div></div>
     <div class="set"><div><h3>복원</h3><div class="d">새 폴더로 복원해요. 지금 데이터는 그대로예요</div></div>
       <div class="c">
-        <div style="display:flex;gap:var(--sp-2);flex-wrap:wrap"><label class="sr" for="rs">복원할 백업</label><select class="inp" id="rs" style="flex:1 1 200px;width:auto"><option>11월 14일 09:02 · 198MB</option></select><button class="btn sec">검사하기</button></div>
-        <div class="field"><label for="rs-dir">복원할 새 폴더</label><div style="display:flex;gap:var(--sp-2)"><input class="inp" id="rs-dir" value="E:DreamRestore	월14일" readonly><button class="btn sec">바꾸기</button></div><div class="help">비어 있는 폴더만 고를 수 있어요.</div></div>
+        <div style="display:flex;gap:var(--sp-2);flex-wrap:wrap"><label class="sr" for="rs">복원할 백업</label><select class="inp" id="rs" style="flex:1 1 200px;width:auto;min-width:0;max-width:100%"><option>이 환경에서 만든 백업 · 2026. 11. 16. 오전 9:00:12 · 자동</option><option disabled>이전 환경 백업 · 2026. 11. 14. 오전 9:02:40 · 수동 · 지금 복원할 수 없음</option><option>출처 확인 안 됨 · 2026. 11. 12. 오후 6:11:27 · 수동</option></select><button class="btn sec">검사하기</button></div>
+        <div class="small muted">이전 환경 백업은 원래 파일이 이 PC의 기록된 위치에 있어야 복원할 수 있어요. 파일 내용은 검사하기에서 다시 검증해요.</div>
+        <div class="field"><label for="rs-dir">복원할 새 폴더</label><input class="inp" id="rs-dir" value="E:&#92;DreamRestore&#92;1116"><div class="help">비어 있는 새 폴더만 고를 수 있어요. 원래 환경의 데이터·자료·백업 폴더와 겹치거나 다른 데이터 폴더 안이면 거절해요.</div></div>
         <div class="ln small"><span>검사 결과 · 파일 312개 · 빠진 파일 0 · 데이터 구조 버전 맞음</span><span class="pill success"><svg class="i sm"><use href="#i-check"/></svg>복원 가능</span></div>
         <div class="small muted">백업 당시 진행 중이던 작업 2개는 복원본에서 이어서 하지 않고 취소로 남겨요. 복원본의 백업은 복원 폴더 안 backups에 저장돼요.</div>
         <div><button class="btn pri">새 폴더에 복원</button></div>
@@ -1305,9 +1315,9 @@ fonts/PretendardVariable.woff2           2.0MB</pre></div></details>
     <div class="set"><div><h3>보관함</h3><div class="d">숨긴 자료·프로젝트</div></div>
       <div class="c"><div class="ln"><span>보관한 자료 3개 · 프로젝트 1개</span><button class="btn sec sm">보관함 열기</button></div></div></div>
     <div class="set"><div><h3>정보</h3></div>
-      <div class="c"><dl class="kv"><dt>템플릿 버전</dt><dd class="num">2026-11-15.1</dd><dt>앱 버전</dt><dd class="num">0.1.0</dd><dt>저장 위치</dt><dd><code class="key">storage/</code> · <code class="key">data/</code> · <code class="key">backups/</code></dd></dl></div></div>
+      <div class="c"><div class="ln"><span class="badge">앱 0.1.0 · 템플릿 2026-11-15.1</span></div></div></div>
   </div>
-  <div class="anno">키 입력칸을 만들지 않는다 (16장). 복원은 별도 위치에 풀어 검사 → 지금 데이터 보관 → 교체 → 실패 시 되돌리기 (K-5). P1 복원은 새 폴더로만 — 지금 데이터와 바꾸는 기능은 없다 (T-003). 예산은 P3까지 잠김 표시만.</div>
+  <div class="anno">DESIGN 6.7 P1 구현 기준(T-021·T-022·T-032)에 맞춘 시안(T-038). 키 입력칸을 만들지 않는다 (16장). 마지막 성공·실패는 이 환경 백업만. 목록 StatusPill 순서: 복원으로 멈춤 → 완료 → 취소됨 → 실패 → 대기 → 만드는 중. 목록은 파일 존재만 확인("검증 이력"), 해시 재검증은 검사하기 때만. P1 복원은 새 폴더로만 (T-003). 날짜는 현재 구현 표기(toLocaleString) — 통일 함수는 후속. 예산은 P3까지 잠김 표시만.</div>
 </section>
 
 
