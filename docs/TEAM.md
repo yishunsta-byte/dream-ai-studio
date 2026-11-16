@@ -777,3 +777,9 @@
 - msg_4d52a7db6183: ea2956e and 1112f7b ready_review. Master read both reports; author449 passed/2 skips, lint/type/build, actual HTTP rejection/box-only/new-disclosure evidence. T088 design runtime review remains separate.
 - T089 independent Codex dispatched ready: ctx_26b8a588299c / task_a0bc45b44d25 / term_21517da7-2dd8-42bc-920e-2593818d1cfa; child p2-3a-fix-recheck. Report-only, actual font timeout/late/retry races and HTTP locked-disclosure invariants, original-CRLF full checks, focus/warnings/read-only verification. Broad T085 evidence inherited explicitly.
 - P2-3a acceptance pending independent and design results; no author result substituted for independent PASS.
+
+### T088 design recheck returned (2026-11-16)
+
+- a9ba383 / msg_8646dfe2d20c: actual 1280/390 on fixed ea2956e confirms B1 font timeout/late/retry and B2 disclosure warning fixes, cancel/save focus and empty-text notice. No required design defect remains.
+- Minor follow-up: font-retry success loses focus to body; suggested editor heading. Kept separate from required findings; no uncoordinated product change requested during T089 target review.
+- Saved 16:9/1:1, actual phone and screen reader remain unverified. T087 server behavior is outside design evidence, assigned T089.
