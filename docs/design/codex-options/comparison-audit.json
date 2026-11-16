@@ -1,0 +1,64 @@
+[
+  {
+    "width": 1280,
+    "scroll": 1265,
+    "images": [
+      {
+        "src": "shots/desk-home-1280.png",
+        "loaded": true
+      },
+      {
+        "src": "shots/flow-home-1280.png",
+        "loaded": true
+      },
+      {
+        "src": "shots/canvas-home-1280.png",
+        "loaded": true
+      },
+      {
+        "src": "shots/desk-home-390.png",
+        "loaded": true
+      },
+      {
+        "src": "shots/flow-home-390.png",
+        "loaded": true
+      },
+      {
+        "src": "shots/canvas-home-390.png",
+        "loaded": true
+      }
+    ],
+    "shortTargets": []
+  },
+  {
+    "width": 390,
+    "scroll": 375,
+    "images": [
+      {
+        "src": "shots/desk-home-1280.png",
+        "loaded": true
+      },
+      {
+        "src": "shots/flow-home-1280.png",
+        "loaded": true
+      },
+      {
+        "src": "shots/canvas-home-1280.png",
+        "loaded": true
+      },
+      {
+        "src": "shots/desk-home-390.png",
+        "loaded": true
+      },
+      {
+        "src": "shots/flow-home-390.png",
+        "loaded": true
+      },
+      {
+        "src": "shots/canvas-home-390.png",
+        "loaded": true
+      }
+    ],
+    "shortTargets": []
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "index": {
+    "title": "새로운 작업실, 세 가지 방향 · Codex design",
+    "loaded": true,
+    "font": [
+      {
+        "family": "Studio",
+        "status": "loaded"
+      }
+    ],
+    "width": 1280,
+    "scroll": 1265
+  },
+  "edit": {
+    "url": "file:///D:/starwork/dream-ai-studio/docs/design/codex-options/desk.html?screen=edit",
+    "title": "장면에 나의 말을 더해요",
+    "caption": "로컬 파일에서도 열리는 시안"
+  },
+  "render": {
+    "url": "file:///D:/starwork/dream-ai-studio/docs/design/codex-options/desk.html?screen=render",
+    "title": "영상이 되어 가는 중이에요.",
+    "progress": "64"
+  }
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "design": "desk",
+    "width": 1280,
+    "cancelFirst": "계속 만들기",
+    "cancelSecond": "취소하기",
+    "cancelWrapped": "계속 만들기",
+    "reverseWrapped": "취소하기",
+    "cancelRestored": true
+  },
+  {
+    "design": "desk",
+    "width": 390,
+    "menuTrapped": true,
+    "menuRestored": true,
+    "cancelFirst": "계속 만들기",
+    "cancelSecond": "취소하기",
+    "cancelWrapped": "계속 만들기",
+    "reverseWrapped": "취소하기",
+    "cancelRestored": true
+  },
+  {
+    "design": "flow",
+    "width": 1280,
+    "cancelFirst": "계속 만들기",
+    "cancelSecond": "취소하기",
+    "cancelWrapped": "계속 만들기",
+    "reverseWrapped": "취소하기",
+    "cancelRestored": true
+  },
+  {
+    "design": "flow",
+    "width": 390,
+    "menuTrapped": true,
+    "menuRestored": true,
+    "cancelFirst": "계속 만들기",
+    "cancelSecond": "취소하기",
+    "cancelWrapped": "계속 만들기",
+    "reverseWrapped": "취소하기",
+    "cancelRestored": true
+  },
+  {
+    "design": "canvas",
+    "width": 1280,
+    "cancelFirst": "계속 만들기",
+    "cancelSecond": "취소하기",
+    "cancelWrapped": "계속 만들기",
+    "reverseWrapped": "취소하기",
+    "cancelRestored": true
+  },
+  {
+    "design": "canvas",
+    "width": 390,
+    "menuTrapped": true,
+    "menuRestored": true,
+    "cancelFirst": "계속 만들기",
+    "cancelSecond": "취소하기",
+    "cancelWrapped": "계속 만들기",
+    "reverseWrapped": "취소하기",
+    "cancelRestored": true
+  }
+]
