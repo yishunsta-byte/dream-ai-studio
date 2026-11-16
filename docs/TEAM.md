@@ -693,3 +693,9 @@
 - T076 report imported msg_bf3b66db3cac. Independent actual error/retry/recovery/focus/save and development warning checks PASS; T074 visuals and preview read-only semantics PASS.
 - Overall review FAIL F076-1: LF-only source assertion fails on original CRLF checkout. Independent 424 passed / 1 failed / 2 skips; lint/typecheck/build passed. Keep author 425 result separate.
 - T077 / CC-DATA-01 / ready (ack pending): newline-tolerant assertion preserving semantic checks, only tests/p2-2-preview.test.ts and unique report. No product/migration newline changes or test disabling. Related/full tests and LF/CRLF evidence required; Master independently confirms CRLF green before acceptance.
+
+### T077 returned; T078 final CRLF verification (2026-11-16)
+
+- T077 235055a returned msg_1ee162eb6bf9. Master inspected exact test diff: only read-text CRLF normalization added; required assertions preserved. Author 425 passed / 2 generation skips, focused13 and LF/CRLF mutation evidence reported.
+- T078 independent Codex dispatched ready: ctx_2d11df377bc8 / task_d1369b0aa645 / term_e68292cd-2628-4fe8-a542-9996814cfc35, child p2-2-crlf-recheck. Report-only scope, fresh original CRLF full tests and focused check. Product runtime evidence inherited from T073/T076 because no product change.
+- P2-2 acceptance waits for T078 green; no further product fix currently identified.

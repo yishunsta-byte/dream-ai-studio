@@ -101,3 +101,9 @@ Supersedes T075-fix-pending entries.
 - T076 independently passed changed error recovery and T074 visuals, including development-mode warning check.
 - Overall suite remains 424 passed / 1 failed / 2 skipped because an LF-only source assertion rejects CRLF.
 - T077 bounded test fix assigned. Next: verify original-CRLF tests green; then decide P2-2 acceptance. No product functionality failure claimed for F076-1.
+
+## Latest: final CRLF green verification
+
+- T077 235055a returned; Master confirmed assertion meaning preserved.
+- T078 independent original-CRLF full test check started (ctx_2d11df377bc8).
+- Next: accept P2-2 if green within T073/T076/T078 scope; retain actual-device, screen-reader and real-hidden verification limits.
