@@ -1269,3 +1269,8 @@
 
 - msg_2c8aac8833ba reports TS2352 in tests/t162-audio-bundle.test.ts163 in isolated UI baseline. Master inspected same assertion and ran current tsc --noEmit --incremental false:exit0. Environment cause not established; no false shared failure claim.
 - T165 implementation owner requested safe explicit manifest version/type narrowing in that test only, no assertion weakening. UI author requested exact compiler/lock/source evidence and honest failed baseline state while browser work continues.
+### T163 writer FAIL; T166 precommit source recheck
+
+- msg_573c1ee41c6c report read/imported. Independent132+5/lint/type/build and actual ZIP/backup/shared-render-helper controls pass. F163-1: same-size source mutation after ZIP serialization but before commit still succeeds; ZIP's original bytes valid, contract still unmet.
+- T166 priority successful-path fresh source hash/size recheck before commit requested, including orphan/retry and ownership preservation. T165 type correction and T164 UI WIP protected/selective commits only. Acceptance withheld.
+- Reviewer processes ended; auto-review denied BUILD cleanup, fake runtime/evidence retained without bypass. No user DB/tool install changes.
