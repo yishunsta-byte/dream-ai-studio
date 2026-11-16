@@ -268,3 +268,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T108 exact package/browser tooling and actual success/cancel/missing-browser cleanup verification underway.
 - Next: independent toolchain verification, app render worker/composition/API/UI implementation, actual end-to-end media and cancellation verification.
 - Actual user DB untouched; P2-4 overall incomplete.
+
+## Current: tools returned; actual render backend implementation assigned
+
+- T113 independently verifies T108 pinned packages/browser/smoke/cleanup.
+- T114 implements app render worker, immutable input and media verification, job lifecycle, API and verified file serving.
+- Next: backend review, render UI connection, actual project render/download/cancel/restore independent validation.
+- Tool smoke and foundation acceptance do not equal complete P2-4 application rendering.

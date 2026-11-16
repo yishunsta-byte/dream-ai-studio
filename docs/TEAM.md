@@ -929,3 +929,11 @@
 - T112 report imported msg_9be62c8cb8d6. Safe actual CLI cause/rollback/normal/noop/source/future8 checks PASS; full500/5skips and separate media9/0skip, focused200/1skip, lint/type PASS. Prior T110 build/restore/guards explicitly inherited, not rerun.
 - Master accepts T105/T109/T111 render-record/migration/backup-restore foundation within combined T110/T112 scope. No actual-user DB migration or renderer/UI acceptance implied.
 - T108 package/scripts WIP protected; author continues toolchain cleanup and actual render/cancel/failure smoke. Design assigned minimal PLAN foundation status, not whole P2-4 completion.
+
+### T108 returned; T113 tools review / T114 actual render backend (2026-11-17)
+
+- 2f12b9b / msg_e7d935df716b ready_review, Master read report. Author501 passed/4 skips, lint/type; actual pinned browser3-aspect45frame H264/yuv420p/bt709 smoke, cancel/fail/missing-browser cleanup and bounded network observations. No app rendering acceptance yet.
+- T113 independent dispatched ready: ctx_19189d3560fe / task_8725875541b2 / term_f435562b-6ff1-4b0d-af66-1b210f606b9d; child render-toolchain-review. Existing pinned browser read-only, isolated smoke/process cleanup and package/license integrity verification.
+- T114 author assigned actual render child worker/shared composition/input/verification/jobs/API/file route integration, no product render screen yet. Existing schema/migrations/packages/assets preserved. Request msg_d55932f8781e.
+- Design informed msg_7b4d8bcf2b25, API/error-state contract coordination only until UI implementation assignment.
+- Personal local use already confirmed; redistribution licensing issues recorded for future distribution, not repeated user approval.
