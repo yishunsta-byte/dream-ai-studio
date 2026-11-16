@@ -42,9 +42,17 @@
 
 ## 요청 기록
 
-### T-044 · DB 비변경·정규 journal·사본 유효성 필수 수정 (parent=T043/T035, priority=P1) — running
+### T-045 · K6 DB 보호 필수3건 독립 재검수 (parent=T044, priority=P1) — ready
+
+- 새 구현미참여 Codex child, 기준83b58f7. F0431/2/3 원본재현·회귀와 F0391/4 통과범위유지를독립검증. rawDELETE/WAL/정확journal예외/새DB경합·sidecar옛형식/다른정상사본/readonly원본보존·실제1280/390정확안내 포함.
+- 제품코드/fixture원본/사용자DB/공용문서불변, 고유T045보고만. 전체tests/lint/typecheck/build·직접재현증거·PASS/FAIL·미검증한계 반환. 미래code-data-migrationhash미구현은0005전 별도선행조건으로유지.
+
+
+### T-044 · DB 비변경·정규 journal·사본 유효성 필수 수정 (parent=T043/T035, priority=P1) — ready_review
 
 - 디자인 msg_52c2e6e93493 읽기대조 수신: T042 실패/미확인사본 문구·코드줄은 채택 기준과 일치. 데이터 폴더 지정방법 도움말은 비차단 후속으로 분리하고 T044 필수3결함 범위를 늘리지 않기로 결정했다. 제품 동작 시험 근거로 취급하지 않는다.
+
+- 83b58f7 / msg_4c953a0f0f4b 결과회수. Master가 보고·connection/CLI핵심코드를검토하고 전체30파일305통과/생성1skip를직접실행했다. canonical빈journal/readonly출처확인/사본integrity·관계검증 수정은독립T045재검수전완료판정아님. 기존/신규사본기록및경합한계는재검수범위에포함.
 
 - 실제 수락·점유 msg_5b3fccd179ce, 시작 HEAD3ba6aa2. 담당이 DB/CLI/sidecar/startup·필요connection옵션/관련tests/README·고유보고 점유를 확인했다. 다른 담당의 같은 제품 파일 수정 배정 없음.
 
