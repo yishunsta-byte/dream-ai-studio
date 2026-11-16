@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-052 · 코드 이관 v2 실행 결합 독립 검수 (parent=T051/T050, priority=P1) — ready
+### T-052 · 코드 이관 v2 실행 결합 독립 검수 (parent=T051/T050, priority=P1) — running
+
+- 실제worker ready dispatch ctx_3cfe0f9cc223 / task task_64a2997e6d5f / terminal term_aeffe7d0-d33d-48b7-9d79-f2148131f1f2 / child code-migration-v2-review. 결과Orca wake로회수.
 
 - cc75f57 대상 새Codex child. F0501~4와Master발견entry identity를실제재현검증, v2동일원문실행·닫힌loader·clock규칙/개별결정성·async/timeout/query_only복구·rollback/snapshot/directrestore·CRLFcheckout을확인한다.
 - 전체tests/lint/typecheck/build·원본SQL/s4불변·증거/신뢰경계·PASS/FAIL반환. 고유T052보고만,제품0005/사용자data/공용문서수정금지. 실제제품등록·Next소스동봉/오류안내는이후0005통합검증과구분.
