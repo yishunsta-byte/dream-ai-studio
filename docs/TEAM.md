@@ -41,6 +41,15 @@
 
 ## 요청 기록
 
+### T-019 · 복원본의 이전 백업 선택 정책 확인 (parent=T016, priority=P2) — running
+
+- 담당 CC-DATA-01. 허용 docs/handoffs/T-019-CC-DATA-01.md 한파일, 실제사용자/기존fixtureDB접근금지. 이전성공백업행이복원본목록에남을때경로읽기/ID-meta검증/누락파일실패/성공오표시/최소표시구분을코드와필요시가상fixture로확인한다. 전송msg_296303943a1d, 수락msg_7d4d639f83a3. 현재P1필수와구분한읽기점검이다.
+
+### T-020 · 복원 중단 이름표·중복 날짜 문구 정리 (parent=T016, priority=P3) — ready_review
+
+- 담당 CX-MASTER-01. 디자인msg_87313a35822e의권장1/2를채택. 허용 settings-panel.tsx와settings/page.tsx. 중단행을warning기본문구에서canceled톤의명시적'복원으로 멈춤'으로바꾸고중복접두어제거. 상단출처/복원시각안내는유지하고앱정보의중복날짜만제거. DB/선택정책/원본변경없음.
+- 실제검증: typecheck와lint 종료0, StatusPill children지원과최종diff대조. 작은표시변경으로전체193검사를다시실행하지않았고새브라우저실행도아직없음. T015후통합화면·독립재검수에포함하며P1전체통과로처리하지않는다.
+
 ### T-016 · 데이터 보고 검토 후 복원 안내·자동 기록 수정 (parent=P1 종료, priority=P1) — done
 
 - 통합검증: Master가T014보고를확인해수정, 관련46검사·전체193검사/build/lint/typecheck/빌드경고0·사적추적0. 실제가상복원본1280/390 출처/중단/시각표시·가로넘침0 확인. 이력상태위조없음. 인계T-016-CX-MASTER-01.md. 제품전체독립통과는아니며재검수포함.
