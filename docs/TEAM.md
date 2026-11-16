@@ -1191,3 +1191,8 @@
 
 - msg_b5542fdb7cb2 /48b82af: Master inspected exact one-line Player note and report; accurate mute/source/final-result distinction accepted. Author64 related tests/lint/type; browser width not newly verified.
 - T150 informed via msg_dc7eaa91dc8c, original independent target retained and optional corrected-note width check requested without resetting review. No overall editor acceptance yet.
+### T150 editor FAIL; T152 draft-preservation fix
+
+- msg_8c7b236f2ef8 /1e82d0208074284027c9651e1a80df0d23d69a01 report imported/read. Independent47/lint/type/build and many real editor lifecycle checks pass; F150-1 P1 overrides acceptance: join preview's stale full timeline discards later gain/rights edits on Apply.
+- T152 priority minimal component/helper fix requested; actual preview lifecycle and saved-GET preservation regression required, no unrelated native-player refactor. U2/U3 acceptance withheld.
+- Actual hidden/listening/device remain unverified. Reviewer server/browser stopped; automatic approval denied temp deletion, so fake runtime/copies remain without bypass. User3013 untouched.
