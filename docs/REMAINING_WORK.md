@@ -381,3 +381,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T136 contract reviewed; T137 actual stageC implementation requested while T135 independently reviews frozen DSP target.
 - Silent/short outputs require honest non-normalized state; ordinary out-of-range outputs remain failure. Versioned input and new0009 compatibility gate required without rewriting old data.
 - Next: collect DSP verdict, resolve findings, validate real audio render integration, then UI. New fixed fixture checkpoint follows acceptance; P2-6/device/semantic sync remain separate.
+## Latest: required DSP corrections before integration acceptance
+
+- T135 independent product FAIL4: tool identity, failed publication residue, pre-publication cancel/deadline, actual mux video length. Original DSP numeric tests passing do not override these findings.
+- T138 prioritized corrections requested; T137 WIP preserved and integration finalization held pending fix/recheck. No existing user data or deployment changed.
+- Next: independent four-reproduction recheck, resume actual render connection, then UI/packaging/device work.
