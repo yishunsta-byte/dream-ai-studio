@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-044 · DB 비변경·정규 journal·사본 유효성 필수 수정 (parent=T043/T035, priority=P1) — ready
+### T-044 · DB 비변경·정규 journal·사본 유효성 필수 수정 (parent=T043/T035, priority=P1) — running
+
+- 실제 수락·점유 msg_5b3fccd179ce, 시작 HEAD3ba6aa2. 담당이 DB/CLI/sidecar/startup·필요connection옵션/관련tests/README·고유보고 점유를 확인했다. 다른 담당의 같은 제품 파일 수정 배정 없음.
 
 - CC-DATA-01 임시코딩, 실제전달로배정. F0431 canonical empty journal만허용/기타failclosed, F0432 시작점검readonly·CLI provenance전persistentPRAGMA금지/쓰기전재검증, F0433 사본readonly integrity·예상원본관계확인후에만확인된사본안내.
 - 범위 T042 db/CLI/startup/sidecar·필요connection옵션/관련tests/고유T044보고·README최소. 원본SQL/고정fixture/사용자DB/타임라인/공용문서불변. rawDELETE/WAL 및generated/default/check 재현·byte/semantic보존·정상upgrade/복원replay·손상/다른정상사본안내·전체tests/lint/typecheck/build·1280/390 증거 반환 후 독립재검수.
