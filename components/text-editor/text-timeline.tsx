@@ -23,6 +23,7 @@ type Props={texts:readonly TimelineText[];selectedId:string|null;onSelect:(id:st
   warned:ReadonlySet<string>;changed:ReadonlySet<string>;unchecked:ReadonlySet<string>;timeErrors:ReadonlySet<string>;frameStore:FrameStore;controlRef:MutableRefObject<PreviewControl|null>};
 type Drag={id:string;mode:TimingEdit;pointerId:number;x:number;perFrame:number;origin:TimelineText["timing"];moved:boolean;element:HTMLElement};
 export const LOCKED_TIME="필수 표기는 시간을 바꿀 수 없어요.";
+const DRAGGING="끄는 중에는 키로 옮길 수 없어요. 놓거나 Esc로 취소해요.";
 const LABEL_W=76,ROW_H=32,MIN_BAR=4,MIN_HIT=24;
 const clock=(frame:number)=>{const seconds=Math.floor(frame/FPS);return `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;};
 
@@ -41,6 +42,10 @@ export function TextTimeline({texts,selectedId,onSelect,onTiming,onEnter,totalFr
   useEffect(()=>()=>{if(raf.current!==null)cancelAnimationFrame(raf.current);clearTimeout(late.current);clearTimeout(quiet.current);},[]);
   // Read once, 0.5 s after the keys stop (not on every repeat).
   const say=useCallback((text:string,delay=500)=>{clearTimeout(quiet.current);quiet.current=setTimeout(()=>setAnnounce(text),delay);},[]);
+  // Choosing another text during a drag (for example in the list) ends the drag without changing anything.
+  useEffect(()=>{const state=drag.current;if(!state||state.id===selectedId)return;drag.current=null;
+    if(state.element.hasPointerCapture(state.pointerId))state.element.releasePointerCapture(state.pointerId);
+    setDragView(null);if(state.moved)say("다른 글자를 골라 옮기기를 취소했어요.",0);},[selectedId,say]);
   const flush=useCallback(()=>{
     if(raf.current!==null){cancelAnimationFrame(raf.current);raf.current=null;}clearTimeout(late.current);
     const job=pending.current;pending.current=null;if(!job||job.delta===0)return;
@@ -63,6 +68,7 @@ export function TextTimeline({texts,selectedId,onSelect,onTiming,onEnter,totalFr
     const action=clipKeyAction(event,text.locked,!!drag.current);if(!action)return;
     event.preventDefault();event.stopPropagation();
     if(action.type==="cancel")cancelDrag();
+    else if(action.type==="dragging"){if(!event.repeat)say(DRAGGING,0);}
     else if(action.type==="enter"){flush();onEnter(text);}
     else if(action.type==="toggle"){if(!event.repeat)controlRef.current?.toggle();}
     else if(action.type==="select"){flush();const next=texts[index+action.step];if(next){choose(next.id);focusClip(next.id);}}
@@ -84,6 +90,9 @@ export function TextTimeline({texts,selectedId,onSelect,onTiming,onEnter,totalFr
   function endDrag(event:PointerEvent<HTMLButtonElement>){
     const state=drag.current;if(!state||event.pointerId!==state.pointerId)return;drag.current=null;
     if(state.element.hasPointerCapture(state.pointerId))state.element.releasePointerCapture(state.pointerId);
+    const now=textsRef.current.find(item=>item.id===state.id)?.timing;
+    // The text changed some other way during the drag (time fields, cancel changes): the drag does not overwrite it.
+    if(!now||now.startFrame!==state.origin.startFrame||now.endFrame!==state.origin.endFrame){setDragView(null);if(state.moved)say("시간이 바뀌어 옮기기를 취소했어요.",0);return;}
     const final=state.moved?shiftTiming(state.origin,Math.round((event.clientX-state.x)/state.perFrame),state.mode,limitFrames):state.origin;setDragView(null);
     if(final!==state.origin){onTiming(state.id,()=>final);say(`${formatFrameTime(final.startFrame)}부터 ${formatFrameTime(final.endFrame)}까지`,0);}
     focusClip(state.id);
@@ -110,10 +119,11 @@ export function TextTimeline({texts,selectedId,onSelect,onTiming,onEnter,totalFr
     <div className={styles.body} ref={bodyRef} style={{["--tl-label" as string]:`${LABEL_W}px`,["--tl-row" as string]:`${ROW_H}px`}}>
       <PositionBar store={frameStore} total={total} track={track} onKeyDown={barKeys} onPointerDown={seekDown} onPointerMove={seekMove} onPointerUp={seekUp} onPointerCancel={seekUp}>
         {Array.from({length:seconds+1},(_,second)=><span key={second} className={second%label===0?styles.major:styles.tick} style={{left:LABEL_W+px(second*FPS)}} aria-hidden="true">{second%label===0?clock(second*FPS):""}</span>)}
+        {videoFrames<total&&<span className={`${styles.scene} ${styles.videoEnd}`} style={{left:LABEL_W+px(videoFrames)}} aria-hidden="true">영상 끝</span>}
         {scenes.map(scene=><span key={scene.startFrame+scene.label} className={styles.scene} style={{left:LABEL_W+px(scene.startFrame)}} aria-hidden="true">{scene.label}</span>)}
       </PositionBar>
       <div className={styles.rows} ref={listRef} role="group" aria-label="글자 클립" aria-describedby={helpId} onPointerDown={seekDown} onPointerMove={seekMove} onPointerUp={seekUp} onPointerCancel={seekUp}>
-        {videoFrames<total&&<div className={styles.after} style={{left:LABEL_W+px(videoFrames)}} aria-hidden="true"><span>영상 끝</span></div>}
+        {videoFrames<total&&<div className={styles.after} style={{left:LABEL_W+px(videoFrames)}} aria-hidden="true"/>}
         {texts.length===0&&<div className={styles.row}><span className={styles.name}/><span className={styles.empty}>아직 글자가 없어요. 위 &apos;글자 추가&apos;로 넣어요.</span></div>}
         {texts.map((text,index)=>{const view=dragView?.id===text.id?dragView.timing:text.timing,selected=text.id===selectedId,warn=!text.locked&&warned.has(text.id);
           const bar=Math.max(MIN_BAR,px(view.endFrame-view.startFrame)),hit=Math.max(MIN_HIT,bar),center=LABEL_W+px(view.startFrame)+bar/2;

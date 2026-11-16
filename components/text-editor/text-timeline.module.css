@@ -14,7 +14,7 @@
 .name { position:absolute; left:0; top:0; bottom:0; width:var(--tl-label); display:flex; align-items:center; gap:var(--sp-1); padding-right:var(--sp-1); box-sizing:border-box; background:var(--bg-surface); color:var(--fg-muted); }
 .empty { position:absolute; left:var(--tl-label); right:0; top:0; bottom:0; display:flex; align-items:center; padding-left:var(--sp-2); font-size:var(--text-sm); color:var(--fg-muted); }
 .after { position:absolute; top:0; bottom:0; right:0; background:repeating-linear-gradient(135deg, var(--st-locked-bg) 0 6px, transparent 6px 10px); pointer-events:none; }
-.after span { position:absolute; top:2px; left:4px; font-size:var(--text-xs); color:var(--st-locked-fg); }
+.videoEnd { color:var(--st-locked-fg); border-left-style:solid; z-index:2; }
 .line { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--st-danger-fg); pointer-events:none; z-index:3; }
 /* Hit area (≥ 24px, centred on the bar); the bar inside is the real length (≥ 4px). */
 .clip { position:absolute; top:0; bottom:0; display:flex; align-items:center; justify-content:center; padding:0; border:0; background:transparent; font:inherit; cursor:grab; touch-action:none; z-index:1; }

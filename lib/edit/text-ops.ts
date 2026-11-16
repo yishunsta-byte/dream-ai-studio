@@ -1,5 +1,5 @@
 import { v7 } from "uuid";
-import { FPS, type Timeline, type TimelineText } from "./timeline";
+import { canonicalJson, FPS, type Timeline, type TimelineText } from "./timeline";
 import { presetFor, type TextKind } from "./presets";
 import { SAFE_AREA } from "./preview";
 
@@ -105,10 +105,14 @@ export function shiftTiming(timing:TimelineText["timing"],delta:number,mode:Timi
 // Timeline keys (T-033 3.2.1, T-091 5장): what one key press does where. A clip key never seeks and the position bar
 // never changes a text, so one key is one action (T-033 3.3 1-1).
 type KeyInput={key:string;shiftKey:boolean;altKey:boolean;ctrlKey:boolean;metaKey:boolean};
-export type ClipKeyAction={type:"move";mode:TimingEdit;delta:number}|{type:"locked"}|{type:"select";step:-1|1}|{type:"enter"}|{type:"toggle"}|{type:"cancel"};
+export type ClipKeyAction={type:"move";mode:TimingEdit;delta:number}|{type:"locked"}|{type:"select";step:-1|1}|{type:"enter"}|{type:"toggle"}|{type:"cancel"}|{type:"dragging"};
+// While a clip is being dragged only Esc works (it cancels the drag); the other clip keys wait, so a key never changes
+// a text that the drag is about to set (T-093 F093-4).
+const CLIP_KEYS=new Set(["Enter"," ","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"]);
 export function clipKeyAction(input:KeyInput,locked:boolean,dragging:boolean):ClipKeyAction|null{
   if(input.ctrlKey||input.metaKey)return null;
   if(input.key==="Escape")return dragging?{type:"cancel"}:null;
+  if(dragging)return CLIP_KEYS.has(input.key)?{type:"dragging"}:null;
   if(input.key==="Enter")return {type:"enter"};
   if(input.key===" ")return {type:"toggle"};
   if(input.key==="ArrowUp"||input.key==="ArrowDown")return {type:"select",step:input.key==="ArrowUp"?-1:1};
@@ -127,4 +131,14 @@ export function rulerSteps(totalFrames:number,widthPx:number){
   const seconds=Math.max(1,Math.ceil(totalFrames/FPS)),perSecond=widthPx/Math.max(1,totalFrames/FPS);
   const label=[1,2,5,10,30,60].find(step=>step*perSecond>=48)??120;
   return {seconds,label};
+}
+
+// The save of this screen arrived (T-093 F093-1): unchanged since sending → the saved version (as the server stored it)
+// is the draft again; changed since sending → those later changes stay, as unsaved changes on top of the new version.
+export function afterSave(current:Timeline,sent:Timeline,saved:Timeline):{draft:Timeline;kept:boolean}{
+  const kept=canonicalJson(current)!==canonicalJson(sent);return {draft:kept?current:saved,kept};
+}
+// Typed time fields ("<id>:start" / "<id>:end") count only for texts that are still there (T-093 F093-3A).
+export function liveTimeFields<T>(fields:Readonly<Record<string,T>>,texts:readonly {id:string}[]):Record<string,T>{
+  const ids=new Set(texts.map(text=>text.id));return Object.fromEntries(Object.entries(fields).filter(([key])=>ids.has(key.split(":")[0])));
 }

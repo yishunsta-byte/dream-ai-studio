@@ -175,7 +175,7 @@ function TextInspector({layer,index,draft,initial,setDraft,fonts,aspect,warnings
       {layer.locked?<p className={styles.note}>{shortTime(layer.timing.startFrame)}–{shortTime(layer.timing.endFrame)} · 표기는 기획 길이만큼 보여요. 영상이 이보다 짧아도 고칠 것은 없어요.</p>:<div className={styles.timeRow}>{timeField("start")}{timeField("end")}</div>}
       {p1Note("start")}{p1Note("end")}</fieldset>
     <div className={styles.pcOnly}>{layer.locked?<p className={styles.note}>필수 표기라 지울 수 없어요. {DISCLOSURE_REASON[layer.content]??"등록값이 요구하는 표기예요."}</p>:
-      <Button variant="ghost" onClick={()=>{const removed=layer,at=index,next=draft.text[index+1]?.id??draft.text[index-1]?.id??null;setDraft(old=>removeText(old,removed.id));onRemoved(next);
+      <Button variant="ghost" onClick={()=>{const removed=layer,at=index,next=draft.text[index+1]?.id??draft.text[index-1]?.id??null;setDraft(old=>removeText(old,removed.id));setTimes(old=>{if(!(`${removed.id}:start` in old)&&!(`${removed.id}:end` in old))return old;const rest={...old};delete rest[`${removed.id}:start`];delete rest[`${removed.id}:end`];return rest;});onRemoved(next);
         notify({tone:"success",message:"글자를 뺐어요.",undo:()=>setDraft(old=>old.text.some(item=>item.id===removed.id)?old:insertText(old,removed,at))});}}>이 글자 빼기</Button>}</div>
   </section>;
 }

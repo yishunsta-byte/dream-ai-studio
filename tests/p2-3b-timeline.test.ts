@@ -3,7 +3,8 @@
 // the frame store, and the boundaries (no page-wide keys, no server code, no fetch in the row).
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { barKeyAction, clipKeyAction, rulerSteps, shiftTiming } from "@/lib/edit/text-ops";
+import { afterSave, barKeyAction, clipKeyAction, liveTimeFields, rulerSteps, shiftTiming } from "@/lib/edit/text-ops";
+import type { Timeline } from "@/lib/edit/timeline";
 import { createFrameStore } from "@/components/player/frame-store";
 
 const key=(name:string,mods:Partial<{shiftKey:boolean;altKey:boolean;ctrlKey:boolean;metaKey:boolean}>={})=>({key:name,shiftKey:false,altKey:false,ctrlKey:false,metaKey:false,...mods});
@@ -63,7 +64,34 @@ describe("경계",()=>{
     expect(row).toContain("clipKeyAction(event");expect(row).toContain("barKeyAction(event");
     expect(panel).toMatch(/<div className=\{styles\.pcOnly\}><Card><div className="stack"><h2>타임라인<\/h2>/);
     expect(panel).not.toMatch(/setInterval|autosave/i);expect(panel.match(/fetch\(`\/api\/projects\/\$\{data\.projectId\}\/timeline`/g)).toHaveLength(1);
-    // Changes made while a save is on its way come back on top of the new version (T-033 1-2).
-    expect(panel).toContain("draft:canonicalJson(draftRef.current)!==canonicalJson(sent)?draftRef.current:null");expect(panel).toContain("저장하는 동안 고친 내용은 아직 저장하지 않았어요.");
+    // T-093: one handover owned by the saving editor, gone with it; no time limit; a late answer of a gone editor does nothing.
+    expect(panel.match(/^let /gm)).toEqual(["let "]);expect(panel).toContain("let handover:Handover|null=null;");expect(panel).toContain("if(!mounted.current)return;");
+    expect(panel).toContain("return ()=>{mounted.current=false;if(handover?.owner===me)handover=null;};");expect(panel).toContain("from.saved&&from.owner!==me&&from.projectId===data.projectId&&from.fromRevision!==data.revision");
+    expect(panel).toContain("startRefresh(()=>router.refresh())");expect(panel).not.toMatch(/Date\.now\(\)|30_000/);expect(panel).toContain("저장하는 동안 고친 내용은 아직 저장하지 않았어요.");
+    expect(panel).toContain('response.status===409?CONFLICT');expect(panel).toContain("busy||posting.current)return;posting.current=true;");expect(panel).toContain("finally{posting.current=false;}");expect(panel).toContain('role="alert" ref={errorRef} tabIndex={-1}');
+  });
+});
+
+describe("저장 수명·시간 칸·끄는 중 키 (T-093 F093-1·3·4)",()=>{
+  const timeline=(content:string,start=0):Timeline=>({schemaVersion:1,aspect:"9:16",video:[],audio:[],text:[{id:"a",kind:"subtitle",content,speakerCharacterId:null,timing:{startFrame:start,endFrame:start+30}}]} as unknown as Timeline);
+  it("저장이 돌아왔을 때: 보낸 뒤 그대로면 서버 저장본, 그 뒤 고쳤으면(문구·시간) 고친 초안을 남김",()=>{
+    const sent=timeline("A "),saved=timeline("A");
+    expect(afterSave(timeline("A "),sent,saved)).toEqual({draft:saved,kept:false});
+    const later=timeline("B");expect(afterSave(later,sent,saved)).toEqual({draft:later,kept:true});
+    const moved=timeline("A ",1);expect(afterSave(moved,sent,saved)).toEqual({draft:moved,kept:true});
+  });
+  it("지운 글자의 시간 칸 오류는 저장을 막지 않음",()=>{
+    const fields={"a:start":{raw:"bad"},"b:end":{raw:"x"}};
+    expect(liveTimeFields(fields,[{id:"b"}])).toEqual({"b:end":{raw:"x"}});expect(liveTimeFields(fields,[])).toEqual({});
+  });
+  it("끄는 중에는 Esc만 동작(취소), 다른 클립 키는 기다림, 처리 안 하는 키는 그대로",()=>{
+    for(const name of ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Enter"," "])expect(clipKeyAction(key(name),false,true)).toEqual({type:"dragging"});
+    expect(clipKeyAction(key("ArrowLeft",{shiftKey:true}),false,true)).toEqual({type:"dragging"});expect(clipKeyAction(key("Escape"),false,true)).toEqual({type:"cancel"});
+    expect(clipKeyAction(key("Tab"),false,true)).toBeNull();
+  });
+  it("타임라인: 놓을 때 시간이 끌기 시작 때와 다르면 덮지 않음, 다른 글자를 고르면 끌기 끝",()=>{
+    const row=readFileSync("components/text-editor/text-timeline.tsx","utf8"),editor=readFileSync("components/text-editor/text-editor.tsx","utf8");
+    expect(row).toContain("now.startFrame!==state.origin.startFrame||now.endFrame!==state.origin.endFrame");expect(row).toContain("다른 글자를 골라 옮기기를 취소했어요.");
+    expect(editor).toMatch(/removeText\(old,removed\.id\)\);setTimes\(/);
   });
 });
