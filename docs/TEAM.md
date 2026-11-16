@@ -1154,3 +1154,10 @@
 - Worker reports current shared full suite may fail because unfinished9-step migration expectations remain8. This is explicit WIP, not a ready-review regression or evidence of DSP failure.
 - Master requested T138-only validation in a safe copied baseline with selective fixes; no reset/stash, unrelated expectation changes or false shared-workspace full PASS. Report actual baseline/source identity and check location. Existing WIP remains protected and uncommitted.
 - Next: T138 return and independent focused verification before T137 resume. No user decision needed.
+### T138 returned; T139 independent reproductions assigned (2026-11-17)
+
+- msg_7de03f8fa8ac /93806df117cd1dcf6916d41cec54cbdba0b9d04a: Master read full report/stat. Only DSP mix/run, new regression tests and unique report committed; T137 four-file WIP protected.
+- Author fixes use per-request hashed executable copies, ownership-specific adjacent staging + no-replace link commit, synchronous final cancel/deadline check, actual video frame/rate/hash checks, stream-count and observer cleanup. Local trust/ABA limits explicit.
+- Author original14 and new12 PASS; isolated T138-only baseline full611/13skip plus lint/type. These remain author evidence; shared WIP suite not claimed green. Some pre-fix red results are new-API failures, not all direct reproductions.
+- T139 requested from original independent reviewer to reproduce F135-1..4/O135-1..2, check commit semantics and preservation using committed snapshot excluding T137 WIP. No DSP acceptance or integration resume yet.
+- T137 must later account for both tool hashes, tool-copy disk budget, new errors/videoCheck and honest late-cancel behavior. Next: independent verdict then bounded resumption/corrections.

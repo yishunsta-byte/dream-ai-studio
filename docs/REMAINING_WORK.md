@@ -386,3 +386,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T135 independent product FAIL4: tool identity, failed publication residue, pre-publication cancel/deadline, actual mux video length. Original DSP numeric tests passing do not override these findings.
 - T138 prioritized corrections requested; T137 WIP preserved and integration finalization held pending fix/recheck. No existing user data or deployment changed.
 - Next: independent four-reproduction recheck, resume actual render connection, then UI/packaging/device work.
+## Latest: DSP corrections returned; independent recheck requested
+
+- T138 required fixes ready_review, author isolated611/13skip; T139 original-reproduction recheck requested.
+- T137 WIP remains protected and paused until DSP acceptance. No product audio render/UI/deployment completion claimed.
+- Next: resolve verdict, resume integration with revised tool/commit contract, then independent actual render verification.
