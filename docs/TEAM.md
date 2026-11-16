@@ -15,8 +15,8 @@
 | ID | 플랫폼/실제 연결 | 역할·작업 | 확인 상태 |
 |---|---|---|---|
 | CX-MASTER-01 | Codex CLI / term_3831c608-dc70-4b7f-aaba-742095a2481e | Master, T-012 운영구성/통합검증 | busy, 이 세션 |
-| CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, T-013 디자인 대조 | returned, 명세 회수·채택 |
-| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터/임시코딩T021·23·28 | 반환·통합/재검수완료 |
+| CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, 기준·시안 정합 T056/T057 | returned, 결과 검토 완료 |
+| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터/임시코딩T058·설계T060 | T058 반환·T059 검수 중, T060 배정 |
 | CC-ENG-01 | Claude CLI acceptEdits / term_cc667bc2-39ee-4648-bc6b-3bb000a9ab47 | 옛코딩T015 | 배정철회/fence·별도자원보존, 물리종료미확인 |
 | CX-REVIEW-01 | Codex / dispatch ctx_fa91b94b9d65 | 독립검수, 격리 child worktree | returned, 제품 FAIL/F0161·2/V13부분 |
 | CX-REVIEW-03 | Codex / dispatch ctx_35f31485cffe | 최종집중독립검수T029 | returned, R018최종P1독립PASS |
@@ -41,6 +41,12 @@
 4. 터미널 번호가 바뀌면 `orca terminal list --json`으로 찾아 이 표를 고친다.
 
 ## 요청 기록
+
+### T-060 · 타임라인 구현 설계 입력 (parent=P2-1 준비) — ready
+
+- 사용자 남은작업확인·계속진행 지시에 따라 CC-DATA-01 배정. 허용 docs/handoffs/T-060-TIMELINE-IMPLEMENTATION.md 한파일만. P1 snapshot→불변timeline r1 결정적이관·CAS/current·revision/검수무효·저장/되돌리기·오류/미완성프로젝트·s4/s5·CLI/productionNext source통합을구체설계, U1/U3/U7기존결정유지·U4초안분리.
+- T059 통과 전 코드/제품0005/SQL/fixture원본/기준·공용문서수정금지. 관련파일/완료조건/검증명령·미정추천·선택문서커밋반환후Master검토. T059필수수정이오면그작업우선.
+
 
 ### T-059 · 동기 코드 이관 계약 독립 검수 (parent=T058/T054, priority=P1) — running
 
