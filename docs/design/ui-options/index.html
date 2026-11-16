@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UI 시안 3안 비교 — Dream AI Studio</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+main{max-width:1200px;margin:0 auto;padding:var(--sp-6) var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-6)}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-4)}
+.opt{display:flex;flex-direction:column;gap:var(--sp-3)}
+.opt.rec{border-color:var(--accent-bar);box-shadow:0 0 0 2px var(--accent-bar)}
+.opt img{width:100%;height:auto;border:1px solid var(--line);border-radius:var(--radius-md);display:block}
+.shots{display:grid;grid-template-columns:3fr 1fr;gap:var(--sp-2);align-items:start}
+.opt ul{margin:0;padding-left:var(--sp-5);font-size:var(--text-sm)}
+@media (max-width:899px){.opts{grid-template-columns:1fr}}
+@media (max-width:639px){main{padding:var(--sp-4)}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<div class="proto-bar" role="note"><strong>T-115 UI 시안 비교</strong><span>모두 가상 데이터로 만든 디자인 시안이에요. 실제 앱이 아니고, 눌러도 저장되지 않아요.</span></div>
+<main id="main" tabindex="-1">
+ <div class="stack"><h1>UI 시안 3안</h1>
+  <p>같은 기능·같은 한글 문구로 <b>작업실(진행 상태)</b>, <b>프로젝트 편집</b>, <b>영상 만들기 대기·오류</b> 세 화면을 1280·390에서 비교해요. 색이 아니라 <b>정보 배치와 작업 진행을 어디에 두는지</b>가 달라요. 색·글자·부품은 지금 디자인 토큰 그대로예요.</p>
+  <p class="small muted">시안마다 위쪽 보라 띠에서 세 화면을 바꿔 볼 수 있어요. 영상 만들기(P2-4) 화면은 아직 구현 전이라 T-102 명세의 상태를 가상으로 보여 줘요.</p></div>
+ <div class="opts">
+  <section class="card opt" aria-labelledby="o-a"><div class="spread"><h2 id="o-a">A · 할 일 먼저</h2></div>
+   <div class="shots"><img src="shots/a-1280-home.png" alt="A안 PC 작업실 캡처"><img src="shots/a-390-home.png" alt="A안 휴대폰 작업실 캡처"></div>
+   <p class="small">지금 앱의 사이드바를 그대로 두고, 작업실 맨 위에 <b>급한 순서의 할 일 목록</b>(실패 → 승인 → 검수 → 만드는 중)을 둬요. 프로젝트 안은 <b>왼쪽 세로 7단계</b>.</p>
+   <ul><li>좋은 점: 지금 앱과 가장 가까워 옮기기 쉽고 위험이 적어요. 분야 16개·업무공간이 늘 보여요.</li><li>아쉬운 점: 사이드바가 길어 휴대폰에서는 서랍을 열어야 해요. 작업 진행은 대기열 화면에 가야 자세히 보여요.</li></ul>
+   <div class="row"><a class="btn primary sm" href="option-a.html#home">A안 열기</a></div></section>
+  <section class="card opt" aria-labelledby="o-b"><h2 id="o-b">B · 흐름 보드</h2>
+   <div class="shots"><img src="shots/b-1280-home.png" alt="B안 PC 작업실 캡처"><img src="shots/b-390-home.png" alt="B안 휴대폰 작업실 캡처"></div>
+   <p class="small">위쪽 메뉴 + 늘 보이는 <b>작업 줄</b>. 작업실은 <b>준비 · 만들기 · 검수 · 내보내기 보드</b>. 프로젝트는 미리보기를 왼쪽에 고정하고 오른쪽 패널 탭에 글자·타임라인·장면 순서·<b>영상 만들기</b>.</p>
+   <ul><li>좋은 점: 여러 프로젝트가 어디서 막혔는지 한눈에. 편집하면서 영상 만들기 진행을 같은 화면에서 봐요.</li><li>아쉬운 점: 셸 구조를 크게 바꿔야 해요(사이드바 → 위 메뉴·휴대폰 아래 메뉴). 분야 목록이 펼침 메뉴 안으로 들어가요.</li></ul>
+   <div class="row"><a class="btn primary sm" href="option-b.html#home">B안 열기</a></div></section>
+  <section class="card opt" aria-labelledby="o-c"><h2 id="o-c">C · 한 작품씩</h2>
+   <div class="shots"><img src="shots/c-1280-home.png" alt="C안 PC 작업실 캡처"><img src="shots/c-390-home.png" alt="C안 휴대폰 작업실 캡처"></div>
+   <p class="small">메뉴를 서랍으로 줄이고 <b>"이어서 하기" 큰 카드 하나</b>와 프로젝트마다 <b>다음 할 일 한 문장</b>. 프로젝트 안은 <b>단계 펼침 목록</b>, 작업 진행은 모든 화면 아래 <b>작업 트레이</b>.</p>
+   <ul><li>좋은 점: 처음 쓰는 사람도 다음에 뭘 할지 바로 알아요. 휴대폰에 가장 자연스러워요.</li><li>아쉬운 점: 타임라인처럼 넓은 PC 편집에는 공간이 좁아요. 준비 분야·업무공간이 한 번 더 들어가야 보여요. 아래 트레이가 화면을 조금 가려요.</li></ul>
+   <div class="row"><a class="btn primary sm" href="option-c.html#home">C안 열기</a></div></section>
+ </div>
+ <section class="card stack" aria-labelledby="h-cmp"><h2 id="h-cmp">한눈에 비교</h2>
+  <div style="overflow-x:auto"><table><thead><tr><th scope="col">기준</th><th scope="col">A 할 일 먼저</th><th scope="col">B 흐름 보드</th><th scope="col">C 한 작품씩</th></tr></thead><tbody>
+   <tr><th scope="row">지금 앱에서 바꿀 양</th><td>작게 (작업실·프로젝트 머리만)</td><td>크게 (셸·편집 배치)</td><td>중간 (셸 단순화·편집 펼침)</td></tr>
+   <tr><th scope="row">급한 일 찾기</th><td>맨 위 목록 ◎</td><td>보드의 빨간 카드 ○</td><td>위 빨간 상자 + 큰 카드 ○</td></tr>
+   <tr><th scope="row">작업 진행 보기</th><td>숫자 카드·대기열 화면 ○</td><td>늘 보이는 작업 줄 ◎</td><td>늘 보이는 트레이 ◎</td></tr>
+   <tr><th scope="row">PC 편집(타임라인)</th><td>넓음 ◎</td><td>넓음, 미리보기 고정 ◎</td><td>좁음 △</td></tr>
+   <tr><th scope="row">휴대폰</th><td>서랍 + 할 일 목록 ○</td><td>아래 메뉴 + 세로 보드 ○</td><td>가장 자연스러움 ◎</td></tr>
+   <tr><th scope="row">분야 16개·업무공간 보이기</th><td>늘 보임 ◎</td><td>펼침 메뉴 ○</td><td>서랍 안 요약 △</td></tr>
+  </tbody></table></div></section>
+ <section class="card stack" aria-labelledby="h-rec"><h2 id="h-rec">추천: A · 할 일 먼저</h2>
+  <ul><li>지금 앱의 셸·부품·경로를 그대로 쓰고 <b>작업실 첫 화면과 프로젝트 머리만</b> 바꾸면 돼서, 진행 중인 렌더 작업(T-114)과 부딪히지 않고 가장 빨리 옮길 수 있어요.</li><li>DESIGN 원칙 D1 "지금 손댈 것을 먼저"를 가장 직접적으로 지켜요.</li><li>B·C의 좋은 점 중 <b>늘 보이는 작업 상태</b>는 A의 위 띠에 작은 작업 줄로 더할 수 있어요(후속 제안).</li></ul>
+  <p class="small muted">자세한 검증·연결 범위: docs/handoffs/T-115-UI-OPTIONS.md</p></section>
+</main>
+</body>
+</html>
