@@ -48,7 +48,9 @@
 - 범위: 백업/복원·migrate 실행 보조/DTO·최소 복원 UI·관련 tests와 가상 고정 s4/README/고유 T035 보고. 기존 migration0001~0004 변경·0005 추가·타임라인·실사용 data/storage/backups 접근 금지. planner 문서와 공용 상태는 별도 담당.
 - 완료 조건: 정확 prefix/manifest-DB 일치·staging 이관/후검증·원본 해시 보존·실패 정리·일관 사전스냅샷/동시 접근/배타 새파일·고정자료 회귀 및 전체 tests/lint/typecheck/build. upgrade는 테스트 전용 격리 migration 입력으로 검증. 커밋·근거·한계 반환 후 Master 통합과 독립 검수. 실제 사용자 DB 이관은 실행하지 않음.
 
-### T-036 · 사용자 승인·P1 종료 기준 반영 (parent=P1 종료) — ready_review
+### T-036 · 사용자 승인·P1 종료 기준 반영 (parent=P1 종료) — done
+
+- 최종 b352554 / msg_1e61705bba1d 회수. Master가 실제 diff로 지난 승인 안내 구분·재승인 불필요 표시와 T015 물리 종료 미확인 표현을 확인했다. T036 문서 검토 완료. 제품 코드/캡처 변경·앱 재시험은 없으며 T035 담당의 진행 중 미커밋은 보존한다.
 
 - 회수 msg_d584bbc7c47b / 375d9d7. Master 실제 diff에서 승인 근거/PLAN 종료/K6 선행을 확인해 채택했다. 확인페이지 지난 승인요청 문구와 고유 WORK-HISTORY의 T015 물리 정지 단정만 정정 요청했다. 히스토리는 사용자 별도 요청에 따라 Claude design 소유이며 Master가 덮어쓰지 않는다.
 
