@@ -766,3 +766,8 @@
 
 - Terminal inventory shows connected AG-UI-01 titled session term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390, actual agentIdentity claude; this is the existing CC-DATA-01 temporary implementation assignee.
 - User's AGY task instruction routed there, retaining T086/T087 priorities/scopes rather than duplicating edits. No separate Antigravity runtime was discovered or claimed.
+
+### T086 returned; T087 running; T088 design recheck assigned (2026-11-16)
+
+- msg_b68a9a03b6e9: T086 ea2956e returned with author448 tests/lint/type/build and runtime evidence; T087 server invariants implemented, regression/API evidence and commit pending, no blocker reported.
+- T088 / CC-DESIGN-01 / ready (ack pending): focused B1/B2 and small focus/empty-text refinements on fixed ea2956e in own temp runtime, unique report/history only. No shared product/build mutation. Independent API recheck follows T087 return.
