@@ -675,3 +675,10 @@
 
 - T074 9e94316 returned msg_45f71927e32a. Master read report and checked four-file scope: three display-only product changes plus unique report. Author targeted 12 tests, component lint/typecheck/build and 1280/390 evidence passed; stored text/data/packages unchanged.
 - Requested design confirmation of tmp/t074-evidence in T072. T073 independent target remains ad0501b; worker informed of separate visual-only follow-up. Overall P2-2 acceptance pending independent report.
+
+### T073 FAIL collected; T075 fix assigned (2026-11-16)
+
+- T073 report imported including follow-up scope note (msg_1d082832284e, msg_09a41cf3de40). Independent 424 passed / 2 skips, lint/typecheck/build, 12 additional checks, actual MP4/trim/empty-state passed. Product acceptance FAIL F073-1: initial/remounted Player render errors vanish before effect subscription, leaving blank stage without error/retry.
+- T074 9e94316 was not part of independent target ad0501b; design confirmed visual refinement separately. Keep evidence scopes distinct.
+- T075 / CC-DATA-01 / ready (ack pending): initial/remount/retry failure UI and recovery, editor/save usable, no render-phase parent-state warnings; bounded player and related tests/report only. Actual fault-injection runtime evidence required. Request msg_fa5a95a95e6f.
+- Design notified msg_84bc48f67106. P2-2 completion remains blocked on fix and independent focused recheck.

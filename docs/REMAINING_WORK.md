@@ -80,3 +80,11 @@ Supersedes earlier implementation-in-progress entries.
 - T072 final visual/UX review requested.
 - T073 independent review started (ctx_9874bc63970e), including actual video and missing runtime-state checks.
 - Next: collect both reports, fix required findings, independently recheck before accepting P2-2. No deployment or actual-phone/screen-reader PASS claimed.
+
+## Latest: T073 FAIL; T075 required fix
+
+Supersedes earlier independent-review-pending status.
+- F073-1: initial/remounted Player failure leaves blank stage without retry. T075 assigned to implementer.
+- Independent actual MP4, trim, scene-zero, 424 tests and build passed; these do not override the required error-path failure.
+- T074 visual refinement design-confirmed; outside T073 independent target.
+- Next: T075 fix/evidence, independent focused recheck including current visual refinement, then P2-2 acceptance decision.
