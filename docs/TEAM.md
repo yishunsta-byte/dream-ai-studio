@@ -971,3 +971,10 @@
 - T118 design assigned actual render UI lifecycle/state/focus/mobile review, unique report/history only, own isolated runtime.
 - T119 author assigned optional ConfirmPanel close label preserving defaults and evidence-backed existing blockedBy render waiting UI, no backend contract/DB changes; separate commit and focused tests.
 - T116 backend independent target remains3893e32. T115 selected-A static preview is deployed separately; no claim it already restyles production app.
+
+### T116 backend FAIL; T120 integrity/retry/egress fixes (2026-11-17)
+
+- msg_2b2efe91d67a report imported, follow-up msg_d3c5b9140436 confirms target3893e32/UI excluded. Independent523/13skip, nine real E2Es, lint/type/build and F113-1 containment passed within scope.
+- Mandatory F116-1 executed cache bytes not authenticated; F116-2 post-recheck equal-size media swap published success; F116-3 permanent publish errors retried; F116-4 Node overload/native non-loopback fetch bypass.
+- T120 author priority assignment sent msg_4cd3f435315d: verified owned cache and stable attempt input copies, original-cause retry classification, exact allowlisted child sources and normalized network calls; actual adversarial timing/pixel/non-loopback tests required.
+- T119 partial UI work preserved/separate. T118 fixed-target UX review continues, backend integrity acceptance withheld.

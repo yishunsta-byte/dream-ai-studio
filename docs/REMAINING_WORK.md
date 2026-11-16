@@ -296,3 +296,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T118 render UI actual UX review requested.
 - T119 cancel-dialog labels and other-job render-wait guidance bounded implementation.
 - Next: integrate backend/design findings, fix and independently check full render user flow before P2-4 acceptance.
+
+## Latest: actual backend FAIL; T120 priority fixes
+
+- T120 corrects cache integrity, immutable served input bytes, permanent publication error retries and Node/native source egress boundary.
+- Normal actual E2E/cancel/backup checks passed independently but do not override wrong-input/integrity failures.
+- T118 UI review continues; T119 small UI work kept separate.
+- Next: fix return and independent integrity/runtime recheck before P2-4 acceptance.
