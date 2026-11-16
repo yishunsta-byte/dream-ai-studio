@@ -92,6 +92,13 @@ describe("import 경계 (T3)",()=>{
     expect(readFileSync("components/player/player-loader.tsx","utf8")).toContain("ssr:false");
     expect(readFileSync("components/player/timeline-composition.tsx","utf8")).toMatch(/OffthreadVideo[^>]*muted/);
   });
+  // T-075 (F073-1): a render error before the event listeners are attached must still reach the panel.
+  it("Player 오류 대체 화면이 비어 있지 않고 effect로 패널에 알림(최초·비율 재마운트·재시도)",()=>{
+    const panel=readFileSync("components/player/player-panel.tsx","utf8");
+    expect(panel).not.toContain("ErrorFallback=()=>null");expect(panel).not.toContain("errorFallback={()=>null}");
+    expect(panel).toContain("function PlayerFailed({onFailed}:{onFailed:()=>void}){\n  useEffect(()=>{onFailed();},[onFailed]);");
+    expect(panel).toContain("errorFallback={fallback}");expect(panel).toContain("onFailed={failed}");
+  });
   it("패키지는 remotion·@remotion/player 4.0.543 정확 고정 두 개만",()=>{
     const pkg=JSON.parse(readFileSync("package.json","utf8")) as {dependencies:Record<string,string>;devDependencies:Record<string,string>};
     const all={...pkg.dependencies,...pkg.devDependencies},remotion=Object.entries(all).filter(([name])=>name==="remotion"||name.startsWith("@remotion/"));

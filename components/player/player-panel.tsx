@@ -13,17 +13,24 @@ import styles from "./player-panel.module.css";
 // Keys are handled only on the stage and its buttons (no document/window key handlers): typing elsewhere is untouched.
 export type PlayerPanelProps={projectId:string;timeline:Timeline|null;savedAspect:PreviewAspect;assets:ReadonlyMap<string,PreviewAsset>;dirty:boolean;timeInvalid:boolean};
 type Status="paused"|"playing"|"waiting"|"error";
-const hiddenFallback:ErrorFallback=()=>null;
+// F073-1: a render error on the first mount, after an aspect change or on a retry happens before the event listeners
+// below are attached, so the Player error event is lost. The fallback the Player draws in place of the picture tells
+// the panel itself — from an effect, never by setting parent state during render — and shows the same words.
+function PlayerFailed({onFailed}:{onFailed:()=>void}){
+  useEffect(()=>{onFailed();},[onFailed]);
+  return <div className={styles.loading} role="alert">미리보기를 띄우지 못했어요.</div>;
+}
 
 // Player only (D3: controls are siblings so a new time does not draw the Player again).
-const StageView=memo(function StageView({playerRef,props,initialFrame}:{playerRef:RefObject<PlayerRef|null>;props:PreviewProps;initialFrame:number}){
+const StageView=memo(function StageView({playerRef,props,initialFrame,onFailed}:{playerRef:RefObject<PlayerRef|null>;props:PreviewProps;initialFrame:number;onFailed:()=>void}){
+  const fallback=useCallback<ErrorFallback>(()=><PlayerFailed onFailed={onFailed}/>,[onFailed]);
   return <Player ref={playerRef} component={TimelineComposition} inputProps={props} durationInFrames={props.durationInFrames} compositionWidth={props.width} compositionHeight={props.height} fps={props.fps}
     style={{width:"100%",aspectRatio:`${props.width} / ${props.height}`}}
     controls={false} clickToPlay={false} doubleClickToFullscreen={false} allowFullscreen={false}
     spaceKeyToPlayOrPause={false} // T-067 3.4: when on, the Player focuses its own play button whenever playing changes.
     loop={false} autoPlay={false} moveToBeginningWhenEnded={false} initialFrame={clampFrame(initialFrame,props.durationInFrames)}
     defaultPremountInSeconds={2} numberOfSharedAudioTags={0} browserMediaControlsBehavior={{mode:"prevent-media-session"}}
-    errorFallback={hiddenFallback}
+    errorFallback={fallback}
     // Remotion License (4.0.543 LICENSE.md, T-037): free for an individual; used for 은영님's personal work (T-040, PLAN 2.3).
     // Check again on an organisation change, P7 or a version change.
     acknowledgeRemotionLicense/>;
@@ -89,8 +96,13 @@ export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInv
     event.preventDefault();event.stopPropagation();seek(target);
   }
   // Preview-only aspect: state here only, the Player is drawn again at the same place; focus stays on the button.
-  function changeAspect(next:PreviewAspect){if(next===aspect)return;const now=playerRef.current?.getCurrentFrame()??frame;setAspect(next);setMount(old=>({key:old.key+1,initialFrame:now}));setFrame(now);setStatus("paused");}
-  function reload(){setStatus("paused");setMount(old=>({key:old.key+1,initialFrame:frame}));}
+  function changeAspect(next:PreviewAspect){if(next===aspect)return;retried.current=false;const now=playerRef.current?.getCurrentFrame()??frame;setAspect(next);setMount(old=>({key:old.key+1,initialFrame:now}));setFrame(now);setStatus("paused");}
+  const failed=useCallback(()=>setStatus("error"),[]),retried=useRef(false);
+  // Retry draws the Player again: focus goes to the new stage, and if it fails again the error box comes back with
+  // focus on its button. An aspect change is not a retry: its focus stays on the aspect button.
+  function reload(){retried.current=true;setStatus("paused");setMount(old=>({key:old.key+1,initialFrame:frame}));}
+  const focusRetry=useCallback((box:HTMLDivElement|null)=>{if(box&&retried.current){retried.current=false;box.querySelector("button")?.focus();}},[]);
+  const focusStage=useCallback((stage:HTMLDivElement|null)=>{stageRef.current=stage;if(stage&&retried.current)stage.focus();},[]);
 
   if(!shown||!props)return <EmptyState title="보여 줄 장면이 없어요." description="만들기 단계에서 장면을 추가해 주세요." action={<Link href={`/projects/${projectId}/produce`}>만들기 단계로</Link>}/>;
   const ratio=`${props.width} / ${props.height}`,safe=SAFE_AREA[props.aspect],moved=props.texts.some(text=>text.movedForPreview),playing=status==="playing"||status==="waiting";
@@ -99,9 +111,9 @@ export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInv
     {aspect!==savedAspect&&<div className={styles.row}><Badge variant="dashed">미리보기 비율 {aspect} · 저장 안 됨</Badge><Button variant="ghost" size="sm" onClick={()=>{changeAspect(savedAspect);
       // This row goes away with the click: focus moves to the saved aspect button, not to the page (T-072 G-7).
       requestAnimationFrame(()=>rootRef.current?.querySelector<HTMLButtonElement>(`[data-aspect="${savedAspect}"]`)?.focus());}}>원래 비율로({savedAspect})</Button></div>}
-    {status==="error"?<div className={styles.errorBox}><Callout tone="danger" title="미리보기를 띄우지 못했어요.">글자 편집과 저장은 그대로 할 수 있어요.</Callout><Button variant="secondary" onClick={reload}>미리보기 다시 불러오기</Button></div>:
-    <div ref={stageRef} className={styles.stage} style={{aspectRatio:ratio}} tabIndex={0} aria-label={`미리보기 · ${props.aspect}`} onKeyDown={event=>keys(event,true)}>
-      {ready?<StageView key={mount.key} playerRef={playerRef} props={props} initialFrame={mount.initialFrame}/>:<div className={styles.loading}><Icon name="spinner" className={styles.spin}/><span>미리보기를 준비하고 있어요.</span></div>}
+    {status==="error"?<div ref={focusRetry} className={styles.errorBox}><Callout tone="danger" title="미리보기를 띄우지 못했어요.">글자 편집과 저장은 그대로 할 수 있어요.</Callout><Button variant="secondary" onClick={reload}>미리보기 다시 불러오기</Button></div>:
+    <div ref={focusStage} className={styles.stage} style={{aspectRatio:ratio}} tabIndex={0} aria-label={`미리보기 · ${props.aspect}`} onKeyDown={event=>keys(event,true)}>
+      {ready?<StageView key={mount.key} playerRef={playerRef} props={props} initialFrame={mount.initialFrame} onFailed={failed}/>:<div className={styles.loading}><Icon name="spinner" className={styles.spin}/><span>미리보기를 준비하고 있어요.</span></div>}
       {ready&&safeOn&&<div className={styles.safe} aria-hidden="true"><span style={{top:0,left:0,right:0,height:`${safe.top*100}%`}}/><span style={{bottom:0,left:0,right:0,height:`${safe.bottom*100}%`}}/><span style={{top:`${safe.top*100}%`,bottom:`${safe.bottom*100}%`,left:0,width:`${safe.left*100}%`}}/><span style={{top:`${safe.top*100}%`,bottom:`${safe.bottom*100}%`,right:0,width:`${safe.right*100}%`}}/><i data-safe-line style={{top:`${safe.top*100}%`,bottom:`${safe.bottom*100}%`,left:`${safe.left*100}%`,right:`${safe.right*100}%`}}/></div>}
       {props.sample&&<span className={styles.sample}><SampleBadge size="sm"/></span>}
       {status==="waiting"&&<span className={styles.waiting} role="status"><Icon name="spinner" className={styles.spin}/><span className="sr-only">파일을 읽고 있어요.</span></span>}
