@@ -129,3 +129,9 @@ Supersedes T075-fix-pending entries.
 - T084 final design review requested.
 - T085 independent review started (ctx_4d87211cb18c), including actual export workflow beyond author's direct bundleLayout ZIP, font timeout recovery and value preservation.
 - Next: collect findings, assign required fixes, independently recheck before P2-3a acceptance.
+
+## Latest: T084 required UX fixes assigned
+
+- T084 found two required issues: font-timeout recovery mismatch and unactionable locked-disclosure warning.
+- T086 author fixes assigned; T085 broad independent review continues on original b4abd9b.
+- Next: collect broad review and fixes, independently recheck changed paths before P2-3a acceptance.

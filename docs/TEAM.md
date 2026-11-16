@@ -747,3 +747,10 @@
 - T084 / CC-DESIGN-01 / ready (ack pending): final A1-A16 UX/font/measurement/focus/mobile review, unique report/history only. Request msg_2c1a8d423902.
 - T085 independent Codex dispatched ready: ctx_4d87211cb18c / task_d07a6c12883c / term_ffc77e03-18de-455b-a6d3-7847678582cc, child p2-3a-text-review. Report-only. Original-CRLF full checks, actual browser/font/measurement/timeout recovery, save/CAS/legacy preservation, actual complete-review-export-job-ZIP flow and misleading review evidence checks required.
 - P2-3a not accepted yet. User data/old ZIP/fixed migrations preserved; later timeline tracks/render/audio remain outside current review.
+
+### T084 FAIL; T086 bounded fixes assigned (2026-11-16)
+
+- T084 45dcee8 / msg_e982091484b2 final UX report read. Required B1 font-timeout recovery instruction/state mismatch; B2 required locked disclosure carries unactionable beyond-video warning.
+- T086 / CC-DATA-01 / ready (ack pending): real font retry/late-load reconciliation and required-disclosure warning correction, related tests/report only. Optional small cancel/save focus and empty-text guidance fixes allowed; sticky deferred. Request msg_8d5cbe5d8c3c.
+- T085 independent broad review remains b4abd9b, informed msg_c3b0a5078cb6. No automatic target change.
+- Design allowed only fonts.json role duplicate-prefix cleanup plus own report/history; final focused UX recheck follows T086 return. Request msg_c48263bf768b.
