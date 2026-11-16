@@ -361,3 +361,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T131 independent focused review PASS: T129 reporting/input validation and actual failed-verdict exit-state gap closed. Master imported/read the evidence and accepts the bounded follow-up.
 - This does not expand fixed-matrix subtitle evidence into universal visibility or complete P2 acceptance. VTT/real-phone/user-video/semantic voice checks remain open.
 - T132 audio storage/restore foundation implementation is the next assigned product work; UI/DSP integration follows its validation.
+## Latest: audio foundation returned; independent review and DSP implementation
+
+- T132 audio save/restore foundation ready_review, author585/13skip; T133 independent validation dispatched, no foundation PASS claimed yet.
+- T134 isolated synthetic-audio DSP implementation assigned alongside review. No actual app audio render/UI enabled until later integration and validation.
+- Next: resolve foundation findings, inspect measured DSP results, then render integration and audio UI. VTT/actual-phone/semantic voice checks remain open.

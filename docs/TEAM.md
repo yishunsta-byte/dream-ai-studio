@@ -1113,3 +1113,10 @@
 - Actual dependency-harness subprocess statuses1/0/1 correspond to failed attempt / prior-real-MP4 passing replay / injected SRT-verdict failure. This closes failed-verdict report.pass=false -> exit1 gap; no fresh native render is claimed.
 - T129 reporting/input/automation fixes accepted within fixed synthetic3-aspect4-cue threshold48/min40 scope. Original unrelated-object false positives and threshold96 fade7/30s FAIL remain limitations, not fixed/generalized acceptance.
 - No product measured-state changes. VTT/user footage/voice semantics/actual phone remain open; P2-5A implementation T132 proceeds separately. Reviewer process/temp cleanup zero, evidence retained.
+### T132 ready_review; T133 independent review and T134 DSP assigned (2026-11-17)
+
+- T132 aa7b0dbe55fe42ef588a8abd5436d59d774e19a2 / msg_bb5f215675e3 returned. Master read report/stat: opt-in timeline2, new0008 compatibility gate, audio references/rights/CAS/backup and explicit unsupported-audio render guard. One render blocker copy line accepted as necessary bounded UI explanation.
+- Author reports585 passed/13 skipped, lint/type and isolated production build; independent acceptance not yet granted. Actual old-app ZIP refusal and browser preservation remain specific review gaps.
+- T133 independent Codex dispatch ctx_58478f7af228 / task_eb5e3f3c8693, audio-foundation-review child, ready receipt: report-only compatibility/migration/backup/invalid-input and preservation review. Existing issued SQL1-7 and fixtures immutable.
+- T134 CC-DATA-01 assigned isolated lib/audio/ DSP module and dedicated tests/report only, parallel to foundation review. Synthetic-source real processing: trim/fade/equalPower crossfade, voice-signal ducking, same-mix two-pass normalization/AAC and final measurement, owned cancel/timeout/failure cleanup. No DB/UI/render integration/package changes.
+- Implementation starting targets are experiments, not measured product claims. Collect and independently verify before integration stageC. User DB and existing deployments remain untouched.
