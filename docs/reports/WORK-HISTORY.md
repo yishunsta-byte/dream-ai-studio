@@ -138,3 +138,4 @@
 | 11-16 | Claude design | T-038 시안 설정 화면을 실제 구현에 맞춤(88aa642), Master 검토 완료 | 완료 |
 | 11-16 | Claude design | T-037 보완(3a665a5): 4.0.543 배포본 LICENSE 3개·태그·main 모두 같음 확인, 이 PC 렌더도 Remotion 표현상 server-side rendering | 검토 대기 |
 | 11-16 | Master | T-037 조사 검토 완료. 사용 주체(개인/조직) 답 전까지 무료 확정·경고 해제·설치 안 함. T-035 반환 전 중복 배정 금지 | 완료 |
+| 11-16 | 은영님 | Remotion 사용 주체 = 개인 활동 → Master 전달 | 완료 |
