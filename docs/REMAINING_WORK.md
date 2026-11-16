@@ -226,3 +226,11 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - Design: minimal PLAN status and transient-only retry clarification.
 - Next: foundation report and independent migration/backup verification, then pinned renderer/browser setup and actual worker/composition/UI implementation.
 - Actual-device/accessibility/unload and wide-square verification limits remain tracked; P2 overall incomplete.
+
+## Current: render foundation returned; verification and tools in parallel
+
+- T10594c5647 ready_review; author485 passed/3 skips.
+- T107 independent migration/backup/render-record foundation review running.
+- T108 exact renderer/bundler/browser setup and isolated actual MP4 smoke assigned.
+- Next: fix foundation findings if any, verify tools, implement app render worker/composition/API/UI, then independent end-to-end validation.
+- User real DB remains untouched; P2-4 application rendering incomplete.

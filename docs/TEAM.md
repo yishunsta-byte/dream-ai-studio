@@ -890,3 +890,10 @@
 - Remaining limits: actual phone/screen-reader/native unload confirmation/saved-wide-square geometry not claimed verified. P2 overall and deployment not complete.
 - T10668b3c99 decision reconciliation reviewed. Retry narrowed to proven transient I/O/tool failures; permanent permissions/path/capacity/input failures not retried unchanged.
 - T105 render foundation implementation continues. Design assigned minimal PLAN P2-3 status and T102/T106 retry wording corrections; no product changes.
+
+### T105 returned; T107 foundation review and T108 toolchain setup (2026-11-16)
+
+- 94c5647 / msg_c7028a1500d0 ready_review, Master read report. Author485 passed/3 generation skips, lint/type/build and actual fake CLI5→6/noop/prebackup, fixeds6 render-file inventory evidence. Actual user DB not migrated.
+- T107 independent Codex dispatched ready: ctx_89788796d84a / task_0ee242b32c9a / term_e5cc8217-f1b8-440b-b51a-91c9e262e061; child render-foundation-review. Report-only exact mixed migration prefix/contracts/fixed fixtures/CLI/restore/MP4 inventory verification.
+- T108 author assigned parallel exact4.0.543 renderer/bundler dependencies, dedicated official pinned browser setup with provenance, isolated actual3-aspect short render/ffprobe/network/cleanup smoke. No app worker/UI/DB changes. Request msg_32246b8cfd36.
+- Design informed msg_00622f2588e4. Foundation acceptance pending independent review; no actual user-data migration or application rendering claim.
