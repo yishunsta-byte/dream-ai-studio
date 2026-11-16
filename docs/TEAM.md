@@ -1108,3 +1108,8 @@
 - Audio v2 must not silently pass through current silent renderer: fail clearly until stageC implements audio. Product UI/DSP/render execution integration excluded from T132 except necessary explicit render guard. Render envelope1/audioPlan1 and final audio format/measurement belong to subsequent stages.
 - DSP starting profile candidate: -14LUFS/TP-2/LRA7,48kHz stereo AAC192k. Final thresholds require actual DSP experiments; no present output-quality claim.
 - T131 independent measurement-helper recheck ongoing; whole P2/VTT/actual-phone acceptance remains open.
+### T131 independent PASS; T129 accepted (2026-11-17)
+
+- Actual dependency-harness subprocess statuses1/0/1 correspond to failed attempt / prior-real-MP4 passing replay / injected SRT-verdict failure. This closes failed-verdict report.pass=false -> exit1 gap; no fresh native render is claimed.
+- T129 reporting/input/automation fixes accepted within fixed synthetic3-aspect4-cue threshold48/min40 scope. Original unrelated-object false positives and threshold96 fade7/30s FAIL remain limitations, not fixed/generalized acceptance.
+- No product measured-state changes. VTT/user footage/voice semantics/actual phone remain open; P2-5A implementation T132 proceeds separately. Reviewer process/temp cleanup zero, evidence retained.

@@ -356,3 +356,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T130 design proposal accepted after Master code spot-check; no actual audio processing PASS claimed.
 - T132 P2-5A audio timeline/save/restore/reference/backup compatibility foundation requested from CC-DATA-01. UI and DSP integration follow independent foundation verification; current renderer must reject audio rather than silently omit it.
 - T131 focused independent T129 validation review remains pending. Original subtitle matrix acceptance remains bounded; VTT/user footage/voice semantics/phone evidence remain open.
+## Latest: measurement-helper follow-up accepted
+
+- T131 independent focused review PASS: T129 reporting/input validation and actual failed-verdict exit-state gap closed. Master imported/read the evidence and accepts the bounded follow-up.
+- This does not expand fixed-matrix subtitle evidence into universal visibility or complete P2 acceptance. VTT/real-phone/user-video/semantic voice checks remain open.
+- T132 audio storage/restore foundation implementation is the next assigned product work; UI/DSP integration follows its validation.
