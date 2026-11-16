@@ -390,3 +390,7 @@ Combined T073 broad runtime, T076 changed error/recovery/development warning/vis
 ## P2-3a acceptance (2026-11-16)
 
 T085 broad evidence plus T089 independent449 passed/2 skips, lint/typecheck/build and runtime/API fixes close F085-1/F085-2. T088 design confirms B1/B2 resolution. Master accepts P2-3a within stated evidence; historical bytes preserved, actual export ZIP evidence inherited from T085. Actual-phone/screen-reader and exhaustive measurement limits remain. Next P2-3b T090/T091; no full-P2/deployment claim.
+
+## P2-3b acceptance (2026-11-16)
+
+Master combines T100 exact ownership/full recovery/lifecycle/CDP preservation PASS, T104 focused resize/layout/data-equality PASS and T099 design B0. Earlier T093/F096 failures are resolved within the reports' direct and inherited evidence. T104 ran focused19, lint/type/build; T100 ran independent full467/2skip. Author T103468 is separate. Actual-phone/screen-reader/native-unload/saved-wide-square limits remain. Render foundation T105 proceeds; no full-P2 or deployment claim.

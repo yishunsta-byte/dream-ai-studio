@@ -218,3 +218,11 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T106: renderer UX/decision/license-note reconciliation assigned.
 - After foundation validation: renderer packages/browser pinned setup, actual render worker/composition/ffprobe, UI and independent runtime verification.
 - Preserve all old migrations/fixtures/user data; successful render files included in backups.
+
+## Current: P2-3b accepted; P2-4 foundation underway
+
+- T100 broad core PASS plus T104 bounded display PASS and T099 UX accepted. No remaining mandatory P2-3b fix identified.
+- Active T105: renders0006/s6 fixture and backup/restore foundation.
+- Design: minimal PLAN status and transient-only retry clarification.
+- Next: foundation report and independent migration/backup verification, then pinned renderer/browser setup and actual worker/composition/UI implementation.
+- Actual-device/accessibility/unload and wide-square verification limits remain tracked; P2 overall incomplete.

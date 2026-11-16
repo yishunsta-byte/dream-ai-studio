@@ -883,3 +883,10 @@
 - T105 implementation author assigned render-record/0006/repo/backup-restore/fixed-s6 foundation only. Preserve SQL1~5/s4/s5, do not migrate actual user DB. No renderer/browser/package/UI installation in this subtask.
 - T106 design assigned bounded render decision/UX/license-note reconciliation, no product changes.
 - T104 prior display check runs independently; renderer worker/composition/UI implementation follows foundation verification.
+
+### P2-3b accepted; renderer foundation continues (2026-11-16)
+
+- T104 report imported msg_8b097e4f41ab: independent focused19/lint/type/build and actual transient ruler overflow, full recovery copy/download/focus preservation PASS. T100 broad core467+2skip plus T099 UX integrated. T103/T104 done; Master accepts P2-3b within combined documented evidence.
+- Remaining limits: actual phone/screen-reader/native unload confirmation/saved-wide-square geometry not claimed verified. P2 overall and deployment not complete.
+- T10668b3c99 decision reconciliation reviewed. Retry narrowed to proven transient I/O/tool failures; permanent permissions/path/capacity/input failures not retried unchanged.
+- T105 render foundation implementation continues. Design assigned minimal PLAN P2-3 status and T102/T106 retry wording corrections; no product changes.
