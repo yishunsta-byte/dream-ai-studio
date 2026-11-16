@@ -122,3 +122,10 @@ Supersedes T075-fix-pending entries.
 - T082: specification alignment plus seven official font asset/license downloads; coordinate asset paths without overlapping product writes.
 - Next: collect implementation/assets, resolve integration issues, run Master and independent validation.
 - P2-3b timeline tracks/drag/clip keys and later rendering/audio/export stages remain. No automatic saving, custom-preset DB or version-history UI added by assumption.
+
+## Latest: P2-3a returned, final validation assigned
+
+- T081 b4abd9b ready_review; author442 passed /2 skips and runtime checks.
+- T084 final design review requested.
+- T085 independent review started (ctx_4d87211cb18c), including actual export workflow beyond author's direct bundleLayout ZIP, font timeout recovery and value preservation.
+- Next: collect findings, assign required fixes, independently recheck before P2-3a acceptance.

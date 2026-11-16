@@ -740,3 +740,10 @@
 - msg_e0c2c7735061: 3036c14 fonts verified metadata and c641918 bounded early UX review returned. Master read report. Actual font rendering/line measurement not yet verified.
 - E1 left-of-screen warning wording accepted; E5 new-timeline README clarification accepted with legacy r1 bytes preserved. Animation zero-opacity boundary is not automatically a defect: author must state/test actual semantics, and future rendered subtitle timing must measure them. Repeated emphasis and shortened text duration should be clearly explained.
 - T081 implementation continues; final UI/font/measurement checks remain pending author return. Existing incomplete UI was not classified as a defect.
+
+### T081 returned; T084/T085 final validation assigned (2026-11-16)
+
+- T081 b4abd9b ready_review / msg_bbe75a008c5d returned. Master read report: author 442 passed/2 skips, lint/type/build, production samples; ZIP generated through bundleLayout because fixture lacked selected result. Full actual export workflow still requires independent evidence.
+- T084 / CC-DESIGN-01 / ready (ack pending): final A1-A16 UX/font/measurement/focus/mobile review, unique report/history only. Request msg_2c1a8d423902.
+- T085 independent Codex dispatched ready: ctx_4d87211cb18c / task_d07a6c12883c / term_ffc77e03-18de-455b-a6d3-7847678582cc, child p2-3a-text-review. Report-only. Original-CRLF full checks, actual browser/font/measurement/timeout recovery, save/CAS/legacy preservation, actual complete-review-export-job-ZIP flow and misleading review evidence checks required.
+- P2-3a not accepted yet. User data/old ZIP/fixed migrations preserved; later timeline tracks/render/audio remain outside current review.
