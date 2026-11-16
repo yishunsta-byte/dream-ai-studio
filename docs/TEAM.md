@@ -1056,3 +1056,9 @@
 - msg_05c0fd808b70 / 794040b confirms T120 trust boundary documented; product/reviewer findings unchanged.
 - T127 implementation author assigned isolated measurement script/tests/report: actual app-rendered three-aspect video, manual cues vs detected pixel/ROI start/end, maximum0.2s, negative/shift controls. No product DB/API/UI or measured-state flags changed.
 - T126 UI independent check and T125 three design alternatives continue separately. Real-phone and semantic voice synchronization remain unverified.
+
+### T126 UI PASS integrated (2026-11-17)
+
+- msg_827b92e79fc7 report imported/read. Independent focused17/lint/type/build, actual render-backed production/jobs/exports1280/390 links and keyboard, safe cancel/explicit cancel, media toggle and read-only DB/MP4 preservation PASS. Author exports gap closed.
+- Master accepts T119 bounded UI scope with T123/T121 inherited results. C1 common Button accessibility and C3 queued attempt0 shown as1/3 remain minor documented follow-ups; U1 hydration uncertainty not reclassified.
+- T127 actual rendered subtitle measurement continues; T125 new designs continue. No overall P2/device/screen-reader acceptance implied.

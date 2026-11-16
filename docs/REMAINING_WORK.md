@@ -330,3 +330,11 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T127 actual rendered-frame subtitle onset/end detection and0.2s criterion assigned, not JSON-only comparison.
 - T126 UI review pending; T125 three design alternatives in progress.
 - After results: resolve required findings, integrate P2-4 acceptance, then audio P2-5 and SRT/VTT/editable delivery P2-6. Actual-device evidence remains separate.
+
+## Current: render UI follow-up accepted
+
+- T126 independent B0 closes T119 exports waiting UI gap; bounded render UI accepted.
+- T127 actual subtitle frame-boundary measurement ongoing.
+- T125 three new Codex design options ongoing.
+- Minor queued-attempt wording/common Button accessibility and documented local trust/device limitations remain separate.
+- Next: collect timing evidence and design alternatives, close P2-4 within actual verification scope and plan audio/P2-6 delivery.
