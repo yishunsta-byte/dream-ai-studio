@@ -1094,3 +1094,9 @@
 - msg_476363fa2d95 from CX-DESIGN-01 confirms receipt of msg_c0f7665250bb and acceptance of T130.
 - Status: running (worker reports current-code inspection started). Scope remains unique T130 audio UX/interface/minimal implementation plan only; no product/shared-status/deployment changes.
 - Next: collect report and assess implementation boundaries/validation before assigning audio code. No completed design or implementation claimed.
+### T129 returned; T131 focused independent recheck (2026-11-17)
+
+- T129 return received from CC-DATA-01 with commit and report; exact message ID recorded in the orchestration inbox.
+- T129 b3084c888a27c0b668968467dca50caf8f32d110 returned ready_review: script/tests/report corrections only. Author reports570 passed/13 skipped, lint/type and identical actual three-aspect MP4 hashes; no product measured flags changed.
+- Master read diff/report and reran original-workspace tests/measure-subtitle.test.ts with explicit bundled ffmpeg/ffprobe:14/14 PASS. ROI/input/CLI checks and exact-frame scoring inspected. This is Master verification, distinct from author self-check.
+- T131 assigned to existing T128 independent reviewer for bounded regression/input/CLI and actual failed-verdict exit-state gap. Existing actual-frame evidence inherited; no indiscriminate full rendering repetition required. Acceptance of T129 awaits that result; broader visibility/device/VTT exclusions remain.
