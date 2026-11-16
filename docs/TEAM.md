@@ -1187,3 +1187,7 @@
 - msg_b815ce232a65 /395d9dd: audio editing/source audition ready_review; author648/17skip and actual fake-project save/recovery/upload/keyboard evidence. Listening/device/native visibility gaps explicit.
 - T150 ctx_d9ef33c7c387 /task_1b64914b081f independent editor/save/raw recovery/native audition review dispatched. Product acceptance pending.
 - T151 outdated Player audio description correction requested msg_ebbf0f510da0, single component copy only. No synchronous mixed preview claim. Shared user server3013 protected, no deployment/user DB changes.
+### T151 Player note accepted; T150 continues
+
+- msg_b5542fdb7cb2 /48b82af: Master inspected exact one-line Player note and report; accurate mute/source/final-result distinction accepted. Author64 related tests/lint/type; browser width not newly verified.
+- T150 informed via msg_dc7eaa91dc8c, original independent target retained and optional corrected-note width check requested without resetting review. No overall editor acceptance yet.
