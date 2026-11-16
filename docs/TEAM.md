@@ -944,3 +944,9 @@
 - F113-1: browser disappearance after successful preflight leaves selectComposition TCP server. Master accepts pinned tools/output scope, requires bounded owned-child/process-tree containment in T114 before app-worker acceptance; rechecking existence alone is insufficient.
 - Installer post-publication license/count validation robustness and non-exhaustive Node/TCP network observations retained as limits. Author may fix staging validation separately without changing pins.
 - Actual-user/app-render/UI acceptance not implied; design informed, T114 continues.
+
+### User-directed three UI alternatives and selected-design publication (2026-11-17)
+
+- T115 / Claude design / ready (ack pending): three distinct comparable responsive UI prototypes under docs/design/ui-options plus unique report, no production-source edits. Actual request msg_b1394d97eaa2.
+- User explicitly delegated choosing one of three and deploying it. Master will select using workflow clarity, existing feature coverage and responsive/accessibility evidence, then publish the selected design preview. Clarification sent; no repeat selection approval needed.
+- Selected static design publication is distinct from migrating the SQLite/worker application to remote production. Existing T114 backend work continues.
