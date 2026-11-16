@@ -60,13 +60,15 @@
 
 - 담당 CC-DESIGN-01, 전송 msg_397f187b3f4c. 허용 docs/handoffs/T-017-CC-DESIGN-01.md만. 알려진 migration prefix/hash만 staging업그레이드, 원본백업불변·미래/변조거부·이관전스냅샷·회귀검사를 차기진입준비명세로 제시. P2코드 구현/사용자게이트해제 아님. 복원출처 설명명세 포함. 일반호환성판단은 Master가 처리, 새비용/권한/삭제없음.
 
-### T-012 · 공통 지침·운영 초기 구성 (Master, parent=P1 종료) — running
+### T-012 · 공통 지침·운영 초기 구성 (Master, parent=P1 종료) — done
+
+- 지침/실제세션등록·전달/수락/결과회수·점유/범위관리 구성을완료했다. 코딩프롬프트차단은T015로분리하며전체자동실행가능으로과장하지않는다. 최신남은작업은docs/REMAINING_WORK.md, 제품완료/사용자승인은별도다.
 
 - 담당 CX-MASTER-01. 허용: AI_TEAM_RULES.md, docs/team/, AGENTS/CLAUDE 안내줄, TEAM 운영/배정, 독립검수 보고 취합. 제품코드/데이터 변경 없음.
 - 완료조건: 실제 세션/도구 확인, 최신 역할 등록, 실제 읽기점검 전달·수락 근거, 결과/충돌 관리 및 다음 작업 배정. 사용자 v1.0의 프로젝트 적용본을 저장했고 도구권한 확대 없음.
 - 검사: repo master, 구현기준 dee2d0b·문서HEAD c4072b9, 기존 미커밋 사용자 변경 없음 확인 후 시작. 실행/테스트는 README/package.json 기존명령 유지. dev-requests/Antigravity 미연결. 디자인/데이터 모두 실제수락 확인.
 
-### T-013 · 현재 플랜·디자인 누락 분석 (parent=P1 종료, priority=P1) — running
+### T-013 · 현재 플랜·디자인 누락 분석 (parent=P1 종료, priority=P1) — done
 
 - 결과 회수 msg_ac4a047d089e, 보고서 커밋7bfb3fb. 상태 ready_review→Master 문서 대조 완료. 두필수수정 명세를 T015 구현입력으로 채택한다. lib/ui/errors.ts 공통문구 파일 추가를 T015 허용범위에 포함한다. 코드/브라우저 실행 없는 명세검토이며 실제UI통과로 처리하지 않는다. 권장사항은 필수수정과 분리하고 사용자결정 필요 없음.
 
