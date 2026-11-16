@@ -44,6 +44,8 @@
 
 ### T-044 · DB 비변경·정규 journal·사본 유효성 필수 수정 (parent=T043/T035, priority=P1) — running
 
+- 디자인 msg_52c2e6e93493 읽기대조 수신: T042 실패/미확인사본 문구·코드줄은 채택 기준과 일치. 데이터 폴더 지정방법 도움말은 비차단 후속으로 분리하고 T044 필수3결함 범위를 늘리지 않기로 결정했다. 제품 동작 시험 근거로 취급하지 않는다.
+
 - 실제 수락·점유 msg_5b3fccd179ce, 시작 HEAD3ba6aa2. 담당이 DB/CLI/sidecar/startup·필요connection옵션/관련tests/README·고유보고 점유를 확인했다. 다른 담당의 같은 제품 파일 수정 배정 없음.
 
 - CC-DATA-01 임시코딩, 실제전달로배정. F0431 canonical empty journal만허용/기타failclosed, F0432 시작점검readonly·CLI provenance전persistentPRAGMA금지/쓰기전재검증, F0433 사본readonly integrity·예상원본관계확인후에만확인된사본안내.
