@@ -1255,3 +1255,9 @@
 - msg_250dd1fd8f38 report read/imported. Independent6+1/lint/type; actual old-issued ticket/current inspect-finish rejection, normal sample download/v1 bytes/rollback PASS. Master accepts T160 bounded correction plus T159 compatibility evidence.
 - T162 CC-DATA-01 requested msg_642be19f8a09: real source-audio packaging writer/read-only preview contract, pinned source integrity, archived/sample/dedup/rights/timeline fidelity, s9 restore->export tests. No final-video/import/gate unlock; UI separate after concrete DTO return.
 - Prior cleanup-denied artifacts retained; this reviewer turn preserved evidence without submitting deletion. User runtime/deployment unchanged.
+### T162 ready_review; T163 writer review and T164 UI
+
+- msg_88dfd99a3e98 /df62033 report read. Author8 new tests/full691/19skip/lint/type/build, actual s9->10 source ZIP and backup restore self-check; no independent writer acceptance yet.
+- T163 ctx_6ac82103b3f1 /task_c451ec1c6cf0 dispatched real source/hash/timeline/metadata/retry/restore/render-helper review; report only.
+- T164 CX-DESIGN-01 requested msg_333fe77eee6b, export UI components/read-only DTO only. No overlapping writer/schema/DB changes. Preview availability and source checks must not imply full hash PASS; no final video/import claim.
+- Current request checks source size, fresh same-size hash rejection occurs in job; this explicit limitation is part of review. User DB/deployment unchanged.

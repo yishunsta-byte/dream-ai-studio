@@ -416,3 +416,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T161 sample-consistency correction accepted with T159 old-app/restore evidence. Fixed s9 checkpoint integrated and Master9 tests passed.
 - Active T162 writes editable source-audio ZIP using verified manifest2/0010 contracts and existing gate preservation. UI preview and independent writer/restore verification follow return.
 - Physical phone/listening/native hidden and whole P2 completion remain open. No application deployment or user DB migration claimed.
+## Current: audio editable ZIP returned; review and UI
+
+- T162 source writer ready_review; T163 independent actual ZIP/restore/failure validation requested.
+- T164 ZIP contents/source errors/size/limitations UI requested from design owner in separate files.
+- After return: fix required findings, validate integrated UI and delivery flow. Phone/listening/native-hidden/general P2 requirements remain open.
