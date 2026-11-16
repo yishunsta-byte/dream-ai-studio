@@ -7,7 +7,16 @@ export type AudioErrorCode="INVALID_INPUT"|"SOURCE_UNSUPPORTED"|"SOURCE_TOO_SHOR
   // T-138: the pinned FFmpeg/ffprobe copy differs from the expected or recorded bytes; the given video's length or
   // frame rate is not the requested output (sound never stretches or cuts a video).
   |"TOOL_CHANGED"|"VIDEO_MISMATCH";
-export class AudioError extends Error{constructor(readonly code:AudioErrorCode,message:string,readonly detail:string|null=null){super(message);this.name="AudioError";}}
+// T-140: what the call could not remove after it ended (names only, never a path): the work folder (under the
+// caller's workRoot) and this call's publish staging file (next to outputPath). complete=false never means the
+// result failed; it means the caller should remove these names again later.
+export type CleanupLeft={kind:"work"|"staging";name:string};
+export type CleanupState={complete:boolean;left:CleanupLeft[]};
+export class AudioError extends Error{
+  // set on a failure that ended before the commit, after the cleanup ran (the original cause is kept as this error)
+  cleanup:CleanupState|null=null;
+  constructor(readonly code:AudioErrorCode,message:string,readonly detail:string|null=null){super(message);this.name="AudioError";}
+}
 const STDERR_LIMIT=1024*1024;
 const DISK_FULL=/No space left on device|ENOSPC|disk quota exceeded/i;
 export type ToolRun={stderr:string;pids:number[]};

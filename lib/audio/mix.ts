@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { chmodSync, closeSync, createReadStream, createWriteStream, existsSync, linkSync, mkdirSync, mkdtempSync, openSync, rmSync, unlinkSync } from "node:fs";
+import { chmodSync, closeSync, createReadStream, createWriteStream, existsSync, linkSync, mkdirSync, mkdtempSync, openSync, rmSync } from "node:fs";
 import { basename, dirname, isAbsolute, join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { z } from "zod";
@@ -7,7 +7,7 @@ import { audioClipV2Schema, audioIssues, audioJoinSchema } from "@/lib/edit/time
 import { mixGraph, type GraphClip } from "./graph";
 import { scanner, type PcmScan } from "./pcm";
 import { AAC, ACCEPT, CHANNELS, FPS, DEFAULT_TIMEOUT_MS, LOUDNESS, MAX_CLIPS, MAX_OUTPUT_FRAMES, MIN_NORMALIZE_FRAMES, PREGAIN_ABOVE_LUFS, PROFILE_ID, SAMPLE_RATE, SAMPLES_PER_FRAME } from "./profile";
-import { AudioError, fsFailure, runTool, type ToolRunner } from "./run";
+import { AudioError, fsFailure, runTool, type CleanupLeft, type CleanupState, type ToolRunner } from "./run";
 
 // P2-5B offline sound processing (T-130 5장 1~7, T-134). Not connected to the render worker yet (step C).
 // One call: pin the source files (hash while copying into an owned work folder), check each source (one audio stream,
@@ -30,6 +30,11 @@ import { AudioError, fsFailure, runTool, type ToolRunner } from "./run";
 //   result stands (a cancel that arrives later does not undo it; the caller decides what a late result means).
 //   Only the call's own staging file is ever removed; a file someone else put at `outputPath` is never touched.
 // - Copies and hash scans observe the cancel signal and the deadline as well as the tool runs.
+// T-140 (T-139 F139-1): the cleanup after the call never replaces its outcome. A result committed by the link is
+// returned as a success with `cleanup` saying whether the work folder and the staging name were removed (and which
+// names are left); a failure before the commit is thrown as its own cause with the same `cleanup` record attached.
+// The published file is never removed to make a cleanup look complete, and an incomplete cleanup is never reported
+// as complete.
 const hex64=z.string().regex(/^[0-9a-f]{64}$/);
 const pinned=z.strictObject({path:z.string().min(1).refine(isAbsolute,{message:"absolute path"}),sha256:hex64,sizeBytes:z.number().int().min(1)});
 export const mixRequestSchema=z.strictObject({
@@ -50,7 +55,7 @@ export type ProcessedMix={status:"normalized"|"silent"|"too_short";profile:typeo
     loudness:null|{stats:LoudnessStats;secondPass:{normalizationType:string;outputI:number;outputTp:number}};
     output:{path:string;sha256:string;sizeBytes:number;container:"mp4"|"m4a";audio:{codec:string;profile:string;sampleRate:number;channels:number;bitRate:number|null;initialPadding:number|null};
       decodedSamples:number;firstAboveSample:number|null;video:boolean;videoCheck:null|{frames:number;streamSha256:string}};
-    final:FinalMeasure;accepted:boolean|null};
+    final:FinalMeasure;accepted:boolean|null;cleanup:CleanupState};
 export type MixResult={status:"no_audio"}|ProcessedMix;
 
 // One call's stop conditions (the caller's signal, its absolute deadline) for file reads and copies.
@@ -123,7 +128,7 @@ export async function mixAudio(input:unknown,options:MixOptions={}):Promise<MixR
   const run=options.run??runTool,installedFfmpeg=options.tools?.ffmpeg??(await import("@/lib/media/tools")).mediaBinary("ffmpeg"),installedFfprobe=options.tools?.ffprobe??(await import("@/lib/media/tools")).mediaBinary("ffprobe");
   const deadline=Date.now()+(options.timeoutMs??DEFAULT_TIMEOUT_MS),signal=options.signal,base={deadline,signal,onPid:options.onPid},stop:Stop={signal,deadline};
   let work:string;try{work=mkdtempSync(join(request.workRoot,"dream-audio-"));}catch(error){throw fsFailure(error);}
-  let staging:string|null=null,committed=false;
+  let staging:string|null=null,outcome:Omit<ProcessedMix,"cleanup">|null=null,failure:AudioError|null=null;
   try{
     options.onWork?.(work);// inside the cleanup scope (O135-2)
     // 0. the tools of this call: pinned copies, run from the work folder (F135-1)
@@ -216,14 +221,20 @@ export async function mixAudio(input:unknown,options:MixOptions={}):Promise<MixR
     if((await hashFile(ffmpeg,stop)).sha256!==tool.sha256||(await hashFile(ffprobe,stop)).sha256!==tool.ffprobeSha256)throw new AudioError("TOOL_CHANGED","소리 처리 도구가 처리 중에 달라졌어요.");
     gate(stop);// nothing awaits between this check and the commit
     try{(options.link??linkSync)(staging,request.outputPath);}catch(error){if((error as NodeJS.ErrnoException).code==="EEXIST")throw new AudioError("OUTPUT_EXISTS","결과 파일이 이미 있어요. 덮어쓰지 않아요.");throw fsFailure(error);}
-    committed=true;
-    return {status,profile:PROFILE_ID,tools:{ffmpeg:tool.version,ffmpegSha256:tool.sha256,ffprobeSha256:tool.ffprobeSha256},sources,mix:{sha256:mix.sha256,samples:mix.frames,peak:mix.peak,firstAboveSample:mix.firstAbove},loudness,
+    // committed: from here the result exists at outputPath
+    outcome={status,profile:PROFILE_ID,tools:{ffmpeg:tool.version,ffmpegSha256:tool.sha256,ffprobeSha256:tool.ffprobeSha256},sources,mix:{sha256:mix.sha256,samples:mix.frames,peak:mix.peak,firstAboveSample:mix.firstAbove},loudness,
       output:{path:request.outputPath,sha256:out.sha256,sizeBytes:out.sizeBytes,container,audio:{codec:audio[0].codec_name,profile:audio[0].profile!,sampleRate:Number(audio[0].sample_rate),channels:audio[0].channels!,bitRate:audio[0].bit_rate?Number(audio[0].bit_rate):null,initialPadding:audio[0].initial_padding??null},
         decodedSamples:decodedScan.frames,firstAboveSample:decodedScan.firstAbove,video:!!video,videoCheck},final,accepted};
-  }catch(error){throw ended(error,{signal,deadline});}
-  finally{
-    // only this call's staging name (after the commit it is a second name of the published file)
-    if(staging){try{unlinkSync(staging);}catch{if(!committed)rmSync(staging,{force:true,maxRetries:3});}}
-    if(!options.keepWork)rmSync(work,{recursive:true,force:true,maxRetries:3});
-  }
+  }catch(error){failure=ended(error,{signal,deadline});}
+  const cleanup=cleanUp(work,staging,!!options.keepWork);
+  if(failure||!outcome){const error=failure??new AudioError("TOOL_FAILED","소리 처리가 결과 없이 끝났어요.");error.cleanup=cleanup;throw error;}
+  return {...outcome,cleanup};
+}
+// Removes this call's staging name (after the commit it is only a second name of the published file, so removing it
+// never touches the result) and the work folder unless kept. Never throws: what is left is reported by name.
+function cleanUp(work:string,staging:string|null,keepWork:boolean):CleanupState{
+  const left:CleanupLeft[]=[];
+  if(staging){try{rmSync(staging,{force:true,maxRetries:3});}catch{/* reported below */}if(existsSync(staging))left.push({kind:"staging",name:basename(staging)});}
+  if(!keepWork){try{rmSync(work,{recursive:true,force:true,maxRetries:3});}catch{/* reported below */}if(existsSync(work))left.push({kind:"work",name:basename(work)});}
+  return {complete:left.length===0,left};
 }

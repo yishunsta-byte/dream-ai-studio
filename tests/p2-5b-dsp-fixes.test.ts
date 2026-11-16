@@ -1,18 +1,23 @@
 // T-138: regressions for the T-135 independent review of the P2-5B sound module (F135-1~4, O135-1·2). Each case is
 // the reviewer's reproduction run against the fixed module with the bundled FFmpeg 9.0.2 on synthetic signals in OS
 // temp folders (no user audio). File system failures at the publish step are injected (not a real full disk).
+// T-140: the cleanup after a committed result (F139-1) is reported, never turned into a failure; and every test that
+// changes a tool binary works on a copy inside its own temp folder: a path outside it is refused (fail closed), and
+// the installed FFmpeg/ffprobe hashes are checked to be unchanged after the file.
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmodSync, copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import * as realFs from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { dirname, join, sep } from "node:path";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only",()=>({}));
 // Fault injection for the publish staging file only (paths ending in ".part"); every other file use is real.
-const faults=vi.hoisted(()=>({write:null as null|string,read:null as null|string}));
+const faults=vi.hoisted(()=>({write:null as null|string,read:null as null|string,rm:null as null|RegExp}));
 vi.mock("node:fs",async original=>{const fs=await original<typeof import("node:fs")>();
   return {...fs,
+    // a lasting EBUSY for removals of names matching faults.rm (the work folder or the staging file)
+    rmSync:(path:string,options?:object)=>{if(faults.rm&&faults.rm.test(String(path).replaceAll("\\","/").split("/").pop()!))throw Object.assign(new Error("injected busy"),{code:"EBUSY"});return fs.rmSync(path,options as never);},
     createWriteStream:(path:string,options?:object)=>{const stream=fs.createWriteStream(path,options as never);
       if(faults.write&&String(path).endsWith(".part")){const code=faults.write;stream._write=(_chunk,_encoding,done)=>{fs.appendFileSync(path,"PARTIAL-AUDIO");done(Object.assign(new Error("injected"),{code}));};}
       return stream;},
@@ -20,13 +25,16 @@ vi.mock("node:fs",async original=>{const fs=await original<typeof import("node:f
       if(faults.read&&String(path).endsWith(".part")){const code=faults.read;stream._read=()=>{stream.destroy(Object.assign(new Error("injected"),{code}));};}
       return stream;}};});
 import { mixAudio, type MixOptions, type ProcessedMix } from "@/lib/audio/mix";
-import { runTool, type ToolRunner } from "@/lib/audio/run";
+import { AudioError, runTool, type ToolRunner } from "@/lib/audio/run";
 import { mediaBinary } from "@/lib/media/tools";
 
 const ffmpeg=mediaBinary("ffmpeg"),ffprobe=mediaBinary("ffprobe");
-let root:string;
-beforeEach(()=>{root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t138-")));faults.write=null;faults.read=null;});
-afterEach(()=>{faults.write=null;faults.read=null;if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temporary boundary rejected");
+let root:string,installed:{ffmpeg:string;ffprobe:string};
+const fileSha=(file:string)=>createHash("sha256").update(readFileSync(file)).digest("hex");
+beforeAll(()=>{installed={ffmpeg:fileSha(ffmpeg),ffprobe:fileSha(ffprobe)};});
+afterAll(()=>{expect({ffmpeg:fileSha(ffmpeg),ffprobe:fileSha(ffprobe)},"installed tools must stay unchanged").toEqual(installed);});
+beforeEach(()=>{root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t138-")));faults.write=null;faults.read=null;faults.rm=null;});
+afterEach(()=>{faults.write=null;faults.read=null;faults.rm=null;if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temporary boundary rejected");
   for(const name of readdirSync(root))if(name.endsWith(".exe"))try{chmodSync(join(root,name),0o666);}catch{/* removed below */}
   rmSync(root,{recursive:true,force:true,maxRetries:3});});
 
@@ -43,7 +51,14 @@ const left=()=>readdirSync(root).filter(name=>name.startsWith("dream-audio-")||n
 // a writable copy of an installed tool (the installed files are never touched)
 function toolCopy(name:"ffmpeg"|"ffprobe"){const path=join(root,`${name}-copy.exe`);copyFileSync(name==="ffmpeg"?ffmpeg:ffprobe,path);const at=new Date("2026-01-01T00:00:00Z");utimesSync(path,at,at);return path;}
 // one byte of the DOS stub changed (the program still runs), size and modification time kept
-function flipStub(path:string){const stat=statSync(path);chmodSync(path,0o666);const bytes=readFileSync(path);bytes[0x50]^=0xff;writeFileSync(path,bytes);utimesSync(path,stat.atime,stat.mtime);}
+function flipStub(path:string){
+  // fail closed: only a copy inside this test's temp folder is ever changed (never an installed or shared binary)
+  const real=realpathSync(path);if(!real.startsWith(root+sep))throw new Error("refusing to change a binary outside the test folder");
+  const stat=statSync(path);chmodSync(path,0o666);const bytes=readFileSync(path);bytes[0x50]^=0xff;
+  // a freshly copied exe can be held briefly by the system's file scanner right after it ran: retry the write only
+  for(let attempt=0;;attempt++){try{writeFileSync(path,bytes);break;}catch(error){const code=(error as NodeJS.ErrnoException).code;
+    if(attempt>=40||!["EBUSY","EPERM","EACCES"].includes(code??""))throw error;Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,100);}}
+  utimesSync(path,stat.atime,stat.mtime);}
 const isLoudnormFirst=(args:readonly string[])=>args.some(arg=>arg.includes("loudnorm=")&&arg.includes("print_format=json")&&!arg.includes("measured_I"));
 const isFinalMeasure=(args:readonly string[])=>args.some(arg=>arg.startsWith("ebur128="));
 
@@ -134,6 +149,52 @@ describe("F135-4 영상 길이: 소리로 영상을 늘리거나 자르지 않�
     const durations=execFileSync(ffprobe,["-v","error","-show_entries","stream=codec_type,duration","-of","csv=p=0",value.outputPath],{encoding:"utf8"}).trim().split(/\r?\n/);
     expect(durations.sort()).toEqual(["audio,4.000000","video,4.000000"]);expect(left()).toEqual([]);
   },240000);
+});
+
+describe("F139-1 commit 뒤 정리: 결과와 정리 상태를 따로 알린다",()=>{
+  const name=/^dream-audio-/;
+  it("정상: 정리 완료",async()=>{
+    const a=id(),result=await mixAudio(request(150,{[a]:tone("a.wav",6)})) as ProcessedMix;
+    expect(result.cleanup).toEqual({complete:true,left:[]});expect(left()).toEqual([]);
+  },120000);
+  for(const late of [false,true])it(`commit 뒤 작업 폴더 EBUSY${late?"(늦은 취소와 함께)":""}: 성공 결과 그대로, 정리 미완료와 남은 이름을 보고`,async()=>{
+    const a=id(),value=request(150,{[a]:tone("a.wav",6)}),controller=new AbortController();
+    const result=await mixAudio(value,{signal:controller.signal,link:(from,to)=>{realFs.linkSync(from,to);faults.rm=name;if(late)controller.abort();}}) as ProcessedMix;
+    expect(result.accepted).toBe(true);expect(sha(value.outputPath)).toBe(result.output.sha256);
+    expect(result.cleanup.complete).toBe(false);expect(result.cleanup.left).toHaveLength(1);
+    expect(result.cleanup.left[0]).toMatchObject({kind:"work"});expect(result.cleanup.left[0].name).toMatch(name);expect(result.cleanup.left[0].name).not.toMatch(/[\\/:]/);
+    expect(existsSync(join(root,result.cleanup.left[0].name))).toBe(true);
+    faults.rm=null;rmSync(join(root,result.cleanup.left[0].name),{recursive:true,force:true});expect(left()).toEqual([]);expect(existsSync(value.outputPath)).toBe(true);
+  },120000);
+  it("commit 뒤 임시 게시 이름 EBUSY: 결과 파일은 그대로, 남은 임시 이름을 보고",async()=>{
+    const a=id(),value=request(150,{[a]:tone("a.wav",6)});
+    const result=await mixAudio(value,{link:(from,to)=>{realFs.linkSync(from,to);faults.rm=/\.part$/;}}) as ProcessedMix;
+    expect(sha(value.outputPath)).toBe(result.output.sha256);expect(result.cleanup.complete).toBe(false);
+    expect(result.cleanup.left.map(item=>item.kind)).toEqual(["staging"]);
+    faults.rm=null;rmSync(join(root,result.cleanup.left[0].name));expect(sha(value.outputPath)).toBe(result.output.sha256);expect(left()).toEqual([]);
+  },120000);
+  it("commit 전 실패 + 정리 EBUSY: 원래 원인(VIDEO_MISMATCH·CANCELED)을 그대로 던지고 정리 상태를 붙인다",async()=>{
+    const a=id(),movie=video("short.mp4",60),value=request(120,{[a]:tone("a.wav",4)},{video:movie,outputPath:join(root,"x.mp4")});faults.rm=name;
+    const error=await mixAudio(value).then(()=>null,(caught:unknown)=>caught as AudioError);
+    expect(error).toBeInstanceOf(AudioError);expect(error!.code).toBe("VIDEO_MISMATCH");expect(error!.cleanup).toMatchObject({complete:false,left:[{kind:"work"}]});
+    const b=id(),controller=new AbortController(),other=request(150,{[b]:tone("b.wav",6)});
+    const run:ToolRunner=async(binary,args,options)=>{const result=await runTool(binary,args,options);if(isFinalMeasure(args))controller.abort();return result;};
+    const canceled=await mixAudio(other,{run,signal:controller.signal}).then(()=>null,(caught:unknown)=>caught as AudioError);
+    expect(canceled!.code).toBe("CANCELED");expect(canceled!.cleanup?.complete).toBe(false);expect(existsSync(other.outputPath)).toBe(false);
+    faults.rm=null;for(const item of [...error!.cleanup!.left,...canceled!.cleanup!.left])rmSync(join(root,item.name),{recursive:true,force:true});expect(left()).toEqual([]);
+  },180000);
+  it("commit 전 실패에서 정리가 끝나면 complete=true",async()=>{
+    const a=id(),movie=video("short2.mp4",60),value=request(120,{[a]:tone("a.wav",4)},{video:movie,outputPath:join(root,"y.mp4")});
+    const error=await mixAudio(value).then(()=>null,(caught:unknown)=>caught as AudioError);
+    expect(error!.code).toBe("VIDEO_MISMATCH");expect(error!.cleanup).toEqual({complete:true,left:[]});
+  },60000);
+});
+
+describe("도구 변경 시험의 보호 장치",()=>{
+  it("시험 폴더 밖 실행 파일은 바꾸지 않고 거절한다(설치본 경로 포함)",()=>{
+    expect(()=>flipStub(ffmpeg)).toThrow(/outside the test folder/);expect(()=>flipStub(ffprobe)).toThrow(/outside the test folder/);
+    expect(fileSha(ffmpeg)).toBe(installed.ffmpeg);
+  });
 });
 
 describe("O135 관찰 2건",()=>{
