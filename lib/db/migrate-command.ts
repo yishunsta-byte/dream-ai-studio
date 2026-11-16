@@ -15,9 +15,10 @@ const digestOf=(file:string)=>{try{return fileSha256(file);}catch{return null;}}
 
 // `npm.cmd run db:migrate`. Returns the exit code.
 // F043-2: an existing database is first read through a read-only connection. Only a fresh database or an allowed
-// upgrade is opened for writing, and then without the persistent switch to WAL, so nothing about the file changes
-// before the pre-migration copy (the upgrade re-checks origin and journal on the writing connection, inside its
-// lock). A refused or already-current database is never opened for writing.
+// upgrade is opened for writing, and then always without the persistent switch to WAL (F045-1: even when the path
+// was empty at the read-only look, since a file may appear there before the writing connection opens), so nothing
+// about the file changes before the writing connection itself has checked origin and journal, inside its lock, and
+// taken the pre-migration copy. The app switches a verified database to WAL when it opens it. A refused or already-current database is never opened for writing.
 // The result record (F039-3) is written after the DB work; failing to write it never changes the DB or the exit code.
 export function runMigrateCommand(options:MigrateCommandOptions):number{
   const {root}=options,migrations=options.migrations??productMigrations(),now=options.now??Date.now,log=options.log??console.log,error=options.error??console.error,write=options.writeRecord??writeMigrationRecord;
@@ -38,7 +39,7 @@ export function runMigrateCommand(options:MigrateCommandOptions):number{
       if(refusal)throw refusal;
       let result:LiveMigrationResult;
       if(current)result={applied:0,from:migrations.length,to:migrations.length,snapshot:null};
-      else{probe?.close();probe=undefined;options.afterProbe?.();handle=openDatabase(file,{},{wal:!existed});result=migrateLiveDatabase(handle,{snapshotDirectory:join(root,"backups","pre-migrate"),migrations,now});}
+      else{probe?.close();probe=undefined;options.afterProbe?.();handle=openDatabase(file,{},{wal:false});result=migrateLiveDatabase(handle,{snapshotDirectory:join(root,"backups","pre-migrate"),migrations,now});}
       const snapshot=result.snapshot?snapshotRelative(result.snapshot):null;
       log(`데이터베이스 준비 완료: 새 마이그레이션 ${result.applied}개`);
       if(snapshot)log(`바꾸기 전 복사본: ${snapshot} (자동으로 지우지 않아요)`);

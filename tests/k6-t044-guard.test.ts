@@ -111,6 +111,17 @@ describe("F043-2 시작 점검과 거부되는 CLI는 모르는 DB를 바꾸지 
     const result=command({afterProbe:()=>{const raw=new Database(dbFile());try{raw.exec("DELETE FROM __schema_migrations");}finally{raw.close();}changed=digest(dbFile());}});
     expect(result).toMatchObject({exit:1,err:[unrecordedCopy.headline,unrecordedCopy.next]});expect(digest(dbFile())).toBe(changed);expect(existsSync(snapshots())).toBe(false);
   });
+  it("F045-1 읽기 확인 때 없던 경로에 모르는 DELETE DB가 생겨도 쓰기 연결이 모드를 바꾸지 않고 거부한다",()=>{
+    mkdirSync(join(root,"data"),{recursive:true});let created="",meaning="";
+    const result=command({afterProbe:()=>{created=build(dbFile(),"delete","CREATE TABLE survivor(id TEXT); INSERT INTO survivor VALUES('keep');");meaning=logical(dbFile());}});
+    expect(created).toBe(digest(dbFile()));expect(result).toMatchObject({exit:1,err:[unrecordedCopy.headline,unrecordedCopy.next]});
+    expect(header(dbFile())).toEqual([1,1]);expect(logical(dbFile())).toBe(meaning);expect(existsSync(`${dbFile()}-wal`)).toBe(false);expect(existsSync(snapshots())).toBe(false);
+  });
+  it("F045-1 없던 경로의 진짜 새 준비와 정상 올리기·최신 no-op은 그대로 된다",()=>{
+    expect(command()).toMatchObject({exit:0,out:["데이터베이스 준비 완료: 새 마이그레이션 4개"]});expect(checkDatabase(root)).toEqual({ok:true});
+    const ready=digest(dbFile());expect(command()).toMatchObject({exit:0,out:["데이터베이스 준비 완료: 새 마이그레이션 0개"]});expect(digest(dbFile())).toBe(ready);
+    rmSync(join(root,"data"),{recursive:true});productDb(dbFile(),3);expect(command().exit).toBe(0);expect(readdirSync(snapshots())).toHaveLength(1);expect(checkDatabase(root)).toEqual({ok:true});
+  });
 });
 
 describe("F043-3 복사본은 열어서 확인될 때만 남았다고 말한다",()=>{
@@ -138,12 +149,19 @@ describe("F043-3 복사본은 열어서 확인될 때만 남았다고 말한다"
     const other=join(root,"other.db");productDb(other,4);copyFileSync(other,file);expect(message()).toBe(notKept.headline);
     writeFileSync(file,original);expect(message()).toBe(kept.headline);
   });
-  it("사본 지문이 없는 이전 기록도 열어서 확인하고, 내용이 깨지거나 다른 DB면 사본이라 하지 않는다",()=>{
-    const {file,record}=failedRun(),original=readFileSync(file);const {snapshotSha256:_omit,...older}=record;void _omit;
-    writeFileSync(migrationRecordPath(root),JSON.stringify(older));expect(readMigrationRecord(root)?.snapshotSha256).toBeUndefined();expect(message()).toBe(kept.headline);
-    const damaged=Buffer.from(original);for(let index=original.length-4096;index<original.length-2048;index++)damaged[index]^=0xff;writeFileSync(file,damaged);expect(message()).toBe(notKept.headline);
-    const other=join(root,"other.db");productDb(other,4);copyFileSync(other,file);expect(message()).toBe(notKept.headline);
-    // Same schema and journal but another state's file still fails the digest when the record has one.
-    writeFileSync(file,original);expect(keptSnapshot(root,{...record,snapshotSha256:"0".repeat(64)})).toBeNull();expect(keptSnapshot(root,record)).toBe(record.snapshot);
+  it("F045-2 지문 없는 이전 기록은 진짜 사본이어도 확인된 사본이라 하지 않고, 같은 구조·기록에 업무 값만 다른 사본은 지문으로 거부",()=>{
+    const {file,record}=failedRun(),original=readFileSync(file),bytes=digest(file);
+    // T-045 as written: an ordinary copy of the real snapshot with only a business row changed (schema, journal, integrity unchanged).
+    const alternate=join(root,"alternate.db");copyFileSync(file,alternate);const raw=new Database(alternate);try{raw.prepare("INSERT INTO settings(key,value_json) VALUES('review.sentinel','\"REPLACEMENT\"')").run();}finally{raw.close();}
+    const check=new Database(alternate,{readonly:true});try{expect(check.pragma("integrity_check",{simple:true})).toBe("ok");}finally{check.close();}
+    copyFileSync(alternate,file);expect(message()).toBe(notKept.headline);expect(keptSnapshot(root,record)).toBeNull();
+    const {snapshotSha256:_omit,...older}=record;void _omit;writeFileSync(migrationRecordPath(root),JSON.stringify(older));
+    expect(readMigrationRecord(root)?.snapshotSha256).toBeUndefined();
+    // Legacy record: still parsed and still explains the failure, but never with confirmed-copy wording.
+    expect(checkDatabase(root)).toMatchObject({ok:false,message:notKept.headline,detail:[notKept.next],code:"MIGRATION_FAILED"});
+    writeFileSync(file,original);expect(digest(file)).toBe(bytes);expect(message()).toBe(notKept.headline);expect(keptSnapshot(root,older)).toBeNull();
+    // New records: the right digest confirms, a wrong one does not.
+    writeFileSync(migrationRecordPath(root),JSON.stringify(record));expect(message()).toBe(kept.headline);
+    expect(keptSnapshot(root,{...record,snapshotSha256:"0".repeat(64)})).toBeNull();expect(keptSnapshot(root,record)).toBe(record.snapshot);expect(digest(file)).toBe(bytes);
   });
 });

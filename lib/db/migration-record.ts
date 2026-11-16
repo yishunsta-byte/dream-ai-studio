@@ -58,8 +58,8 @@ export function fileSha256(file:string){
   return hash.digest("hex");
 }
 // F043-3: a copy is reported as kept only when it is a real file directly inside <root>/backups/pre-migrate (no links
-// on the way, no escape through the name), still has the digest taken right after it was made (when the record has
-// one; older records without it fall back to the checks below), opens read-only as an intact SQLite database in
+// on the way, no escape through the name), still has the digest taken right after it was made (a record without one
+// is never confirmed), opens read-only as an intact SQLite database in
 // rollback mode (so reading it creates no side files), and has exactly the journal and schema of the database
 // state the record belongs to. Anything else (a fake header, a truncated or damaged file, another database) is not
 // called a copy. The file is only read.
@@ -77,7 +77,9 @@ export function keptSnapshot(root:string,record:Pick<MigrationRecord,"snapshot"|
     try{if(readSync(handle,header,0,20,0)!==20)return null;}finally{closeSync(handle);}
     if(header.subarray(0,16).toString("latin1")!=="SQLite format 3\0"||header[18]!==1||header[19]!==1)return null;
     for(const side of ["-wal","-shm","-journal"])if(existsSync(/*turbopackIgnore: true*/`${file}${side}`))return null;
-    if(record.snapshotSha256&&fileSha256(file)!==record.snapshotSha256)return null;
+    // F045-2: without the digest taken when the copy was made (records from before T-044), schema and journal
+    // equality cannot show the business data is the pre-migration data, so such a copy is never called confirmed.
+    if(!record.snapshotSha256||fileSha256(file)!==record.snapshotSha256)return null;
     const copy=new Database(file,{readonly:true,fileMustExist:true});
     try{
       if(copy.pragma("integrity_check",{simple:true})!=="ok")return null;
