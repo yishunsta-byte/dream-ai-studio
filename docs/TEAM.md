@@ -42,7 +42,13 @@
 
 ## 요청 기록
 
-### T-058 · 동기 전용 이관의 비동기 생성 제한 (parent=T055/T054, priority=P1) — running
+### T-059 · 동기 코드 이관 계약 독립 검수 (parent=T058/T054, priority=P1) — ready
+
+- 대상94a13c2 새Codex child. 반환/미반환Promise·nestedasync/dynamicimport·일반then/getter/proxy가생성전안전거부/status0·rollback/미적용·A/B후속정상, source/hash/entry/closedrequire/crypto원시값창구와timeout·직접복원동등 회귀. 새동기문법제한오탐/신뢰된hostDB한계를구분한다.
+- 원CRLF전체tests/lint/typecheck/build·실제T054원문(거부문구만필요최소조정)재현·원SQL/s4불변·PASS/FAIL고유T059보고. 제품0005/사용자DB/공용문서수정금지, 실제제품등록/Next/cwd/source동봉/오류UI는이후통합조건.
+
+
+### T-058 · 동기 전용 이관의 비동기 생성 제한 (parent=T055/T054, priority=P1) — ready_review
 
 - 추천설계 msg_5560b54fc140 검토채택: 해시검증후동일원문전체 async/await/import 보수거부(주석/문자열오탐명시), Promise/fromAsync등동기제한·require/crypto context함수/원시값창구로축소·settle복잡성제거. dbhost신뢰한계별도, 정상/오류경로host객체유출·이스케이프구문실측·기존crash시험안전거부status0·동기정상회귀를검증조건으로전달했다. 임의JS sandbox/모든비동기증명으로과장안함.
 
