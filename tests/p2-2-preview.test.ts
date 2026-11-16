@@ -94,7 +94,8 @@ describe("import 경계 (T3)",()=>{
   });
   // T-075 (F073-1): a render error before the event listeners are attached must still reach the panel.
   it("Player 오류 대체 화면이 비어 있지 않고 effect로 패널에 알림(최초·비율 재마운트·재시도)",()=>{
-    const panel=readFileSync("components/player/player-panel.tsx","utf8");
+    // T-077 (F076-1): the same check on an LF or a CRLF checkout — only the line endings of the read text are unified.
+    const panel=readFileSync("components/player/player-panel.tsx","utf8").replace(/\r\n/g,"\n");
     expect(panel).not.toContain("ErrorFallback=()=>null");expect(panel).not.toContain("errorFallback={()=>null}");
     expect(panel).toContain("function PlayerFailed({onFailed}:{onFailed:()=>void}){\n  useEffect(()=>{onFailed();},[onFailed]);");
     expect(panel).toContain("errorFallback={fallback}");expect(panel).toContain("onFailed={failed}");
