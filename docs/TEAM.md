@@ -42,6 +42,17 @@
 
 ## 요청 기록
 
+### T-061 · P2-1 타임라인·리비전 실제 구현 (parent=P2-1, priority=P1) — ready
+
+- 담당CC-DATA-01 임시코딩, T060검토·T059/P1승인게이트충족으로실제배정. T060예상DB/0005·코드등록/스키마/서비스/API·현정적편집UI/검수/내보내기·source오류/timeout/CLI/startup/worker·tracing·관련tests/s5새fixture/README/고유보고 허용.
+- D1 durationFrames/null빈자리,D2기획·영상길이max상한/무절단경고,D4읽기무쓰기,D5깨진pointer실패,D6이관기존내용version/검수불변,D7스냅샷revision,D8오류코드,D9s5,D10명시저장채택. D3는현재편집UI저장신API전환완료때만410허용. pointer INSERT/UPDATE·같은projectrestore참조/REPLACE불변·중복ID/hash·stale선택검증 추가.
+- 기존SQL1~4/s4/실사용DB/기준문서불변,제품0005는가상사본에서만적용. 전체tests/lint/typecheck/build·CLI/productionNext실제code실행/source동봉/cwd·오류안내·원본/옛행/ZIP보존·s4upgrade/s5/직접복원동등·양폭키보드현재편집→검수→ZIP동작·P1모양이관비교 증거와선택커밋반환후독립검수. Remotion/본격P2-3추가없음.
+
+### T-063 · 타임라인 상세 명세·기존값 이관 정합 (parent=T061) — ready
+
+- 담당CC-DESIGN-01. PLAN11.2/11.3·18최소와text-presets migration.fromP1·고유보고/히스토리만. T060채택결정·U1실제P1좌표/스타일숫자·초프레임반올림·빈자리/글자상한·무절단경고를정합. 코드파일·공용상태·시안불변, 구현자필드차이는공유후조정. P2-1착수이며완료/Remotion시작아님.
+
+
 ### T-062 · K6 준비 통과·P2-1 구현 가능 상태 기준 반영 (parent=T059) — done
 
 - cda67a4 / msg_a657618a5644 회수. Master실제PLAN diff·고유보고검토: restricted계약379+1skip/SQL독립통과·신뢰한계·0005미추가/다음통합완료조건을구분해기준문서정합완료로채택했다. 문서검증만이며새앱시험/제품구현주장없음.
@@ -49,7 +60,9 @@
 - CC-DESIGN-01, PLAN K6/18 상태·최소이력/고유보고·히스토리만. SQL/s4 T047 + restricted코드계약 T059 독립PASS와P1두승인완료로준비게이트충족, P2-1실제미구현/T060설계검토후배정구분. source동봉/cwd/CLI·productionNext/errorUI/고정s5는다음제품통합완료조건, hostDB신뢰한계·step별clock비교유지. 제품/시안/spec/공용상태불변.
 
 
-### T-060 · 타임라인 구현 설계 입력 (parent=P2-1 준비) — running
+### T-060 · 타임라인 구현 설계 입력 (parent=P2-1 준비) — done
+
+- f8fe043 / msg_e70633db3012 회수·전체설계원문Master검토완료. D1/D2/D4~10채택, D3는현재UI같은변경내저장경로완전전환조건. INSERT/UPDATE포인터·같은project restore참조·불변REPLACE·중복ID/hash/선택변경stale일관성검증을보강해T061실제구현배정. 제품0005가상검증허용,실사용DB이관금지.
 
 - 실제 수락·점유 msg_d2bdd5aa7b9e 수신, 시작HEAD424471d. 담당이 고유 설계 문서 한 파일만 수정하고 코드/SQL/fixture/PLAN/공용문서 불변 및 T059 필수 수정 우선을 확인했다.
 
