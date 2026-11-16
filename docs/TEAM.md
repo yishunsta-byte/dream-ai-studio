@@ -42,7 +42,15 @@
 
 ## 요청 기록
 
-### T-052 · 코드 이관 v2 실행 결합 독립 검수 (parent=T051/T050, priority=P1) — running
+### T-053 · 코드 이관 반환 경계·실패 context 재사용 보완 (parent=T052/T051, priority=P1) — ready
+
+- CC-DATA-01 임시코딩. loader/migrate필요최소/관련회귀/README/고유보고. 반환객체then을host에서조회·호출하지않고run undefined계약등최소안으로실행가능접근을timedVM내처리. 실패context후속재평가로rollbackDB늦은쓰기금지, A/B열린DB동일객체재사용과getter/then deadline 실제재현으로검증.
+- 원문SQL/s4/사용자DB/제품0005/공용문서불변. nativepromise/async거부·rollback후무쓰기·정상후속/entrygetter·전체tests/lint/typecheck/build 증거반환후집중독립재검수. 임의적대JS/nativeSQLite중단을새보안범위로추가하지않는다.
+
+
+### T-052 · 코드 이관 v2 실행 결합 독립 검수 (parent=T051/T050, priority=P1) — done (계약 FAIL)
+
+- 결과msg_1dc5cebef5fd·원문보고취합. 독립원CRLF333통과/생성1skip·lint/typecheck/build,F0501/2/4·entryidentity·규칙수준F0503실행범위PASS. 새F0521 thenable microtask로rollback후다음객체재사용때A늦은쓰기/F0522 getter·then timeout밖실행 실제재현으로수용FAIL, T053최소수정배정. 잘못생성된검수fake경로삭제자동승인policy거부로보존·우회안함,사용자DB미접근.
 
 - 실제worker ready dispatch ctx_3cfe0f9cc223 / task task_64a2997e6d5f / terminal term_aeffe7d0-d33d-48b7-9d79-f2148131f1f2 / child code-migration-v2-review. 결과Orca wake로회수.
 
