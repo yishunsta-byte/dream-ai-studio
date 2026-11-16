@@ -1,5 +1,6 @@
 // T-048/T-051: the code data migration contract (K-6 ⑤ / T-017 3.4) proven with a test-only step 5; no product 0005.
 // The executed `run`/`sql` are loaded from the very text whose hash matched the declaration (contract v2).
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -146,7 +147,7 @@ describe("로더: 목록 안 원문만, 정해진 형식만 (F050-2)",()=>{
   it("시간 제한: 최상위 무한 반복은 불러오기에서, run 무한 반복은 실행에서 끊고 되돌린다",async()=>{
     expect(()=>probe("loop-load",{"p/entry.cjs":"for(;;){}\nmodule.exports.run=function(db){};"})()).toThrow(/불러오는 중 실패/);
     const make=probe("loop-run",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES ('x')");for(;;){}};`},{runTimeoutMs:200});
-    const file=await s4("loop-db"),before=snap(file);expect(()=>migrateFile(file,[...productMigrations(),make()])).toThrow(/timed out/);expect(snap(file)).toEqual(before);
+    const file=await s4("loop-db"),before=snap(file);expect(()=>migrateFile(file,[...productMigrations(),make()])).toThrow(/시간 제한 200ms/);expect(snap(file)).toEqual(before);
   });
   it("비동기: async run은 등록 거부, Promise를 돌려주면 대기 작업까지 트랜잭션 안에서 끝낸 뒤 거부하고 되돌린다(늦은 쓰기 없음)",async()=>{
     expect(()=>probe("async",{"p/entry.cjs":"module.exports.run=async function(db){};"})()).toThrow(/동기 함수/);
@@ -156,6 +157,78 @@ describe("로더: 목록 안 원문만, 정해진 형식만 (F050-2)",()=>{
     try{expect(()=>migrateDatabase(sqlite,{migrations:[...productMigrations(),make()],now})).toThrow(/Promise/);await new Promise(resolve=>setTimeout(resolve,50));expect(sqlite.prepare("SELECT key FROM settings WHERE key='late.write'").all()).toEqual([]);}finally{sqlite.close();}
     expect(snap(file)).toEqual(before);expect(proofRows(file)).toBeNull();
   });
+});
+
+describe("반환값 경계: run은 undefined만, 늦은 쓰기 없음 (F052-1·2)",()=>{
+  const BASE=migrationEntry(1,"0001_base.sql","CREATE TABLE proof (value INTEGER) STRICT;");
+  // Two open in-memory databases with the base step, like T-052 late.mts.
+  const opened=()=>[new Database(":memory:"),new Database(":memory:")].map(db=>{migrateDatabase(db,{migrations:[BASE],now});return db;});
+  const state=(db:Database.Database)=>({rows:db.prepare("SELECT value FROM proof").all(),journal:db.prepare("SELECT version FROM __schema_migrations ORDER BY version").all(),inTransaction:db.inTransaction});
+  const STEP2=(name:string,run:string)=>probe(name,{"p/entry.cjs":`module.exports.run=function(db){${run}};`},{version:2,name:"0002_probe.cjs"});
+  const settle=()=>new Promise(resolve=>setTimeout(resolve,50));
+  const cases:Record<string,string>={
+    "T052 원문: then이 microtask를 예약하는 일반 thenable":"return {then(resolve){Promise.resolve().then(()=>db.exec('INSERT INTO proof VALUES(7)'));resolve();}};",
+    "getter가 microtask를 예약하는 then":"return {get then(){Promise.resolve().then(()=>db.exec('INSERT INTO proof VALUES(8)'));return undefined;}};",
+    "native Promise":"return Promise.resolve().then(()=>db.exec('INSERT INTO proof VALUES(9)'));",
+    "일반 객체":"db.exec('INSERT INTO proof VALUES(10)');return {};",
+    "null":"db.exec('INSERT INTO proof VALUES(11)');return null;",
+  };
+  for(const [label,run] of Object.entries(cases))it(`${label}: 같은 migration 객체를 열린 A·B에 3번씩 번갈아 써도 행·기록 없음, 뒤의 정상 단계는 성공`,async()=>{
+    const step=STEP2(`ret-${sha(label).slice(0,8)}`,run)(),[a,b]=opened();
+    try{
+      for(let round=0;round<3;round++)for(const db of [a,b]){
+        expect(()=>migrateDatabase(db,{migrations:[BASE,step],now})).toThrow(/undefined만 돌려줄 수 있어요/);
+        expect(state(a)).toEqual({rows:[],journal:[{version:1}],inTransaction:false});expect(state(b)).toEqual({rows:[],journal:[{version:1}],inTransaction:false});
+      }
+      await settle();expect(state(a).rows).toEqual([]);expect(state(b).rows).toEqual([]);
+      const good=STEP2(`good-${sha(label).slice(0,8)}`,"db.exec('INSERT INTO proof VALUES(1)');")();
+      for(const db of [a,b]){expect(migrateDatabase(db,{migrations:[BASE,good],now})).toBe(1);}
+      await settle();for(const db of [a,b])expect(state(db)).toEqual({rows:[{value:1}],journal:[{version:1},{version:2}],inTransaction:false});
+    }finally{a.close();b.close();}
+  });
+  it("undefined 반환(return 없음·return undefined)은 정상 적용",()=>{
+    for(const run of ["db.exec('INSERT INTO proof VALUES(1)');","db.exec('INSERT INTO proof VALUES(1)');return undefined;"]){
+      const [a,b]=opened();try{expect(migrateDatabase(a,{migrations:[BASE,STEP2(`undef-${sha(run).slice(0,8)}`,run)()],now})).toBe(1);expect(state(a).rows).toEqual([{value:1}]);}finally{a.close();b.close();}
+    }
+  });
+  it("판정 도우미는 사용자 코드 전에 잡아 둔다: 전역·내장 함수를 바꿔도 async run 거부, 호스트 연결은 보이지 않음",()=>{
+    const tamper="try{globalThis.__dream={load(){return 'ok\\\\0'},run(){return 'ok\\\\0'}};}catch(e){}Object.prototype.toString=function(){return '[object Function]'};Reflect.apply=function(){return undefined};";
+    expect(()=>STEP2("tamper-async",`};${tamper}module.exports.run=async function(db){`)()).toThrow(/동기 함수/);
+    const make=probe("tamper-return",{"p/entry.cjs":`${tamper}module.exports.run=function(db){db.exec('INSERT INTO proof VALUES(3)');return {};};`},{version:2,name:"0002_probe.cjs"});
+    const [a,b]=opened();try{expect(()=>migrateDatabase(a,{migrations:[BASE,make()],now})).toThrow(/undefined만/);expect(state(a).rows).toEqual([]);}finally{a.close();b.close();}
+    expect(()=>STEP2("bridge",`};if(typeof __dreamHost!=="undefined"||typeof globalThis.__dreamHost!=="undefined")throw new Error("bridge visible");module.exports.run=function(db){`)()).not.toThrow();
+  });
+  it("목록 밖 require 오류를 사용자 코드가 삼켜도 거부(등록·실행 모두), 실행은 되돌린다",()=>{
+    expect(()=>probe("swallow-top",{"p/entry.cjs":"try{require('./outside.cjs');}catch(e){}module.exports.run=function(db){};"})()).toThrow(/목록 밖 의존/);
+    const make=STEP2("swallow-run","db.exec('INSERT INTO proof VALUES(4)');try{require('node:fs');}catch(e){}");
+    const [a,b]=opened();try{expect(()=>migrateDatabase(a,{migrations:[BASE,make()],now})).toThrow(/목록 밖 의존/);expect(state(a)).toEqual({rows:[],journal:[{version:1}],inTransaction:false});}finally{a.close();b.close();}
+  });
+  it("실행마다 새 실행 공간: 최상위 상태가 다음 실행으로 넘어가지 않고 sql은 등록 값과 같다",()=>{
+    const step=probe("fresh",{"p/entry.cjs":"let count=0;module.exports.run=function(db){count++;db.prepare('INSERT INTO proof VALUES (?)').run(count);};"},{version:2,name:"0002_probe.cjs"})();
+    const [a,b]=opened();try{migrateDatabase(a,{migrations:[BASE,step],now});migrateDatabase(b,{migrations:[BASE,step],now});expect(state(a).rows).toEqual([{value:1}]);expect(state(b).rows).toEqual([{value:1}]);}finally{a.close();b.close();}
+  });
+  // Endless loops run in a child process with an external deadline; a PASS needs the internal limit to end it first.
+  const child=join(process.cwd(),"tests/fixtures/migrations/deadline-child.mts");
+  const LOAD_LIMIT=/불러오는 중 실패 \(코드 마이그레이션이 시간 제한 1000ms 안에 끝나지 않았어요 \(ERR_SCRIPT_EXECUTION_TIMEOUT\)\)/;
+  const RUN_LIMIT=/시간 제한 200ms 안에 끝나지 않았어요 \(ERR_SCRIPT_EXECUTION_TIMEOUT\)/;
+  const MODES:Record<string,{phase:string;message:RegExp}>={
+    "module-loop":{phase:"register",message:LOAD_LIMIT},
+    "entry-run-getter":{phase:"register",message:LOAD_LIMIT},
+    "entry-sql-getter":{phase:"register",message:LOAD_LIMIT},
+    "run-loop":{phase:"run",message:RUN_LIMIT},
+    "then-loop":{phase:"run",message:/undefined만 돌려줄 수 있어요/},
+    "then-getter-loop":{phase:"run",message:/undefined만 돌려줄 수 있어요/},
+    "error-getter-loop":{phase:"run",message:RUN_LIMIT},
+    "microtask-loop":{phase:"run",message:RUN_LIMIT},
+  };
+  for(const [mode,expected] of Object.entries(MODES))it(`끝나지 않는 ${mode}: 외부 마감(10초) 전에 내부 제한이나 거부로 스스로 끝나고 기록 그대로`,()=>{
+    const folder=join(root,`deadline-${mode}`);mkdirSync(folder,{recursive:true});
+    const result=spawnSync(process.execPath,["--conditions=react-server","--import","tsx",child,process.cwd(),folder,mode],{cwd:process.cwd(),timeout:10000,encoding:"utf8",windowsHide:true});
+    expect(result.error).toBeUndefined();expect(result.signal).toBeNull();expect(result.status).toBe(0);
+    const out=JSON.parse(result.stdout.trim().split("\n").at(-1)!) as {phase:string;message:string;elapsedMs:number;journal?:{version:number}[];result?:string};
+    expect(out.result).toBeUndefined();expect(out.phase).toBe(expected.phase);expect(out.message).toMatch(expected.message);expect(out.elapsedMs).toBeLessThan(5000);
+    if(expected.phase==="run")expect(out.journal).toEqual([1]);
+  },20000);
 });
 
 describe("SQL 시각·난수 검출 규칙과 단계별 결정성 확인 (F050-3)",()=>{

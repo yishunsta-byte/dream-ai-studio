@@ -27,9 +27,15 @@ import type { Migration } from "./migrate";
 //   Everything else fails. `import`/`export` syntax is a syntax error and dynamic import() has no loader, so there is
 //   no second module graph next to the hashed one. String code generation and wasm are off; Date, Math.random,
 //   Intl, Temporal, WeakRef/FinalizationRegistry, SharedArrayBuffer/Atomics and WebAssembly are blocked or removed.
-// - Module top level runs under LOAD_TIMEOUT_MS. `run` runs synchronously under RUN_TIMEOUT_MS inside the
-//   migration transaction; queued microtasks of the context are drained before it returns, and an async `run` or a
-//   thenable result is refused (so the transaction rolls back and no write lands after it).
+// - Every use gets a fresh context: registration loads once to check the entry and read its `sql`, and each `run`
+//   loads the same captured strings again. Module top level runs under LOAD_TIMEOUT_MS; `run` runs synchronously
+//   under RUN_TIMEOUT_MS inside the migration transaction. Microtasks queued by step code drain inside that timed
+//   evaluation (afterEvaluate), and the context is never evaluated again, so nothing can reach a later database.
+// - `run` must return undefined. The check is a primitive comparison inside the VM; any other value (a Promise, a
+//   thenable, any object) is refused without being read, and the transaction rolls back. Reading the entry exports,
+//   the async-function check and turning an error into name/message text all happen inside timed evaluations with
+//   intrinsics captured before step code runs; the host only ever receives primitive strings. A timeout is
+//   recognised from the timeout error's own `code` data property only.
 // - This is a trusted-migration loader, not a security sandbox: the host `sqlite` object handed to `run` can reach
 //   the host realm. It catches wrong registrations, stale or edited sources and ordinary hidden inputs; it does not
 //   prove that arbitrary hostile code is deterministic.
@@ -67,49 +73,90 @@ export function codeMigrationSha256(files:readonly {path:string;text:string}[]){
   return sha([CODE_MIGRATION_FORMAT,`entry\0${files[0].path}`,...sorted.map(file=>`file\0${file.path}\0${sha(lf(file.text))}`)].join("\n"));
 }
 
+// Runs in every fresh context before any step code. It blocks clocks/randomness, takes the host bridge off the global
+// object, and keeps private helpers built from intrinsics captured now, so step code cannot change how the entry
+// exports, the result of `run` or an error are read. Helpers return only primitive strings and are called from inside
+// a timed evaluation; after this point the host never writes to, or reads from, the context's global object.
 const PRELUDE=`"use strict";(()=>{const g=globalThis;const blocked=name=>Object.freeze(function(){throw new Error(name+" is not available in a code migration");});
-Object.defineProperty(g,"Date",{value:blocked("Date"),writable:false,configurable:false,enumerable:false});
-Object.defineProperty(Math,"random",{value:blocked("Math.random"),writable:false,configurable:false,enumerable:false});Object.freeze(Math);
-for(const name of ["Intl","Temporal","WeakRef","FinalizationRegistry","SharedArrayBuffer","Atomics","WebAssembly","eval"])delete g[name];})();`;
+const apply=Reflect.apply,toStr=Object.prototype.toString,S=String,define=Object.defineProperty,freeze=Object.freeze;
+const host=g.__dreamHost;delete g.__dreamHost;
+define(g,"Date",{value:blocked("Date"),writable:false,configurable:false,enumerable:false});
+define(Math,"random",{value:blocked("Math.random"),writable:false,configurable:false,enumerable:false});freeze(Math);
+for(const name of ["Intl","Temporal","WeakRef","FinalizationRegistry","SharedArrayBuffer","Atomics","WebAssembly","eval"])delete g[name];
+const describe=e=>{try{if(e!==null&&(typeof e==="object"||typeof e==="function"))return S(e.name)+"\\0"+S(e.message);return "Error\\0"+S(e);}catch(_){return "Error\\0unreadable error";}};
+let run;
+define(g,"__dream",{value:freeze({
+  load(){try{const entry=apply(host.loadEntry,undefined,[]);const r=entry.run,sql=entry.sql;
+    if(typeof r!=="function")return "fail\\0module.exports.run이 없어요";
+    if(apply(toStr,r,[])!=="[object Function]")return "fail\\0run은 동기 함수여야 해요";
+    if(sql!==undefined&&typeof sql!=="string")return "fail\\0module.exports.sql은 문자열이어야 해요";
+    run=r;return "ok\\0"+(sql===undefined?"":sql);}catch(e){return "error\\0"+describe(e);}},
+  run(){let result;try{result=apply(run,undefined,[apply(host.database,undefined,[])]);}catch(e){return "error\\0"+describe(e);}
+    return result===undefined?"ok\\0":"fail\\0run은 undefined만 돌려줄 수 있어요 (Promise·객체 반환 거부)";},
+}),writable:false,configurable:false,enumerable:false});
+return ()=>({exports:{}});})();`;
 const cryptoFacade=Object.freeze({createHash:(algorithm:unknown)=>{if(algorithm!=="sha256")throw new MigrationSourceError("node:crypto는 createHash(\"sha256\")만 쓸 수 있어요");return createHash("sha256");}});
-const isThenable=(value:unknown)=>(typeof value==="object"||typeof value==="function")&&value!==null&&typeof (value as {then?:unknown}).then==="function";
+const LOAD_SCRIPT=new vm.Script("__dream.load()"),RUN_SCRIPT=new vm.Script("__dream.run()");
 
-type Loaded={run:(sqlite:Database.Database)=>void;sql:string};
-// Executes the already verified texts. Never called before the declared hash matched.
-function load(files:readonly {path:string;text:string}[],runTimeoutMs:number):Loaded{
-  const context=vm.createContext({},{name:"dream-code-migration",codeGeneration:{strings:false,wasm:false},microtaskMode:"afterEvaluate"});
-  new vm.Script(PRELUDE).runInContext(context,{timeout:LOAD_TIMEOUT_MS});
-  const texts=new Map(files.map(file=>[file.path,file.text])),cache=new Map<string,{exports:Record<string,unknown>}>();
-  const slot=context as Record<string,unknown>;
-  // Calls `fn` from inside an evaluation of the context so the timeout applies and the context's microtasks drain.
-  const call=(fn:unknown,args:unknown[],timeout:number)=>{slot.__dreamCall=fn;slot.__dreamArgs=args;try{return new vm.Script("__dreamCall(...__dreamArgs)").runInContext(context,{timeout});}finally{delete slot.__dreamCall;delete slot.__dreamArgs;}};
+// A timed evaluation that did not return: the timeout error is created in the context realm, so only its own data
+// property `code` is read (no getter or prototype lookup); any other escape is reported without reading it.
+function stopped(error:unknown,limitMs:number){
+  const code=typeof error==="object"&&error!==null?Object.getOwnPropertyDescriptor(error,"code"):undefined;
+  const timedOut=!!code&&"value" in code&&code.value==="ERR_SCRIPT_EXECUTION_TIMEOUT";
+  const failure=new Error(timedOut?`코드 마이그레이션이 시간 제한 ${limitMs}ms 안에 끝나지 않았어요 (ERR_SCRIPT_EXECUTION_TIMEOUT)`:"코드 마이그레이션 실행이 중단됐어요");
+  failure.name=timedOut?"MigrationTimeoutError":"MigrationStoppedError";return failure;
+}
+// Error from a timed evaluation, rebuilt from primitives only.
+function failure(outcome:string,where:string){
+  const [kind,first,...rest]=outcome.split("\0");
+  if(kind==="fail")return new MigrationSourceError(`${where}: ${first}`);
+  const error=new Error(rest.join("\0"));error.name=first||"Error";return error;
+}
+
+// One fresh context per use: load the verified texts (LOAD_TIMEOUT_MS) and, when `sqlite` is given, run the step
+// (runTimeoutMs). Microtasks queued by step code drain inside these evaluations (afterEvaluate); the context is never
+// evaluated again afterwards, so nothing queued in it can reach a later database. Never called before the hash matched.
+// A loader refusal (out-of-list require, bad format) is final even if step code caught it.
+function execute(files:readonly {path:string;text:string}[],options:{runTimeoutMs:number;sqlite?:Database.Database}){
+  const texts=new Map(files.map(file=>[file.path,file.text])),cache=new Map<string,{exports:unknown}>(),entryPath=files[0].path;
+  let sourceError:MigrationSourceError|undefined,database:Database.Database|undefined;
+  const refuse=(error:MigrationSourceError)=>{sourceError??=error;throw error;};
   const requireFrom=(from:string)=>(specifier:unknown)=>{
     if(specifier==="node:crypto")return cryptoFacade;
-    if(typeof specifier!=="string"||!/^\.\.?\//.test(specifier))throw new MigrationSourceError(`${from}: 목록 밖 의존 ${String(specifier)}`);
+    if(typeof specifier!=="string"||!/^\.\.?\//.test(specifier))return refuse(new MigrationSourceError(`${from}: 목록 밖 의존 ${typeof specifier==="string"?specifier:`(${typeof specifier})`}`));
     const target=posix.normalize(posix.join(posix.dirname(from),specifier));
-    if(!texts.has(target))throw new MigrationSourceError(`${from}: 목록 밖 의존 ${specifier}`);
+    if(!texts.has(target))return refuse(new MigrationSourceError(`${from}: 목록 밖 의존 ${specifier}`));
     return loadModule(target);
   };
-  const loadModule=(path:string)=>{
+  // Host bridge, handed over before any step code runs and then removed from the global object by the prelude.
+  const bridge=Object.freeze({loadEntry:()=>loadModule(entryPath),database:()=>database});
+  const context=vm.createContext({__dreamHost:bridge},{name:"dream-code-migration",codeGeneration:{strings:false,wasm:false},microtaskMode:"afterEvaluate"});
+  const newRecord=new vm.Script(PRELUDE).runInContext(context,{timeout:LOAD_TIMEOUT_MS}) as ()=>{exports:unknown};
+  // Runs only inside a timed evaluation: through __dream.load, or when step code calls require.
+  const loadModule=(path:string):unknown=>{
     const hit=cache.get(path);if(hit)return hit.exports;
-    const record=vm.runInContext("({exports:{}})",context) as {exports:Record<string,unknown>};cache.set(path,record);
-    let fn:unknown;
-    try{fn=vm.compileFunction(texts.get(path)!,["exports","require","module"],{parsingContext:context,filename:path});}
-    catch(error){throw new MigrationSourceError(`${path}: 정해진 .cjs 형식이 아니에요 (${error instanceof Error?error.name:"문법"})`);}
-    call(fn,[record.exports,requireFrom(path),record],LOAD_TIMEOUT_MS);
+    let fn:(...args:unknown[])=>unknown;
+    try{fn=vm.compileFunction(texts.get(path)!,["exports","require","module"],{parsingContext:context,filename:path}) as (...args:unknown[])=>unknown;}
+    catch(error){return refuse(new MigrationSourceError(`${path}: 정해진 .cjs 형식이 아니에요 (${error instanceof SyntaxError?"SyntaxError":"문법"})`));}
+    const record=newRecord();cache.set(path,record);
+    fn(record.exports,requireFrom(path),record);
     return record.exports;
   };
-  let entry:Record<string,unknown>;
-  try{entry=loadModule(files[0].path);}catch(error){if(error instanceof MigrationSourceError)throw error;throw new MigrationSourceError(`${files[0].path}: 불러오는 중 실패 (${error instanceof Error?error.message:String(error)})`);}
-  const run=entry.run,sql=entry.sql??"";
-  if(typeof run!=="function")throw new MigrationSourceError(`${files[0].path}: module.exports.run이 없어요`);
-  if(Object.prototype.toString.call(run)!=="[object Function]")throw new MigrationSourceError(`${files[0].path}: run은 동기 함수여야 해요`);
-  if(typeof sql!=="string")throw new MigrationSourceError(`${files[0].path}: module.exports.sql은 문자열이어야 해요`);
-  return {sql,run:(sqlite)=>{
-    const result=call(run,[sqlite],runTimeoutMs);
-    // Queued work already drained inside the evaluation above; mark the result handled and refuse it (rollback).
-    if(isThenable(result)){try{(result as {then:(a:()=>void,b:()=>void)=>unknown}).then(()=>{},()=>{});}catch{/* refused below either way */}throw new MigrationSourceError(`${files[0].path}: run이 Promise를 돌려줬어요`);}
-  }};
+  let loaded:string;
+  try{loaded=LOAD_SCRIPT.runInContext(context,{timeout:LOAD_TIMEOUT_MS}) as string;}
+  catch(error){throw sourceError??new MigrationSourceError(`${entryPath}: 불러오는 중 실패 (${stopped(error,LOAD_TIMEOUT_MS).message})`);}
+  if(sourceError)throw sourceError;
+  if(!loaded.startsWith("ok\0")){const error=failure(loaded,entryPath);throw error instanceof MigrationSourceError?error:new MigrationSourceError(`${entryPath}: 불러오는 중 실패 (${error.name}: ${error.message})`);}
+  const sql=loaded.slice(3);
+  if(!options.sqlite)return sql;
+  database=options.sqlite;
+  let outcome:string;
+  try{outcome=RUN_SCRIPT.runInContext(context,{timeout:options.runTimeoutMs}) as string;}
+  catch(error){throw sourceError??stopped(error,options.runTimeoutMs);}
+  finally{database=undefined;}
+  if(sourceError)throw sourceError;
+  if(outcome!=="ok\0")throw failure(outcome,entryPath);
+  return sql;
 }
 
 export function codeMigration(definition:CodeStepDefinition):Migration{
@@ -129,9 +176,12 @@ export function codeMigration(definition:CodeStepDefinition):Migration{
   if(sha256!==definition.sha256)throw new MigrationSourceError(`${definition.version} ${definition.name}: 원문 해시 ${sha256}가 선언 ${definition.sha256}와 달라요`);
   for(const file of read)checkSqlText(file.path,file.text);
   // 2) only now execute those same strings.
-  const loaded=load(read,runTimeoutMs);
-  checkSqlText(`${files[0]} sql`,loaded.sql);
-  const migration:Migration=Object.freeze({version:definition.version,name:definition.name,sql:lf(loaded.sql),sha256,kind:"code" as const,sources:Object.freeze([...files]),run:loaded.run,...(definition.verify?{verify:definition.verify}:{})});
+  //    A validation load in its own context gives the entry shape and its SQL (a string); that context is dropped.
+  const sql=execute(read,{runTimeoutMs});
+  checkSqlText(`${files[0]} sql`,sql);
+  //    Each run loads the same captured strings again in a fresh context; the SQL must still be the registered one.
+  const run=(sqlite:Database.Database)=>{if(execute(read,{runTimeoutMs,sqlite})!==sql)throw new MigrationSourceError(`${files[0]}: 실행할 때 sql이 등록 때와 달라요`);};
+  const migration:Migration=Object.freeze({version:definition.version,name:definition.name,sql:lf(sql),sha256,kind:"code" as const,sources:Object.freeze([...files]),run,...(definition.verify?{verify:definition.verify}:{})});
   certified.add(migration);
   return migration;
 }
