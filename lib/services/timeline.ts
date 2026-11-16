@@ -5,7 +5,7 @@ import type { DatabaseHandle } from "@/lib/db/connection";
 import { withDatabase } from "@/lib/db/server";
 import { checkP1MigratedRow, currentClips, P1SourceMismatchError, readTimelineRow, timelineSha256, type TimelineRow } from "@/lib/db/timeline-data";
 import { requiredDisclosures, type EditInput, type EditSnapshot } from "@/lib/edit/schema";
-import { canonicalJson, editViewFromTimeline, FPS, framesToSeconds, sameClip, textEndLimit, timelineSchema, totalFrames, type Timeline, type TimelineClip, type TimelineText } from "@/lib/edit/timeline";
+import { canonicalJson, editViewFromTimeline, FPS, textFromP1, framesToSeconds, sameClip, textEndLimit, timelineSchema, totalFrames, type Timeline, type TimelineClip, type TimelineText } from "@/lib/edit/timeline";
 import type { FontRef } from "@/lib/edit/fonts";
 import { presetFor } from "@/lib/edit/presets";
 import { selectableFonts } from "@/lib/fonts/registry";
@@ -64,12 +64,19 @@ export function timelineService(handle:DatabaseHandle,fonts:()=>readonly FontRef
   for(const layer of timeline.text){const old=before.get(layer.id);if(old&&old.style.fontFamily===layer.style.fontFamily&&old.style.fontWeight===layer.style.fontWeight)continue;
    const font=selectable.get(layer.style.fontFamily);if(!font)throw invalid(FONT_UNAVAILABLE);if(!font.weights.includes(layer.style.fontWeight))throw invalid(FONT_WEIGHT_UNAVAILABLE);}
   const inputs=z.record(z.string(),z.unknown()).parse(JSON.parse(value.inputsJson)),required=requiredDisclosures(inputs),planned=states.scenes(projectId).reduce((sum,scene)=>sum+scene.durationSec,0)*FPS;
-  // A required disclosure follows the P1 rule (64, white, whole plan), or (P2-3, Master D-4) the spec disclosure look
-  // exactly over the whole plan, or is the saved one with only its box moved (older values are kept, never corrected).
-  const disclosureLook=canonicalJson({style:presetFor("disclosure").style,animation:presetFor("disclosure").animation});
-  for(const content of required){const layer=timeline.text.find(item=>item.kind==="disclosure"&&item.content===content),old=layer&&before.get(layer.id);
-   const kept=!!old&&canonicalJson({...old,box:null})===canonicalJson({...layer,box:null});
-   if(!layer||!layer.locked||!(kept||(layer.timing.startFrame===0&&layer.timing.endFrame===planned&&((layer.style.fontSize===64&&layer.style.color.toUpperCase()==="#FFFFFF")||canonicalJson({style:layer.style,animation:layer.animation})===disclosureLook))))throw invalid("필수 표기는 지우거나 바꿀 수 없어요. 위치만 바꿀 수 있어요.");}
+  // T-087 (F085-2): a required disclosure the saved timeline already has keeps its id and every value but its box
+  // (older values such as a P1 28px are kept, never corrected). Only a disclosure the saved timeline does not have yet
+  // may be created, as a new layer over the whole plan with exactly the P1 look (Pretendard 64 white, no motion) or the
+  // spec disclosure look (Master D-4). The two rules never mix, so a "new look" cannot change a saved disclosure.
+  const p1=textFromP1({id:"",kind:"disclosure",content:"",fontFamily:"Pretendard",fontSize:64,color:"#FFFFFF",position:"top",startSec:0,endSec:1,locked:true}),preset=presetFor("disclosure");
+  const looks=new Set([canonicalJson({style:p1.style,animation:p1.animation}),canonicalJson({style:preset.style,animation:preset.animation})]);
+  const savedDisclosures=new Map((base?.text??[]).filter(layer=>layer.kind==="disclosure"&&layer.locked&&required.includes(layer.content)).map(layer=>[layer.content,layer]));
+  for(const content of required){
+   const matches=timeline.text.filter(item=>item.kind==="disclosure"&&item.content===content),layer=matches[0],saved=savedDisclosures.get(content);
+   const ok=matches.length===1&&layer.locked&&(saved
+    ?layer.id===saved.id&&canonicalJson({...layer,box:null})===canonicalJson({...saved,box:null})
+    :!before.has(layer.id)&&layer.timing.startFrame===0&&layer.timing.endFrame===planned&&layer.speakerCharacterId===null&&looks.has(canonicalJson({style:{...layer.style,color:layer.style.color.toUpperCase()},animation:layer.animation})));
+   if(!ok)throw invalid("필수 표기는 지우거나 바꿀 수 없어요. 위치만 바꿀 수 있어요.");}
   if(timeline.text.some(layer=>layer.locked&&!required.includes(layer.content)))throw invalid("잠긴 필수 표기를 확인해 주세요.");
   return {timeline,json};
  }

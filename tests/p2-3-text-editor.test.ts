@@ -149,20 +149,43 @@ describe("옮긴 s4 프로젝트 (서버 규칙·저장·묶음)",()=>{
     expect(only.save(ids.main,saved.revision,saved.timelineId,next)).toMatchObject({created:true});
     expect(all.get(ids.main).timeline!.text[1].style).toMatchObject({fontFamily:"Black Han Sans",fontWeight:400});
   });
-  it("필수 표기: 새로 만드는 표기는 spec 표기 모양(D-4), 모양·크기·시간을 바꾸면 거절, 기존 표기는 위치만",async()=>{
-    const handle=open(await migratedS4()),rev=revisionOf(handle),timelines=timelineService(handle),data=timelines.get(ids.main),base=data.timeline!,id=data.current!.id;
-    const planned=editingService(handle).get(ids.main).plannedFrames,fresh=newTextLayer("disclosure",{startFrame:0,videoFrames:0,plannedFrames:planned,content:"광고"});
-    const swap=(layer:TimelineText):Timeline=>({...base,text:[layer,...base.text.slice(1)]});
-    for(const bad of [{...fresh,style:{...fresh.style,fontSize:30}},{...fresh,style:{...fresh.style,color:"#000000"}},{...fresh,timing:{startFrame:0,endFrame:planned-30}},{...fresh,content:"유료 광고 포함"},{...base.text[0],style:{...base.text[0].style,fontSize:64}}])
-      expect(thrown(()=>timelines.save(ids.main,rev,id,swap(bad))).message).toMatch("필수 표기");
-    expect(timelines.save(ids.main,rev,id,swap({...fresh,box:{...fresh.box,x:0.1,y:0.2}}))).toMatchObject({created:true});
+  it("필수 표기(새로 필요해진 것): P1 모양 또는 spec 표기 모양 그대로·기획 전체 시간·새 id만, 섞인 모양·중복·기존 글자 id 재사용은 거절",async()=>{
+    const handle=open(await migratedS4());
+    // Temp copy only: the project now also needs "AI 생성", which the saved r1 does not have yet.
+    const inputs=JSON.parse((handle.sqlite.prepare("SELECT inputs_json FROM projects WHERE id=?").get(ids.main) as {inputs_json:string}).inputs_json);
+    handle.sqlite.prepare("UPDATE projects SET inputs_json=? WHERE id=?").run(JSON.stringify({...inputs,realisticAi:true}),ids.main);
+    const rev=revisionOf(handle),timelines=timelineService(handle),data=timelines.get(ids.main),base=data.timeline!,id=data.current!.id;
+    const planned=editingService(handle).get(ids.main).plannedFrames,fresh=newTextLayer("disclosure",{startFrame:0,videoFrames:0,plannedFrames:planned,content:"AI 생성",stack:1});
+    const p1Look={...fresh,style:{...fresh.style,fontFamily:"Pretendard" as const,fontSize:64,fontWeight:700,color:"#FFFFFF",stroke:null,shadow:null,background:null,align:"center" as const,letterSpacing:0,lineHeight:1.3,maxLines:1},animation:{in:"none" as const,out:"none" as const,emphasis:"none" as const,durationFrames:0,easing:"ease-out" as const}};
+    const add=(...layers:TimelineText[]):Timeline=>({...base,text:[...base.text,...layers]});
+    expect(thrown(()=>timelines.save(ids.main,rev,id,base)).message).toMatch("필수 표기");
+    for(const bad of [add({...fresh,style:{...fresh.style,fontSize:30}}),add({...fresh,style:{...fresh.style,color:"#000000"}}),add({...fresh,timing:{startFrame:0,endFrame:planned-30}}),add({...fresh,locked:false}),
+      add({...p1Look,style:{...p1Look.style,shadow:{color:"#000000",opacity:1,blur:100,x:100,y:100}}}),add({...p1Look,animation:fresh.animation}),add(fresh,{...fresh,id:"019b8b74-0000-7000-8000-00000000a1a2"}),{...base,text:base.text.map((layer,index)=>index===1?{...fresh,id:layer.id}:layer)}])
+      expect(thrown(()=>timelines.save(ids.main,rev,id,bad)).message).toMatch("필수 표기");
+    expect(handle.sqlite.prepare("SELECT count(*) n FROM timeline_revisions").get()).toEqual({n:1});
+    expect(timelines.save(ids.main,rev,id,add({...p1Look,box:{...p1Look.box,y:0.2}}))).toMatchObject({created:true});
   });
-  it("필수 표기: P1에서 옮긴 표기는 위치만 바꿔 저장 가능, 빼면 거절",async()=>{
+  it("필수 표기(새로 필요해진 것): spec 표기 모양으로도 만들 수 있음",async()=>{
+    const handle=open(await migratedS4()),inputs=JSON.parse((handle.sqlite.prepare("SELECT inputs_json FROM projects WHERE id=?").get(ids.main) as {inputs_json:string}).inputs_json);
+    handle.sqlite.prepare("UPDATE projects SET inputs_json=? WHERE id=?").run(JSON.stringify({...inputs,realisticAi:true}),ids.main);
+    const rev=revisionOf(handle),timelines=timelineService(handle),data=timelines.get(ids.main),base=data.timeline!;
+    const fresh=newTextLayer("disclosure",{startFrame:0,videoFrames:0,plannedFrames:editingService(handle).get(ids.main).plannedFrames,content:"AI 생성",stack:1});
+    expect(timelines.save(ids.main,rev,data.current!.id,{...base,text:[...base.text,fresh]})).toMatchObject({created:true});
+  });
+  it("필수 표기(저장된 것, F085-2): 같은 id·box 외 전부 그대로여야 함 — P1 모양·spec 모양으로 바꾸기·id 바꿔치기도 거절, box만 저장, P1 크기 보존",async()=>{
     const handle=open(await migratedS4()),rev=revisionOf(handle),timelines=timelineService(handle),data=timelines.get(ids.main),base=data.timeline!,id=data.current!.id,old=base.text[0];
-    expect(old).toMatchObject({kind:"disclosure",content:"광고",locked:true});
+    expect(old).toMatchObject({kind:"disclosure",content:"광고",locked:true});expect(old.style.fontSize).not.toBe(64);
+    const planned=editingService(handle).get(ids.main).plannedFrames,spec=newTextLayer("disclosure",{startFrame:0,videoFrames:0,plannedFrames:planned,content:"광고"});
+    const swap=(layer:TimelineText):Timeline=>({...base,text:[layer,...base.text.slice(1)]}),rows0=JSON.stringify(rows(handle)),rev0=revisionOf(handle);
+    for(const bad of [{...old,style:{...old.style,fontSize:64,color:"#FFFFFF",shadow:{color:"#000000",opacity:1,blur:100,x:100,y:100}}},{...old,style:{...old.style,fontSize:64,color:"#FFFFFF"},timing:{startFrame:0,endFrame:planned}},
+      {...spec,id:old.id},{...spec},{...old,id:spec.id},{...old,content:"유료 광고 포함"},{...old,locked:false},{...old,kind:"subtitle" as const},{...old,animation:spec.animation},{...old,timing:{...old.timing,endFrame:old.timing.endFrame-1}},{...old,style:{...old.style,fontFamily:"Jua" as const,fontWeight:400}}])
+      expect(thrown(()=>timelines.save(ids.main,rev,id,swap(bad))).message).toMatch("필수 표기");
     expect(thrown(()=>timelines.save(ids.main,rev,id,{...base,text:base.text.slice(1)})).message).toMatch("필수 표기");
-    const saved=timelines.save(ids.main,rev,id,{...base,text:[{...old,box:{...old.box,y:0.3}},...base.text.slice(1)]});expect(saved).toMatchObject({created:true});
+    expect(thrown(()=>timelines.save(ids.main,rev,id,{...base,text:[...base.text,{...spec}]})).message).toMatch("필수 표기");
+    expect(JSON.stringify(rows(handle))).toBe(rows0);expect(revisionOf(handle)).toBe(rev0);
+    const saved=timelines.save(ids.main,rev,id,swap({...old,box:{...old.box,y:0.3}}));expect(saved).toMatchObject({created:true});
     expect(canonicalJson({...timelines.get(ids.main).timeline!.text[0],box:null})).toBe(canonicalJson({...old,box:null}));
+    const [r1]=rows(handle);expect(timelineSha256(r1.timeline_json)).toBe(r1.timeline_sha256);expect(()=>checkTimelineRows(handle.sqlite)).not.toThrow();
   });
   it("글자만 바꿔 저장: 장면 결과·선택·자료 그대로, 새 타임라인·내용 버전, 검수 다시(잠김)",async()=>{
     const handle=open(await migratedS4()),rev=revisionOf(handle),timelines=timelineService(handle),data=timelines.get(ids.main);
