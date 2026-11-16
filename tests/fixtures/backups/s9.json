@@ -1,0 +1,227 @@
+{
+  "fixture": "s9",
+  "generatorVersion": 1,
+  "basis": "927abc8",
+  "license": "검수용 합성 원본: FFmpeg lavfi sine/pink noise를 직접 생성. 외부 음원·실제 사람 음성 없음. 사용권 승인이나 실제 인물 녹음이 아님.",
+  "zip": {
+    "sha256": "50e850aec0c2c8a3137c4280943e3de295d32e6bad9b998f0e02cf20af41ca95",
+    "sizeBytes": 1304161
+  },
+  "backupId": "01a1e8a4-0000-7000-8000-000000000011",
+  "migrations": [
+    {
+      "version": 1,
+      "name": "0001_initial.sql",
+      "sha256": "ee96edd4ecfed0d1c707f0efaa922c421c533cd6562d9b887f3b213c0ca31fa0"
+    },
+    {
+      "version": 2,
+      "name": "0002_ownership.sql",
+      "sha256": "6d7b88304f9c2416d544b7f678ae7054a22d072bd8ad95c51a71d9cd5c1420ed"
+    },
+    {
+      "version": 3,
+      "name": "0003_edit_snapshots.sql",
+      "sha256": "9782fed4c886a4ee37954bf6c1945d165e240b1e8509732e48b704449c409c1e"
+    },
+    {
+      "version": 4,
+      "name": "0004_audit_backups.sql",
+      "sha256": "6ff0cacf3edbc1b0c0911803f38ce01e39ede50a4f7357c2fe779472f91863c3"
+    },
+    {
+      "version": 5,
+      "name": "0005_timeline_revisions.cjs",
+      "sha256": "6a012009fd045439d6d3af8ad2021043fec475aadf10fd942b6585c9e88f0061"
+    },
+    {
+      "version": 6,
+      "name": "0006_renders.sql",
+      "sha256": "0bedf2afb9db707b255917707a364ed6a30f35b8d97dfb660485e2e7aea0d19e"
+    },
+    {
+      "version": 7,
+      "name": "0007_render_guards.sql",
+      "sha256": "3d1f6a58331c7660c3944e14e19b73d4e7bdd9a2a1319c430355e31c43532f3a"
+    },
+    {
+      "version": 8,
+      "name": "0008_timeline_audio.sql",
+      "sha256": "04747e329610e4bc27f12a44938d8aa32791e2484607d2d31ac4d4582d9d5651"
+    },
+    {
+      "version": 9,
+      "name": "0009_render_audio.sql",
+      "sha256": "0796d137d3db503cfeb741b990067e9cc14cbc43851b486d15fa7c86599082eb"
+    }
+  ],
+  "ids": {
+    "project": "019b8b74-3f10-7137-8265-68b11d809f0c",
+    "v1": "01a1e8a4-0000-7000-8000-000000000001",
+    "v2": "01a1e8a4-0000-7000-8000-00000000000b",
+    "voice": "01a1e8a4-0000-7000-8000-000000000007",
+    "music": "01a1e8a4-0000-7000-8000-000000000008",
+    "a": "01a1e8a4-0000-7000-8000-000000000003",
+    "b": "01a1e8a4-0000-7000-8000-00000000000d",
+    "backup": "01a1e8a4-0000-7000-8000-000000000011"
+  },
+  "tools": {
+    "ffmpeg": "3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec",
+    "ffprobe": "f0d36ecbbdd3bcfac3efa078c96c7271c2e68b3810595552ac3b7f17e9a65c52"
+  },
+  "logical": {
+    "profile": "P_S9_REGEN",
+    "all": "d9548b52e86868c9e71a03c56917faf26ca8ac009dbc1a5b904541ffedc8c00e",
+    "tables": {
+      "__schema_migrations": "f059a1cffee087afa8f159aa89fa40a1d24606efc70b83c75c07f8708e4e52dd",
+      "activity_log": "d926e98ba6771726437204b5405693c9c4bd74dacf602d973a80accf444cca4f",
+      "assets": "69f061d552d116a8fd3ae4279566f47bb00a9e62b7534b79f369c6a4c06023f8",
+      "backups": "cf6a8e8d7c7a10f8a86670dbcc9e98f75c2c0087d0cf84bddaed195b4ee8739a",
+      "characters": "36cb01db9beeb2c423bb701919da98fe07ad35515b2a9fd0efab7e46d6989f6d",
+      "exports": "98e6bf8027b79518affc53c40b3548f3ce628edc38946dcad8ec39429a52df26",
+      "generations": "abe371ed98e3fbd97d5fd73b178bb2b406cebda18dd8d492da120f3eac8bdc77",
+      "jobs": "f95c1767095aead3731d849686a28667d04181e6101633e1b734df4764e55aca",
+      "plans": "94f4648e0685005c400a685f77167aea24546f9956976486e8615e946009f07d",
+      "project_assets": "8523c06ff67b98695bd22396e739c2a9227bf05d9bee80513040bdfb8f0ccdd7",
+      "project_characters": "d0a9619e0ca9ffb072c3fcb8b4fe3d34bcd27a9d8928078b5fd91e6eca9cf170",
+      "projects": "851206d109ebd0132fb5bc7d3358ef862b96f2c8a6cd3ea4ce4e858e4b367d9f",
+      "renders": "f6a0da77ce6c6183c45464904a022cd45464a2d3f2fc965a543db5f8afcb7255",
+      "review_items": "88458a73c9c15c492bbc1c8059902d9c21b8cd7e32a55fd96004cfecfe57f2f3",
+      "scene_versions": "d41dea5293c78df594fe7960afa57c9abf3892d6ccb15d1db5576b5e461b091d",
+      "scenes": "34ac845a67424892f71eec9ba81845774fe0ec1f5c7607ef2a4be30bb2d5e0c5",
+      "settings": "185da914470bcc2be19ba77bed3bf906596ea135908795ddafe05fa39ece67bc",
+      "stage_states": "caf1858ad27720ac5dff8563f2b605d1d94eb909ece4a224cdbe1f8e2fd854f4",
+      "timeline_revisions": "f8ec7a4af5abb411db8f86ea429950c872319d27930618c8f909b30b96f51115"
+    }
+  },
+  "schema": "c5b44a838b5f5f53ff4ff63f7c302ecc6789c393f001d37c398d682b6932c0cb",
+  "timelines": [
+    {
+      "id": "b869b207-ae5f-8b36-8a9e-7709732e8344",
+      "revision": 1,
+      "timeline_json": "{\"aspect\":\"9:16\",\"audio\":[],\"fps\":30,\"schemaVersion\":1,\"text\":[{\"animation\":{\"durationFrames\":0,\"easing\":\"ease-out\",\"emphasis\":\"none\",\"in\":\"none\",\"out\":\"none\"},\"box\":{\"anchor\":\"center\",\"rotation\":0,\"widthRatio\":0.76,\"x\":0.44,\"y\":0.16},\"content\":\"광고\",\"id\":\"019b8b80-e940-73e1-8ec8-e414daf9c3bf\",\"kind\":\"disclosure\",\"locked\":true,\"speakerCharacterId\":null,\"style\":{\"align\":\"center\",\"background\":null,\"color\":\"#FFFFFF\",\"fontFamily\":\"Pretendard\",\"fontSize\":28,\"fontWeight\":700,\"letterSpacing\":0,\"lineHeight\":1.3,\"maxLines\":1,\"shadow\":null,\"stroke\":null},\"timing\":{\"endFrame\":900,\"startFrame\":0}},{\"animation\":{\"durationFrames\":0,\"easing\":\"ease-out\",\"emphasis\":\"none\",\"in\":\"none\",\"out\":\"none\"},\"box\":{\"anchor\":\"center\",\"rotation\":0,\"widthRatio\":0.76,\"x\":0.44,\"y\":0.74},\"content\":\"  자막 하나 (0.125초 시작)  \",\"id\":\"019b8b80-ed28-7ed0-8d7c-420c2dd924b7\",\"kind\":\"subtitle\",\"locked\":false,\"speakerCharacterId\":null,\"style\":{\"align\":\"center\",\"background\":null,\"color\":\"#FFFFFF\",\"fontFamily\":\"Pretendard\",\"fontSize\":40,\"fontWeight\":700,\"letterSpacing\":0,\"lineHeight\":1.3,\"maxLines\":2,\"shadow\":null,\"stroke\":null},\"timing\":{\"endFrame\":75,\"startFrame\":4}},{\"animation\":{\"durationFrames\":0,\"easing\":\"ease-out\",\"emphasis\":\"none\",\"in\":\"none\",\"out\":\"none\"},\"box\":{\"anchor\":\"center\",\"rotation\":0,\"widthRatio\":0.76,\"x\":0.44,\"y\":0.74},\"content\":\"자막 둘 — 2.5초\",\"id\":\"019b8b80-f110-7ea6-81a4-8336c57fe791\",\"kind\":\"subtitle\",\"locked\":false,\"speakerCharacterId\":null,\"style\":{\"align\":\"center\",\"background\":null,\"color\":\"#FFFFFF\",\"fontFamily\":\"Pretendard\",\"fontSize\":40,\"fontWeight\":700,\"letterSpacing\":0,\"lineHeight\":1.3,\"maxLines\":2,\"shadow\":null,\"stroke\":null},\"timing\":{\"endFrame\":158,\"startFrame\":75}}],\"video\":[{\"assetId\":\"019b8b7a-3280-7510-8501-1219cc497f1f\",\"durationFrames\":90,\"id\":\"d54e9e02-3601-8fdb-b0a5-51808ccd296b\",\"sceneId\":\"019b8b75-ecc0-7a90-a8c8-fa22a5646bd0\",\"sceneVersionId\":\"019b8b7b-b920-76ad-8a78-9cc2b5e36e2f\",\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0},{\"assetId\":\"019b8b7a-80a0-7124-b1d9-551d10a19a89\",\"durationFrames\":90,\"id\":\"d671301b-750f-8de4-80ae-73f7cb9d49e2\",\"sceneId\":\"019b8b76-13d0-73ec-bf7a-3bcf08478028\",\"sceneVersionId\":\"019b8b7c-2e50-7b38-9a08-03ef1581dd02\",\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0},{\"assetId\":null,\"durationFrames\":90,\"id\":\"c133ac87-95b0-8a33-9e13-504560ab6aed\",\"sceneId\":\"019b8b76-3ae0-779e-abdc-6c717d70b2c7\",\"sceneVersionId\":null,\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0}]}",
+      "timeline_sha256": "711c8622dfe63b3a0fcf96cb117d4551e5df5fc125a2b8a06f0154d38f01e226"
+    },
+    {
+      "id": "01a1e8a4-0000-7000-8000-000000000001",
+      "revision": 2,
+      "timeline_json": "{\"aspect\":\"9:16\",\"audio\":[],\"fps\":30,\"schemaVersion\":1,\"text\":[],\"video\":[{\"assetId\":\"019b8b7a-3280-7510-8501-1219cc497f1f\",\"durationFrames\":60,\"id\":\"d54e9e02-3601-8fdb-b0a5-51808ccd296b\",\"sceneId\":\"019b8b75-ecc0-7a90-a8c8-fa22a5646bd0\",\"sceneVersionId\":\"019b8b7b-b920-76ad-8a78-9cc2b5e36e2f\",\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0},{\"assetId\":\"019b8b7a-80a0-7124-b1d9-551d10a19a89\",\"durationFrames\":60,\"id\":\"d671301b-750f-8de4-80ae-73f7cb9d49e2\",\"sceneId\":\"019b8b76-13d0-73ec-bf7a-3bcf08478028\",\"sceneVersionId\":\"019b8b7c-2e50-7b38-9a08-03ef1581dd02\",\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0}]}",
+      "timeline_sha256": "5aec890ece14f0c4d9e30de1bddb4486757108ed9cc43abecda0cec6acf1f073"
+    },
+    {
+      "id": "01a1e8a4-0000-7000-8000-00000000000b",
+      "revision": 3,
+      "timeline_json": "{\"aspect\":\"9:16\",\"audio\":[{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000007\",\"duckUnderVoice\":false,\"durationFrames\":120,\"fadeInFrames\":3,\"fadeOutFrames\":3,\"gainDb\":-4,\"id\":\"01a1e8a4-0000-7000-8000-000000000009\",\"role\":\"voice\",\"sourceInFrame\":0,\"startFrame\":0},{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000008\",\"duckUnderVoice\":true,\"durationFrames\":120,\"fadeInFrames\":3,\"fadeOutFrames\":3,\"gainDb\":-8,\"id\":\"01a1e8a4-0000-7000-8000-00000000000a\",\"role\":\"music\",\"sourceInFrame\":0,\"startFrame\":0}],\"audioJoins\":[],\"audioMixProfile\":\"p2-5-local-v1\",\"audioRights\":[{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000007\",\"createdOn\":\"2026-11-17\",\"licenseNote\":\"검수용 합성 원본: FFmpeg lavfi sine/pink noise를 직접 생성. 외부 음원·실제 사람 음성 없음. 사용권 승인이나 실제 인물 녹음이 아님.\",\"planName\":\"자체 합성 · fixture 전용\",\"sourceUrl\":null},{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000008\",\"createdOn\":\"2026-11-17\",\"licenseNote\":\"검수용 합성 원본: FFmpeg lavfi sine/pink noise를 직접 생성. 외부 음원·실제 사람 음성 없음. 사용권 승인이나 실제 인물 녹음이 아님.\",\"planName\":\"자체 합성 · fixture 전용\",\"sourceUrl\":null}],\"fps\":30,\"schemaVersion\":2,\"text\":[],\"video\":[{\"assetId\":\"019b8b7a-3280-7510-8501-1219cc497f1f\",\"durationFrames\":60,\"id\":\"d54e9e02-3601-8fdb-b0a5-51808ccd296b\",\"sceneId\":\"019b8b75-ecc0-7a90-a8c8-fa22a5646bd0\",\"sceneVersionId\":\"019b8b7b-b920-76ad-8a78-9cc2b5e36e2f\",\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0},{\"assetId\":\"019b8b7a-80a0-7124-b1d9-551d10a19a89\",\"durationFrames\":60,\"id\":\"d671301b-750f-8de4-80ae-73f7cb9d49e2\",\"sceneId\":\"019b8b76-13d0-73ec-bf7a-3bcf08478028\",\"sceneVersionId\":\"019b8b7c-2e50-7b38-9a08-03ef1581dd02\",\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0}]}",
+      "timeline_sha256": "daae2ff80360b4271a6c6fc52cd9e988283f75bacc4f6b16f21182bf55b7070b"
+    }
+  ],
+  "renders": [
+    {
+      "id": "01a1e8a4-0000-7000-8000-000000000003",
+      "timeline_rev_id": "01a1e8a4-0000-7000-8000-000000000001",
+      "input_json": "{\"contentRevision\":6,\"durationInFrames\":120,\"fonts\":[],\"media\":[{\"assetId\":\"019b8b7a-3280-7510-8501-1219cc497f1f\",\"isMock\":true,\"kind\":\"image\",\"relPath\":\"projects/019b8b74-3f10-7137-8265-68b11d809f0c/scenes/019b8b7a-3280-7510-8501-1219cc497f1f.png\",\"sha256\":\"831a7e1e7cec6be1268d408fdce74c5687ce67304027c393d0f0c0e75c7f9543\",\"sizeBytes\":94},{\"assetId\":\"019b8b7a-80a0-7124-b1d9-551d10a19a89\",\"isMock\":true,\"kind\":\"image\",\"relPath\":\"projects/019b8b74-3f10-7137-8265-68b11d809f0c/scenes/019b8b7a-80a0-7124-b1d9-551d10a19a89.png\",\"sha256\":\"b162eb1252f0363536a541c94a35b90bb8622d1c691ded7cca3643dcc4ff944b\",\"sizeBytes\":94}],\"output\":{\"audio\":\"none\",\"codec\":\"h264\",\"colorSpace\":\"bt709\",\"fps\":30,\"height\":1920,\"pixelFormat\":\"yuv420p\",\"width\":1080},\"projectId\":\"019b8b74-3f10-7137-8265-68b11d809f0c\",\"renderer\":{\"browser\":\"158.0.8127.2\",\"browserSha256\":\"40fcceffa39380a1188ead560d9dea125d1075284ad56448be0c1282e4f652a7\",\"compositionSourceSha256\":\"6133522d22de2cf71eb74a95e8d88005eebc3f157ab76002ef48fd884a1ac78b\",\"remotion\":\"4.0.543\"},\"sample\":true,\"schemaVersion\":1,\"timeline\":{\"aspect\":\"9:16\",\"audio\":[],\"fps\":30,\"schemaVersion\":1,\"text\":[],\"video\":[{\"assetId\":\"019b8b7a-3280-7510-8501-1219cc497f1f\",\"durationFrames\":60,\"id\":\"d54e9e02-3601-8fdb-b0a5-51808ccd296b\",\"sceneId\":\"019b8b75-ecc0-7a90-a8c8-fa22a5646bd0\",\"sceneVersionId\":\"019b8b7b-b920-76ad-8a78-9cc2b5e36e2f\",\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0},{\"assetId\":\"019b8b7a-80a0-7124-b1d9-551d10a19a89\",\"durationFrames\":60,\"id\":\"d671301b-750f-8de4-80ae-73f7cb9d49e2\",\"sceneId\":\"019b8b76-13d0-73ec-bf7a-3bcf08478028\",\"sceneVersionId\":\"019b8b7c-2e50-7b38-9a08-03ef1581dd02\",\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0}]},\"timelineRevId\":\"01a1e8a4-0000-7000-8000-000000000001\",\"timelineRevision\":2,\"timelineSha256\":\"5aec890ece14f0c4d9e30de1bddb4486757108ed9cc43abecda0cec6acf1f073\",\"videoFrames\":120}",
+      "input_sha256": "bfa582e846c0d2b2dc9d4ce614dc30378b8c7256fe782d1fac94dc7d90dd9858",
+      "status": "succeeded",
+      "file_path": "projects/019b8b74-3f10-7137-8265-68b11d809f0c/renders/01a1e8a4-0000-7000-8000-000000000003.mp4",
+      "sha256": "14cb78c5eb90d4708214b8e058039ab9535cacdaccfe6520c4a0e7863c6e3edf",
+      "size_bytes": 12751,
+      "verify_json": "{\"result\":\"passed\",\"items\":[{\"item\":\"container\",\"expected\":\"mp4\",\"actual\":\"mp4\",\"pass\":true},{\"item\":\"videoStreams\",\"expected\":1,\"actual\":1,\"pass\":true},{\"item\":\"codec\",\"expected\":\"h264\",\"actual\":\"h264\",\"pass\":true},{\"item\":\"pixelFormat\",\"expected\":\"yuv420p\",\"actual\":\"yuv420p\",\"pass\":true},{\"item\":\"colorRange\",\"expected\":\"tv\",\"actual\":\"tv\",\"pass\":true},{\"item\":\"colorSpace\",\"expected\":\"bt709\",\"actual\":\"bt709\",\"pass\":true},{\"item\":\"width\",\"expected\":1080,\"actual\":1080,\"pass\":true},{\"item\":\"height\",\"expected\":1920,\"actual\":1920,\"pass\":true},{\"item\":\"frameRate\",\"expected\":\"30/1\",\"actual\":\"30/1\",\"pass\":true},{\"item\":\"averageFrameRate\",\"expected\":\"30/1\",\"actual\":\"30/1\",\"pass\":true},{\"item\":\"frames\",\"expected\":120,\"actual\":120,\"pass\":true},{\"item\":\"durationSec\",\"expected\":4,\"actual\":4,\"pass\":true},{\"item\":\"audioStreams\",\"expected\":0,\"actual\":0,\"pass\":true},{\"item\":\"otherStreams\",\"expected\":0,\"actual\":0,\"pass\":true},{\"item\":\"sizeBytes\",\"expected\":\">0\",\"actual\":12751,\"pass\":true}],\"probe\":{\"codec\":\"h264\",\"pixFmt\":\"yuv420p\",\"width\":1080,\"height\":1920,\"fps\":\"30/1\",\"frames\":120,\"durationSec\":4,\"audioStreams\":0,\"otherStreams\":0,\"sizeBytes\":12751}}"
+    },
+    {
+      "id": "01a1e8a4-0000-7000-8000-00000000000d",
+      "timeline_rev_id": "01a1e8a4-0000-7000-8000-00000000000b",
+      "input_json": "{\"audioPlan\":{\"mode\":\"mix\",\"outputFrames\":120,\"profile\":\"p2-5-local-v1\",\"schemaVersion\":1,\"sources\":[{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000007\",\"durationMs\":4000,\"isMock\":false,\"relPath\":\"library/01a1e8a4-0000-7000-8000-000000000007.wav\",\"sha256\":\"2492f0d9e7f6ed53ce8aa20e13ba3e472971c407ebc8851f528cdf97fa4bb941\",\"sizeBytes\":384078},{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000008\",\"durationMs\":4000,\"isMock\":false,\"relPath\":\"library/01a1e8a4-0000-7000-8000-000000000008.wav\",\"sha256\":\"08fdd887d1ed1f732f6294e26c72e101077afb9d7b19375ee8c68f35a54f835d\",\"sizeBytes\":384078}],\"tools\":{\"ffmpeg\":\"9.0.2-essentials_build-www.gyan.dev\",\"ffmpegSha256\":\"3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec\",\"ffprobeSha256\":\"f0d36ecbbdd3bcfac3efa078c96c7271c2e68b3810595552ac3b7f17e9a65c52\"}},\"contentRevision\":7,\"durationInFrames\":120,\"fonts\":[],\"media\":[{\"assetId\":\"019b8b7a-3280-7510-8501-1219cc497f1f\",\"isMock\":true,\"kind\":\"image\",\"relPath\":\"projects/019b8b74-3f10-7137-8265-68b11d809f0c/scenes/019b8b7a-3280-7510-8501-1219cc497f1f.png\",\"sha256\":\"831a7e1e7cec6be1268d408fdce74c5687ce67304027c393d0f0c0e75c7f9543\",\"sizeBytes\":94},{\"assetId\":\"019b8b7a-80a0-7124-b1d9-551d10a19a89\",\"isMock\":true,\"kind\":\"image\",\"relPath\":\"projects/019b8b74-3f10-7137-8265-68b11d809f0c/scenes/019b8b7a-80a0-7124-b1d9-551d10a19a89.png\",\"sha256\":\"b162eb1252f0363536a541c94a35b90bb8622d1c691ded7cca3643dcc4ff944b\",\"sizeBytes\":94}],\"output\":{\"audio\":\"aac\",\"codec\":\"h264\",\"colorSpace\":\"bt709\",\"fps\":30,\"height\":1920,\"pixelFormat\":\"yuv420p\",\"width\":1080},\"projectId\":\"019b8b74-3f10-7137-8265-68b11d809f0c\",\"renderer\":{\"browser\":\"158.0.8127.2\",\"browserSha256\":\"40fcceffa39380a1188ead560d9dea125d1075284ad56448be0c1282e4f652a7\",\"compositionSourceSha256\":\"6133522d22de2cf71eb74a95e8d88005eebc3f157ab76002ef48fd884a1ac78b\",\"remotion\":\"4.0.543\"},\"sample\":true,\"schemaVersion\":1,\"timeline\":{\"aspect\":\"9:16\",\"audio\":[{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000007\",\"duckUnderVoice\":false,\"durationFrames\":120,\"fadeInFrames\":3,\"fadeOutFrames\":3,\"gainDb\":-4,\"id\":\"01a1e8a4-0000-7000-8000-000000000009\",\"role\":\"voice\",\"sourceInFrame\":0,\"startFrame\":0},{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000008\",\"duckUnderVoice\":true,\"durationFrames\":120,\"fadeInFrames\":3,\"fadeOutFrames\":3,\"gainDb\":-8,\"id\":\"01a1e8a4-0000-7000-8000-00000000000a\",\"role\":\"music\",\"sourceInFrame\":0,\"startFrame\":0}],\"audioJoins\":[],\"audioMixProfile\":\"p2-5-local-v1\",\"audioRights\":[{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000007\",\"createdOn\":\"2026-11-17\",\"licenseNote\":\"검수용 합성 원본: FFmpeg lavfi sine/pink noise를 직접 생성. 외부 음원·실제 사람 음성 없음. 사용권 승인이나 실제 인물 녹음이 아님.\",\"planName\":\"자체 합성 · fixture 전용\",\"sourceUrl\":null},{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000008\",\"createdOn\":\"2026-11-17\",\"licenseNote\":\"검수용 합성 원본: FFmpeg lavfi sine/pink noise를 직접 생성. 외부 음원·실제 사람 음성 없음. 사용권 승인이나 실제 인물 녹음이 아님.\",\"planName\":\"자체 합성 · fixture 전용\",\"sourceUrl\":null}],\"fps\":30,\"schemaVersion\":2,\"text\":[],\"video\":[{\"assetId\":\"019b8b7a-3280-7510-8501-1219cc497f1f\",\"durationFrames\":60,\"id\":\"d54e9e02-3601-8fdb-b0a5-51808ccd296b\",\"sceneId\":\"019b8b75-ecc0-7a90-a8c8-fa22a5646bd0\",\"sceneVersionId\":\"019b8b7b-b920-76ad-8a78-9cc2b5e36e2f\",\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0},{\"assetId\":\"019b8b7a-80a0-7124-b1d9-551d10a19a89\",\"durationFrames\":60,\"id\":\"d671301b-750f-8de4-80ae-73f7cb9d49e2\",\"sceneId\":\"019b8b76-13d0-73ec-bf7a-3bcf08478028\",\"sceneVersionId\":\"019b8b7c-2e50-7b38-9a08-03ef1581dd02\",\"transition\":{\"durationFrames\":0,\"type\":\"cut\"},\"trimInFrames\":0,\"trimOutFrames\":0}]},\"timelineRevId\":\"01a1e8a4-0000-7000-8000-00000000000b\",\"timelineRevision\":3,\"timelineSha256\":\"daae2ff80360b4271a6c6fc52cd9e988283f75bacc4f6b16f21182bf55b7070b\",\"videoFrames\":120}",
+      "input_sha256": "d247cc0e8c4e330a1d47af9d1392165b7a5c0720a10be72ae2bfb173fba20447",
+      "status": "succeeded",
+      "file_path": "projects/019b8b74-3f10-7137-8265-68b11d809f0c/renders/01a1e8a4-0000-7000-8000-00000000000d.mp4",
+      "sha256": "8ac6ab8486d2fbef9ae9527e41b39f416f3a1442aeb0f4d52a1081e2e68bfcab",
+      "size_bytes": 112914,
+      "verify_json": "{\"result\":\"passed\",\"items\":[{\"item\":\"container\",\"expected\":\"mp4\",\"actual\":\"mp4\",\"pass\":true},{\"item\":\"videoStreams\",\"expected\":1,\"actual\":1,\"pass\":true},{\"item\":\"codec\",\"expected\":\"h264\",\"actual\":\"h264\",\"pass\":true},{\"item\":\"pixelFormat\",\"expected\":\"yuv420p\",\"actual\":\"yuv420p\",\"pass\":true},{\"item\":\"colorRange\",\"expected\":\"tv\",\"actual\":\"tv\",\"pass\":true},{\"item\":\"colorSpace\",\"expected\":\"bt709\",\"actual\":\"bt709\",\"pass\":true},{\"item\":\"width\",\"expected\":1080,\"actual\":1080,\"pass\":true},{\"item\":\"height\",\"expected\":1920,\"actual\":1920,\"pass\":true},{\"item\":\"frameRate\",\"expected\":\"30/1\",\"actual\":\"30/1\",\"pass\":true},{\"item\":\"averageFrameRate\",\"expected\":\"30/1\",\"actual\":\"30/1\",\"pass\":true},{\"item\":\"frames\",\"expected\":120,\"actual\":120,\"pass\":true},{\"item\":\"durationSec\",\"expected\":4,\"actual\":4,\"pass\":true},{\"item\":\"audioStreams\",\"expected\":1,\"actual\":1,\"pass\":true},{\"item\":\"otherStreams\",\"expected\":0,\"actual\":0,\"pass\":true},{\"item\":\"sizeBytes\",\"expected\":\">0\",\"actual\":112914,\"pass\":true},{\"item\":\"audioCodec\",\"expected\":\"aac\",\"actual\":\"aac\",\"pass\":true},{\"item\":\"audioProfile\",\"expected\":\"LC\",\"actual\":\"LC\",\"pass\":true},{\"item\":\"audioSampleRate\",\"expected\":48000,\"actual\":48000,\"pass\":true},{\"item\":\"audioChannels\",\"expected\":2,\"actual\":2,\"pass\":true},{\"item\":\"audioDecodedSamples\",\"expected\":192000,\"actual\":192000,\"pass\":true},{\"item\":\"audioInitialPadding\",\"expected\":\"record\",\"actual\":1024,\"pass\":true},{\"item\":\"videoStreamSha256\",\"expected\":\"b276e947227777334aa1ba07fbba64f33b31f86550c87c07db392826ee4dcdbc\",\"actual\":\"b276e947227777334aa1ba07fbba64f33b31f86550c87c07db392826ee4dcdbc\",\"pass\":true},{\"item\":\"audioStatus\",\"expected\":\"normalized|silent|too_short\",\"actual\":\"normalized\",\"pass\":true},{\"item\":\"loudnessIntegrated\",\"expected\":\"-14±1\",\"actual\":-14,\"pass\":true},{\"item\":\"truePeak\",\"expected\":\"<=-1\",\"actual\":-11.5,\"pass\":true}],\"probe\":{\"codec\":\"h264\",\"pixFmt\":\"yuv420p\",\"width\":1080,\"height\":1920,\"fps\":\"30/1\",\"frames\":120,\"durationSec\":4,\"audioStreams\":1,\"otherStreams\":0,\"sizeBytes\":112914},\"audio\":{\"mode\":\"aac\",\"profile\":\"p2-5-local-v1\",\"tools\":{\"ffmpeg\":\"9.0.2-essentials_build-www.gyan.dev\",\"ffmpegSha256\":\"3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec\",\"ffprobeSha256\":\"f0d36ecbbdd3bcfac3efa078c96c7271c2e68b3810595552ac3b7f17e9a65c52\"},\"status\":\"normalized\",\"accepted\":true,\"target\":{\"integrated\":-14,\"truePeak\":-2,\"range\":7,\"tolerance\":1,\"truePeakMax\":-1},\"sources\":[{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000007\",\"sha256\":\"2492f0d9e7f6ed53ce8aa20e13ba3e472971c407ebc8851f528cdf97fa4bb941\",\"channels\":1,\"decodedSamples\":192000},{\"assetId\":\"01a1e8a4-0000-7000-8000-000000000008\",\"sha256\":\"08fdd887d1ed1f732f6294e26c72e101077afb9d7b19375ee8c68f35a54f835d\",\"channels\":1,\"decodedSamples\":192000}],\"mix\":{\"sha256\":\"cc7fe6f2bf32dc1bcb205202642c76346c630e798427b05e53cd0428f432f75d\",\"samples\":192000,\"peak\":0.1018088236451149},\"loudness\":{\"preGainDb\":0,\"inputI\":-22.32,\"inputTp\":-19.8,\"inputLra\":0,\"inputThresh\":-32.32,\"targetOffset\":-0.05,\"normalizationType\":\"dynamic\",\"outputI\":-13.99,\"outputTp\":-11.48},\"final\":{\"integrated\":-14,\"range\":0.1,\"truePeak\":-11.5},\"childFinal\":{\"integrated\":-14,\"range\":0.1,\"truePeak\":-11.5},\"output\":{\"decodedSamples\":192000,\"initialPadding\":1024,\"videoStreamSha256\":\"b276e947227777334aa1ba07fbba64f33b31f86550c87c07db392826ee4dcdbc\"}}}"
+    }
+  ],
+  "audioSources": [
+    {
+      "id": "01a1e8a4-0000-7000-8000-000000000007",
+      "kind": "audio",
+      "title": "[가상] s9 합성 목소리 역할 (sine)",
+      "file_path": "library/01a1e8a4-0000-7000-8000-000000000007.wav",
+      "mime": "audio/wav",
+      "size_bytes": 384078,
+      "sha256": "2492f0d9e7f6ed53ce8aa20e13ba3e472971c407ebc8851f528cdf97fa4bb941",
+      "duration_ms": 4000,
+      "rights_note": "검수용 합성 원본: FFmpeg lavfi sine/pink noise를 직접 생성. 외부 음원·실제 사람 음성 없음. 사용권 승인이나 실제 인물 녹음이 아님."
+    },
+    {
+      "id": "01a1e8a4-0000-7000-8000-000000000008",
+      "kind": "audio",
+      "title": "[가상] s9 합성 배경음 (pink seed156)",
+      "file_path": "library/01a1e8a4-0000-7000-8000-000000000008.wav",
+      "mime": "audio/wav",
+      "size_bytes": 384078,
+      "sha256": "08fdd887d1ed1f732f6294e26c72e101077afb9d7b19375ee8c68f35a54f835d",
+      "duration_ms": 4000,
+      "rights_note": "검수용 합성 원본: FFmpeg lavfi sine/pink noise를 직접 생성. 외부 음원·실제 사람 음성 없음. 사용권 승인이나 실제 인물 녹음이 아님."
+    }
+  ],
+  "files": [
+    {
+      "path": "storage/library/019b8b75-5080-7b60-8131-e74f117df323.png",
+      "sha256": "935389466b4fc1f5991abcab9257a3347392843df7456986f9f2bbd4bfd2ccf6",
+      "sizeBytes": 94
+    },
+    {
+      "path": "storage/library/019b8b75-7790-7de9-9f7f-ffa502b5f2da.png",
+      "sha256": "251a64b5e274678a4c7b1f1c56c77edb274f8b368964e1aadc5999776fc9077a",
+      "sizeBytes": 94
+    },
+    {
+      "path": "storage/library/019b8b75-c5b0-7e7c-be59-b154121b47ee.txt",
+      "sha256": "07670d2b82fab2932b4782e654cb4d7e4e8d58377ff397bd1492b46e7b57acb1",
+      "sizeBytes": 24
+    },
+    {
+      "path": "storage/library/01a1e8a4-0000-7000-8000-000000000007.wav",
+      "sha256": "2492f0d9e7f6ed53ce8aa20e13ba3e472971c407ebc8851f528cdf97fa4bb941",
+      "sizeBytes": 384078
+    },
+    {
+      "path": "storage/library/01a1e8a4-0000-7000-8000-000000000008.wav",
+      "sha256": "08fdd887d1ed1f732f6294e26c72e101077afb9d7b19375ee8c68f35a54f835d",
+      "sizeBytes": 384078
+    },
+    {
+      "path": "storage/projects/019b8b74-3f10-7137-8265-68b11d809f0c/exports/019b8b7e-c660-76f3-bf49-a774b6f120d5.zip",
+      "sha256": "d3e0ece1169b093d4bc0918afcb9fa5bf9646e375de1c11bb4459d016fcf1ffc",
+      "sizeBytes": 1809
+    },
+    {
+      "path": "storage/projects/019b8b74-3f10-7137-8265-68b11d809f0c/renders/01a1e8a4-0000-7000-8000-000000000003.mp4",
+      "sha256": "14cb78c5eb90d4708214b8e058039ab9535cacdaccfe6520c4a0e7863c6e3edf",
+      "sizeBytes": 12751
+    },
+    {
+      "path": "storage/projects/019b8b74-3f10-7137-8265-68b11d809f0c/renders/01a1e8a4-0000-7000-8000-00000000000d.mp4",
+      "sha256": "8ac6ab8486d2fbef9ae9527e41b39f416f3a1442aeb0f4d52a1081e2e68bfcab",
+      "sizeBytes": 112914
+    },
+    {
+      "path": "storage/projects/019b8b74-3f10-7137-8265-68b11d809f0c/scenes/019b8b7a-3280-7510-8501-1219cc497f1f.png",
+      "sha256": "831a7e1e7cec6be1268d408fdce74c5687ce67304027c393d0f0c0e75c7f9543",
+      "sizeBytes": 94
+    },
+    {
+      "path": "storage/projects/019b8b74-3f10-7137-8265-68b11d809f0c/scenes/019b8b7a-5990-77dd-b2cf-909b51ebf2e3.png",
+      "sha256": "1753a2a005e9b2459b7ac970c4849076d0ce3ca0560db98acf677590dcc34cc8",
+      "sizeBytes": 94
+    },
+    {
+      "path": "storage/projects/019b8b74-3f10-7137-8265-68b11d809f0c/scenes/019b8b7a-80a0-7124-b1d9-551d10a19a89.png",
+      "sha256": "b162eb1252f0363536a541c94a35b90bb8622d1c691ded7cca3643dcc4ff944b",
+      "sizeBytes": 94
+    }
+  ],
+  "videoPackets": {
+    "01a1e8a4-0000-7000-8000-000000000003": "b276e947227777334aa1ba07fbba64f33b31f86550c87c07db392826ee4dcdbc",
+    "01a1e8a4-0000-7000-8000-00000000000d": "b276e947227777334aa1ba07fbba64f33b31f86550c87c07db392826ee4dcdbc"
+  }
+}
