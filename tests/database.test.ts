@@ -31,8 +31,8 @@ function plan(projectId:string) {
   const id=v7();handle.db.insert(schema.plans).values({id,projectId,version:1,stepsJson:"[]",script:"샘플 대본",status:"draft"}).run();return id;
 }
 describe("P1 데이터베이스",()=>{
- it("16개 테이블·Drizzle 칼럼 일치와 외래키 활성화를 확인한다",()=>{
-   expect(Object.keys(schema)).toHaveLength(16);
+ it("17개 테이블(P2-1 timeline_revisions 포함)·Drizzle 칼럼 일치와 외래키 활성화를 확인한다",()=>{
+   expect(Object.keys(schema)).toHaveLength(17);
    for(const table of Object.values(schema)) {
     const columns=handle.sqlite.pragma(`table_info('${getTableName(table)}')`) as {name:string}[];
     expect(columns.map(c=>c.name)).toEqual(getTableConfig(table).columns.map(c=>c.name));

@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only",()=>({}));
 import { openDatabase, type DatabaseHandle } from "@/lib/db/connection";
 import { checkSqlText, codeMigration, codeMigrationSha256, CODE_MIGRATION_FORMAT, isCertifiedCodeMigration, MigrationSourceError, type CodeStepDefinition } from "@/lib/db/code-migration";
-import { journal, migrateDatabase, migrationEntry, productMigrations, type Migration } from "@/lib/db/migrate";
+import { journal, migrateDatabase, migrationEntry, productSqlMigrations, type Migration } from "@/lib/db/migrate";
 import { migrateLiveDatabase } from "@/lib/db/live-migrate";
 import { readBackupManifest, verifyBackupArchive } from "@/lib/backup/archive";
 import type { BackupManifest } from "@/lib/backup/schema";
@@ -28,7 +28,7 @@ afterEach(async()=>{vi.unstubAllEnvs();handle?.close();handle=undefined;expect(a
 
 const sha=(text:string)=>createHash("sha256").update(text).digest("hex");
 const lf=(text:string)=>text.replace(/\r\n/g,"\n");
-const CODE_LIST=()=>[...productMigrations(),test5Code()];
+const CODE_LIST=()=>[...productSqlMigrations(),test5Code()];
 async function s4(name:string){const into=join(root,name);const manifest=await readBackupManifest(S4_ZIP);await verifyBackupArchive(S4_ZIP,manifest,into);return join(into,"data/app.db");}
 const snap=(file:string)=>{const sqlite=new Database(file,{readonly:true,fileMustExist:true});try{return snapshotDb(sqlite);}finally{sqlite.close();}};
 const without=(snapshot:ReturnType<typeof snapshotDb>,...names:string[])=>{const copy=new Map(snapshot);for(const name of names)copy.delete(name);return copy;};
@@ -47,7 +47,7 @@ const proofRows=(file:string)=>{const sqlite=new Database(file,{readonly:true});
 
 describe("계약: 원문 해시, 실행은 해시한 원문에서만",()=>{
   it("SQL 단계 해시는 그대로(파일 원문 sha256, 고정 백업 s4 기록과 같음)",async()=>{
-    const product=productMigrations();
+    const product=productSqlMigrations();
     for(const migration of product){expect(migration.kind).toBeUndefined();expect(migration.run).toBeUndefined();expect(migration.sha256).toBe(sha(lf(readFileSync(join(process.cwd(),"lib/db/migrations",migration.name),"utf8"))));}
     expect((await readBackupManifest(S4_ZIP)).migrations).toEqual(product.map(({version,name,sha256})=>({version,name,sha256})));
     expect(migrationEntry(1,product[0].name,product[0].sql).sha256).toBe(product[0].sha256);
@@ -76,7 +76,7 @@ describe("계약: 원문 해시, 실행은 해시한 원문에서만",()=>{
     // A copy whose entry really changes: its new text is what runs (rows carry the new source label).
     const other=join(root,"edited");copySources(other);const path=join(other,TEST5_CODE_FILES[0]);writeFileSync(path,readFileSync(path,"utf8").replace('"p1-migration"','"p1-edited"'));
     const edited=test5Code({root:other,sha256:codeMigrationSha256(readAll(other,TEST5_CODE_FILES))});expect(edited.sha256).not.toBe(TEST5_CODE_SHA256);
-    const file=await s4("edited-run");migrateFile(file,[...productMigrations(),edited]);
+    const file=await s4("edited-run");migrateFile(file,[...productSqlMigrations(),edited]);
     const sqlite=new Database(file,{readonly:true});try{expect(sqlite.prepare("SELECT DISTINCT source FROM test_k6_timeline").all()).toEqual([{source:"p1-edited"}]);}finally{sqlite.close();}
   });
   it("실행 파일 식별: 같은 두 원문을 [A,B]/[B,A]로 주면 해시가 다르고, A 선언으로 B를 실행할 수 없다",async()=>{
@@ -85,7 +85,7 @@ describe("계약: 원문 해시, 실행은 해시한 원문에서만",()=>{
     const ab=["p/a.cjs","p/b.cjs"],ba=["p/b.cjs","p/a.cjs"],hashAB=codeMigrationSha256(readAll(base,ab)),hashBA=codeMigrationSha256(readAll(base,ba));expect(hashAB).not.toBe(hashBA);
     const define=(list:string[],sha256:string)=>codeMigration({version:5,name:"0005_probe.cjs",files:list,sha256,root:base});
     expect(()=>define(ba,hashAB)).toThrow(/원문 해시/);expect(()=>define(ab,hashBA)).toThrow(/원문 해시/);
-    const results:unknown[]=[];for(const [list,sha256] of [[ab,hashAB],[ba,hashBA]] as const){const file=await s4(`entry-${list[0].slice(2,3)}`);migrateFile(file,[...productMigrations(),define([...list],sha256)]);results.push({journal:(()=>{const d=new Database(file,{readonly:true});try{return journal(d)?.at(-1);}finally{d.close();}})(),rows:proofRows(file)});}
+    const results:unknown[]=[];for(const [list,sha256] of [[ab,hashAB],[ba,hashBA]] as const){const file=await s4(`entry-${list[0].slice(2,3)}`);migrateFile(file,[...productSqlMigrations(),define([...list],sha256)]);results.push({journal:(()=>{const d=new Database(file,{readonly:true});try{return journal(d)?.at(-1);}finally{d.close();}})(),rows:proofRows(file)});}
     expect(results).toEqual([{journal:{version:5,name:"0005_probe.cjs",sha256:hashAB},rows:[{value:"1"}]},{journal:{version:5,name:"0005_probe.cjs",sha256:hashBA},rows:[{value:"2"}]}]);
   });
   it("F050-1: 실행 함수·모듈을 넘길 수 없다(module·run·sql·entry 항목 거부)",()=>{
@@ -112,7 +112,7 @@ describe("계약: 원문 해시, 실행은 해시한 원문에서만",()=>{
   it("codeMigration이 만들지 않은 실행 코드는 어떤 단계도 적용하기 전에 거부한다",async()=>{
     const file=await s4("forged"),before=snap(file),real=test5Code();
     const forged:Migration[]=[{...real},{...migrationEntry(5,"0005_test_only_code.cjs",real.sql),run:real.run},{...migrationEntry(5,"0005_x.sql",real.sql),kind:"code"}];
-    for(const five of forged)expect(()=>migrateFile(file,[...productMigrations(),five])).toThrow(MigrationSourceError);
+    for(const five of forged)expect(()=>migrateFile(file,[...productSqlMigrations(),five])).toThrow(MigrationSourceError);
     expect(snap(file)).toEqual(before);
   });
 });
@@ -133,7 +133,7 @@ describe("로더: 목록 안 원문만, 정해진 형식만 (F050-2)",()=>{
   });
   it("run 안에서 늦게 부르는 목록 밖 require도 실패하고 전부 되돌린다",async()=>{
     const make=probe("lazy",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES ('x')");require('./outside.cjs');};`});
-    const file=await s4("lazy-db"),before=snap(file);expect(()=>migrateFile(file,[...productMigrations(),make()])).toThrow(/목록 밖 의존/);expect(snap(file)).toEqual(before);
+    const file=await s4("lazy-db"),before=snap(file);expect(()=>migrateFile(file,[...productSqlMigrations(),make()])).toThrow(/목록 밖 의존/);expect(snap(file)).toEqual(before);
   });
   it("모듈은 한 번만 불러오고 순환은 CommonJS처럼 부분 exports를 본다",()=>{
     const make=probe("cycle",{"p/entry.cjs":"const a=require('./a.cjs');const again=require('./a.cjs');if(a!==again)throw new Error('not cached');if(a.loads!==1)throw new Error('loaded twice');if(a.sawPartial!==true)throw new Error('cycle');module.exports.run=function(db){};","p/a.cjs":"module.exports.loads=(module.exports.loads||0)+1;module.exports.early=true;require('./b.cjs');module.exports.sawPartial=require('./b.cjs').saw;","p/b.cjs":"module.exports.saw=require('./a.cjs').early===true;"});
@@ -147,14 +147,14 @@ describe("로더: 목록 안 원문만, 정해진 형식만 (F050-2)",()=>{
   it("시간 제한: 최상위 무한 반복은 불러오기에서, run 무한 반복은 실행에서 끊고 되돌린다",async()=>{
     expect(()=>probe("loop-load",{"p/entry.cjs":"for(;;){}\nmodule.exports.run=function(db){};"})()).toThrow(/불러오는 중 실패/);
     const make=probe("loop-run",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES ('x')");for(;;){}};`},{runTimeoutMs:200});
-    const file=await s4("loop-db"),before=snap(file);expect(()=>migrateFile(file,[...productMigrations(),make()])).toThrow(/시간 제한 200ms/);expect(snap(file)).toEqual(before);
+    const file=await s4("loop-db"),before=snap(file);expect(()=>migrateFile(file,[...productSqlMigrations(),make()])).toThrow(/시간 제한 200ms/);expect(snap(file)).toEqual(before);
   });
   it("비동기: async run은 등록 거부(동기 전용 규칙), Promise는 만들 수 없어 거부하고 되돌린다(늦은 쓰기 없음)",async()=>{
     expect(()=>probe("async",{"p/entry.cjs":"module.exports.run=async function(db){};"})()).toThrow(/동기 코드만 쓸 수 있어요 \('async'/);
     // The queued write targets an existing table and the connection stays open, so a write after rollback would land.
     const make=probe("thenable",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){return Promise.resolve().then(()=>db.exec("INSERT INTO settings(key,value_json) VALUES ('late.write','1')"));};`});
     const file=await s4("thenable-db"),before=snap(file),sqlite=new Database(file);
-    try{expect(()=>migrateDatabase(sqlite,{migrations:[...productMigrations(),make()],now})).toThrow(/Promise/);await new Promise(resolve=>setTimeout(resolve,50));expect(sqlite.prepare("SELECT key FROM settings WHERE key='late.write'").all()).toEqual([]);}finally{sqlite.close();}
+    try{expect(()=>migrateDatabase(sqlite,{migrations:[...productSqlMigrations(),make()],now})).toThrow(/Promise/);await new Promise(resolve=>setTimeout(resolve,50));expect(sqlite.prepare("SELECT key FROM settings WHERE key='late.write'").all()).toEqual([]);}finally{sqlite.close();}
     expect(snap(file)).toEqual(before);expect(proofRows(file)).toBeNull();
   });
 });
@@ -286,16 +286,16 @@ describe("SQL 시각·난수 검출 규칙과 단계별 결정성 확인 (F050-3
   it("시험 5단계는 같은 입력·다른 시각에서 같은 결과",async()=>{expect(await sameAcrossClocks("t5",CODE_LIST)).toBe(true);},20000);
   it("규칙이 못 잡는 시각 표현은 등록되지만 단계별 동등성 확인이 잡는다(규칙은 증명이 아님)",async()=>{
     const make=probe("hidden-clock",{"p/entry.cjs":`${PROOF}module.exports.run=function(db){db.exec("INSERT INTO proof VALUES (strftime('%s', 'n' || 'ow'))");};`});
-    expect(make().kind).toBe("code");expect(await sameAcrossClocks("hidden",()=>[...productMigrations(),make()])).toBe(false);
+    expect(make().kind).toBe("code");expect(await sameAcrossClocks("hidden",()=>[...productSqlMigrations(),make()])).toBe(false);
   },20000);
 });
 
 describe("verify는 읽기 전용 검사",()=>{
   it("verify가 쓰려 하면 거부되고 전부 되돌리며, 끝나면 query_only를 원래 값으로 돌린다",async()=>{
     const file=await s4("verify-write"),before=snap(file);
-    expect(()=>migrateFile(file,[...productMigrations(),test5Code({verify:sqlite=>{sqlite.exec("DELETE FROM test_k6_timeline");}})])).toThrow(/readonly/);expect(snap(file)).toEqual(before);
+    expect(()=>migrateFile(file,[...productSqlMigrations(),test5Code({verify:sqlite=>{sqlite.exec("DELETE FROM test_k6_timeline");}})])).toThrow(/readonly/);expect(snap(file)).toEqual(before);
     const ok=await s4("verify-ok"),sqlite=new Database(ok);
-    try{let inside:unknown;migrateDatabase(sqlite,{migrations:[...productMigrations(),test5Code({verify:db=>{inside=db.pragma("query_only",{simple:true});}})],now});expect(inside).toBe(1);expect(sqlite.pragma("query_only",{simple:true})).toBe(0);sqlite.prepare("INSERT INTO settings(key,value_json) VALUES('after.verify','1')").run();}finally{sqlite.close();}
+    try{let inside:unknown;migrateDatabase(sqlite,{migrations:[...productSqlMigrations(),test5Code({verify:db=>{inside=db.pragma("query_only",{simple:true});}})],now});expect(inside).toBe(1);expect(sqlite.pragma("query_only",{simple:true})).toBe(0);sqlite.prepare("INSERT INTO settings(key,value_json) VALUES('after.verify','1')").run();}finally{sqlite.close();}
   });
 });
 
@@ -319,7 +319,7 @@ describe("실행: 같은 트랜잭션·결정적·옛 행 보존·실패 시 전
     const file=await s4("broken"),raw=new Database(file);try{raw.prepare("INSERT INTO settings(key,value_json) VALUES(?,?)").run(`project.${"0".repeat(8)}-0000-7000-8000-${"0".repeat(12)}.edit.zz`,"{\"content_revision\":1,\"created_at\":\"2026-01-01T00:00:00.000Z\"}");}finally{raw.close();}
     const before=snap(file);expect(thrown(()=>migrateFile(file,CODE_LIST())).name).toBe("TypeError");expect(snap(file)).toEqual(before);
     const clean=await s4("verify"),cleanBefore=snap(clean);
-    expect(()=>migrateFile(clean,[...productMigrations(),test5Code({verify:()=>{throw new Error("injected");}})])).toThrow("injected");expect(snap(clean)).toEqual(cleanBefore);
+    expect(()=>migrateFile(clean,[...productSqlMigrations(),test5Code({verify:()=>{throw new Error("injected");}})])).toThrow("injected");expect(snap(clean)).toEqual(cleanBefore);
   });
   it("지금 DB 올리기: 바꾸기 전 사본을 남기고 같은 결과, 실패하면 DB 그대로·사본 남음",async()=>{
     const direct=await s4("direct");migrateFile(direct,CODE_LIST());
@@ -331,7 +331,7 @@ describe("실행: 같은 트랜잭션·결정적·옛 행 보존·실패 시 전
     const strip=(value:ReturnType<typeof snapshotDb>)=>without(without(value,"__schema_migrations"),"activity_log");
     expect(strip(snap(file))).toEqual(strip(snap(direct)));
     const failing=await s4("live-fail"),failingBefore=snap(failing),other=openDatabase(failing,{fileMustExist:true},{wal:false});
-    try{expect(()=>migrateLiveDatabase(other,{snapshotDirectory:join(root,"pre-fail"),migrations:[...productMigrations(),test5Code({verify:()=>{throw new Error("injected");}})],now})).toThrow(expect.objectContaining({code:"MIGRATION_FAILED"}));}finally{other.close();}
+    try{expect(()=>migrateLiveDatabase(other,{snapshotDirectory:join(root,"pre-fail"),migrations:[...productSqlMigrations(),test5Code({verify:()=>{throw new Error("injected");}})],now})).toThrow(expect.objectContaining({code:"MIGRATION_FAILED"}));}finally{other.close();}
     expect(snap(failing)).toEqual(failingBefore);expect(readdirSync(join(root,"pre-fail"))).toHaveLength(1);expect(existsSync(join(root,"pre"))).toBe(true);
   });
 });
@@ -345,9 +345,9 @@ function changedStep(){
 describe("기록 일치: DB·백업 기록 해시와 지금 코드 원문",()=>{
   it("지금 DB 기록의 코드 해시가 지금 원문과 다르면 아무 단계도 적용하지 않고 거부, 바뀐 원문은 실제로 다른 결과를 낸다",async()=>{
     const file=await s4("recorded");migrateFile(file,CODE_LIST());const before=snap(file);
-    expect(()=>migrateFile(file,[...productMigrations(),changedStep()])).toThrow();expect(snap(file)).toEqual(before);
+    expect(()=>migrateFile(file,[...productSqlMigrations(),changedStep()])).toThrow();expect(snap(file)).toEqual(before);
     expect(migrateFile(file,CODE_LIST())).toBe(0);expect(snap(file)).toEqual(before);
-    const fresh=await s4("changed-run");migrateFile(fresh,[...productMigrations(),changedStep()]);
+    const fresh=await s4("changed-run");migrateFile(fresh,[...productSqlMigrations(),changedStep()]);
     expect(snap(fresh).get("test_k6_timeline")).not.toEqual(before.get("test_k6_timeline"));
   });
 });
@@ -377,10 +377,10 @@ describe("백업 복원: staging에서 코드 단계로 올리기와 기록 불�
     // Each case runs in an app whose own DB was prepared with that case's list (the service refuses otherwise).
     const list=CODE_LIST();await source(list);const {zip,manifest}=await upgradedBackup();const before=await fileDigest(zip);
     expect(await service({migrations:list}).inspect({backupId:manifest.backupId,destination:join(root,"same")})).toMatchObject({compat:"same",fromVersion:5,toVersion:5});
-    const changed=[...productMigrations(),changedStep()];await source(changed,"source-changed");await register(zip,manifest);
+    const changed=[...productSqlMigrations(),changedStep()];await source(changed,"source-changed");await register(zip,manifest);
     await expect(service({migrations:changed}).inspect({backupId:manifest.backupId,destination:join(root,"changed")})).rejects.toMatchObject({code:"BACKUP_SCHEMA_MISMATCH"});
-    await source(productMigrations(),"source-older");await register(zip,manifest);
-    await expect(service({migrations:productMigrations()}).inspect({backupId:manifest.backupId,destination:join(root,"older")})).rejects.toMatchObject({code:"BACKUP_TOO_NEW"});
+    await source(productSqlMigrations(),"source-older");await register(zip,manifest);
+    await expect(service({migrations:productSqlMigrations()}).inspect({backupId:manifest.backupId,destination:join(root,"older")})).rejects.toMatchObject({code:"BACKUP_TOO_NEW"});
     expect(existsSync(join(root,"changed"))).toBe(false);expect(existsSync(join(root,"older"))).toBe(false);expect(await fileDigest(zip)).toEqual(before);
   },60000);
 });

@@ -6,6 +6,7 @@ import { compareMigrations, databaseOrigin, journal, productMigrations, verifyMi
 import { migrationFailureCopy, prepareNeededCopy, unrecordedCopy, upgradeNeededCopy, type MigrationCopy } from "./migration-copy";
 import { databaseFingerprint, keptSnapshot, migrationsFingerprint, readMigrationRecord } from "./migration-record";
 import { runtimeRoot } from "@/lib/config/runtime";
+import { MigrationSourceError } from "./code-migration";
 import type { DatabaseHandle } from "./connection";
 
 export function withDatabase<T>(operation:(handle:DatabaseHandle)=>T):T {
@@ -22,9 +23,14 @@ const copyCheck=(copy:MigrationCopy,detail:string[]=[],code?:string):DatabaseChe
 // The database is opened read-only (F043-2): the startup check never changes it.
 export function checkDatabase(root=runtimeRoot(),list?:readonly Migration[]):DatabaseCheck {
   const file=join(root,"data","app.db");
+  // T-061 D8: the code steps' files are read and checked before the database is opened (missing, changed, or the app
+  // started outside its folder). This is checked first, with or without a database file.
+  let migrations:readonly Migration[];
+  try { migrations=list??productMigrations(); }
+  catch(error) { if(error instanceof MigrationSourceError){const copy=migrationFailureCopy("MIGRATION_SOURCE",null,false);return copyCheck(copy,[],"MIGRATION_SOURCE");} return {ok:false as const,message:"데이터베이스를 열 수 없어요. npm.cmd run db:migrate를 실행하고 저장 권한을 확인해 주세요."}; }
   if(!existsSync(file))return copyCheck(prepareNeededCopy);
   try {
-    const migrations=list??productMigrations(),handle=openDatabase(file,{fileMustExist:true,readonly:true});
+    const handle=openDatabase(file,{fileMustExist:true,readonly:true});
     try {
       try { verifyMigrations(handle.sqlite,migrations); return {ok:true as const}; }
       catch(error) {

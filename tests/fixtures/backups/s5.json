@@ -1,0 +1,67 @@
+{
+  "fixture": "s5",
+  "generatorVersion": 1,
+  "zip": {
+    "sha256": "5331346f66c4f8ab325c75147202167e0eb595b28d680be4bff9be0595d5e967",
+    "sizeBytes": 326195
+  },
+  "backupId": "019b8b82-96f0-7f2a-938a-0255c856886d",
+  "migrations": [
+    {
+      "version": 1,
+      "name": "0001_initial.sql",
+      "sha256": "ee96edd4ecfed0d1c707f0efaa922c421c533cd6562d9b887f3b213c0ca31fa0"
+    },
+    {
+      "version": 2,
+      "name": "0002_ownership.sql",
+      "sha256": "6d7b88304f9c2416d544b7f678ae7054a22d072bd8ad95c51a71d9cd5c1420ed"
+    },
+    {
+      "version": 3,
+      "name": "0003_edit_snapshots.sql",
+      "sha256": "9782fed4c886a4ee37954bf6c1945d165e240b1e8509732e48b704449c409c1e"
+    },
+    {
+      "version": 4,
+      "name": "0004_audit_backups.sql",
+      "sha256": "6ff0cacf3edbc1b0c0911803f38ce01e39ede50a4f7357c2fe779472f91863c3"
+    },
+    {
+      "version": 5,
+      "name": "0005_timeline_revisions.cjs",
+      "sha256": "6a012009fd045439d6d3af8ad2021043fec475aadf10fd942b6585c9e88f0061"
+    }
+  ],
+  "logical": {
+    "profile": "P_REGEN",
+    "all": "7bda3fc79f971e5357450c6b1cda2c8b27e562c709d15cb57a8cfe475359caa1",
+    "tables": {
+      "__schema_migrations": "7a56b1071e997b2a11f0730a16e2c62b4481bd065a8adf8719abacb20e912f50",
+      "activity_log": "3c89232a7cd71fd1275bc1fb4ba14b77a3dfd356bdde3853d1696800f79ca770",
+      "assets": "df42f79b7246a7ddeffd4edb379f23acb3bd459b2b0097c99be55d2ddac3a146",
+      "backups": "10544b8233b7f2ccb0d65c7549b1c752c5655e912fe6e831706bdc10d4f59fa3",
+      "characters": "13ef8d7a8542a9a0e4710304da3cf1f0bcc3f25b239bbe5d3538fe09db0df3b2",
+      "exports": "eedcd26105fd4a72d67a9345b94c019f3d519e754d0bb5f363b1bb4fc471dc2a",
+      "generations": "28ff8be4d192ad755102c541aef1ffd4f946cf841ef8a802d898cf1e9c33d870",
+      "jobs": "8ad8a57161a807ff702f4695089be0b9e3f02d1630ca6770dee4a18a8329be3e",
+      "plans": "50a3dba968068fec5773efe1c685ade7d62065afe05bbeb54891ca35dbf83af7",
+      "project_assets": "8523c06ff67b98695bd22396e739c2a9227bf05d9bee80513040bdfb8f0ccdd7",
+      "project_characters": "d0a9619e0ca9ffb072c3fcb8b4fe3d34bcd27a9d8928078b5fd91e6eca9cf170",
+      "projects": "cf3be4625cbf75bd0bb91f13d0f96ce21d6b96471bacf4ade67496fed4cd251f",
+      "review_items": "88458a73c9c15c492bbc1c8059902d9c21b8cd7e32a55fd96004cfecfe57f2f3",
+      "scene_versions": "5269265a76acd55ef427901a51ee0cc67f1c51bd20fa5dbc88f18dabadc8e68c",
+      "scenes": "6ddd2e0b9de0a7b82c8624fcc6f4743e8808ee133e64f61ccb92e9addbe2f4fe",
+      "settings": "04330dce0ac331b62df22115bcbc9ec21671e9c01ba7401a0d108e3d527a3b1e",
+      "stage_states": "bfda9ab60a39e0ede26dcfa7f1e3b607a8e0475d8ed9348fb1744d581dab70ea",
+      "timeline_revisions": "06e74854521cfebedf960d69711a32e885796446ed2a93ec98d285c6c7a24628"
+    }
+  },
+  "schema": "b95cfbb1a6330431486629f89358a856601207bca65b0fa802bbe834f22c8b94",
+  "timeline": [
+    {
+      "id": "b869b207-ae5f-8b36-8a9e-7709732e8344",
+      "sha256": "711c8622dfe63b3a0fcf96cb117d4551e5df5fc125a2b8a06f0154d38f01e226"
+    }
+  ]
+}

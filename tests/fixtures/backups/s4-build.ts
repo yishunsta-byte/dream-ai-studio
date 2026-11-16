@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type Database from "better-sqlite3";
 import { openDatabase } from "@/lib/db/connection";
-import { migrateDatabase, type Migration } from "@/lib/db/migrate";
+import { migrateDatabase, productSqlMigrations, type Migration } from "@/lib/db/migrate";
 import { fileDigest, writeArchive, writeZip } from "@/lib/export/zip";
 import type { BundleManifest } from "@/lib/export/schema";
 import { inventoryHash, storageInventory } from "@/lib/backup/archive";
@@ -88,7 +88,7 @@ export async function exportBundleBytes(write:boolean){
 }
 export function exportManifest(ids:S4Ids):BundleManifest{return {manifestVersion:1,project:{id:ids.main,title:S4_INPUTS.projectTitle,aspect:"9:16",lengthSec:30},menu:{id:"shopping-shorts",label:"쇼핑숏츠"},templateVersion:"s4-fixture",contentRevision:4,planId:ids.plan2,exportedAt:at(735),isMock:true,kind:"editing-bundle",files:[{path:"scenes/01.png",sha256:sha(S4_FILES.result1),sizeBytes:S4_FILES.result1.length,mime:"image/png",sceneId:ids.s1,versionId:ids.v11,width:2,height:2},{path:"scenes/02.png",sha256:sha(S4_FILES.result3),sizeBytes:S4_FILES.result3.length,mime:"image/png",sceneId:ids.s2,versionId:ids.v21,width:2,height:2}]};}
 
-// Builds data/app.db and storage/ under `runtime` with the product migrations 1–4.
+// Builds data/app.db and storage/ under `runtime` with the P1 product migrations 1–4 (s4 stays a P1 backup after T-061).
 export async function buildS4Runtime(runtime:string,exportBytes:Buffer,migrations?:readonly Migration[]){
   const ids=s4Ids(),I=S4_INPUTS;
   for(const path of ["data","storage/library",`storage/projects/${ids.main}/scenes`,`storage/projects/${ids.main}/exports`])await mkdir(join(runtime,path),{recursive:true});
@@ -96,7 +96,7 @@ export async function buildS4Runtime(runtime:string,exportBytes:Buffer,migration
   for(const [path,bytes] of Object.entries(files))writeFileSync(join(runtime,"storage",path),bytes,{flag:"wx"});
   const handle=openDatabase(join(runtime,"data/app.db"));const sqlite=handle.sqlite;
   try{
-    migrateDatabase(sqlite,{migrations});
+    migrateDatabase(sqlite,{migrations:migrations??productSqlMigrations()});
     sqlite.transaction(()=>{
       const project=(id:string,title:string,revision:number,sec:number,extra:Record<string,unknown>={})=>insert(sqlite,"projects",{id,menu_id:"shopping-shorts",template_version:"s4-fixture",template_snapshot_json:json(TEMPLATE),inputs_json:json({title,goal:I.goal,target:I.target,aspect:"9:16",lengthSec:30,isAd:true,productName:I.productName,facts:I.jsonish,usageRights:I.rightsNote,nfc:I.nfc,nfd:I.nfd,emoji:I.emoji}),title,goal:I.goal,target:I.target,aspect:"9:16",length_sec:30,content_revision:revision,created_at:at(sec),updated_at:at(sec+5),...extra});
       project(ids.main,I.projectTitle,5,10);project(ids.draft,I.nfd,1,20);project(ids.archived,I.longTitle,1,30,{archived_at:at(35)});

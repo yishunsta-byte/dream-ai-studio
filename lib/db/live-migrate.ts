@@ -6,8 +6,10 @@ import Database from "better-sqlite3";
 import { editSnapshotSchema } from "@/lib/edit/schema";
 import type { DatabaseHandle } from "./connection";
 import { compareMigrations, databaseOrigin, journal, migrateDatabase, productMigrations, verifyMigrations, type Migration } from "./migrate";
+import { MigrationSourceError } from "./code-migration";
+import { checkTimelineRows } from "./timeline-data";
 
-export const liveMigrationCodes=["SCHEMA_MISMATCH","SNAPSHOT_EXISTS","SNAPSHOT_FAILED","DATABASE_BUSY","MIGRATION_FAILED"] as const;
+export const liveMigrationCodes=["SCHEMA_MISMATCH","SNAPSHOT_EXISTS","SNAPSHOT_FAILED","DATABASE_BUSY","MIGRATION_FAILED","MIGRATION_SOURCE","MIGRATION_TIMEOUT"] as const;
 export type LiveMigrationCode=typeof liveMigrationCodes[number];
 // reason "unrecorded": SCHEMA_MISMATCH because a nonempty database has no readable journal (F039-2).
 export class LiveMigrationError extends Error{constructor(readonly code:LiveMigrationCode,readonly snapshot:string|null=null,readonly reason:"unrecorded"|null=null){super(code);this.name="LiveMigrationError";}}
@@ -20,6 +22,8 @@ export function checkMigratedData(sqlite:Database.Database,migrations:readonly M
   verifyMigrations(sqlite,migrations);
   if(sqlite.pragma("integrity_check",{simple:true})!=="ok")throw new Error("Database integrity failed");
   for(const row of sqlite.prepare("SELECT value_json FROM settings WHERE key GLOB 'project.*.edit.*' AND key NOT GLOB '*.current'").all() as {value_json:string}[])editSnapshotSchema.parse(JSON.parse(row.value_json));
+  // T-061: every timeline revision reads back through the schema and its hash; every pointer stays in its project.
+  checkTimelineRows(sqlite);
 }
 
 // K-6 ⑥ / T-017 3.5: before changing the DB the app is using, keep a consistent copy as a NEW file.
@@ -59,6 +63,9 @@ export function migrateLiveDatabase(handle:DatabaseHandle,options:LiveMigrationO
   }catch(error){
     if(error instanceof LiveMigrationError)throw error;
     if((error as {code?:string})?.code==="SQLITE_BUSY")throw new LiveMigrationError("DATABASE_BUSY",path);
+    // T-061 D8: a code step's source refused while running, or its time limit, get their own codes and sentences.
+    if(error instanceof MigrationSourceError)throw new LiveMigrationError("MIGRATION_SOURCE",path);
+    if(error instanceof Error&&error.name==="MigrationTimeoutError")throw new LiveMigrationError("MIGRATION_TIMEOUT",path);
     throw new LiveMigrationError("MIGRATION_FAILED",path);
   }
 }

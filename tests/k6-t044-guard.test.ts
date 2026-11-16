@@ -10,7 +10,7 @@ import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only",()=>({}));
 import { openDatabase } from "@/lib/db/connection";
-import { databaseOrigin, migrateDatabase, productMigrations, UnrecordedDatabaseError } from "@/lib/db/migrate";
+import { databaseOrigin, migrateDatabase, productSqlMigrations, UnrecordedDatabaseError } from "@/lib/db/migrate";
 import { migrateLiveDatabase } from "@/lib/db/live-migrate";
 import { runMigrateCommand } from "@/lib/db/migrate-command";
 import { migrationFailureCopy, unrecordedCopy } from "@/lib/db/migration-copy";
@@ -41,11 +41,11 @@ function logical(file:string){
     return JSON.stringify({objects,rows,user:sqlite.pragma("user_version",{simple:true}),app:sqlite.pragma("application_id",{simple:true})});
   }finally{sqlite.close();}
 }
-function command(options:Partial<Parameters<typeof runMigrateCommand>[0]>={}){const out:string[]=[],err:string[]=[];const exit=runMigrateCommand({root,now,log:line=>out.push(line),error:line=>err.push(line),...options});return {exit,out,err};}
+function command(options:Partial<Parameters<typeof runMigrateCommand>[0]>={}){const out:string[]=[],err:string[]=[];const exit=runMigrateCommand({root,now,migrations:productSqlMigrations(),log:line=>out.push(line),error:line=>err.push(line),...options});return {exit,out,err};}
 // A product database of the first `steps` migrations, built without the app's WAL switch (like a restored copy).
 function productDb(file:string,steps:number,mode:Mode="delete"){
   mkdirSync(dirname(file),{recursive:true});const sqlite=new Database(file);
-  try{if(mode==="wal")sqlite.pragma("journal_mode = WAL");sqlite.pragma("foreign_keys = ON");sqlite.pragma("recursive_triggers = ON");migrateDatabase(sqlite,{migrations:productMigrations().slice(0,steps),now});}finally{sqlite.close();}
+  try{if(mode==="wal")sqlite.pragma("journal_mode = WAL");sqlite.pragma("foreign_keys = ON");sqlite.pragma("recursive_triggers = ON");migrateDatabase(sqlite,{migrations:productSqlMigrations().slice(0,steps),now});}finally{sqlite.close();}
   return digest(file);
 }
 const CANONICAL="version INTEGER PRIMARY KEY, name TEXT NOT NULL, sha256 TEXT NOT NULL, applied_at TEXT NOT NULL";
@@ -71,7 +71,7 @@ describe("F043-1 정확한 빈 기록 표만 새 DB로 본다",()=>{
   });
   it("진짜 빈 DB와 이 앱이 만드는 그대로의 빈 기록 표는 DELETE 모드에서도 CLI로 4단계 준비",()=>{
     build(dbFile(),"delete",`CREATE TABLE IF NOT EXISTS __schema_migrations (${CANONICAL}) STRICT;`);
-    expect(command()).toMatchObject({exit:0,out:["데이터베이스 준비 완료: 새 마이그레이션 4개"]});expect(checkDatabase(root)).toEqual({ok:true});
+    expect(command()).toMatchObject({exit:0,out:["데이터베이스 준비 완료: 새 마이그레이션 4개"]});expect(checkDatabase(root,productSqlMigrations())).toEqual({ok:true});
     rmSync(join(root,"data"),{recursive:true});build(dbFile(),"delete","");
     expect(command()).toMatchObject({exit:0,out:["데이터베이스 준비 완료: 새 마이그레이션 4개"]});expect(existsSync(snapshots())).toBe(false);
   });
@@ -89,22 +89,22 @@ describe("F043-2 시작 점검과 거부되는 CLI는 모르는 DB를 바꾸지 
   const cases=unknown.flatMap(([name,sql,pragmas])=>(["delete","wal"] as const).map(mode=>[`${name} · ${mode}`,mode,sql,pragmas] as const));
   it.each(cases)("%s: 시작 점검·CLI 거부 뒤 바이트·내용·모드 그대로, 스냅샷 없음",(_name,mode,sql,pragmas)=>{
     const before=build(dbFile(),mode,sql,pragmas),meaning=logical(dbFile()),mode0=header(dbFile());
-    const check=checkDatabase(root);expect(check.ok).toBe(false);expect(digest(dbFile())).toBe(before);
+    const check=checkDatabase(root,productSqlMigrations());expect(check.ok).toBe(false);expect(digest(dbFile())).toBe(before);
     const result=command();expect(result.exit).toBe(1);expect(result.err).toEqual([unrecordedCopy.headline,unrecordedCopy.next]);
-    expect(checkDatabase(root)).toMatchObject({ok:false,message:unrecordedCopy.headline,code:"SCHEMA_MISMATCH"});
+    expect(checkDatabase(root,productSqlMigrations())).toMatchObject({ok:false,message:unrecordedCopy.headline,code:"SCHEMA_MISMATCH"});
     expect(digest(dbFile())).toBe(before);expect(header(dbFile())).toEqual(mode0);expect(logical(dbFile())).toBe(meaning);
     if(mode==="delete")expect(existsSync(`${dbFile()}-wal`)).toBe(false);
     expect(existsSync(snapshots())).toBe(false);
   });
   it("DELETE 모드 제품 DB: 시작 점검·같은 구조 CLI는 바이트 그대로, 앞부분 DB는 사본을 남기고 올린다",()=>{
     const s4=productDb(dbFile(),4);
-    expect(checkDatabase(root)).toEqual({ok:true});expect(command()).toMatchObject({exit:0,out:["데이터베이스 준비 완료: 새 마이그레이션 0개"]});
+    expect(checkDatabase(root,productSqlMigrations())).toEqual({ok:true});expect(command()).toMatchObject({exit:0,out:["데이터베이스 준비 완료: 새 마이그레이션 0개"]});
     expect(digest(dbFile())).toBe(s4);expect(header(dbFile())).toEqual([1,1]);expect(readMigrationRecord(root)).toMatchObject({result:"succeeded",from:4,to:4});
     rmSync(join(root,"data"),{recursive:true});const s3=productDb(dbFile(),3);
-    expect(checkDatabase(root)).toMatchObject({ok:false});expect(digest(dbFile())).toBe(s3);
+    expect(checkDatabase(root,productSqlMigrations())).toMatchObject({ok:false});expect(digest(dbFile())).toBe(s3);
     const result=command();expect(result.exit).toBe(0);const [name]=readdirSync(snapshots());expect(name).toMatch(/_s3-s4\.db$/);
     expect(readMigrationRecord(root)).toMatchObject({result:"succeeded",from:3,to:4,snapshot:`backups/pre-migrate/${name}`,snapshotSha256:digest(join(snapshots(),name))});
-    expect(checkDatabase(root)).toEqual({ok:true});
+    expect(checkDatabase(root,productSqlMigrations())).toEqual({ok:true});
   });
   it("읽기 확인과 쓰기 연결 사이에 기록이 사라지면 쓰는 쪽이 다시 확인해 거부하고 사본도 만들지 않는다",()=>{
     productDb(dbFile(),3);let changed="";
@@ -118,9 +118,9 @@ describe("F043-2 시작 점검과 거부되는 CLI는 모르는 DB를 바꾸지 
     expect(header(dbFile())).toEqual([1,1]);expect(logical(dbFile())).toBe(meaning);expect(existsSync(`${dbFile()}-wal`)).toBe(false);expect(existsSync(snapshots())).toBe(false);
   });
   it("F045-1 없던 경로의 진짜 새 준비와 정상 올리기·최신 no-op은 그대로 된다",()=>{
-    expect(command()).toMatchObject({exit:0,out:["데이터베이스 준비 완료: 새 마이그레이션 4개"]});expect(checkDatabase(root)).toEqual({ok:true});
+    expect(command()).toMatchObject({exit:0,out:["데이터베이스 준비 완료: 새 마이그레이션 4개"]});expect(checkDatabase(root,productSqlMigrations())).toEqual({ok:true});
     const ready=digest(dbFile());expect(command()).toMatchObject({exit:0,out:["데이터베이스 준비 완료: 새 마이그레이션 0개"]});expect(digest(dbFile())).toBe(ready);
-    rmSync(join(root,"data"),{recursive:true});productDb(dbFile(),3);expect(command().exit).toBe(0);expect(readdirSync(snapshots())).toHaveLength(1);expect(checkDatabase(root)).toEqual({ok:true});
+    rmSync(join(root,"data"),{recursive:true});productDb(dbFile(),3);expect(command().exit).toBe(0);expect(readdirSync(snapshots())).toHaveLength(1);expect(checkDatabase(root,productSqlMigrations())).toEqual({ok:true});
   });
 });
 
@@ -133,11 +133,11 @@ describe("F043-3 복사본은 열어서 확인될 때만 남았다고 말한다"
     return {file,relative,before,record:readMigrationRecord(root)!};
   }
   const kept=migrationFailureCopy("MIGRATION_FAILED",null,true),notKept=migrationFailureCopy("MIGRATION_FAILED",null,false);
-  const message=()=>{const check=checkDatabase(root);return check.ok?null:check.message;};
+  const message=()=>{const check=checkDatabase(root,productSqlMigrations());return check.ok?null:check.message;};
   it("올바른 사본은 확인되고, 확인해도 사본 바이트와 곁 파일이 생기지 않는다",()=>{
     const {file,relative,record}=failedRun(),bytes=digest(file);
     expect(record).toMatchObject({code:"MIGRATION_FAILED",snapshot:relative,snapshotSha256:bytes});
-    expect(checkDatabase(root)).toMatchObject({message:kept.headline,detail:[`바꾸기 전 복사본: ${relative}`,kept.next]});
+    expect(checkDatabase(root,productSqlMigrations())).toMatchObject({message:kept.headline,detail:[`바꾸기 전 복사본: ${relative}`,kept.next]});
     expect(digest(file)).toBe(bytes);expect(readdirSync(snapshots())).toEqual([relative.split("/").at(-1)]);
   });
   it("머리글만 맞는 512바이트 가짜 (T-043 그대로)·반으로 자른 사본·중간이 깨진 사본·다른 정상 DB는 사본이라 하지 않는다",()=>{
@@ -158,7 +158,7 @@ describe("F043-3 복사본은 열어서 확인될 때만 남았다고 말한다"
     const {snapshotSha256:_omit,...older}=record;void _omit;writeFileSync(migrationRecordPath(root),JSON.stringify(older));
     expect(readMigrationRecord(root)?.snapshotSha256).toBeUndefined();
     // Legacy record: still parsed and still explains the failure, but never with confirmed-copy wording.
-    expect(checkDatabase(root)).toMatchObject({ok:false,message:notKept.headline,detail:[notKept.next],code:"MIGRATION_FAILED"});
+    expect(checkDatabase(root,productSqlMigrations())).toMatchObject({ok:false,message:notKept.headline,detail:[notKept.next],code:"MIGRATION_FAILED"});
     writeFileSync(file,original);expect(digest(file)).toBe(bytes);expect(message()).toBe(notKept.headline);expect(keptSnapshot(root,older)).toBeNull();
     // New records: the right digest confirms, a wrong one does not.
     writeFileSync(migrationRecordPath(root),JSON.stringify(record));expect(message()).toBe(kept.headline);

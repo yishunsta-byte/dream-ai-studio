@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openPromise } from "yauzl";
 vi.mock("server-only",()=>({}));
 import { openDatabase } from "@/lib/db/connection";
-import { productMigrations } from "@/lib/db/migrate";
+import { productSqlMigrations } from "@/lib/db/migrate";
 import { fileDigest } from "@/lib/export/zip";
 import { readBackupManifest, verifyBackupArchive } from "@/lib/backup/archive";
 import { backupService, runClaimedBackup } from "@/lib/services/backups";
@@ -40,7 +40,7 @@ describe.skipIf(process.env.S4_WRITE==="1")("고정 백업 s4",()=>{
  it("A1 보관 원본: ZIP 해시·manifest·마이그레이션 4줄이 기록과 같다",async()=>{
   const expected=record();expect(await fileDigest(S4_ZIP)).toEqual(expected.zip);
   const manifest=await readBackupManifest(S4_ZIP);expect(manifest).toMatchObject({schemaVersion:1,appVersion:"0.1.0",backupId:expected.manifest.backupId,createdAt:expected.manifest.createdAt,inventorySha256:expected.manifest.inventorySha256});expect(manifest.files).toEqual(expected.manifest.files);
-  expect(manifest.migrations).toEqual(productMigrations().map(({version,name,sha256})=>({version,name,sha256})));expect(manifest.migrations.map(row=>row.sha256)).toEqual(["ee96edd4ecfed0d1c707f0efaa922c421c533cd6562d9b887f3b213c0ca31fa0","6d7b88304f9c2416d544b7f678ae7054a22d072bd8ad95c51a71d9cd5c1420ed","9782fed4c886a4ee37954bf6c1945d165e240b1e8509732e48b704449c409c1e","6ff0cacf3edbc1b0c0911803f38ce01e39ede50a4f7357c2fe779472f91863c3"]);
+  expect(manifest.migrations).toEqual(productSqlMigrations().map(({version,name,sha256})=>({version,name,sha256})));expect(manifest.migrations.map(row=>row.sha256)).toEqual(["ee96edd4ecfed0d1c707f0efaa922c421c533cd6562d9b887f3b213c0ca31fa0","6d7b88304f9c2416d544b7f678ae7054a22d072bd8ad95c51a71d9cd5c1420ed","9782fed4c886a4ee37954bf6c1945d165e240b1e8509732e48b704449c409c1e","6ff0cacf3edbc1b0c0911803f38ce01e39ede50a4f7357c2fe779472f91863c3"]);
   const described=describeDb((await extractDb(S4_ZIP,join(root,"a1"))).db);expect(described.logical).toEqual({all:expected.logical.all,tables:expected.logical.tables});expect(described.schema).toBe(expected.schema);expect(described.journal).toEqual(expected.journal);expect(checkInputs(described.snap,s4Ids())).toEqual([]);
   expect(await fileDigest(S4_EXPORT_INPUT)).toEqual(expected.inputFiles["export-r4.zip"]);const bundle=manifest.files.find(file=>file.path.endsWith(`${s4Ids().e4}.zip`))!;expect({sha256:bundle.sha256,sizeBytes:bundle.sizeBytes}).toEqual(expected.inputFiles["export-r4.zip"]);
  });

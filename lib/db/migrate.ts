@@ -3,7 +3,8 @@ import type Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isCertifiedCodeMigration, MigrationSourceError } from "./code-migration";
+import { codeMigration, isCertifiedCodeMigration, MigrationSourceError } from "./code-migration";
+import { verifyTimelineMigration } from "./timeline-data";
 
 // `verify` is the data check a step defines for itself (K-6 ③); it runs after the step is applied.
 // A code step (T-048, see code-migration.ts) also has `run`, the data transform bound to `sha256` with its `sources`;
@@ -12,8 +13,13 @@ export type Migration = { version:number; name:string; sql:string; sha256:string
 export type AppliedMigration = { version:number; name:string; sha256:string };
 const productFiles=["0001_initial.sql","0002_ownership.sql","0003_edit_snapshots.sql","0004_audit_backups.sql"];
 export function migrationEntry(version:number,name:string,sql:string):Migration{const text=sql.replace(/\r\n/g,"\n");return {version,name,sql:text,sha256:createHash("sha256").update(text).digest("hex")};}
+// Product code steps (T-061): the closed list of reviewed .cjs files (entry first) and the hash of that exact text.
+// The files are read from the app folder (cwd) on every use and must match this hash before anything runs.
+export const PRODUCT_CODE_STEPS=[{version:5,name:"0005_timeline_revisions.cjs",files:["lib/db/migrations/0005_timeline_revisions.cjs","lib/db/migrations/0005_timeline_shared.cjs"],sha256:"6a012009fd045439d6d3af8ad2021043fec475aadf10fd942b6585c9e88f0061"}] as const;
+export const productSqlMigrations=()=>productFiles.map((name,index)=>migrationEntry(index+1,name,readFileSync(join(process.cwd(),"lib/db/migrations",name),"utf8")));
 // The product list. Tests may pass an isolated list (e.g. product + a test-only step); the product never adds one at runtime.
-export function productMigrations():Migration[]{return productFiles.map((name,index)=>migrationEntry(index+1,name,readFileSync(join(process.cwd(),"lib/db/migrations",name),"utf8")));}
+// A product file that cannot be read (missing, or the app started outside its folder) is a source error (T-061 D8).
+export function productMigrations():Migration[]{let sql:Migration[];try{sql=productSqlMigrations();}catch{throw new MigrationSourceError("lib/db/migrations: 제품 마이그레이션 파일을 읽지 못했어요");}return [...sql,...PRODUCT_CODE_STEPS.map(step=>codeMigration({...step,verify:verifyTimelineMigration}))];}
 export function journal(sqlite:Database.Database):AppliedMigration[]|null{
   if(!sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='__schema_migrations'").get())return null;
   return sqlite.prepare("SELECT version,name,sha256 FROM __schema_migrations ORDER BY version").all() as AppliedMigration[];

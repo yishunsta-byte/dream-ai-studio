@@ -11,6 +11,7 @@ import { compareMigrations, journal, productMigrations, type AppliedMigration, t
 import { maintenanceRepository } from "@/lib/repo/maintenance";
 import { fileDigest, safeArchivePath } from "@/lib/export/zip";
 import { editSnapshotSchema } from "@/lib/edit/schema";
+import { checkTimelineRows } from "@/lib/db/timeline-data";
 import { backupManifestSchema, SUPPORTED_MANIFEST_VERSIONS, type BackupManifest } from "./schema";
 import { BackupCompatError } from "./compat";
 import { within } from "./paths";
@@ -63,7 +64,9 @@ export async function verifyRestoredDatabase(folder:string,manifest:BackupManife
   // An older structure is only hashed, integrity- and FK-checked here; file references and text
   // snapshots are read through the current schema, so they are checked after the staging upgrade.
   if(compat==="same"){const inventory=new Map(manifest.files.map(file=>[file.path,file]));for(const reference of maintenanceRepository(handle).fileReferences()){if(!reference.filePath)continue;const key=`storage/${reference.filePath}`,meta=inventory.get(key);if(!safeArchivePath(key)||!meta||!reference.sha256||meta.sha256!==reference.sha256||(reference.sizeBytes!==null&&meta.sizeBytes!==reference.sizeBytes))throw new Error("Database file reference differs");const actual=join(folder,key);if(!within(folder,actual)||!within(await realpath(/*turbopackIgnore: true*/folder),await realpath(/*turbopackIgnore: true*/actual)))throw new Error("Restored reference escaped");}
-  for(const row of handle.sqlite.prepare("SELECT key,value_json FROM settings WHERE key GLOB 'project.*.edit.*' AND key NOT GLOB '*.current'").all() as {key:string;value_json:string}[])editSnapshotSchema.parse(JSON.parse(row.value_json));}
+  for(const row of handle.sqlite.prepare("SELECT key,value_json FROM settings WHERE key GLOB 'project.*.edit.*' AND key NOT GLOB '*.current'").all() as {key:string;value_json:string}[])editSnapshotSchema.parse(JSON.parse(row.value_json));
+  // T-061: timeline revisions (same structure, or right after the staging upgrade) read back by schema and hash.
+  checkTimelineRows(handle.sqlite);}
   return {compat,schemaFrom:recorded.length,projects:(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM projects").get() as {n:number}).n,assets:(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM assets").get() as {n:number}).n,pendingJobs:(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM jobs WHERE status IN ('queued','running')").get() as {n:number}).n};
  }finally{handle.close();}
 }

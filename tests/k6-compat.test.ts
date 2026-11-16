@@ -8,7 +8,7 @@ import Database from "better-sqlite3";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only",()=>({}));
 import { openDatabase, type DatabaseHandle } from "@/lib/db/connection";
-import { compareMigrations, migrateDatabase, migrationEntry, productMigrations, type Migration } from "@/lib/db/migrate";
+import { compareMigrations, migrateDatabase, migrationEntry, productSqlMigrations, type Migration } from "@/lib/db/migrate";
 import { LiveMigrationError, migrateLiveDatabase } from "@/lib/db/live-migrate";
 import { fileDigest, verifyZip, writeArchive } from "@/lib/export/zip";
 import { readBackupManifest, verifyBackupArchive } from "@/lib/backup/archive";
@@ -24,7 +24,7 @@ const plain=(list:readonly Migration[])=>list.map(({version,name,sha256})=>({ver
 // Test-only step 5: a deterministic data move (edit snapshots → index table) with its own data check.
 const TEST5_SQL="CREATE TABLE test_k6_edit_index (settings_key TEXT PRIMARY KEY NOT NULL, project_id TEXT NOT NULL, content_revision INTEGER NOT NULL, layer_count INTEGER NOT NULL) STRICT;\nINSERT INTO test_k6_edit_index SELECT key, substr(key, 9, 36), json_extract(value_json,'$.content_revision'), json_array_length(value_json,'$.layers') FROM settings WHERE key GLOB 'project.*.edit.*' AND key NOT GLOB '*.current';\n";
 function test5(verify?:Migration["verify"]):Migration{return {...migrationEntry(5,"0005_test_only_k6.sql",TEST5_SQL),verify:verify??(sqlite=>{const expected=(sqlite.prepare("SELECT COUNT(*) AS n FROM settings WHERE key GLOB 'project.*.edit.*' AND key NOT GLOB '*.current'").get() as {n:number}).n,moved=(sqlite.prepare("SELECT COUNT(*) AS n FROM test_k6_edit_index i JOIN settings s ON s.key=i.settings_key WHERE i.content_revision=json_extract(s.value_json,'$.content_revision') AND i.layer_count=json_array_length(s.value_json,'$.layers')").get() as {n:number}).n;if(moved!==expected)throw new Error("test step 5 moved data differs");})};}
-const UPGRADE=()=>[...productMigrations(),test5()];
+const UPGRADE=()=>[...productSqlMigrations(),test5()];
 
 let root:string,runtime:string,handle:DatabaseHandle|undefined,time:number,committed:{sha256:string;sizeBytes:number};
 const now=()=>time,stamp=()=>new Date(time).toISOString();
@@ -34,7 +34,7 @@ afterAll(async()=>{expect(await fileDigest(S4_ZIP)).toEqual(committed);});
 beforeEach(async()=>{root=await realpath(await mkdtemp(join(tmpdir(),"dream-k6-")));time=Date.parse("2026-11-16T03:00:00Z");});
 afterEach(async()=>{vi.restoreAllMocks();vi.unstubAllEnvs();handle?.close();handle=undefined;if(dirname(await realpath(root))!==await realpath(tmpdir()))throw new Error("Temporary boundary rejected");await rm(root,{recursive:true,force:true});});
 
-async function source(migrations?:readonly Migration[]){runtime=join(root,"source");for(const path of ["data","storage","backups"])await mkdir(join(runtime,path),{recursive:true});vi.stubEnv("DREAM_DATA_ROOT",runtime);handle=openDatabase(join(runtime,"data/app.db"));migrateDatabase(handle.sqlite,{migrations,now});return handle;}
+async function source(migrations?:readonly Migration[]){runtime=join(root,"source");for(const path of ["data","storage","backups"])await mkdir(join(runtime,path),{recursive:true});vi.stubEnv("DREAM_DATA_ROOT",runtime);handle=openDatabase(join(runtime,"data/app.db"));migrateDatabase(handle.sqlite,{migrations:migrations??productSqlMigrations(),now});return handle;}
 // Registers a backup ZIP in the source instance the way a verified backup row looks (path, hashes, meta).
 async function register(zip:string,manifest:{backupId:string;createdAt:string;database:{sha256:string};inventorySha256:string;files:unknown[]}){const digest=await fileDigest(zip);handle!.sqlite.prepare("INSERT INTO backups(id,kind,path,db_sha256,file_inventory_sha256,status,created_at) VALUES(?,?,?,?,?,?,?)").run(manifest.backupId,"manual",zip,manifest.database.sha256,manifest.inventorySha256,"succeeded",manifest.createdAt);handle!.sqlite.prepare("INSERT INTO settings(key,value_json) VALUES(?,?)").run(`backup.${manifest.backupId}.meta`,JSON.stringify({zipSha256:digest.sha256,sizeBytes:digest.sizeBytes,fileCount:manifest.files.length+1,verifiedAt:stamp()}));return manifest.backupId;}
 async function archived(){const zip=join(root,"archive","s4.zip");await mkdir(dirname(zip),{recursive:true});await copyFile(S4_ZIP,zip);const manifest=await readBackupManifest(zip);await register(zip,manifest);return {zip,manifest};}
@@ -51,7 +51,8 @@ async function variant(name:string,change:{db?:(sqlite:Database.Database)=>void;
   const zip=join(root,"archive",`${name}.zip`);await mkdir(dirname(zip),{recursive:true});await writeArchive(zip,[{path:"data/app.db",filename:db},...manifest.files.map(file=>({path:file.path,filename:join(folder,file.path)})),{path:"backup-manifest.json",bytes:Buffer.from(JSON.stringify(final))}]);
   return {zip,manifest:final as unknown as BackupManifest};
 }
-const service=(options?:RestoreOptions)=>restoreService(handle!,now,options);
+// T-061: these cases prove the P1 four-step contract with a test-only step 5; the product step 5 has its own tests.
+const service=(options?:RestoreOptions)=>restoreService(handle!,now,{...options,migrations:options?.migrations??productSqlMigrations()});
 const ticketOf=(id:string)=>restoreTicketSchema.parse(JSON.parse(maintenanceRepository(handle!).setting(`restore.check.${id}`)!.valueJson));
 const business=(snapshot:DbSnap)=>new Map([...snapshot].filter(([name])=>name!=="settings"&&name!=="activity_log"));
 
@@ -153,7 +154,7 @@ describe("거부와 원본 보존 (B·C)",()=>{
   it("B1 더 새 버전(현재+5단계)은 BACKUP_TOO_NEW, staging·목적지 없음",async()=>{await rejects(await variant("too-new",{db:sqlite=>sqlite.prepare("INSERT INTO __schema_migrations VALUES(5,'0005_future.sql',?,'2026-01-06T00:00:00.000Z')").run("5".repeat(64)),manifest:addFive}),"BACKUP_TOO_NEW");});
   it("B2 기록 다름: 해시 한 글자·번호 빠짐·이름 변경은 BACKUP_SCHEMA_MISMATCH",async()=>{
     const flip=(value:string)=>`${value.slice(0,-1)}${value.endsWith("0")?"1":"0"}`;
-    await rejects(await variant("sha",{db:sqlite=>sqlite.prepare("UPDATE __schema_migrations SET sha256=? WHERE version=2").run(flip(productMigrations()[1].sha256)),manifest:m=>({...m,migrations:m.migrations.map(row=>row.version===2?{...row,sha256:flip(row.sha256)}:row)})}),"BACKUP_SCHEMA_MISMATCH");
+    await rejects(await variant("sha",{db:sqlite=>sqlite.prepare("UPDATE __schema_migrations SET sha256=? WHERE version=2").run(flip(productSqlMigrations()[1].sha256)),manifest:m=>({...m,migrations:m.migrations.map(row=>row.version===2?{...row,sha256:flip(row.sha256)}:row)})}),"BACKUP_SCHEMA_MISMATCH");
   });
   it("B2 번호 빠짐(1,2,4)",async()=>{await rejects(await variant("gap",{db:sqlite=>sqlite.exec("DELETE FROM __schema_migrations WHERE version=3"),manifest:m=>({...m,migrations:m.migrations.filter(row=>row.version!==3)})}),"BACKUP_SCHEMA_MISMATCH");});
   it("B2 이름만 변경",async()=>{await rejects(await variant("name",{db:sqlite=>sqlite.exec("UPDATE __schema_migrations SET name='0004_renamed.sql' WHERE version=4"),manifest:m=>({...m,migrations:m.migrations.map(row=>row.version===4?{...row,name:"0004_renamed.sql"}:row)})}),"BACKUP_SCHEMA_MISMATCH");});
@@ -178,8 +179,8 @@ describe("중간 실패 격리 (D1)",()=>{
     const svc=service({...options,migrations:list}),checked=await svc.inspect({backupId:ids.backup,destination});await expect(svc.finish(checked.ticketId)).rejects.toMatchObject({code});
     expect(await leftovers()).toEqual([]);expect(await empty(destination)).toBe(true);expect(ticketOf(checked.ticketId).status).toBe("failed");expect(business(snapshotDb(handle!.sqlite))).toEqual(sourceBefore);return {zip,before};
   }
-  it("올리기 트랜잭션 안에서 실패하면 BACKUP_UPGRADE_FAILED, 흔적 없음",async()=>{const failing={...migrationEntry(5,"0005_test_only_fail.sql","CREATE TABLE test_k6_fail (id TEXT PRIMARY KEY NOT NULL CHECK (0)) STRICT;\nINSERT INTO test_k6_fail SELECT id FROM projects;\n")};const {zip,before}=await failsAt({},"BACKUP_UPGRADE_FAILED",[...productMigrations(),failing]);expect(await fileDigest(zip)).toEqual(before);});
-  it("새 단계의 데이터 검사가 실패하면 BACKUP_UPGRADE_FAILED",async()=>{const list=[...productMigrations(),test5(sqlite=>{if((sqlite.prepare("SELECT COUNT(*) AS n FROM test_k6_edit_index").get() as {n:number}).n>0)throw new Error("injected");})];await failsAt({},"BACKUP_UPGRADE_FAILED",list);});
+  it("올리기 트랜잭션 안에서 실패하면 BACKUP_UPGRADE_FAILED, 흔적 없음",async()=>{const failing={...migrationEntry(5,"0005_test_only_fail.sql","CREATE TABLE test_k6_fail (id TEXT PRIMARY KEY NOT NULL CHECK (0)) STRICT;\nINSERT INTO test_k6_fail SELECT id FROM projects;\n")};const {zip,before}=await failsAt({},"BACKUP_UPGRADE_FAILED",[...productSqlMigrations(),failing]);expect(await fileDigest(zip)).toEqual(before);});
+  it("새 단계의 데이터 검사가 실패하면 BACKUP_UPGRADE_FAILED",async()=>{const list=[...productSqlMigrations(),test5(sqlite=>{if((sqlite.prepare("SELECT COUNT(*) AS n FROM test_k6_edit_index").get() as {n:number}).n>0)throw new Error("injected");})];await failsAt({},"BACKUP_UPGRADE_FAILED",list);});
   it("풀기 직후·올린 직후 주입 실패",async()=>{await failsAt({onStage:stage=>{if(stage==="extracted")throw new Error("injected");}},"BACKUP_UPGRADE_FAILED",UPGRADE());});
   it("올린 뒤 검사 지점 주입 실패",async()=>{await failsAt({onStage:stage=>{if(stage==="upgraded")throw new Error("injected");}},"BACKUP_UPGRADE_FAILED",UPGRADE());});
   it("정규화 직후 주입 실패는 RESTORE_INVALID",async()=>{await failsAt({onStage:stage=>{if(stage==="normalized")throw new Error("injected");}},"RESTORE_INVALID",UPGRADE());});
@@ -211,10 +212,10 @@ describe("지금 쓰는 DB 올리기 전 스냅샷 (E · K-6 ⑥)",()=>{
     expect(()=>migrateLiveDatabase(handle!,{snapshotDirectory:snapshots,migrations:UPGRADE(),now})).toThrow(expect.objectContaining({code:"DATABASE_BUSY"}));
     const copy=new Database(join(snapshots,expectedName()),{readonly:true,fileMustExist:true});try{expect(copy.pragma("integrity_check",{simple:true})).toBe("ok");expect(copy.prepare("SELECT 1 FROM settings WHERE key='e3.uncommitted'").get()).toBeUndefined();}finally{copy.close();}
     other.exec("ROLLBACK");expect(journalLength(handle!.sqlite)).toBe(4);}finally{other.close();}});
-  it("E4 이관 중 실패하면 DB는 그대로이고 스냅샷은 남는다",async()=>{const {snapshots}=await live();const before=snapshotDb(handle!.sqlite);const list=[...productMigrations(),test5(()=>{throw new Error("injected");})];
+  it("E4 이관 중 실패하면 DB는 그대로이고 스냅샷은 남는다",async()=>{const {snapshots}=await live();const before=snapshotDb(handle!.sqlite);const list=[...productSqlMigrations(),test5(()=>{throw new Error("injected");})];
     expect(()=>migrateLiveDatabase(handle!,{snapshotDirectory:snapshots,migrations:list,now})).toThrow(expect.objectContaining({code:"MIGRATION_FAILED"}));expect(snapshotDb(handle!.sqlite)).toEqual(before);
     const copy=new Database(join(snapshots,expectedName()),{readonly:true,fileMustExist:true});try{expect(copy.pragma("integrity_check",{simple:true})).toBe("ok");}finally{copy.close();}});
-  it("같은 구조면 스냅샷 없이 그대로, 새 DB는 스냅샷 없이 전부 적용, 다른 기록은 거부",async()=>{const {snapshots}=await live();expect(migrateLiveDatabase(handle!,{snapshotDirectory:snapshots,now})).toEqual({applied:0,from:4,to:4,snapshot:null});expect(existsSync(snapshots)).toBe(false);
-    const fresh=openDatabase(join(root,"fresh.db"));try{expect(migrateLiveDatabase(fresh,{snapshotDirectory:snapshots,now})).toEqual({applied:4,from:0,to:4,snapshot:null});}finally{fresh.close();}
+  it("같은 구조면 스냅샷 없이 그대로, 새 DB는 스냅샷 없이 전부 적용, 다른 기록은 거부",async()=>{const {snapshots}=await live();expect(migrateLiveDatabase(handle!,{snapshotDirectory:snapshots,migrations:productSqlMigrations(),now})).toEqual({applied:0,from:4,to:4,snapshot:null});expect(existsSync(snapshots)).toBe(false);
+    const fresh=openDatabase(join(root,"fresh.db"));try{expect(migrateLiveDatabase(fresh,{snapshotDirectory:snapshots,migrations:productSqlMigrations(),now})).toEqual({applied:4,from:0,to:4,snapshot:null});}finally{fresh.close();}
     handle!.sqlite.prepare("UPDATE __schema_migrations SET name='x' WHERE version=4").run();expect(()=>migrateLiveDatabase(handle!,{snapshotDirectory:snapshots,migrations:UPGRADE(),now})).toThrow(expect.objectContaining({code:"SCHEMA_MISMATCH"}));expect(existsSync(snapshots)).toBe(false);});
 });

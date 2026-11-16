@@ -98,7 +98,8 @@ export function workflowService(handle:DatabaseHandle) {
       repo.log(projectId,"review.approve",encodeJson(jsonObject,{contentRevision:project.contentRevision}));
       return project.contentRevision;
     }),
-    changeContent:(projectId:string,expectedRevision:number,origin:"plan"|"produce"|"edit",action:string,mutation:()=>boolean|void)=>atomic(()=>{
+    // T-061: `detail` adds record fields (timeline id·revision) to the activity line; the three base fields always win.
+    changeContent:(projectId:string,expectedRevision:number,origin:"plan"|"produce"|"edit",action:string,mutation:()=>boolean|void,detail:()=>Record<string,string|number>=()=>({}))=>atomic(()=>{
       const {project,states}=context(projectId);assertRevision(expectedRevision,project.contentRevision);assertPreviousApproved(origin,states);
       if(mutation()===false)return project.contentRevision;
       const revision=project.contentRevision+1;
@@ -106,7 +107,7 @@ export function workflowService(handle:DatabaseHandle) {
       repo.updateProject(projectId,{contentRevision:revision,...(origin==="plan"?{approvedPlanId:null}:{})});
       repo.invalidateStages(projectId,invalidateContent(states,origin).filter((state)=>stageOrder.indexOf(state.stage)>=stageOrder.indexOf(origin)));
       if(origin==="plan")repo.markScenesForRecheck(projectId);
-      repo.log(projectId,action,encodeJson(jsonObject,{previousRevision:project.contentRevision,contentRevision:revision,origin}));
+      repo.log(projectId,action,encodeJson(jsonObject,{...detail(),previousRevision:project.contentRevision,contentRevision:revision,origin}));
       return revision;
     }),
   };

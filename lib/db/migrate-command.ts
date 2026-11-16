@@ -5,6 +5,7 @@ import Database from "better-sqlite3";
 import { openDatabase, type DatabaseHandle } from "./connection";
 import { compareMigrations, databaseOrigin, journal, productMigrations, verifyMigrations, type Migration } from "./migrate";
 import { LiveMigrationError, migrateLiveDatabase, type LiveMigrationResult } from "./live-migrate";
+import { MigrationSourceError } from "./code-migration";
 import { migrationFailureCopy } from "./migration-copy";
 import { databaseFingerprint, fileSha256, migrationsFingerprint, snapshotRelative, writeMigrationRecord, type MigrationRecord } from "./migration-record";
 
@@ -21,7 +22,13 @@ const digestOf=(file:string)=>{try{return fileSha256(file);}catch{return null;}}
 // taken the pre-migration copy. The app switches a verified database to WAL when it opens it. A refused or already-current database is never opened for writing.
 // The result record (F039-3) is written after the DB work; failing to write it never changes the DB or the exit code.
 export function runMigrateCommand(options:MigrateCommandOptions):number{
-  const {root}=options,migrations=options.migrations??productMigrations(),now=options.now??Date.now,log=options.log??console.log,error=options.error??console.error,write=options.writeRecord??writeMigrationRecord;
+  const {root}=options,now=options.now??Date.now,log=options.log??console.log,error=options.error??console.error,write=options.writeRecord??writeMigrationRecord;
+  // T-061 D8: the product list reads and checks the code steps' files (from the app folder) before anything opens the
+  // database; missing or changed files stop here with their own sentence. No record is written: the app's list itself
+  // cannot be named, and the startup check finds the same problem on its own.
+  let migrations:readonly Migration[];
+  try{migrations=options.migrations??productMigrations();}
+  catch(failure){if(!(failure instanceof MigrationSourceError))throw failure;const copy=migrationFailureCopy("MIGRATION_SOURCE",null,false);error(copy.headline);error(copy.next);return 1;}
   const file=join(root,"data","app.db");
   let probe:Database.Database|undefined,handle:DatabaseHandle|undefined;
   try{
