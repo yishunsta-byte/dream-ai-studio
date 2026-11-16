@@ -62,6 +62,8 @@
 
 ### T-034 · K6 호환·고정 s4 백업 회귀 자료 설계 (parent=차기준비, priority=P2) — ready_review
 
+- 보완 4c1b67d / msg_c88b855ce82d 실제 diff 검토: 표 전체 제외 제거·원본 ZIP 바이트 보존·startedAt 보존은 반영됐다. 다만 재생성 시 migration applied_at과 서로 다른 복원 목적지의 경로/티켓 값 때문에 전체 H3 동일 조건이 성립하지 않는다. 비교 목적별 프로파일·정규화 전 결정성/후 기대값 분리와 settings upsert 시각 칸 확인을 추가 요청했다. 문서 검토 중이며 실제 테스트 통과로 보고하지 않는다.
+
 - 25c77eb / msg_52330a97a85e 회수. Master가 restore.normalize와 대조해 표 전체 해시 제외의 검출 누락, 내부 export ZIP 가변성/H2 모순, startedAt 제외 근거를 발견했다. 정확한 변경 행·칸 허용 목록과 나머지 원본 보존 검사로 보완 요청을 실제 전송했다. 문서 보완 대기, 구현·fixture 생성·P2 착수 없음.
 
 - 실제수락msg_fabe058d2c36, HEAD0db4d7b·고유설계문서1파일만점유. 코드/SQL/실제ZIP/기존fixture/실사용data미접근.
