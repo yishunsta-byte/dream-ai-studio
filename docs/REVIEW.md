@@ -407,3 +407,6 @@ T124 trusted-local backend scope and T126 bounded UI acceptance stand. VTT, real
 ### T129/T131 measurement validation acceptance (2026-11-17)
 
 T129 b3084c accepted after Master14-test rerun and independent T131 report review. R128-1/2 wording, invalid input rejection, strict CLI and failed-verdict exit1 verified. Independent subprocess harness uses prior actual MP4 replay and explicit failure injection, not new native renders. Fixed48/40 synthetic matrix only; threshold96 fade FAIL and all general visibility/device/VTT/voice limits retained. No product measurement-complete flags authorized. Evidence: docs/handoffs/T-131-SUBTITLE-VALIDATION-RECHECK.md.
+### T132/T133 audio foundation acceptance (2026-11-17)
+
+T132 aa7b0db accepted for P2-5A after independent T133 PASS:585/13skip, lint/type, real old-app refusal, rollback, PCM backup/restore, s7 upgrade and actual editor audio-field preservation. No mandatory findings. Evidence docs/handoffs/T-133-AUDIO-FOUNDATION-REVIEW.md; author-only production build remains distinguished. DSP/output/UI/P2 completion not accepted by this result.

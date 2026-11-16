@@ -1120,3 +1120,10 @@
 - T133 independent Codex dispatch ctx_58478f7af228 / task_eb5e3f3c8693, audio-foundation-review child, ready receipt: report-only compatibility/migration/backup/invalid-input and preservation review. Existing issued SQL1-7 and fixtures immutable.
 - T134 CC-DATA-01 assigned isolated lib/audio/ DSP module and dedicated tests/report only, parallel to foundation review. Synthetic-source real processing: trim/fade/equalPower crossfade, voice-signal ducking, same-mix two-pass normalization/AAC and final measurement, owned cancel/timeout/failure cleanup. No DB/UI/render integration/package changes.
 - Implementation starting targets are experiments, not measured product claims. Collect and independently verify before integration stageC. User DB and existing deployments remain untouched.
+### T133 PASS integrated; T132 foundation accepted (2026-11-17)
+
+- msg_df60162f3607 / reviewer5114de5780301e760a52527abae9aaab78e84dc5: Master read complete report and imported report only. Independent original585 tests/13 skips, lint/type PASS; no mandatory product findings.
+- Gaps closed directly: actual seven-step app rejects eight-step DB and ZIP, four invalid migrations fully roll back, actual PCM backup/restore and s7->8 restore preserve bytes, forged audio reference ZIP rejects, real editor r2->r3 preserves all five audio-related fields.
+- Twenty-eight protected migration/fixture files unchanged. Original test expectation updates reviewed and not found to hide regression. Author's placeholder-WAV tests were supplemented with real PCM; this is storage validation, not audio-quality evidence.
+- Master accepts T132 aa7b0db P2-5A storage/restore/reference/compatibility foundation within this scope. Independent production build or actual audio output not claimed. Actual user DB remains unmigrated.
+- T134 isolated DSP implementation continues. Its untracked lib/audio and dedicated test WIP preserved and excluded from this documentation commit. Next: inspect measured DSP report, independent DSP validation, then render integration and UI.

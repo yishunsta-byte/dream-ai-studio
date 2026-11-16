@@ -366,3 +366,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T132 audio save/restore foundation ready_review, author585/13skip; T133 independent validation dispatched, no foundation PASS claimed yet.
 - T134 isolated synthetic-audio DSP implementation assigned alongside review. No actual app audio render/UI enabled until later integration and validation.
 - Next: resolve foundation findings, inspect measured DSP results, then render integration and audio UI. VTT/actual-phone/semantic voice checks remain open.
+## Latest: P2-5A foundation accepted; DSP in progress
+
+- T133 independent PASS closes T132 storage/restore compatibility and browser-preservation gaps. Foundation accepted; actual user DB unchanged.
+- T134 isolated DSP implementation is ongoing; no actual app audio output enabled or accepted yet.
+- Next: measured DSP review and independent validation, then render integration/UI. Editable ZIP audio packaging/VTT and actual-phone/semantic voice evidence remain open.
