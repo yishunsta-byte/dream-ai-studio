@@ -652,3 +652,9 @@
 - CC-DATA-01 remains sole product writer for T071; requested current stage/blockers and final production/test evidence (msg_193b909a2839).
 - CC-DESIGN-01 instructed to perform one bounded read-only early review of current WIP now, share concrete findings directly with implementer, and update only own T072 report/history (msg_dad0ee27ddd1). Final visual review still follows implementation return.
 - Master owns scope/conflict coordination, result integration and independent validation dispatch. No duplicate product implementation assigned.
+
+### T072 early review findings collected (2026-11-16)
+
+- Report 1841cea / msg_22255dfc5838 received. Design directly delivered candidates to implementer msg_48f395580cbe.
+- Master inspected current player-panel WIP: B1 focus restoration to saved-aspect button, B2 stable stage accessible name without time, B3 corrected keyboard guidance already present. These are code observations, not browser or screen-reader PASS.
+- Requested final production evidence for these points; C1 loading aspect and C2 mobile wording remain bounded optional refinements. T071 validation and final T072 visual review pending.
