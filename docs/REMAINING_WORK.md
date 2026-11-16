@@ -181,3 +181,9 @@ Supersedes T075-fix-pending entries.
 - T096 closed original F093 failures but reproduced F096-1: newer external revision wrongly accepted for own handover; subsequent save overwrites untouched external text.
 - T097 exact-response ownership and explicit conflict handling assigned.
 - Next: collect fix, independently reproduce dual-writer ordering and verify preservation before P2-3b acceptance.
+
+## Latest: T097 returned; full conflict recovery T098 required
+
+- Exact-response ownership fix returned, not independently accepted.
+- T098 must preserve all local draft fields/raw input in recoverable conflict data; text/time summary is insufficient.
+- Next: collect complete recovery, then independent dual-writer and draft-preservation recheck plus UX validation.

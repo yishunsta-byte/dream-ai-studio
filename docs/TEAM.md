@@ -835,3 +835,10 @@
 - F096-1 mandatory: handover accepts another client's newer revision because only 'different revision' is checked; next legitimate CAS saves stale untouched text over external edit.
 - T097 / CC-DATA-01 / ready (ack pending): exact response revision/pointer/project/owner binding, preserve own draft and explicitly conflict on newer external baseline; no silent whole-draft rebasing. Actual dual-writer race and subsequent save must preserve external text. Bounded UI/helpers/tests/report, no DB/API/migration changes.
 - P2-3b remains unaccepted; earlier normal-path UX and original defect resolution scopes retained.
+
+### T097 returned; T098 recovery completeness required (2026-11-16)
+
+- 1bc070e / msg_9656b67d1e23 ready_review. Master read report: exact returned revision/pointer ownership implemented, author464 passed/2 skips. External overwrite prevention not yet independently rechecked.
+- Master rejects loss of local style/box/animation/order/raw-invalid-time as a mere policy exception to draft preservation. Text/time summary alone is incomplete recovery.
+- T098 / CC-DATA-01 / ready (ack pending): preserve complete conflict recovery payload (local timeline, raw time fields, selection and baseline identifiers), explicit copy/download without automatic merge/rebase/server writes. Actual dual-writer byte/value preservation and 1280/390 access required before independent recheck.
+- Design informed; P2-3b acceptance remains pending.
