@@ -1127,3 +1127,10 @@
 - Twenty-eight protected migration/fixture files unchanged. Original test expectation updates reviewed and not found to hide regression. Author's placeholder-WAV tests were supplemented with real PCM; this is storage validation, not audio-quality evidence.
 - Master accepts T132 aa7b0db P2-5A storage/restore/reference/compatibility foundation within this scope. Independent production build or actual audio output not claimed. Actual user DB remains unmigrated.
 - T134 isolated DSP implementation continues. Its untracked lib/audio and dedicated test WIP preserved and excluded from this documentation commit. Next: inspect measured DSP report, independent DSP validation, then render integration and UI.
+### T134 returned; T135 DSP review and T136 integration contract (2026-11-17)
+
+- msg_c2057a0bb5af /bfb59843b8e6f23f8380d2fca751ebaf60d96c9b: Master read T134 report/stat. New isolated lib/audio only, app unconnected. Author599 passed/13 skipped and14 DSP tests/lint/type, synthetic measured loudness/trim/crossfade/duck evidence remain self-verification.
+- Master decision: retain existing -14±1LU/TP≤-1 output criterion. Sparse-click -15.8LUFS remains explicit failure, no hidden tolerance relaxation or false success; ordinary technical policy requires no user question.
+- T135 independent DSP review reopened existing reviewer: ctx_19a4b1ff043c /task_7c6e68ed245c ready receipt. Scope includes measured output, compressed-source/sample alignment, ownership/cleanup and failure publication; report-only.
+- T136 CC-DATA-01 integration contract requested via msg_2b7a2dd6c7f0; unique document only. Concrete versioned audio render input/immutable pins/owned pipeline/cancel/verification/backup/API contract and smallest implementation plan, no overlapping code edits during DSP review.
+- No actual audio app rendering/UI, actual listening or user DB/deployment completion claimed. Next: integrate review, resolve findings, then implement contracted renderer connection.

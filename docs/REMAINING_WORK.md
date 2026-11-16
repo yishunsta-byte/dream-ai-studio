@@ -371,3 +371,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T133 independent PASS closes T132 storage/restore compatibility and browser-preservation gaps. Foundation accepted; actual user DB unchanged.
 - T134 isolated DSP implementation is ongoing; no actual app audio output enabled or accepted yet.
 - Next: measured DSP review and independent validation, then render integration/UI. Editable ZIP audio packaging/VTT and actual-phone/semantic voice evidence remain open.
+## Latest: DSP module returned; review and renderer contract underway
+
+- T134 ready_review, isolated audio processing module not yet connected to app. Author numeric evidence is not independent acceptance or human listening.
+- T135 independent DSP verification requested; T136 concrete render integration contract assigned in parallel.
+- Sparse-click outputs outside fixed loudness criterion remain failures. Next: close findings and implement stageC, then UI/P2-6/device validation.
