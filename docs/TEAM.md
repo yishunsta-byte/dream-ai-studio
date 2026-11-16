@@ -719,3 +719,12 @@
 - Supplement 5c1efb7 / msg_6c65eea26847 returned, documentation only. Master accepts append-only readable font family identifiers separately from selectable fonts (spec intersect installed and licensed).
 - Existing timeline rows remain readable when an installed font disappears, with explicit preview fallback warning. Preserve registered 0005, fixed fixtures, original P1 values and r1/ZIP bytes.
 - New-font rows are not guaranteed readable by older builds; no downgrade support claim. Implementation still awaits T080 unit/preset/export scope reconciliation.
+
+### T079/T080 accepted; P2-3a implementation and assets assigned (2026-11-16)
+
+- T080 b3c7af7 / msg_4ede77bfc4d8 and T079 reconciliation 5937543 / msg_eccf60e50de7 reviewed. Design-only inputs accepted.
+- Decisions: explicit save; no auto-save/user-preset DB/history UI; P2-3a editor first, timeline drag/keys in P2-3b. Existing P1 values preserved; presets apply explicitly. New required disclosures use preset, existing locked disclosure values/time remain. Letter spacing px and stroke outer-width only with old-value preservation verification.
+- Export: new user/restore-version timelines include raw edit/timeline.json and used fonts/licenses; migrated P1 r1 legacy bundle path and existing ZIPs preserved. No API-shape/DB/migration changes.
+- T081 / CC-DATA-01 / ready (ack pending): actual editor/preview/measurement/server validation/export integration and tests, per T079 6.1. Sole product writer, no fonts-assets/spec writes. Request msg_70f9fbd4a57f.
+- T082 / CC-DESIGN-01 / ready (ack pending): bounded spec/DESIGN alignment and official seven-font assets/licenses/provenance in new public/fonts subfolders. Existing Pretendard untouched; coordinate filenames with T081. No product/package/shared-state writes. Request msg_a8fa43b50304.
+- Acceptance requires actual production, font measurement, old r1/ZIP preservation, new export completeness, related/full tests and independent review. No user decision currently required.

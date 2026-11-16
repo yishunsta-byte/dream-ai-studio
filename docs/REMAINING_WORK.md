@@ -114,3 +114,11 @@ Supersedes T075-fix-pending entries.
 - T079 technical text-editor design requested from implementation author.
 - T080 text-editor UX and minimal stale PLAN status correction requested from Claude design.
 - Next: reconcile both designs, assign P2-3 implementation, test and independently review. Actual-phone/screen-reader/real-hidden verification limits remain; P2 overall is incomplete.
+
+## Latest: P2-3a actual work assigned
+
+- T079/T080 design reconciliation accepted.
+- T081: text-layer editor, explicit presets/fonts, measured warnings, save/CAS and lossless new-timeline export.
+- T082: specification alignment plus seven official font asset/license downloads; coordinate asset paths without overlapping product writes.
+- Next: collect implementation/assets, resolve integration issues, run Master and independent validation.
+- P2-3b timeline tracks/drag/clip keys and later rendering/audio/export stages remain. No automatic saving, custom-preset DB or version-history UI added by assumption.
