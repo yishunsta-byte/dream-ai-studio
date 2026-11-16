@@ -85,7 +85,7 @@
       "license": "OFL-1.1",
       "source": "https://fonts.google.com/specimen/Do+Hyeon",
       "usedBy": [],
-      "role": "선택 — 깔끔한 제목"
+      "role": "깔끔한 제목"
     },
     {
       "family": "Jua",
@@ -96,7 +96,7 @@
       "license": "OFL-1.1",
       "source": "https://fonts.google.com/specimen/Jua",
       "usedBy": [],
-      "role": "선택 — 둥근 귀여운 느낌"
+      "role": "둥근 귀여운 느낌"
     },
     {
       "family": "Gowun Dodum",
@@ -107,7 +107,7 @@
       "license": "OFL-1.1",
       "source": "https://fonts.google.com/specimen/Gowun+Dodum",
       "usedBy": [],
-      "role": "선택 — 부드러운 본문"
+      "role": "부드러운 본문"
     },
     {
       "family": "Nanum Pen Script",
@@ -118,7 +118,7 @@
       "license": "OFL-1.1",
       "source": "https://fonts.google.com/specimen/Nanum+Pen+Script",
       "usedBy": [],
-      "role": "선택 — 손글씨"
+      "role": "손글씨"
     }
   ],
   "notAllowed": "무료라도 OFL이 아닌 글꼴(회사 전용 무료 글꼴 등)은 영상 삽입·묶음 배포 조건이 제각각이라 목록에 넣지 않는다. 넣으려면 플래너가 라이선스를 확인해 이 파일에 추가한다.",
