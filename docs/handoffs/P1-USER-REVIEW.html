@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>P1 흐름 미리 보기</title>
+<title>P1 흐름 확인</title>
 <!--
-  T-024 · 은영님용 P1 흐름 확인 페이지 (준비본, 승인 요청 아님)
-  그림은 ../../tmp/p1-review/ 의 캡처 11장을 상대 경로로 읽는다. 캡처 원본은 바꾸지 않는다.
-  수정 후 교체 방법은 docs/handoffs/T-024-CC-DESIGN-01.md 3장.
-  외부 글꼴·스크립트를 불러오지 않는다(로컬 파일로 열어도 그대로 보이게).
+  T-030 · 은영님용 P1 흐름 확인 페이지 (T-024 준비본 갱신)
+  그림은 ../../tmp/p1-review/ 의 캡처를 상대 경로로 읽는다. 캡처 파일은 바꾸거나 덮지 않는다.
+  캡처 출처(검수 환경·가상 프로젝트)는 그림마다 A/B/C로 표시한다. 그림 매핑은 docs/handoffs/T-030-CC-DESIGN-01.md.
+  이 페이지는 승인을 기록하지 않는다. 외부 글꼴·스크립트를 불러오지 않는다.
 -->
 <style>
 :root{
@@ -34,8 +34,7 @@
   --sample:#C7B5F5; --sample-bg:#2C2445; color-scheme:dark}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:16px;line-height:1.65;word-break:keep-all;overflow-wrap:anywhere;
-  padding:32px 16px 64px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:16px;line-height:1.65;word-break:keep-all;overflow-wrap:anywhere;padding:32px 16px 64px}
 .wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
 h1{margin:0;font-size:30px;line-height:1.3;color:var(--strong);font-weight:800}
 h2{margin:0;font-size:22px;line-height:1.35;color:var(--strong);font-weight:700}
@@ -43,14 +42,14 @@ h3{margin:0;font-size:18px;line-height:1.4;color:var(--strong);font-weight:700}
 p{margin:0}
 ul,ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
 a{color:var(--accent);text-underline-offset:3px}
-a:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
-.muted{color:var(--muted)}
-.small{font-size:14px}
+a:focus-visible,.scroll:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+code{font-family:var(--mono);font-size:.9em;background:var(--sunken);border-radius:4px;padding:0 4px}
+.muted{color:var(--muted)} .small{font-size:14px}
 section{display:flex;flex-direction:column;gap:16px}
 .lead{display:flex;flex-direction:column;gap:10px;max-width:68ch}
 .eyebrow{font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--accent)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
-.status{border-left:6px solid var(--warn)}
+.status{border-left:6px solid var(--ok)}
 .status-head{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
 .pill{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:2px 12px;border-radius:999px;font-size:14px;font-weight:700;white-space:nowrap}
 .pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
@@ -59,72 +58,81 @@ section{display:flex;flex-direction:column;gap:16px}
 .gates{list-style:none;padding:0;gap:10px}
 .gates .pill{min-width:84px;justify-content:center}
 .gates li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start}
-.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .fact{background:var(--sunken);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .fact b{font-size:19px;color:var(--strong);font-variant-numeric:tabular-nums}
 .fact span{font-size:13px;color:var(--muted)}
+.src{list-style:none;padding:0;gap:8px}
+.src li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start}
+.tag{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:24px;padding:0 7px;border-radius:6px;background:var(--strong);color:var(--surface);font-size:13px;font-weight:800;font-family:var(--mono)}
 .flow{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:0}
 .flow li{display:inline-flex;align-items:center;gap:6px;background:var(--sunken);border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600;color:var(--strong)}
 .flow li::after{content:"→";color:var(--muted);font-weight:400;margin-left:2px}
 .flow li:last-child::after{content:""}
 .steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:32px}
 .step{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:20px;align-items:start}
+figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+figcaption{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+figcaption .from{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .shot{position:relative;background:var(--sunken);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .shot img{display:block;width:100%;height:auto}
-.shot.pending img{opacity:.55}
-.flag{position:absolute;left:10px;top:10px;right:10px;display:flex}
-.flag span{background:var(--warn-bg);color:var(--warn);border:1px solid currentColor;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700;line-height:1.4}
+.scroll{max-height:640px;overflow-y:auto;overscroll-behavior:contain}
+.phone{max-width:340px}
 .note{display:flex;flex-direction:column;gap:8px;min-width:0}
 .k{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:700}
 .look{font-size:14px;font-weight:700;color:var(--muted);margin-top:4px}
-.fix{background:var(--warn-bg);color:var(--fg);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:15px}
-.fix b{color:var(--warn)}
-.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
-figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
-.pair .shot{max-width:330px}
-.pair{grid-template-columns:repeat(auto-fit,minmax(240px,330px))}
-figcaption{font-size:14px;color:var(--muted)}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,340px));gap:20px}
 .tree{margin:0;background:var(--sunken);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;font-size:15px}
 .tree .root{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--strong)}
 .tree div:not(.root){display:grid;grid-template-columns:9.5em minmax(0,1fr);gap:4px 12px;padding-left:12px;border-left:2px solid var(--line)}
 .tree dt{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);padding-top:2px}
 .tree dd{margin:0}
-code{font-family:var(--mono);font-size:.9em;background:var(--sunken);border-radius:4px;padding:0 4px}
-.later{background:var(--accent-soft);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px}
-.later code{font-family:var(--font);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1px 8px;color:var(--strong);font-weight:700}
-footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
-@media (max-width:680px){ .tree div:not(.root){grid-template-columns:minmax(0,1fr);gap:0}  .step{grid-template-columns:minmax(0,1fr)} h1{font-size:25px} h2{font-size:20px} .card{padding:16px} }
+.how{background:var(--accent-soft);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.how ol{gap:12px}
+.how code{font-family:var(--font);font-size:1em;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1px 8px;color:var(--strong);font-weight:700}
+.limits li{font-size:15px}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:4px}
+@media (max-width:680px){ .tree div:not(.root){grid-template-columns:minmax(0,1fr);gap:0} .step{grid-template-columns:minmax(0,1fr)} h1{font-size:25px} h2{font-size:20px} .card{padding:16px} .scroll{max-height:520px} }
 </style>
 </head>
 <body>
 <main class="wrap">
 
   <header class="lead">
-    <div class="eyebrow">P1 · 은영님 확인용 자료 (준비본)</div>
+    <div class="eyebrow">P1 · 은영님 확인용 자료</div>
     <h1>쇼핑숏츠 한 편을 처음부터 편집용 묶음까지 만드는 흐름</h1>
-    <p>가상 상품 "가상 민트컵"으로 새 프로젝트를 만들고, 편집용 묶음(ZIP)을 내려받기까지 찍은 화면이에요. 모든 결과는 샘플이고 실제 AI는 쓰지 않았어요.</p>
+    <p>가상 상품 "가상 민트컵"으로 새 프로젝트를 만들고 편집용 묶음(ZIP)을 내려받기까지의 화면이에요. 모든 결과는 샘플이고 실제 AI는 쓰지 않았어요.</p>
   </header>
 
   <section class="card status" aria-labelledby="st-h">
     <div class="status-head">
-      <h2 id="st-h">지금 상태 · 아직 확인을 부탁드리는 단계가 아니에요</h2>
-      <span class="pill bad">독립 검수 불통과</span>
+      <h2 id="st-h">지금 상태 · 은영님 확인만 남았어요</h2>
+      <span class="pill ok">독립 검수 최종 통과</span>
     </div>
-    <p>미리 보시라고 준비해 둔 페이지예요. 아래가 모두 끝나면 이 페이지를 새 화면으로 바꾼 뒤 확인을 부탁드릴게요. <strong>지금은 답하지 않으셔도 돼요.</strong></p>
     <ul class="gates">
-      <li><span class="pill bad">고치는 중</span><span><b>장면 실패 안내</b> — 실패한 장면이 "결과를 기다리고 있어요."로만 보이고 이유가 안 나와요.</span></li>
-      <li><span class="pill bad">고치는 중</span><span><b>내보내기 정보</b> — 묶음을 만들기 전에 들어갈 폴더와 예상 크기가, 만든 뒤에 파일 이름과 크기가 안 보여요.</span></li>
-      <li><span class="pill warn">확인 남음</span><span><b>접근성 마무리</b> — 휴대폰 화면에서 검수표 직접 입력, 키보드만으로 처음부터 끝까지 진행하기.</span></li>
-      <li><span class="pill wait">대기</span><span><b>독립 재검수</b> — 만들지 않은 검수 담당이 위 내용을 다시 확인해요.</span></li>
-      <li><span class="pill wait">대기</span><span><b>은영님 확인</b> — 이 흐름 확인과 디자인 시안 승인. 두 가지가 끝나야 다음 단계(P2 영상 편집)를 시작해요.</span></li>
+      <li><span class="pill ok">완료</span><span><b>꼭 고칠 것 0건</b> — 장면 실패 안내, 내보내기 파일 정보, 버전 비교 안의 실패 링크까지 모두 고쳤어요.</span></li>
+      <li><span class="pill ok">완료</span><span><b>접근성 확인</b> — 휴대폰 화면에서 검수표 직접 입력, 키보드만으로 등록부터 ZIP 내려받기까지 이어서 진행.</span></li>
+      <li><span class="pill ok">완료</span><span><b>독립 재검수</b> — 만들지 않은 검수 담당이 따로 확인하고 최종 통과로 판정했어요.</span></li>
+      <li><span class="pill warn">대기</span><span><b>은영님 흐름 확인</b> — 이 페이지를 보고 아래 "확인 방법"대로 답해 주세요.</span></li>
+      <li><span class="pill warn">대기</span><span><b>디자인 시안 승인</b> — 흐름 확인과 따로 받아요. 두 가지가 끝나야 다음 단계(P2 영상 편집)를 시작해요.</span></li>
     </ul>
     <div class="facts">
-      <div class="fact"><b>191개</b><span>독립 검수 때 자동 시험 통과</span></div>
-      <div class="fact"><b>12 / 13</b><span>필수 확인 항목 통과 (1개 일부만)</span></div>
-      <div class="fact"><b>2건</b><span>꼭 고칠 것</span></div>
+      <div class="fact"><b>221개 · 건너뜀 0</b><span>독립 재검수 때 자동 시험 통과 (R-017)</span></div>
+      <div class="fact"><b>2개 + 빌드</b><span>마지막 집중 재검수 (R-018) · 바뀐 부분만</span></div>
+      <div class="fact"><b>223개</b><span>Master 전체 시험 (만든 쪽 확인, 독립 검수와 별도)</span></div>
       <div class="fact"><b>1280 · 390</b><span>PC·휴대폰 화면 너비</span></div>
     </div>
-    <p class="muted small">기준: 독립 검수 보고(R-016). 그 뒤 Master가 백업·복원 안내를 고치고 자동 시험 207개를 직접 돌렸지만, 이는 만든 쪽의 확인이라 독립 검수를 대신하지 않아요.</p>
+    <p class="muted small">마지막 집중 재검수는 고친 부분만 다시 본 것이고, 나머지는 앞선 독립 검수 기록(R-016·R-017)과 합쳐 최종 통과로 판정했어요.</p>
+  </section>
+
+  <section class="card" aria-labelledby="src-h">
+    <h2 id="src-h">그림을 찍은 곳이 세 군데예요</h2>
+    <p>수정 전후를 따로 확인하느라 검수 때마다 <b>새 가상 프로젝트</b>를 만들어 찍었어요. 그래서 그림마다 프로젝트 제목·장면 수·내용 버전이 달라요. 같은 프로젝트 하나를 이어 찍은 것이 아니에요.</p>
+    <ul class="src">
+      <li><span class="tag">A</span><span><b>첫 독립 검수</b> · "독립검수 가상 민트컵", 장면 5개 · 고치기 전 화면(바뀌지 않은 단계만 씀)</span></li>
+      <li><span class="tag">B</span><span><b>독립 재검수</b> · "독립 검수 가상 민트컵 긴 제목 원본 보존 확인", 장면 5개 · 고친 뒤 화면</span></li>
+      <li><span class="tag">C</span><span><b>마지막 집중 재검수</b> · "독립 집중 검수 가상 민트컵", 장면 2개 · 버전 비교 안의 실패 링크</span></li>
+    </ul>
   </section>
 
   <section aria-labelledby="flow-h">
@@ -136,59 +144,112 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   </section>
 
   <section aria-labelledby="steps-h">
-    <h2 id="steps-h">화면 8장 · 무엇을 보시면 되는지</h2>
+    <h2 id="steps-h">단계별 화면 · 무엇을 보시면 되는지</h2>
     <ol class="steps">
       <li class="step">
-        <div class="shot"><img src="../../tmp/p1-review/flow-01.png" alt="새 프로젝트 입력 화면. 제목·목표·보는 사람·화면 비율·목표 길이·광고 포함 칸이 있다" width="1280" height="960" loading="lazy"></div>
+        <figure><div class="shot"><img src="../../tmp/p1-review/flow-01.png" alt="새 프로젝트 입력 화면. 제목·목표·보는 사람·화면 비율·목표 길이·광고 포함 칸" width="1280" height="960" loading="lazy"></div>
+          <figcaption><span class="from"><span class="tag">A</span>PC 1280</span></figcaption></figure>
         <div class="note"><span class="k">1 · 등록</span><h3>새 프로젝트에 필요한 칸을 채워요</h3>
           <p class="look">보실 것</p>
           <ul><li>제목·목표·보는 사람·화면 비율(9:16)·길이(30초)를 적어요.</li><li>광고·협찬을 체크하면 검수 항목이 늘어난다고 미리 알려 줘요.</li><li>위쪽 안내: "확인한 내용만 등록해 주세요."</li></ul></div>
       </li>
       <li class="step">
-        <div class="shot"><img src="../../tmp/p1-review/flow-02.png" alt="자료·캐릭터 화면. 가상 상품 사진 두 장이 원본 표시와 함께 올라가 있다" width="1280" height="960" loading="lazy"></div>
+        <figure><div class="shot"><img src="../../tmp/p1-review/flow-02.png" alt="자료·캐릭터 화면. 가상 상품 사진 두 장이 원본 표시와 함께 올라가 있다" width="1280" height="960" loading="lazy"></div>
+          <figcaption><span class="from"><span class="tag">A</span>PC 1280</span></figcaption></figure>
         <div class="note"><span class="k">2 · 자료</span><h3>상품 사진을 올려 보관해요</h3>
           <p class="look">보실 것</p>
           <ul><li>올린 사진에 "원본" 표시와 크기·해상도가 보여요.</li><li>출처·권리 메모를 함께 적어 둘 수 있어요.</li><li>원본은 바꾸지 않고 그대로 보관해요.</li></ul></div>
       </li>
       <li class="step">
-        <div class="shot"><img src="../../tmp/p1-review/flow-03.png" alt="요구 확인 단계. 위에 7단계 진행 표시, 아래에 등록한 내용 목록" width="1280" height="960" loading="lazy"></div>
+        <figure><div class="shot"><img src="../../tmp/p1-review/flow-03.png" alt="요구 확인 단계. 위에 7단계 진행 표시, 아래에 등록한 내용 목록" width="1280" height="960" loading="lazy"></div>
+          <figcaption><span class="from"><span class="tag">A</span>PC 1280</span></figcaption></figure>
         <div class="note"><span class="k">3 · 요구 확인</span><h3>등록한 내용이 맞는지 다시 봐요</h3>
           <p class="look">보실 것</p>
           <ul><li>위쪽 7단계 진행 표시에서 지금 단계와 잠긴 단계가 구분돼요.</li><li>잠긴 단계에는 "이전 단계를 완료하면 열려요."라고 이유가 붙어요.</li></ul></div>
       </li>
       <li class="step">
-        <div class="shot"><img src="../../tmp/p1-review/flow-04.png" alt="기획 단계. 기획 버전 선택, 새 버전으로 저장 안내, 전체 대본 칸" width="1280" height="960" loading="lazy"></div>
+        <figure><div class="shot"><img src="../../tmp/p1-review/flow-04.png" alt="기획 단계. 기획 버전 선택, 새 버전으로 저장 안내, 전체 대본 칸" width="1280" height="960" loading="lazy"></div>
+          <figcaption><span class="from"><span class="tag">A</span>PC 1280</span></figcaption></figure>
         <div class="note"><span class="k">4 · 기획</span><h3>대본과 장면표를 쓰고 승인해요</h3>
           <p class="look">보실 것</p>
           <ul><li>고치면 덮어쓰지 않고 새 버전(v1, v2…)으로 저장돼요.</li><li>이전 버전과 나란히 비교할 수 있어요.</li><li>승인해야 장면을 만들 수 있어요.</li></ul></div>
       </li>
       <li class="step">
-        <div class="shot"><img src="../../tmp/p1-review/flow-05.png" alt="장면 제작 단계. 장면 1 카드에 샘플 표시와 SAMPLE 그림, 0원 표시" width="1280" height="960" loading="lazy"></div>
+        <figure><div class="shot"><img src="../../tmp/p1-review/flow-05.png" alt="장면 제작 단계. 장면 1 카드에 샘플 표시와 SAMPLE 그림, 0원 표시" width="1280" height="960" loading="lazy"></div>
+          <figcaption><span class="from"><span class="tag">A</span>PC 1280</span></figcaption></figure>
         <div class="note"><span class="k">5 · 장면 제작</span><h3>장면을 만들고 쓸 버전을 골라요</h3>
           <p class="look">보실 것</p>
-          <ul><li>샘플 결과에는 보라색 "샘플" 표시와 "0원(샘플)"이 붙어요.</li><li>새로 만들면 이전 결과는 버전으로 남고, 고른 버전만 쓰여요.</li><li>"결과 없는 장면만 만들기"로 빠진 장면만 채울 수 있어요.</li></ul></div>
+          <ul><li>샘플 결과에는 보라색 "샘플" 표시와 "0원(샘플)"이 붙어요.</li><li>새로 만들면 이전 결과는 버전으로 남고, 고른 버전만 쓰여요.</li><li>만들지 못한 장면은 아래 "실패했을 때" 화면처럼 보여요.</li></ul></div>
       </li>
       <li class="step">
-        <div class="shot"><img src="../../tmp/p1-review/flow-06.png" alt="수정·조립 단계. 왼쪽 정지 화면 미리보기에 광고 글자, 오른쪽 글자 레이어 설정" width="1280" height="960" loading="lazy"></div>
+        <figure><div class="shot"><img src="../../tmp/p1-review/flow-06.png" alt="수정·조립 단계. 왼쪽 정지 화면 미리보기에 광고 글자, 오른쪽 글자 레이어 설정" width="1280" height="960" loading="lazy"></div>
+          <figcaption><span class="from"><span class="tag">A</span>PC 1280</span></figcaption></figure>
         <div class="note"><span class="k">6 · 수정·조립</span><h3>글자를 얹고 미리 봐요</h3>
           <p class="look">보실 것</p>
           <ul><li>"광고" 표기 글자는 지울 수 없고 위치만 바꿀 수 있어요.</li><li>점선 안쪽이 휴대폰에서 가려지지 않는 안전 영역이에요.</li><li>P1은 정지 화면 미리보기까지예요. 실제 영상 조립은 다음 단계(P2)예요.</li></ul></div>
       </li>
       <li class="step">
-        <div class="shot"><img src="../../tmp/p1-review/flow-07.png" alt="검수 단계. 필수 13개 중 13개 통과, 항목별 통과·보류 버튼과 메모" width="1280" height="960" loading="lazy"></div>
+        <figure><div class="shot"><img src="../../tmp/p1-review/flow-07.png" alt="검수 단계. 필수 13개 중 13개 통과, 항목별 통과·보류 버튼과 메모" width="1280" height="960" loading="lazy"></div>
+          <figcaption><span class="from"><span class="tag">A</span>PC 1280 · 휴대폰 검수표는 아래 휴대폰 화면에 있어요</span></figcaption></figure>
         <div class="note"><span class="k">7 · 검수</span><h3>항목마다 통과·보류를 정해요</h3>
           <p class="look">보실 것</p>
-          <ul><li>필수 항목이 몇 개 통과했는지 위에 보여요.</li><li>자동 확인은 근거만 보여 주고, 통과는 사람이 직접 눌러요.</li><li>장면·글자·순서를 바꾸면 검수를 다시 해야 해요.</li></ul></div>
+          <ul><li>필수 항목이 몇 개 통과했는지 위에 보여요.</li><li>자동 확인은 근거만 보여 주고, 통과는 사람이 직접 눌러요.</li><li>보류하려면 이유를 적어야 하고, 장면·글자·순서를 바꾸면 검수를 다시 해요.</li></ul></div>
       </li>
       <li class="step">
-        <div class="shot pending"><img src="../../tmp/p1-review/flow-08.png" alt="내보내기 단계. 편집용 묶음 만들기 버튼과 완료된 묶음 카드, 검증된 SHA256" width="1280" height="960" loading="lazy">
-          <div class="flag"><span>수정 후 새 화면으로 바꿀 예정</span></div></div>
+        <figure><div class="shot scroll" tabindex="0" role="region" aria-label="내보내기 화면 전체 캡처, 안에서 스크롤"><img src="../../tmp/p1-review/flow-08-v2.png" alt="내보내기 화면 전체. 묶음에 들어갈 것 미리보기와 예상 2.4MB, 파일 이름 모두 보기, 완료 묶음의 파일 이름·크기·해시 8자리, 실패 묶음, 예전 묶음의 지금 내용과 다름 표시" width="1265" height="3135" loading="lazy"></div>
+          <figcaption><span class="from"><span class="tag">B</span>PC 1280 · 긴 화면 한 장 · 상자 안에서 스크롤</span>
+            <span>긴 화면을 한 장으로 찍다 보니 위쪽에서 왼쪽 메뉴와 머리줄이 중간에 겹쳐 찍혔어요. 실제 화면에서는 겹치지 않아요.</span>
+            <span><a href="../../tmp/p1-review/flow-08-v2.png">그림만 크게 보기</a></span></figcaption></figure>
         <div class="note"><span class="k">8 · 내보내기</span><h3>편집용 묶음(ZIP)을 내려받아요</h3>
           <p class="look">보실 것</p>
-          <ul><li>"편집용 묶음"이라고 불러요. 완성 영상은 들어 있지 않아요.</li><li>묶음을 만든 뒤 모든 파일을 다시 검사해야 내려받기가 열려요.</li></ul>
-          <div class="fix"><b>지금 화면에서 고치는 중</b><span>만들기 전: 들어갈 폴더 목록과 예상 크기를 보여 줘요.</span><span>만든 뒤: 실제 파일 이름·크기·시각을 보여 주고, 긴 확인 번호는 앞 8자리 + "전체 복사"로 줄여요.</span></div></div>
+          <ul><li><b>만들기 전:</b> "묶음에 들어갈 것"에 폴더 목록과 "예상 약 2.4MB · 파일 15개"가 보여요. "파일 이름 모두 보기"로 하나하나 볼 수 있어요.</li>
+            <li><b>만든 뒤:</b> 파일 이름, 실제 크기(바이트까지), 만든 시각, 확인 번호 앞 8자리와 "전체 복사"가 보여요.</li>
+            <li>실패한 묶음은 빨간 상자로 이유와 "현재 내용으로 새로 만들기"를 보여 주고 내려받기 버튼이 없어요.</li>
+            <li>기획을 고친 뒤의 예전 묶음에는 "지금 내용과 다름"이 붙어요.</li></ul></div>
       </li>
     </ol>
+  </section>
+
+  <section aria-labelledby="fail-h">
+    <h2 id="fail-h">장면을 만들지 못했을 때</h2>
+    <p>실패는 실패로 보여요. 이유와 다음에 할 일을 알려 주고, 이미 골라 둔 결과는 그대로 남아요.</p>
+    <div class="step">
+      <figure><div class="shot"><img src="../../tmp/p1-review/flow-05-fail-card-v2.png" alt="장면 1 카드. 제목 옆 실패 표시, 선택한 v1은 그대로예요, 제공사가 이 장면을 만들 수 없다고 했어요, 기획 고치기·자료 바꾸기 링크" width="1280" height="960" loading="lazy"></div>
+        <figcaption><span class="from"><span class="tag">B</span>PC 1280 · 장면 카드 기본 화면</span></figcaption></figure>
+      <div class="note"><h3>장면 카드에 바로 보여요</h3>
+        <p class="look">보실 것</p>
+        <ul><li>제목 옆 빨간 "실패" 표시와 "선택한 v1은 그대로예요."</li><li>굵은 첫 문장으로 이유, 그다음 할 일, 맨 아래 작은 글씨로 코드.</li><li>내용 때문에 거절된 경우 "다시 시도" 대신 <b>기획 고치기 · 자료 바꾸기</b>로 안내해요(같은 내용으로 다시 해도 또 거절되니까요).</li></ul></div>
+    </div>
+    <div class="step">
+      <figure><div class="shot scroll" tabindex="0" role="region" aria-label="버전 비교 화면 전체 캡처, 안에서 스크롤"><img src="../../tmp/p1-review/flow-fail-v3.png" alt="장면 제작 화면 전체. 버전 비교를 펼쳐 v3 성공, v2 실패(이유·기획 고치기·자료 바꾸기), v1 선택됨이 나란히 보인다" width="1265" height="3049" loading="lazy"></div>
+        <figcaption><span class="from"><span class="tag">C</span>PC 1280 · 긴 화면 한 장 · 상자 안에서 스크롤</span><span><a href="../../tmp/p1-review/flow-fail-v3.png">그림만 크게 보기</a></span></figcaption></figure>
+      <div class="note"><h3>버전 비교 안에서도 같아요</h3>
+        <p class="look">보실 것</p>
+        <ul><li>"버전 비교·선택"을 펼치면 v3(성공) · v2(실패) · v1(선택됨)이 나란히 보여요.</li><li>실패한 v2에도 이유와 기획 고치기·자료 바꾸기 링크가 있어요. 마지막 재검수에서 키보드로 두 링크를 직접 눌러 확인했어요.</li><li>실패한 버전에는 "이 버전으로 되돌리기"가 없어요.</li></ul></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="mob-h">
+    <h2 id="mob-h">휴대폰 화면</h2>
+    <div class="pair">
+      <figure><div class="shot scroll phone" tabindex="0" role="region" aria-label="휴대폰 장면 제작 화면 전체, 안에서 스크롤"><img src="../../tmp/p1-review/flow-m-scenes-v3.png" alt="휴대폰 너비 장면 제작. 버전 비교가 세로로 쌓이고 실패 상자와 두 링크가 보인다" width="375" height="4551" loading="lazy"></div>
+        <figcaption><span class="from"><span class="tag">C</span>휴대폰 390 · 장면 제작</span><span>버전 비교가 세로로 쌓이고, 실패 상자와 링크가 화면 폭 안에 들어가요.</span></figcaption></figure>
+      <figure><div class="shot scroll phone" tabindex="0" role="region" aria-label="휴대폰 내보내기 화면 전체, 안에서 스크롤"><img src="../../tmp/p1-review/flow-m-export-v2.png" alt="휴대폰 너비 내보내기. 묶음 미리보기, 긴 파일 이름이 줄바꿈된 완료 묶음, 실패 묶음" width="375" height="4068" loading="lazy"></div>
+        <figcaption><span class="from"><span class="tag">B</span>휴대폰 390 · 내보내기</span><span>긴 파일 이름은 줄을 바꿔 보여 주고 가로로 넘치지 않아요.</span></figcaption></figure>
+      <figure><div class="shot phone"><img src="../../tmp/p1-review/flow-review-editable-v2.png" alt="휴대폰 너비 검수표. 미확인 항목에 메모 칸과 통과·보류 버튼" width="390" height="844" loading="lazy"></div>
+        <figcaption><span class="from"><span class="tag">B</span>휴대폰 390 · 검수</span><span>휴대폰에서도 메모를 적고 통과·보류를 누를 수 있어요.</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="bk-h">
+    <h2 id="bk-h">설정 · 백업 목록</h2>
+    <div class="step">
+      <figure><div class="shot"><img src="../../tmp/p1-review/flow-backup-list-v2.png" alt="설정의 백업 목록. 이 환경에서 만든 백업, 복원으로 멈춤, 출처 확인 안 됨, 이 PC에 파일 없음 표시와 새 폴더로 복원 영역" width="1280" height="1400" loading="lazy"></div>
+        <figcaption><span class="from"><span class="tag">B</span>PC 1280 · 복원해 본 가상 데이터의 설정 화면</span></figcaption></figure>
+      <div class="note"><h3>백업마다 어디서 왔는지 보여요</h3>
+        <p class="look">보실 것</p>
+        <ul><li>"이 환경에서 만든 백업"과 "이전 환경 백업"이 구분돼요.</li><li>복원 때문에 멈춘 백업은 회색 "복원으로 멈춤"으로, 실패나 취소로 보이지 않아요.</li><li>파일이 없는 백업은 "이 PC에 파일 없음"으로 표시하고 복원에 고를 수 없어요.</li><li>복원은 지금 데이터를 건드리지 않고 비어 있는 새 폴더로만 해요.</li></ul></div>
+    </div>
   </section>
 
   <section aria-labelledby="zip-h">
@@ -197,52 +258,54 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       <h3>샘플 <span class="pill sample">샘플</span></h3>
       <ul>
         <li>지금은 실제 AI를 연결하지 않아서 결과 자리에 "샘플 · SAMPLE" 그림이 들어가요. 비용은 0원이에요.</li>
-        <li>샘플 결과에는 늘 보라색 "샘플" 표시가 붙고, 묶음 안 파일 이름에도 <code>_SAMPLE</code>이 붙어요. 실제 결과로 착각하지 않게 하려는 거예요.</li>
+        <li>샘플 결과에는 늘 보라색 "샘플" 표시가 붙고, 묶음 이름과 안의 장면 파일 이름에도 <code>_SAMPLE</code>이 붙어요. 실제 결과로 착각하지 않게 하려는 거예요.</li>
         <li>실제 AI 연결은 P3에서, 은영님이 예산과 계정을 정하신 뒤에 해요.</li>
       </ul>
     </div>
     <div class="card">
       <h3>편집용 묶음(ZIP) 안에 들어가는 것</h3>
-      <p>캡컷 같은 편집 프로그램에서 이어 작업할 재료 묶음이에요. 한 번 만든 묶음은 나중에 기획을 고쳐도 바뀌지 않아요.</p>
-<dl class="tree" aria-label="편집용 묶음 폴더 구성">
-        <div class="root">가상-민트컵_20261116-0114/</div>
+      <p>캡컷 같은 편집 프로그램에서 이어 작업할 재료 묶음이에요. 완성 영상은 들어 있지 않아요. 한 번 만든 묶음은 나중에 기획을 고쳐도 바뀌지 않아요.</p>
+      <dl class="tree" aria-label="편집용 묶음 구성">
+        <div class="root">editing-{번호}_SAMPLE.zip</div>
+        <div><dt>README.txt</dt><dd>묶음 안내</dd></div>
+        <div><dt>manifest.json</dt><dd>파일 목록과 확인 번호</dd></div>
         <div><dt>scenes/</dt><dd>장면별로 고른 결과 (샘플은 이름에 _SAMPLE)</dd></div>
-        <div><dt>script/</dt><dd>대본과 기획</dd></div>
-        <div><dt>subtitles/</dt><dd>자막 파일 (.srt)</dd></div>
+        <div><dt>script/</dt><dd>대본(script.txt)과 기획(plan.md)</dd></div>
         <div><dt>edit/</dt><dd>글자 위치·크기 설정</dd></div>
+        <div><dt>subtitles/</dt><dd>자막 파일 (자막을 적었을 때만)</dd></div>
         <div><dt>provenance/</dt><dd>무엇으로 만들었는지, 권리 메모</dd></div>
         <div><dt>review/</dt><dd>검수표</dd></div>
-        <div><dt>LICENSES/</dt><dd>함께 넣은 글꼴의 사용 허락서</dd></div>
-        <div><dt>manifest.json</dt><dd>파일 목록과 확인 번호</dd></div>
+        <div><dt>fonts/</dt><dd>글자에 쓴 글꼴 (Pretendard)</dd></div>
+        <div><dt>LICENSES/</dt><dd>글꼴 사용 허락서</dd></div>
       </dl>
-      <p class="muted small">완성 영상(final/)은 P2부터 들어가요. 폴더 이름은 예시예요.</p>
+      <p class="muted small">실제 이름 예: <code>editing-01a1e23c-…-9d0f523915d5_SAMPLE.zip</code> · 크기 약 2.4MB · 파일 15개(자막이 없으면 14개). 완성 영상(final/)은 P2부터 들어가요.</p>
     </div>
   </section>
 
-  <section aria-labelledby="more-h">
-    <h2 id="more-h">휴대폰 화면과 실패 화면</h2>
-    <div class="pair">
-      <figure><div class="shot"><img src="../../tmp/p1-review/flow-m-scenes.png" alt="휴대폰 너비의 장면 제작 화면. 버튼이 카드 아래로 내려와 있다" width="390" height="844" loading="lazy"></div>
-        <figcaption>휴대폰 · 장면 제작. 버튼이 카드 아래로 내려오고 가로로 넘치지 않아요.</figcaption></figure>
-      <figure><div class="shot pending"><img src="../../tmp/p1-review/flow-m-export.png" alt="휴대폰 너비의 내보내기 화면. 완료된 묶음 두 개" width="390" height="844" loading="lazy">
-          <div class="flag"><span>수정 후 교체 예정</span></div></div>
-        <figcaption>휴대폰 · 내보내기. 지난 묶음에는 "이전 내용" 표시가 붙어요. 파일 정보가 추가되면 새 화면으로 바꿔요.</figcaption></figure>
-    </div>
-      <figure class="wide"><div class="shot pending"><img src="../../tmp/p1-review/flow-fail.png" alt="장면 버전 세 개. 왼쪽 실패 버전에 '결과를 기다리고 있어요.'라고만 적혀 있다" width="1280" height="960" loading="lazy">
-          <div class="flag"><span>수정 후 교체 예정</span></div></div>
-        <figcaption>실패한 장면 버전. 실패 표시는 맞게 나오지만 안내 문장이 "결과를 기다리고 있어요."로 잘못 나와요.</figcaption></figure>
-    <div class="fix"><b>실패 화면에서 고치는 중</b><span>실패한 이유와 다음에 할 일을 한 문장씩 보여 줘요. 예: "결과 파일을 저장하지 못했어요. 선택한 v1은 그대로예요." + "저장 다시 시도" 버튼.</span><span>내용 때문에 거절된 경우는 다시 시도 버튼 대신 "기획 고치기"로 안내해요. 이미 고른 성공 버전은 그대로 남아요.</span></div>
+  <section class="how" aria-labelledby="how-h">
+    <h2 id="how-h">확인 방법</h2>
+    <ol>
+      <li><b>흐름 이해하기</b> — 위 "전체 흐름"과 단계별 화면을 위에서부터 훑어보세요. 단계 순서와 승인하는 곳이 은영님이 생각하신 작업 순서와 맞는지 봐 주세요.</li>
+      <li><b>기능 확인하기</b> — 각 화면 옆 "보실 것"이 그림에서 보이는지 확인해 주세요. 특히 실패 안내, 내보내기 파일 정보, "샘플" 표시가 헷갈리지 않는지요.</li>
+      <li><b>고칠 곳 알려 주기</b> — 단계 번호나 제목과 함께 적어 주세요. 예: <code>5번 샘플 표시가 작아</code>, <code>내보내기 파일 이름이 너무 길어</code></li>
+      <li><b>괜찮으면</b> — Claude 대화창에 <code>P1 확인했어</code>라고 적어 주세요.</li>
+    </ol>
+    <p><b>디자인 시안은 따로 확인해요.</b> 앞으로 만들 화면 전체의 모양이에요. 흐름 확인과 별개로 보시고 따로 답해 주세요: <a href="../design/prototype.html">디자인 시안 열기</a></p>
+    <p class="small">이 페이지는 승인을 기록하지 않아요. 은영님이 대화창에 직접 남기신 답만 확인으로 써요. 흐름 확인과 시안 승인이 모두 끝나기 전에는 P2를 시작하지 않아요.</p>
   </section>
 
-  <section class="later" aria-labelledby="later-h">
-    <h2 id="later-h">나중에 확인하실 때</h2>
-    <p>수정과 독립 재검수가 끝나면 이 페이지의 실패·내보내기 화면을 새로 찍은 화면으로 바꾸고, 위의 상태 칸을 갱신해 다시 알려 드려요.</p>
-    <p>그때 괜찮으시면 <code>P1 확인했어</code>, 고칠 곳이 있으면 화면 번호와 함께 적어 주시면 돼요. 예: <code>5번 샘플 표시가 작아</code></p>
-    <p>디자인 시안(앞으로 만들 화면 전체)도 함께 보실 수 있어요: <a href="../design/prototype.html">디자인 시안 열기</a></p>
+  <section aria-labelledby="lim-h">
+    <h2 id="lim-h">아직 확인하지 않은 것</h2>
+    <ul class="limits">
+      <li>아주 큰 파일, 디스크가 꽉 찬 상황, 전원이 갑자기 꺼지는 상황은 실제로 시험하지 않았어요.</li>
+      <li>화면 읽기 프로그램 같은 모든 보조 기기와 화면 200% 확대는 전부 확인하지 않았어요.</li>
+      <li>실제 AI 결과(P3), 영상 조립(P2)은 아직 없어요.</li>
+    </ul>
   </section>
 
   <footer>
-    <p>준비: Claude design (T-024) · 화면 캡처는 독립 검수 때 가상 데이터로 찍은 것이에요. 실제 개인정보·키·PC 경로는 들어 있지 않아요.</p>
+    <p>준비: Claude design (T-024 → T-030) · 근거: 독립 검수 보고 R-016 · R-017 · R-018</p>
+    <p>화면 캡처는 모두 검수용 가상 데이터예요. 실제 개인정보·키·PC 경로는 들어 있지 않아요.</p>
   </footer>
 </main>
 </body>
