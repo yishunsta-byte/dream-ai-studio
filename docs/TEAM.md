@@ -42,7 +42,15 @@
 
 ## 요청 기록
 
-### T-043 · K6 필수 수정 독립 재검수 (parent=T039/T041/T042, priority=P1) — running
+### T-044 · DB 비변경·정규 journal·사본 유효성 필수 수정 (parent=T043/T035, priority=P1) — ready
+
+- CC-DATA-01 임시코딩, 실제전달로배정. F0431 canonical empty journal만허용/기타failclosed, F0432 시작점검readonly·CLI provenance전persistentPRAGMA금지/쓰기전재검증, F0433 사본readonly integrity·예상원본관계확인후에만확인된사본안내.
+- 범위 T042 db/CLI/startup/sidecar·필요connection옵션/관련tests/고유T044보고·README최소. 원본SQL/고정fixture/사용자DB/타임라인/공용문서불변. rawDELETE/WAL 및generated/default/check 재현·byte/semantic보존·정상upgrade/복원replay·손상/다른정상사본안내·전체tests/lint/typecheck/build·1280/390 증거 반환 후 독립재검수.
+
+
+### T-043 · K6 필수 수정 독립 재검수 (parent=T039/T041/T042, priority=P1) — done (수용 FAIL)
+
+- 결과 msg_578f581ef17f 회수·원문보고취합. 독립29파일280통과/생성1skip·lint/typecheck/build, F0391/4 scopedPASS. 필수 F0431 비정규빈journal DEFAULT/CHECK/generated무사본초기화, F0432 시작점검/거부CLI rawDELETE→WAL bytes변경, F0433 손상SQLite-header사본확인안내를실제재현해수용FAIL. T044수정배정, owned서버/브라우저종료·fake증거보존·사용자DB미접근. 독립상세범위/한계는고유보고참조.
 
 - 실제 worker ready dispatch ctx_c24d11ef5996 / task task_6b7604c1d014 / terminal term_41c69b3f-2b44-4b3a-96d9-75aa28562abb / child k6-fix-independent-recheck. Orca wake로 결과 회수.
 

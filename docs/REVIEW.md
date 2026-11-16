@@ -1,5 +1,9 @@
 # 검수 기록
 
+## R-020 · T043 K6 수정 독립 재검수 — FAIL (2026-11-16)
+
+독립29파일280통과/생성1skip·lint/typecheck/build, 복원실패후재검사·포커스·저장값해제(F0391)와V_RUN검증(F0394)은실행범위내PASS. 추가F0431 비정규빈journal무사본초기화/F0432 시작점검·거부CLI의rawDELETE→WAL원본bytes변경/F0433 손상머리글사본을확인된사본안내를실제재현해K6수용FAIL. T044수정배정, 수정후독립재검수전0005진입금지. 상세 handoffs/T-043-K6-INDEPENDENT-RECHECK.md, 기존P1완료/승인과별도새변경검수. 현재미검증한계는보고유지.
+
 ## R-019 · T039 K6/s4 독립 검수 — FAIL (2026-11-16)
 
 구현 ebd0dff의 독립 검수에서 28파일258통과/생성1skip·lint/typecheck/build, 실제제품s3→s4 및1280/390키보드복원은 통과했다. 수용은 F039-1 terminal실패후재검사UI막힘과 F039-2 nonemptyDB의누락/빈journal 무사본초기화 때문에 FAIL. F1은T041진행, F2와시작안내/V_RUN검증보완은T042순차배정. 수정후독립재검수전K6완료/0005진입금지. 이는 기존P1독립PASS/사용자승인과 별도인 새K6변경검수다. 상세 직접실행범위·한계·증거는 handoffs/T-039-K6-INDEPENDENT-REVIEW.md. 임시fake root삭제자동승인policy거부로자료보존, 자체서버/브라우저종료확인.
