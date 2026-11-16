@@ -6,23 +6,32 @@
 // Node connections to anything but loopback are refused (render/guard.ts). If the worker goes away (IPC disconnect)
 // the render is cancelled and the child ends.
 import { spawnSync } from "node:child_process";
-import { randomBytes } from "node:crypto";
-import { rmSync } from "node:fs";
+import { createHash, randomBytes } from "node:crypto";
+import { createReadStream, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { RenderProps } from "../lib/render/props";
 import { assertOwnedProps, chromiumFlags, classify, installNetGuard } from "./guard";
 import { copyTrustedBundle, manifestOf, storeBundle, type BundleFile, type TrustedBundle } from "./bundle-cache";
+import { audioFailureCode } from "../lib/render/errors";
+import type { MixRequest, ProcessedMix } from "../lib/audio/mix";
 
 export { chromiumFlags, classify };
 // bundleRoot: the cache folder; trustedBundle: the worker's own record of a cached build (null → build);
 // workBundle: the attempt's folder the render serves. fileBase: the attempt's file server (the only allowed source).
 // netLog: optional Chrome network log file (evidence runs).
+// T-137 sound (envelope B mix; T-136 2.3): after the muted render to videoPath, the same child processes the sound
+// with lib/audio (pinned sources by absolute path and hash, the tools with their expected hashes) and muxes it with
+// that video into `output`. The sound step is cancelled by the same cancel/disconnect path; deadline is absolute.
+export type AudioStart={request:Pick<MixRequest,"outputFrames"|"audio"|"audioJoins"|"sources">;
+  tools:{ffmpeg:string;ffprobe:string;ffmpegSha256:string;ffprobeSha256:string};workRoot:string;videoPath:string;deadline:number};
 export type ChildStart={type:"start";appRoot:string;entry:string;bundleRoot:string;bundleKey:string;trustedBundle:TrustedBundle|null;workBundle:string;
-  browserPath:string;output:string;props:RenderProps;fileBase:string;compositionId:string;netLog:string|null};
+  browserPath:string;output:string;props:RenderProps;fileBase:string;compositionId:string;netLog:string|null;audio:AudioStart|null};
+export const AUDIO_STEP_MAX_MS=10*60000;
 export type ChildMessage=
-  |{type:"stage";stage:"bundle"|"browser"|"compose"}
+  |{type:"stage";stage:"bundle"|"browser"|"compose"|"audio"}
+  |{type:"audio";result:ProcessedMix}
   |{type:"bundle";result:"hit"}|{type:"bundle";result:"built";dir:string;files:BundleFile[];rejected:string|null}
   |{type:"progress";renderedFrames:number;encodedFrames:number;progress:number}
   |{type:"done"}
@@ -65,9 +74,31 @@ async function run(start:ChildStart){
     await send({type:"stage",stage:"compose"});
     // a cancel that arrived while compose was starting is applied now
     const signal=makeCancelSignal();cancel=signal.cancel;if(canceled)signal.cancel();let last=0;
-    await renderMedia({...common,composition,codec:"h264",pixelFormat:"yuv420p",colorSpace:"bt709",muted:true,outputLocation:start.output,overwrite:false,concurrency:1,licenseKey:null,cancelSignal:signal.cancelSignal,
+    await renderMedia({...common,composition,codec:"h264",pixelFormat:"yuv420p",colorSpace:"bt709",muted:true,outputLocation:start.audio?start.audio.videoPath:start.output,overwrite:false,concurrency:1,licenseKey:null,cancelSignal:signal.cancelSignal,
       onProgress:({progress,renderedFrames,encodedFrames})=>{const now=Date.now();if(now-last<1000&&progress<1)return;last=now;void send({type:"progress",renderedFrames,encodedFrames,progress});}});
   }finally{cancel=null;await browser.close({silent:true}).catch(()=>{});}
+  if(start.audio)await processSound(start.audio,start.output);
+}
+async function sha256File(path:string){const hash=createHash("sha256");let size=0;for await(const chunk of createReadStream(path)){hash.update(chunk as Buffer);size+=(chunk as Buffer).length;}return {sha256:hash.digest("hex"),sizeBytes:size};}
+async function processSound(audio:AudioStart,output:string){
+  if(canceled)throw new Error("render got cancelled before sound");
+  await send({type:"stage",stage:"audio"});
+  const controller=new AbortController();cancel=()=>controller.abort();if(canceled)controller.abort();
+  try{
+    const timeoutMs=Math.min(AUDIO_STEP_MAX_MS,audio.deadline-Date.now());
+    if(timeoutMs<=0)throw Object.assign(new Error("sound step has no time left"),{name:"AudioError",code:"TIMEOUT",detail:null});
+    const video={path:audio.videoPath,...await sha256File(audio.videoPath)};
+    const {mixAudio}=await import("../lib/audio/mix");
+    const result=await mixAudio({...audio.request,video,outputPath:output,workRoot:audio.workRoot},{signal:controller.signal,timeoutMs,tools:audio.tools});
+    if(result.status==="no_audio")throw new Error("sound plan without sound clips");
+    await send({type:"audio",result});
+  }finally{cancel=null;}
+}
+// A sound processing failure keeps its own code (mapped once, lib/render/errors); detail never holds a path.
+function failureOf(error:unknown){
+  const audio=error as {name?:string;code?:unknown;detail?:unknown};
+  if(audio?.name==="AudioError"&&typeof audio.code==="string")return {code:audioFailureCode(audio.code),detail:`${audio.code}${typeof audio.detail==="string"?` ${audio.detail}`:""}`.slice(0,300)};
+  return classify(error);
 }
 
 // Only when started as the render child (forked by lib/render/run.ts with IPC and this flag), never on import.
@@ -76,7 +107,7 @@ if(process.send&&process.env.DREAM_RENDER_CHILD==="1"){
   process.on("message",(message:ChildStart|{type:"cancel"})=>{
     if(message.type==="cancel"){canceled=true;cancel?.();return;}
     if(message.type!=="start")return;
-    void run(message).then(async()=>{await send({type:"done"});},async error=>{const result=classify(error);await send({type:"error",...(canceled?{code:"RENDER_CANCELED",detail:result.detail}:result)});})
+    void run(message).then(async()=>{await send({type:"done"});},async error=>{const result=failureOf(error);await send({type:"error",...(canceled?{code:"RENDER_CANCELED",detail:result.detail}:result)});})
       .finally(()=>{if(process.connected)process.disconnect?.();setTimeout(()=>process.exit(0),200);});
   });
   // The worker went away (closed, crashed or killed): stop rendering, give the browser a moment to close, then end

@@ -16,7 +16,7 @@ import { checkTimelineRows, readTimelineRow, timelineSha256, type TimelineRow } 
 import { readBackupManifest, verifyBackupArchive } from "@/lib/backup/archive";
 import { fileDigest } from "@/lib/export/zip";
 import { AUDIO_MIX_PROFILE, canonicalJson, outputFrames, SAMPLES_PER_FRAME, timelineSchema, timelineV1Schema, timelineV2Schema, type Timeline, type TimelineV2 } from "@/lib/edit/timeline";
-import { renderInputSchema, prepareRender } from "@/lib/render/input";
+import { renderInputSilentSchema, prepareRender } from "@/lib/render/input";
 import { libraryRepository } from "@/lib/repo/library";
 import { menusSchema } from "@/lib/menus/schema";
 import { snapshotForMenu } from "@/lib/menus/snapshot";
@@ -202,14 +202,16 @@ describe("저장·읽기·복원 (가상 s4 사본)",()=>{
     const review=reviewService(handle).get(ids.main),item=review.items.find(row=>row.templateItemId==="x.music-rights");
     expect(item).toMatchObject({status:"unchecked",required:true});expect(item!.evidence).toMatch(/1곡 중 플랜·생성일·라이선스가 모두 적힌 곡 1곡/);expect(review.approved).toBe(false);
   });
-  it("렌더: v2(소리 있음·없음)와 소리 있는 예전 v1은 무음 렌더로 들어가지 않음, 렌더 입력 1은 소리 없는 v1만",async()=>{
+  // T-137: a v2 timeline is rendered through envelope B (never the silent envelope A); envelope A stays a v1 without sound.
+  it("렌더: v2는 봉투 B(소리 없으면 mode none, 있으면 mix 준비 검사)로만, 무음 봉투 A는 소리 없는 v1만",async()=>{
     const {handle,audio}=await fixture(),timelines=timelineService(handle),data=timelines.get(ids.main);
     const saved=timelines.save(ids.main,data.project.contentRevision,data.current!.id,soundOn(data.timeline!,[sound(audio.song1)]));
-    const prepared=await prepareRender(handle,ids.main,{browser:async()=>{throw new Error("not reached");}});
-    expect(prepared.input).toBeNull();expect(prepared.blockers).toEqual([{code:"AUDIO_RENDER_UNSUPPORTED",params:{schemaVersion:2,audioClips:1}}]);
+    const deps={browser:async()=>({ok:false as const,reason:"missing" as const,version:"x"}),audioTools:async()=>null};
+    const prepared=await prepareRender(handle,ids.main,deps);
+    expect(prepared.input).toBeNull();expect(prepared.blockers.map(item=>item.code)).toContain("AUDIO_TOOL_MISSING");expect(prepared.blockers.map(item=>item.code)).not.toContain("AUDIO_RENDER_UNSUPPORTED");
     timelines.save(ids.main,saved.revision,saved.timelineId,soundOn(data.timeline!,[]));
-    expect((await prepareRender(handle,ids.main,{browser:async()=>{throw new Error("not reached");}})).blockers).toEqual([{code:"AUDIO_RENDER_UNSUPPORTED",params:{schemaVersion:2,audioClips:0}}]);
-    const timelineField=renderInputSchema.shape.timeline;
+    expect((await prepareRender(handle,ids.main,deps)).blockers.map(item=>item.code)).not.toContain("AUDIO_RENDER_UNSUPPORTED");
+    const timelineField=renderInputSilentSchema.shape.timeline;
     expect(timelineField.safeParse(data.timeline).success).toBe(true);
     expect(timelineField.safeParse(soundOn(data.timeline!,[])).success).toBe(false);
     expect(timelineField.safeParse({...data.timeline,audio:[{id:v7(),assetId:audio.voice,role:"voice",startFrame:0,gainDb:0,fadeInFrames:0,fadeOutFrames:0,duckUnderVoice:false}]}).success).toBe(false);
@@ -222,7 +224,7 @@ describe("0008 기능 게이트·예전 v1 소리·백업 복원",()=>{
     const timeline=JSON.parse(r1.timeline_json) as Record<string,unknown>;
     for(const bad of [{...timeline,audio:[{x:1}]},{...timeline,schemaVersion:3},{...timeline,schemaVersion:2,audioJoins:[],audioRights:[],audioMixProfile:"other"},{...timeline,schemaVersion:2,audioMixProfile:AUDIO_MIX_PROFILE}])
       expect(()=>insert(JSON.stringify(bad)),JSON.stringify(bad).slice(0,60)).toThrow(/timeline schema is not writable/);
-    const recorded=journal(handle.sqlite)!;expect(recorded.map(row=>row.version)).toEqual([1,2,3,4,5,6,7,8]);expect(recorded[7].name).toBe("0008_timeline_audio.sql");
+    const recorded=journal(handle.sqlite)!;expect(recorded.map(row=>row.version)).toEqual([1,2,3,4,5,6,7,8,9]);expect(recorded[7].name).toBe("0008_timeline_audio.sql");
     expect(compareMigrations(recorded,productMigrations().slice(0,7))).toBe("too_new");expect(compareMigrations(recorded,productMigrations())).toBe("same");
   });
   it("0008 이전에 쓰인 소리 있는 v1 행: 올려도 바이트 그대로 읽히고, 저장·되돌리기·렌더는 명시 거절",async()=>{
@@ -233,7 +235,7 @@ describe("0008 기능 게이트·예전 v1 소리·백업 복원",()=>{
       timelineRepository(handle).insert({id,project_id:ids.main,revision:2,content_revision:data.project.contentRevision+1,timeline_json:json,timeline_sha256:timelineSha256(json),source:"user",restored_from_id:null,migrated_from_key:null,created_at:"2026-11-16T00:00:00Z"});
       handle.sqlite.prepare("UPDATE projects SET content_revision=content_revision+1 WHERE id=?").run(ids.main);timelineRepository(handle).point(ids.main,id);}finally{handle.close();}}
     const before=new Database(file,{readonly:true});const kept=before.prepare("SELECT * FROM timeline_revisions WHERE id=?").get(historical);before.close();
-    const sqlite=new Database(file);try{sqlite.pragma("foreign_keys = ON");expect(migrateDatabase(sqlite,{migrations:productMigrations(),now})).toBe(1);}finally{sqlite.close();}
+    const sqlite=new Database(file);try{sqlite.pragma("foreign_keys = ON");expect(migrateDatabase(sqlite,{migrations:productMigrations(),now})).toBe(2);}finally{sqlite.close();}
     const handle=openDatabase(file,{fileMustExist:true});handles.push(handle);
     expect(handle.sqlite.prepare("SELECT * FROM timeline_revisions WHERE id=?").get(historical)).toEqual(kept);
     const timelines=timelineService(handle),data=timelines.get(ids.main);expect(data.timeline!.audio).toHaveLength(1);expect(data.timeline!.schemaVersion).toBe(1);
@@ -260,7 +262,7 @@ describe("0008 기능 게이트·예전 v1 소리·백업 복원",()=>{
     handle.sqlite.prepare("DELETE FROM settings WHERE key='backup.directory'").run();// the fixture's folder setting points outside this copy
     expect(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM jobs WHERE status='running'").get()).toEqual({n:0});
     const request=backupService(handle,now).request()!,claimed=jobsService(handle,now).claim()!;expect(claimed.kind).toBe("backup");await runClaimedBackup(handle,claimed,now);
-    const destination=join(root,"restored"),svc=restoreService(handle,now),checked=await svc.inspect({backupId:request.id,destination});expect(checked).toMatchObject({compat:"same",fromVersion:8,toVersion:8});await svc.finish(checked.ticketId);
+    const destination=join(root,"restored"),svc=restoreService(handle,now),checked=await svc.inspect({backupId:request.id,destination});expect(checked).toMatchObject({compat:"same",fromVersion:9,toVersion:9});await svc.finish(checked.ticketId);
     const restored=openDatabase(join(destination,"data/app.db"),{fileMustExist:true});handles.push(restored);
     expect(restored.sqlite.prepare("SELECT * FROM timeline_revisions WHERE id=?").get(row.id)).toEqual(row);
     for(const file of files)expect(await fileDigest(join(destination,"storage",...file.filePath!.split("/")))).toEqual({sha256:file.sha256,sizeBytes:file.sizeBytes});

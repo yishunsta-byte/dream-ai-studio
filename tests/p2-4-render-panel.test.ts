@@ -13,7 +13,7 @@ import { blockerLines, failureCopy, progressCopy, verifyReasons, canceledCopy, d
 // in the browser run of the T-117 report.
 const base:RenderView={id:"r1",jobId:"j1",status:"succeeded",stage:null,progress:null,renderedFrames:900,totalFrames:900,createdAt:"2026-11-17T01:00:00.000Z",startedAt:"2026-11-17T01:00:01.000Z",finishedAt:"2026-11-17T01:01:00.000Z",elapsedSec:59,attempt:1,maxAttempts:3,cancelRequested:false,waiting:null,
   timelineRevision:5,contentRevision:7,stale:false,isSample:false,fileName:"핸드크림_9x16_r5.mp4",sizeBytes:13002342,fileExists:true,width:1080,height:1920,fps:30,codec:"h264",durationSec:30,audioStreams:0,
-  verify:{result:"passed",items:[]},canceledLate:false,cleanupLeft:[],errorCode:null,errorMessage:null,error:null,subtitleMeasure:null,phonePlayback:null,textOnlyChange:null,etaSec:null};
+  verify:{result:"passed",items:[]},canceledLate:false,cleanupLeft:[],errorCode:null,errorMessage:null,error:null,subtitleMeasure:null,phonePlayback:null,textOnlyChange:null,etaSec:null,audioMode:"none",audio:null};
 const view=(patch:Partial<RenderView>):RenderView=>({...base,...patch});
 const data=(patch:Partial<RendersData>={}):RendersData=>({workerOnline:true,contentRevision:7,timelineId:"019b0000-0000-7000-8000-000000000001",check:{ready:true,blockers:[]},renders:[],...patch});
 const html=(value:RendersData,saved:{revision:number;aspect:string}|null={revision:5,aspect:"9:16"})=>renderToStaticMarkup(createElement(RenderPanel,{projectId:"p1",data:value,saved}));

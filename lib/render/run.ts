@@ -3,7 +3,8 @@ import { execFile, fork, type ChildProcess } from "node:child_process";
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import type { ChildMessage, ChildStart } from "@/render/child";
+import type { AudioStart, ChildMessage, ChildStart } from "@/render/child";
+import type { ProcessedMix } from "@/lib/audio/mix";
 import type { TrustedBundle } from "@/render/bundle-cache";
 import { REMOTION_VERSION } from "./tools";
 import type { RenderProps } from "./props";
@@ -20,7 +21,7 @@ import type { RenderProps } from "./props";
 //   profile and Remotion's frame folders are removed with that folder even when the tree was killed.
 const run=promisify(execFile);
 export const CANCEL_GRACE_MS=10000;
-export type AttemptResult={ok:true}|{ok:false;code:string;detail:string;signal:string|null;exitCode:number|null};
+export type AttemptResult={ok:true;audio?:ProcessedMix|null}|{ok:false;code:string;detail:string;signal:string|null;exitCode:number|null};
 // Bundle trust (T-116 F116-1): the file list of each cached build lives here, in the worker's memory, never in the
 // cache folder. A new worker builds once and then reuses its own verified builds.
 const trustedBundles=new Map<string,TrustedBundle>();
@@ -35,7 +36,7 @@ function pruneBundles(bundleRoot:string,sourceSha256:string,keep:string){
 // file server, the only origin the props may name.
 export type AttemptOptions={appRoot:string;bundleRoot:string;sourceSha256:string;workBundle:string;fileBase:string;browserPath:string;output:string;props:RenderProps;compositionId:string;netLog?:string|null;
   onBundle?:(result:"hit"|"built",rejected:string|null)=>void;
-  onStage?:(stage:"bundle"|"browser"|"compose")=>void;onProgress?:(value:{renderedFrames:number;encodedFrames:number;progress:number})=>void;
+  onStage?:(stage:"bundle"|"browser"|"compose"|"audio")=>void;audio?:AudioStart|null;onProgress?:(value:{renderedFrames:number;encodedFrames:number;progress:number})=>void;
   shouldCancel?:()=>"cancel"|"timeout"|null;pollMs?:number;graceMs?:number;onChild?:(pid:number)=>void;tempDir?:string};
 
 type Proc={pid:number;parent:number;created:number};
@@ -60,7 +61,7 @@ export async function runRenderAttempt(options:AttemptOptions):Promise<AttemptRe
     env:{...process.env,DREAM_RENDER_CHILD:"1",...(options.tempDir?{TEMP:options.tempDir,TMP:options.tempDir,TMPDIR:options.tempDir}:{})}});
   options.onChild?.(child.pid!);
   let tail="";const keep=(chunk:Buffer)=>{tail=(tail+chunk.toString("utf8")).slice(-4000);};child.stdout?.on("data",keep);child.stderr?.on("data",keep);
-  let result:{code:string;detail:string}|null=null,done=false,stop:"cancel"|"timeout"|null=null,forced=false;
+  let result:{code:string;detail:string}|null=null,audio:ProcessedMix|null=null,done=false,stop:"cancel"|"timeout"|null=null,forced=false;
   child.on("message",(message:ChildMessage)=>{
     if(message.type==="stage")options.onStage?.(message.stage);
     else if(message.type==="bundle"){
@@ -68,12 +69,13 @@ export async function runRenderAttempt(options:AttemptOptions):Promise<AttemptRe
       options.onBundle?.(message.result,message.result==="built"?message.rejected:null);
     }
     else if(message.type==="progress")options.onProgress?.({renderedFrames:message.renderedFrames,encodedFrames:message.encodedFrames,progress:message.progress});
+    else if(message.type==="audio")audio=message.result;
     else if(message.type==="done")done=true;
     else if(message.type==="error")result={code:message.code,detail:message.detail};
   });
   const exited=new Promise<{code:number|null;signal:string|null}>(resolve=>child.once("exit",(code,signal)=>resolve({code,signal})));
   const start:ChildStart={type:"start",appRoot:options.appRoot,entry:join(options.appRoot,"render","entry.tsx"),bundleRoot:options.bundleRoot,bundleKey:bundleKey(options.sourceSha256),trustedBundle:trustedBundle(options.bundleRoot,options.sourceSha256),workBundle:options.workBundle,
-    browserPath:options.browserPath,output:options.output,props:options.props,fileBase:options.fileBase,compositionId:options.compositionId,netLog:options.netLog??null};
+    browserPath:options.browserPath,output:options.output,props:options.props,fileBase:options.fileBase,compositionId:options.compositionId,netLog:options.netLog??null,audio:options.audio??null};
   child.send(start);
   // Cancel / time limit: ask once, then kill the tree after the grace period.
   let deadline:number|null=null;
@@ -87,7 +89,7 @@ export async function runRenderAttempt(options:AttemptOptions):Promise<AttemptRe
   if(stop)return {ok:false,code:stop==="timeout"?"TIMEOUT":"RENDER_CANCELED",detail:forced?"child tree killed after grace period":"child stopped",signal:exit.signal,exitCode:exit.code};
   // (set inside the message handler; read through a cast because TypeScript narrows the closure variable to null)
   const reported=result as {code:string;detail:string}|null;
-  if(done&&!reported)return {ok:true};
+  if(done&&!reported)return {ok:true,audio:audio as ProcessedMix|null};
   if(reported)return {ok:false,code:reported.code,detail:reported.detail,signal:exit.signal,exitCode:exit.code};
   // No result: the child died (signal, crash, killed from outside).
   return {ok:false,code:"RENDER_BROWSER_CRASHED",detail:`child ended without a result (${exit.signal??exit.code}) ${tail.split(/\r?\n/).filter(Boolean).at(-1)?.slice(0,200)??""}`,signal:exit.signal,exitCode:exit.code};

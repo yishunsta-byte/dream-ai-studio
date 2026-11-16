@@ -1,6 +1,9 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import type Database from "better-sqlite3";
+import { z } from "zod";
+import { timelineSchema } from "@/lib/edit/timeline";
+import { MAX_OUTPUT_FRAMES, PROFILE_ID } from "@/lib/audio/profile";
 
 // T-105/T-109: checks of stored render rows, run after a migration step (0007's data check) and on every restore
 // that reads the current structure. They read every rule back from the stored rows instead of trusting that the
@@ -10,7 +13,59 @@ export const renderInputSha256=(json:string)=>createHash("sha256").update(json).
 export const hasRendersTable=(sqlite:Database.Database)=>!!sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='renders'").get();
 // T-111: the reason is one of these fixed sentences and the subject id is a UUID, so a caller may show both as they
 // are (CLI diagnostics). No stored text (input JSON, file path, hash) is ever put into the error.
-export const renderRowReasons=["input differs from its hash","input is not JSON","input schemaVersion is not 1","input names another project or timeline","saved timeline is missing","saved timeline binding differs","input timeline hash differs from the saved timeline","job differs","file fields are incomplete","verify record is not JSON","verify record is not an object","success without a verified file","late result without a kept file","file kept for an unfinished or failed render","failure without a code","finish time differs from status","more than one render in progress"] as const;
+export const renderRowReasons=["input differs from its hash","input is not JSON","input schemaVersion is not 1","input names another project or timeline","saved timeline is missing","saved timeline binding differs","input timeline hash differs from the saved timeline","job differs","file fields are incomplete","verify record is not JSON","verify record is not an object","success without a verified file","late result without a kept file","file kept for an unfinished or failed render","failure without a code","finish time differs from status","more than one render in progress",
+  // T-137 (0009): appended only, the earlier sentences and their order stay as they were.
+  "input envelope is not known","input audio plan differs from its timeline","audio verify record differs"] as const;
+
+// T-136/T-137 render input envelopes. The top-level schemaVersion stays 1 (0006 CHECK).
+// A (unchanged since P2-4): no audioPlan key, output.audio "none", a v1 timeline. Stored rows are read as they are.
+// B (0009): a v2 timeline with audioPlan 1, either mode "none" (no sound clips: silent video) or mode "mix" (AAC).
+// The plan pins every sound file (stored path, hash, size, length) and the FFmpeg/ffprobe build used to process it.
+const hex64s=z.string().regex(/^[0-9a-f]{64}$/);
+const storedRel=z.string().min(1).max(400).refine(value=>!value.startsWith("/")&&!value.includes("\\")&&!value.includes(":")&&value.split("/").every(part=>part&&part!=="."&&part!==".."),{message:"relative path"});
+export const audioSourcePinSchema=z.strictObject({assetId:z.uuid(),relPath:storedRel,sha256:hex64s,sizeBytes:z.number().int().min(1),durationMs:z.number().int().min(1),isMock:z.boolean()});
+export const audioToolsPinSchema=z.strictObject({ffmpeg:z.string().min(1).max(200),ffmpegSha256:hex64s,ffprobeSha256:hex64s});
+export const audioPlanSchema=z.discriminatedUnion("mode",[
+  z.strictObject({schemaVersion:z.literal(1),mode:z.literal("none")}),
+  z.strictObject({schemaVersion:z.literal(1),mode:z.literal("mix"),profile:z.literal(PROFILE_ID),outputFrames:z.number().int().min(1).max(MAX_OUTPUT_FRAMES),
+    sources:z.array(audioSourcePinSchema).min(1).max(100),tools:audioToolsPinSchema}),
+]);
+export type AudioPlan=z.infer<typeof audioPlanSchema>;
+// Rules between the plan, the output and the timeline (the request builds them; the row check reads them back).
+export function audioPlanIssue(input:{timeline:{schemaVersion:number;audio:readonly {assetId:string}[]};output:{audio:string};durationInFrames:number;audioPlan:AudioPlan}):string|null{
+  const {timeline,output,audioPlan:plan}=input;
+  if(timeline.schemaVersion!==2)return "audio plan needs a v2 timeline";
+  if(plan.mode==="none")return output.audio==="none"&&timeline.audio.length===0?null:"mode none with sound or an audio output";
+  if(output.audio!=="aac"||timeline.audio.length===0)return "mode mix without sound or without an AAC output";
+  if(plan.outputFrames!==input.durationInFrames)return "mix length differs from the video length";
+  const ids=plan.sources.map(source=>source.assetId);
+  if(ids.some((id,index)=>index>0&&ids[index-1]>=id))return "sources are not sorted and unique";
+  const used=[...new Set(timeline.audio.map(clip=>clip.assetId))].sort();
+  return used.length===ids.length&&used.every((id,index)=>id===ids[index])?null:"sources differ from the timeline's sound files";
+}
+type Envelope={kind:"A"}|{kind:"B";mode:"none"|"mix"};
+const isRecord=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==="object"&&!Array.isArray(value);
+// The envelope of a stored input, or the reason it is not one. A row without audioPlan is envelope A and keeps the
+// rules of its time (0006/0007: schemaVersion 1 and the saved timeline binding); only a v2 timeline or an AAC output
+// without a plan is refused there, since only envelope B may carry either.
+export function renderEnvelope(record:Record<string,unknown>):Envelope|"input envelope is not known"|"input audio plan differs from its timeline"{
+  const output=isRecord(record.output)?record.output:null,timeline=isRecord(record.timeline)?record.timeline:null;
+  if(!("audioPlan" in record))return timeline?.schemaVersion===2||output?.audio==="aac"?"input envelope is not known":{kind:"A"};
+  if(!output||!timeline)return "input envelope is not known";
+  const plan=audioPlanSchema.safeParse(record.audioPlan),parsed=timelineSchema.safeParse(timeline);
+  if(!plan.success||!parsed.success||parsed.data.schemaVersion!==2||!Number.isSafeInteger(record.durationInFrames)||(output.audio!=="none"&&output.audio!=="aac"))return "input envelope is not known";
+  return audioPlanIssue({timeline:parsed.data,output:{audio:output.audio as string},durationInFrames:record.durationInFrames as number,audioPlan:plan.data})?"input audio plan differs from its timeline":{kind:"B",mode:plan.data.mode};
+}
+const AUDIO_STATUSES=new Set(["normalized","silent","too_short"]);
+const measured=(value:unknown)=>value===null||(typeof value==="number"&&Number.isFinite(value));
+// verify_json.audio of a kept AAC file: the processing result as recorded (non-finite values are null, a normalized
+// result is accepted, a silent or too-short one is not judged).
+function audioVerifyOk(audio:unknown){
+  if(!isRecord(audio)||audio.mode!=="aac"||audio.profile!==PROFILE_ID||!AUDIO_STATUSES.has(audio.status as string))return false;
+  if(audio.status==="normalized"?audio.accepted!==true:audio.accepted!==null)return false;
+  const final=isRecord(audio.final)?audio.final:null;
+  return !!final&&measured(final.integrated)&&measured(final.truePeak)&&measured(final.range)&&(audio.status!=="normalized"||(final.integrated!==null&&final.truePeak!==null));
+}
 export type RenderRowReason=typeof renderRowReasons[number];
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export class RenderRowError extends Error{
@@ -28,6 +83,7 @@ export function checkRenderRow(sqlite:Database.Database,row:Row){
   if(!isObject(input)||input.schemaVersion!==1)fail("input schemaVersion is not 1");
   const record=input as Record<string,unknown>;
   if(record.projectId!==row.project_id||record.timelineRevId!==row.timeline_rev_id||record.timelineRevision!==row.timeline_revision||record.contentRevision!==row.content_revision)fail("input names another project or timeline");
+  const envelope=renderEnvelope(record);if(typeof envelope==="string")fail(envelope);
   // Saved timeline binding (F107-3): the same project's saved revision with that number, content revision and hash.
   const timeline=sqlite.prepare("SELECT project_id,revision,content_revision,timeline_sha256 FROM timeline_revisions WHERE id=?").get(row.timeline_rev_id) as {project_id:string;revision:number;content_revision:number;timeline_sha256:string}|undefined;
   if(!timeline)fail("saved timeline is missing");
@@ -40,12 +96,17 @@ export function checkRenderRow(sqlite:Database.Database,row:Row){
   const none=row.file_path===null&&row.sha256===null&&row.size_bytes===null;
   const full=row.file_path===`projects/${row.project_id}/renders/${row.id}.mp4`&&hex64(row.sha256)&&Number.isSafeInteger(row.size_bytes)&&row.size_bytes!>=1&&row.verify_json!==null;
   if(!none&&!full)fail("file fields are incomplete");
-  if(row.verify_json!==null){let verify:unknown;try{verify=JSON.parse(row.verify_json);}catch{fail("verify record is not JSON");}if(!isObject(verify))fail("verify record is not an object");}
+  let verify:unknown=null;
+  if(row.verify_json!==null){try{verify=JSON.parse(row.verify_json);}catch{fail("verify record is not JSON");}if(!isObject(verify))fail("verify record is not an object");}
   if(row.status==="succeeded"&&(!full||row.canceled_late!==0||row.error_code!==null))fail("success without a verified file");
   if(row.canceled_late===1&&(row.status!=="canceled"||!full))fail("late result without a kept file");
   if(full&&row.status!=="succeeded"&&row.canceled_late!==1)fail("file kept for an unfinished or failed render");
   if(row.status==="failed"&&!row.error_code)fail("failure without a code");
   if((row.status==="queued"||row.status==="running")!==(row.finished_at===null))fail("finish time differs from status");
+  // A kept file of a sound mix carries its processing record; every other verify record has none.
+  const mix=typeof envelope!=="string"&&envelope.kind==="B"&&envelope.mode==="mix";
+  if(isObject(verify)){const audio=(verify as Record<string,unknown>).audio;
+    if(mix&&full?!audioVerifyOk(audio):audio!==undefined&&!(mix&&!full))fail("audio verify record differs");}
 }
 export function checkRenderRows(sqlite:Database.Database){
   if(!hasRendersTable(sqlite))return;

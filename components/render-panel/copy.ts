@@ -24,7 +24,10 @@ export function blockerLines(blockers:RenderBlocker[]):BlockerLine[]{
     else if(blocker.code==="FONT_MISSING"){const [first,...rest]=blocker.params.texts;lines.push({key:`font-${blocker.params.family}`,text:`${blocker.params.family} 글꼴 파일을 찾지 못했어요.${first?` 이 글꼴을 쓰는 글자: "${first.preview}"${rest.length?` 외 ${rest.length}개`:""}.`:""}`,code:"FONT_MISSING",link:"edit"});}
     else if(blocker.code==="TIMELINE_STALE")lines.push({key:"stale",text:`장면 결과를 바꾼 뒤 타임라인을 다시 저장하지 않았어요${blocker.params.scenes.length?`: ${blocker.params.scenes.map(scene=>scene.sceneTitle).join(", ")}`:""}. 편집에서 다시 저장해 주세요.`,code:"TIMELINE_STALE",link:"edit"});
     else if(blocker.code==="RENDER_BROWSER_MISSING")lines.push(blocker.params.reason==="mismatch"?{key:"browser",text:`영상 만들기 도구의 설치본이 정해진 버전(${blocker.params.version})과 달라요. 이 PC에서 PowerShell로 scripts/install-browser.ps1을 다시 실행해 주세요.`,code:"RENDER_BROWSER_MISSING"}:{key:"browser",text:"영상 만들기 도구가 아직 설치되지 않았어요. 설치는 한 번만 하면 돼요: 이 PC에서 PowerShell로 scripts/install-browser.ps1을 실행해 주세요.",code:"RENDER_BROWSER_MISSING"});
-    else if(blocker.code==="AUDIO_RENDER_UNSUPPORTED")lines.push({key:"audio",text:blocker.params.schemaVersion===2?"소리 설정이 들어간 타임라인은 아직 영상으로 만들 수 없어요. 소리 없이 만든다고 성공으로 보여 주지 않아요.":"예전 형식에 소리 항목이 있어 영상으로 만들 수 없어요. 원래 기록은 그대로 둬요.",code:"AUDIO_RENDER_UNSUPPORTED",link:"edit"});
+    else if(blocker.code==="AUDIO_RENDER_UNSUPPORTED")lines.push({key:"audio",text:"소리를 넣은 예전 형식 타임라인이에요. 편집에서 소리를 확인하고 다시 저장해 주세요. 소리 없이 만든다고 성공으로 보여 주지 않아요.",code:"AUDIO_RENDER_UNSUPPORTED",link:"edit"});
+    else if(blocker.code==="AUDIO_SOURCE_MISSING")lines.push({key:`audio-${blocker.params.assetId}`,text:blocker.params.reason==="range"?"소리 파일이 쓰려는 구간보다 짧아요. 편집에서 소리 구간을 확인해 주세요.":blocker.params.reason==="file_changed"?"소리 파일이 고를 때와 달라졌어요. 편집에서 소리를 다시 골라 주세요.":blocker.params.reason==="not_audio"?"소리 자리에 소리가 아닌 파일이 들어 있어요. 편집에서 다시 골라 주세요.":"소리 파일을 찾지 못했어요. 편집에서 소리를 다시 골라 주세요.",code:"AUDIO_SOURCE_MISSING",link:"edit"});
+    else if(blocker.code==="AUDIO_TOO_LONG")lines.push({key:"audio-long",text:`소리가 들어간 영상은 10분까지만 만들 수 있어요(지금 ${duration(blocker.params.frames/30)}).`,code:"AUDIO_TOO_LONG",link:"edit"});
+    else if(blocker.code==="AUDIO_TOOL_MISSING")lines.push({key:"audio-tool",text:"소리 처리 도구(FFmpeg)를 찾지 못했어요. 설치 안내를 확인해 주세요.",code:"AUDIO_TOOL_MISSING"});
     else if(blocker.code==="DISK_FULL")lines.push({key:"disk",text:`디스크 공간이 모자라요. 필요 약 ${gb(blocker.params.needBytes)} · 남은 ${gb(blocker.params.freeBytes)}.`,code:"DISK_FULL"});
   }
   const scene=(reason:string,text:(numbers:number[])=>string,code?:string)=>{const entry=group.get(reason);if(entry)lines.unshift({key:reason,text:text(entry.numbers),code,link:"produce"});};
@@ -60,7 +63,11 @@ export function verifyReasons(items:{item:string;expected:string|number;actual:s
     if(item.item==="durationSec")out.push(`길이가 ${item.expected}초가 아니라 ${item.actual??"알 수 없음"}${item.actual!==null?"초":""}예요`);
     else if(item.item==="width"||item.item==="height"){if(!out.some(text=>text.startsWith("해상도")))out.push(`해상도가 ${get("width")?.expected}×${get("height")?.expected}이 아니라 ${get("width")?.actual??"?"}×${get("height")?.actual??"?"}예요`);}
     else if(item.item==="videoStreams")out.push(item.actual===0?"영상 트랙이 없어요":`영상 트랙이 ${item.actual}개예요`);
-    else if(item.item==="audioStreams")out.push("소리 트랙이 들어 있어요(소리 없는 영상이어야 해요)");
+    else if(item.item==="audioStreams")out.push(item.expected===0?"소리 트랙이 들어 있어요(소리 없는 영상이어야 해요)":`소리 트랙이 ${item.actual??0}개예요(1개여야 해요)`);
+    else if(item.item==="audioCodec"||item.item==="audioProfile"||item.item==="audioSampleRate"||item.item==="audioChannels"){if(!out.some(text=>text.startsWith("소리 형식")))out.push("소리 형식이 기준(AAC-LC·48kHz·두 채널)과 달라요");}
+    else if(item.item==="audioDecodedSamples")out.push("소리 길이가 영상 길이와 달라요");
+    else if(item.item==="videoStreamSha256")out.push("소리를 합치는 중에 영상이 달라졌어요");
+    else if(item.item==="loudnessIntegrated"||item.item==="truePeak"){if(!out.some(text=>text.startsWith("음량")))out.push("음량이 기준(-14 LUFS ±1, 최대 -1 dBTP)을 벗어났어요");}
     else if(item.item==="colorRange"||item.item==="colorSpace"){if(!out.some(text=>text.startsWith("색 정보")))out.push("색 정보 표시가 기준(bt709·tv)과 달라요");}
     else if(item.item==="frames")out.push(`프레임 수가 ${item.expected}개가 아니라 ${item.actual??"알 수 없음"}${item.actual!==null?"개":""}예요`);
     else if(item.item==="frameRate"||item.item==="averageFrameRate"){if(!out.some(text=>text.startsWith("초당")))out.push(`초당 프레임이 30이 아니에요(${item.actual??"알 수 없음"})`);}
@@ -87,6 +94,9 @@ export function failureCopy(render:RenderView):{text:string;autoRetried:boolean}
     case "TIMEOUT":return {text:"30분 안에 끝나지 않아 멈췄어요. 이미 만든 영상은 그대로예요.",autoRetried:false};
     case "DISK_FULL":return {text:"디스크 공간이 모자라 멈췄어요. 공간을 비운 뒤 다시 만들기를 눌러 주세요. 이미 만든 영상은 그대로예요.",autoRetried:false};
     case "STORAGE_FAILED":return {text:retried?`영상 파일을 저장하지 못했어요(${attempts}번 시도). 잠시 뒤 다시 만들어 주세요.`:`영상 파일을 저장하지 못했어요${render.errorMessage?`: ${render.errorMessage}`:"."} 원인을 고친 뒤 다시 만들어 주세요.`,autoRetried:retried};
+    case "AUDIO_SOURCE_INVALID":return {text:"소리 파일을 읽지 못했어요(형식·채널 수·길이). 편집에서 다른 소리 파일을 골라 주세요.",autoRetried:false};
+    case "AUDIO_LOUDNESS_FAILED":return {text:"소리 음량을 기준(-14 LUFS)에 맞추지 못해 완성으로 치지 않았어요. 아주 작거나 띄엄띄엄한 소리는 기준을 맞출 수 없어요. 소리 구성을 확인해 주세요.",autoRetried:false};
+    case "AUDIO_FAILED":return {text:"소리를 합치지 못했어요. 다시 만들어 주세요.",autoRetried:false};
     case "RESTORE_INTERRUPTED":return {text:"백업을 복원하느라 멈췄어요. 다시 만들어 주세요.",autoRetried:false};
     // The stored fallback sentence ("영상을 만들지 못했어요.") repeats the first one, so only a different reason is added.
     default:return {text:`영상을 만드는 중에 멈췄어요.${render.errorMessage&&render.errorMessage!=="영상을 만들지 못했어요."?` ${render.errorMessage}`:" 다시 만들어 주세요."}`,autoRetried:false};

@@ -9,7 +9,9 @@ import { WorkflowError } from "@/lib/domain/stages";
 import { jobsRepository } from "@/lib/repo/jobs";
 import { rendersRepository, type RenderRow } from "@/lib/repo/renders";
 import { resolveStoredFile } from "@/lib/storage/paths";
-import { prepareRender, renderInputJson, renderInputSchema, sha256Text, type PrepareDeps, type RenderBlocker, type RenderInput } from "@/lib/render/input";
+import { audioModeOf, mixPlan, prepareRender, renderInputJson, renderInputSchema, sha256Text, type PrepareDeps, type RenderBlocker, type RenderInput } from "@/lib/render/input";
+import { ACCEPT, LOUDNESS, PROFILE_ID } from "@/lib/audio/profile";
+import type { RenderAudioRecord } from "@/lib/render/verify";
 import { renderFileName } from "@/lib/render/name";
 import { RENDER_MESSAGES, renderRetryable } from "@/lib/render/errors";
 import type { VerifyResult } from "@/lib/render/verify";
@@ -30,7 +32,8 @@ async function withDatabaseAsync<T>(operation:(handle:DatabaseHandle)=>Promise<T
 function ready(){if(!checkStartup().canStart)throw new RenderRequestError("STAGE_LOCKED","시작 점검을 확인해 주세요.",503);}
 const BLOCKER_MESSAGE:Record<RenderBlocker["code"],string>={
   RENDER_INPUT_MISSING:"영상에 쓸 장면 결과나 파일을 확인해 주세요.",FONT_MISSING:"글자에 쓴 글꼴을 확인해 주세요.",TIMELINE_STALE:"선택한 장면 결과가 바뀌었어요. 편집 화면에서 다시 저장해 주세요.",
-  RENDER_BROWSER_MISSING:"영상 만들기 도구를 확인해 주세요.",DISK_FULL:"저장 공간이 부족해요.",RENDER_ACTIVE:"이 프로젝트의 다른 영상을 만들고 있어요.",AUDIO_RENDER_UNSUPPORTED:"소리를 넣은 타임라인은 아직 영상으로 만들 수 없어요.",
+  RENDER_BROWSER_MISSING:"영상 만들기 도구를 확인해 주세요.",DISK_FULL:"저장 공간이 부족해요.",RENDER_ACTIVE:"이 프로젝트의 다른 영상을 만들고 있어요.",AUDIO_RENDER_UNSUPPORTED:"소리를 넣은 예전 형식 타임라인은 영상으로 만들 수 없어요. 편집에서 다시 저장해 주세요.",
+  AUDIO_SOURCE_MISSING:"소리 파일을 확인해 주세요.",AUDIO_TOO_LONG:"소리가 들어간 영상은 10분까지만 만들 수 있어요.",AUDIO_TOOL_MISSING:"소리 처리 도구(FFmpeg)를 확인해 주세요.",
 };
 
 type VerifyView={result:"passed"|"failed";items:VerifyResult["items"]};
@@ -43,13 +46,20 @@ export type RenderView={
   verify:VerifyView|null;canceledLate:boolean;cleanupLeft:string[];
   errorCode:string|null;errorMessage:string|null;error:null|{code:string;retryable:boolean;attempts:number;maxAttempts:number};
   subtitleMeasure:null;phonePlayback:null;textOnlyChange:boolean|null;etaSec:number|null;
+  // T-137: sound of this render. audioMode is read from the fixed input (envelope A = "none"); audio is null for a
+  // silent render, and its status is null until the processed sound was verified (queued, running, failed).
+  audioMode:"none"|"aac";
+  audio:null|{status:"normalized"|"silent"|"too_short"|null;accepted:boolean|null;integrated:number|null;truePeak:number|null;range:number|null;
+    target:{integrated:number;tolerance:number;truePeakMax:number};profile:typeof PROFILE_ID;ffmpeg:string;clips:number;hasMusic:boolean};
 };
 const parseJson=<T>(text:string|null):T|null=>{if(!text)return null;try{return JSON.parse(text) as T;}catch{return null;}};
 const seconds=(from:string|null,to:string|null)=>from&&to?Math.max(0,Math.round((Date.parse(to)-Date.parse(from))/1000)):null;
 // "Only the texts changed": the same scenes (media and clips) as the newest earlier success, and different texts.
 function textOnly(input:RenderInput|null,previous:RenderInput|null){
   if(!input||!previous)return null;
-  const scenes=(value:RenderInput)=>JSON.stringify({media:value.media,video:value.timeline.video,aspect:value.timeline.aspect});
+  // sound counts as "scenes": a render whose sound changed is never a text-only change
+  const scenes=(value:RenderInput)=>JSON.stringify({media:value.media,video:value.timeline.video,aspect:value.timeline.aspect,
+    audio:value.timeline.schemaVersion===2?{audio:value.timeline.audio,joins:value.timeline.audioJoins,sources:mixPlan(value)?.sources??[]}:null});
   return scenes(input)===scenes(previous)&&JSON.stringify(input.timeline.text)!==JSON.stringify(previous.timeline.text);
 }
 
@@ -64,12 +74,17 @@ export function rendersService(handle:DatabaseHandle,now:()=>number=Date.now){
   function workerOnline(){const value=parseJson<{at?:string}>(jobs.setting("worker.heartbeat")?.valueJson??null);const at=Date.parse(value?.at??"");return Number.isFinite(at)&&now()-at<45000;}
   function view(row:RenderRow,context:{contentRevision:number;currentTimelineRevId:string|null;online:boolean;previous:RenderInput|null;secondsPerFrame:number|null}):RenderView{
     const job=jobs.job(row.jobId),input=(()=>{try{return renderInputSchema.parse(JSON.parse(row.inputJson));}catch{return null;}})();
-    const verifyRaw=parseJson<VerifyResult>(row.verifyJson),probe=verifyRaw?.probe;
+    const verifyRaw=parseJson<VerifyResult&{audio?:RenderAudioRecord}>(row.verifyJson),probe=verifyRaw?.probe,plan=input?mixPlan(input):null,record=verifyRaw?.audio;
+    const audio:RenderView["audio"]=!plan||!input||input.timeline.schemaVersion!==2?null:{status:record?.status??null,accepted:record?record.accepted:null,
+      integrated:record?.final.integrated??null,truePeak:record?.final.truePeak??null,range:record?.final.range??null,
+      target:{integrated:LOUDNESS.integrated,tolerance:ACCEPT.integratedTolerance,truePeakMax:ACCEPT.truePeakMax},profile:PROFILE_ID,ffmpeg:plan.tools.ffmpeg,
+      clips:input.timeline.audio.length,hasMusic:input.timeline.audio.some(clip=>clip.role==="music")};
+    const audioMode=input?audioModeOf(input):"none";
     let fileExists=false;if(row.filePath){const file=resolveStoredFile(row.filePath);try{fileExists=!!file&&statSync(/*turbopackIgnore: true*/file).size===row.sizeBytes;}catch{fileExists=false;}}
     const running=row.status==="running",queued=row.status==="queued",other=queued?jobs.running().find(item=>item.id!==row.jobId):undefined;
     const waiting:RenderView["waiting"]=!queued?null:!context.online?{reason:"worker_off"}:other?{reason:"behind_job",kind:other.kind}:job?.nextRunAt&&Date.parse(job.nextRunAt)>now()?{reason:"retry_scheduled",at:job.nextRunAt}:null;
     const code=row.errorCode??(row.status==="failed"?job?.errorCode??null:null);
-    return {id:row.id,jobId:row.jobId,status:row.status,stage:row.stage,progress:row.stage==="compose"?row.progressPermille/1000:null,renderedFrames:row.framesDone,totalFrames:row.framesTotal,
+    return {id:row.id,jobId:row.jobId,status:row.status,stage:row.stage,progress:row.stage==="compose"&&audioMode==="none"?row.progressPermille/1000:null,renderedFrames:row.framesDone,totalFrames:row.framesTotal,
       createdAt:row.createdAt,startedAt:row.startedAt,finishedAt:row.finishedAt,elapsedSec:seconds(row.startedAt,row.finishedAt??(running?stamp():null)),
       attempt:job?.attempts??0,maxAttempts:job?.maxAttempts??RENDER_MAX_ATTEMPTS,cancelRequested:!!job?.cancelRequestedAt,waiting,
       timelineRevision:row.timelineRevision,contentRevision:row.contentRevision,stale:row.contentRevision!==context.contentRevision||row.timelineRevId!==context.currentTimelineRevId,
@@ -77,7 +92,7 @@ export function rendersService(handle:DatabaseHandle,now:()=>number=Date.now){
       width:input?.output.width??0,height:input?.output.height??0,fps:input?.output.fps??30,codec:probe?.codec??null,durationSec:row.framesTotal/30,audioStreams:probe?probe.audioStreams:null,
       verify:verifyRaw?{result:verifyRaw.result,items:verifyRaw.items}:null,canceledLate:!!row.canceledLate,cleanupLeft:parseJson<string[]>(row.cleanupLeftJson)??[],
       errorCode:code,errorMessage:row.errorMessage??null,error:code&&code!=="RENDER_CANCELED"?{code,retryable:renderRetryable(code),attempts:job?.attempts??0,maxAttempts:job?.maxAttempts??RENDER_MAX_ATTEMPTS}:null,
-      subtitleMeasure:null,phonePlayback:null,textOnlyChange:textOnly(input,context.previous),
+      subtitleMeasure:null,phonePlayback:null,textOnlyChange:textOnly(input,context.previous),audioMode,audio,
       etaSec:(running||queued)&&context.secondsPerFrame!==null?Math.round((row.framesTotal-row.framesDone)*context.secondsPerFrame):null};
   }
   return {

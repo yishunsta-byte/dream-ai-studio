@@ -11,12 +11,14 @@ import { resolveStoredFile } from "@/lib/storage/paths";
 import { storageDirectory } from "@/lib/storage/upload";
 import { runtimeRoot } from "@/lib/config/runtime";
 import { jobsService } from "@/lib/services/jobs";
-import { freeBytes, neededBytes, renderInputSchema, sha256Text, type RenderInput } from "@/lib/render/input";
+import { audioModeOf, audioNeededBytes, checkAudioTools, freeBytes, mixPlan, neededBytes, renderInputSchema, sha256Text, type RenderInput } from "@/lib/render/input";
+import { mediaBinary } from "@/lib/media/tools";
+import type { AudioStart } from "@/render/child";
 import { startFileServer, type FileServer, type ServedFile } from "@/lib/render/file-server";
 import { renderProps } from "@/lib/render/props";
 import { runRenderAttempt } from "@/lib/render/run";
 import { checkBrowser, compositionSourceSha256, COMPOSITION_ID, fileSha256 } from "@/lib/render/tools";
-import { verifyRender, type VerifyResult } from "@/lib/render/verify";
+import { verifyAudio, verifyRender, type RenderAudioRecord, type VerifyResult } from "@/lib/render/verify";
 import { RENDER_MESSAGES, RENDER_RETRYABLE, storageFailure, type RenderErrorCode } from "@/lib/render/errors";
 
 // P2-4b worker side of one render attempt (T-101 2.3·2.5·2.7). The claim already set the row running/prepare.
@@ -25,6 +27,11 @@ import { RENDER_MESSAGES, RENDER_RETRYABLE, storageFailure, type RenderErrorCode
 // → publish: the verified file is linked to its fixed path (never overwriting) and the row and job are finished in
 // one transaction. A cancel that arrives after the file passed keeps it as canceled_late (never selected).
 // Failures carry a code; only a crash of the browser/child or a transient storage error is retried (T-105 by cause).
+// T-137 (T-136 2.2-2.6): an envelope B mix renders the video muted to work/video.mp4, then the same child processes
+// the sound (lib/audio, sources pinned by absolute path + hash, tools by hash) and writes work/out.mp4. The worker
+// checks the tools again before starting, verifies the result (P2-4 items with one AAC stream, the exact decoded
+// sample count, the video packets of the muted render, and for a normalized result its own loudness measurement)
+// and keeps the processing record in verify_json.audio. Envelope A and mode none take the P2-4 path unchanged.
 export const RENDER_TIME_LIMIT_MS=30*60000;
 // errno: the original system error code, kept for the activity log (never a path).
 export class RenderFailure extends Error{constructor(readonly code:RenderErrorCode,message:string,readonly retryable=false,readonly verify:VerifyResult|null=null,readonly errno:string|null=null){super(message);this.name="RenderFailure";}}
@@ -114,8 +121,18 @@ export async function runClaimedRender(handle:DatabaseHandle,job:{id:string;atte
     if(sha256Text(row.inputJson)!==row.inputSha256)throw new RenderFailure("RENDER_INPUT_CHANGED",RENDER_MESSAGES.RENDER_INPUT_CHANGED);
     const input=renderInputSchema.parse(JSON.parse(row.inputJson));
     if(check())throw new RenderFailure(stop==="timeout"?"TIMEOUT":"RENDER_CANCELED",stop==="timeout"?RENDER_MESSAGES.TIMEOUT:RENDER_MESSAGES.RENDER_CANCELED);
-    // The work folder also holds the input copies (T-116 F116-2) and the attempt's bundle.
-    const need=neededBytes(input.durationInFrames,input.output.width,input.output.height)+[...input.media,...input.fonts].reduce((sum,item)=>sum+item.sizeBytes,0),tmp=await storageDirectory("tmp");
+    // Sound: the tools are still the pinned ones and every source still exists at its stored path (its bytes are
+    // checked by lib/audio while it copies them: a change is RENDER_INPUT_CHANGED).
+    const plan=mixPlan(input);let soundSources:AudioStart["request"]["sources"]|null=null;
+    if(plan){
+      const tools=await checkAudioTools();if(!tools)throw new RenderFailure("AUDIO_FAILED",RENDER_MESSAGES.AUDIO_FAILED);
+      if(tools.ffmpegSha256!==plan.tools.ffmpegSha256||tools.ffprobeSha256!==plan.tools.ffprobeSha256)throw new RenderFailure("RENDER_INPUT_CHANGED",RENDER_MESSAGES.RENDER_INPUT_CHANGED);
+      soundSources={};
+      for(const source of plan.sources){const file=resolveStoredFile(source.relPath);if(!file||!existsSync(/*turbopackIgnore: true*/file))throw new RenderFailure("RENDER_INPUT_MISSING",RENDER_MESSAGES.RENDER_INPUT_MISSING);
+        soundSources[source.assetId]={path:file,sha256:source.sha256,sizeBytes:source.sizeBytes};}
+    }
+    // The work folder also holds the input copies (T-116 F116-2), the attempt's bundle and (sound) the processing.
+    const need=neededBytes(input.durationInFrames,input.output.width,input.output.height)+[...input.media,...input.fonts].reduce((sum,item)=>sum+item.sizeBytes,0)+audioNeededBytes(plan,input.durationInFrames,input.output.width,input.output.height),tmp=await storageDirectory("tmp");
     // Frames, the browser profile and the output all live in the work folder under storage/tmp (one volume).
     {let free=Infinity;try{free=await freeBytes(tmp);}catch{/* unknown: the render reports a real ENOSPC */}if(free<need)throw new RenderFailure("DISK_FULL",RENDER_MESSAGES.DISK_FULL);}
     work=join(/*turbopackIgnore: true*/tmp,renderTempName(row.id,job.attempts));removeAll(work);
@@ -123,25 +140,36 @@ export async function runClaimedRender(handle:DatabaseHandle,job:{id:string;atte
     const checked=await recheckInput(input,work,controller.signal);
     server=await startFileServer(checked.media,checked.fonts);
     const output=join(work,"out.mp4"),bundleRoot=options.bundleRoot??join(appRoot(),"tmp","render-bundle");let lastWrite=0;
+    const silentVideo=join(work,"video.mp4");let audio:AudioStart|null=null;
+    if(plan&&soundSources&&input.timeline.schemaVersion===2){
+      try{mkdirSync(/*turbopackIgnore: true*/join(work,"audio"));}catch(error){throw storageError(error);}
+      audio={request:{outputFrames:plan.outputFrames,audio:input.timeline.audio,audioJoins:input.timeline.audioJoins,sources:soundSources},
+        tools:{ffmpeg:mediaBinary("ffmpeg"),ffprobe:mediaBinary("ffprobe"),ffmpegSha256:plan.tools.ffmpegSha256,ffprobeSha256:plan.tools.ffprobeSha256},
+        workRoot:join(work,"audio"),videoPath:silentVideo,deadline:Date.parse(job.startedAt)+RENDER_TIME_LIMIT_MS-30000};
+    }
     if(check())throw new RenderFailure(stop==="timeout"?"TIMEOUT":"RENDER_CANCELED",RENDER_MESSAGES.RENDER_CANCELED);
     const attempt=await (options.attempt??runRenderAttempt)({appRoot:appRoot(),bundleRoot,sourceSha256:input.renderer.compositionSourceSha256,workBundle:join(work,"bundle"),fileBase:server.base,onBundle:options.onBundle,browserPath:checked.browser.path,output,
-      compositionId:COMPOSITION_ID,props:renderProps(input,{media:server.mediaUrl,font:server.fontUrl}),netLog:options.netLog?join(work,"net-log.json"):null,graceMs:options.graceMs,pollMs:options.pollMs,onChild:options.onChild,tempDir:join(work,"os-tmp"),
+      compositionId:COMPOSITION_ID,props:renderProps(input,{media:server.mediaUrl,font:server.fontUrl}),audio,netLog:options.netLog?join(work,"net-log.json"):null,graceMs:options.graceMs,pollMs:options.pollMs,onChild:options.onChild,tempDir:join(work,"os-tmp"),
       shouldCancel:check,
       onStage:stage=>{if(stage==="compose")renders.progress(row.id,{stage:"compose",progressPermille:0,framesDone:0});},
       onProgress:value=>{const at=now();if(at-lastWrite<1000&&value.progress<1)return;lastWrite=at;
         renders.progress(row.id,{progressPermille:Math.max(0,Math.min(1000,Math.floor(value.progress*1000))),framesDone:Math.max(0,Math.min(row.framesTotal,value.renderedFrames))});}});
     await server.close();server=null;
     if(!attempt.ok){
-      if(attempt.code==="RENDER_CANCELED"||attempt.code==="TIMEOUT")throw new RenderFailure(stop==="timeout"?"TIMEOUT":"RENDER_CANCELED",stop==="timeout"?RENDER_MESSAGES.TIMEOUT:RENDER_MESSAGES.RENDER_CANCELED);
+      if(attempt.code==="RENDER_CANCELED"||(attempt.code==="TIMEOUT"&&stop))throw new RenderFailure(stop==="timeout"?"TIMEOUT":"RENDER_CANCELED",stop==="timeout"?RENDER_MESSAGES.TIMEOUT:RENDER_MESSAGES.RENDER_CANCELED);
       const code=(attempt.code in RENDER_MESSAGES?attempt.code:"RENDER_FAILED") as RenderErrorCode;
+      // a sound failure: the processor's own code and measurement detail go to the activity log (no path in it)
+      if(plan&&/^[A-Z_]+( |$)/.test(attempt.detail)){try{jobs.log(row.projectId,"render.audio_failed",{renderId:row.id,jobId:job.id,code,detail:attempt.detail.slice(0,300)});}catch{/* the failure itself is still recorded */}}
       throw new RenderFailure(code,RENDER_MESSAGES[code],RETRYABLE.has(code));
     }
-    if(!existsSync(/*turbopackIgnore: true*/output))throw new RenderFailure("RENDER_FAILED",RENDER_MESSAGES.RENDER_FAILED);
+    if(!existsSync(/*turbopackIgnore: true*/output)||(plan&&!attempt.audio))throw new RenderFailure("RENDER_FAILED",RENDER_MESSAGES.RENDER_FAILED);
     await verifyStaged([...checked.media,...checked.fonts]);
     renders.progress(row.id,{stage:"verify",progressPermille:1000,framesDone:row.framesTotal});
-    let verify:VerifyResult;
-    try{verify=await verifyRender(output,{width:input.output.width,height:input.output.height,fps:input.output.fps,frames:input.durationInFrames});}
-    catch{throw new RenderFailure("RENDER_VERIFY_FAILED",RENDER_MESSAGES.RENDER_VERIFY_FAILED);}
+    let verify:VerifyResult&{audio?:RenderAudioRecord};
+    try{verify=await verifyRender(output,{width:input.output.width,height:input.output.height,fps:input.output.fps,frames:input.durationInFrames,...(plan?{audio:audioModeOf(input)}:{})});
+      if(plan&&attempt.audio){const sound=await verifyAudio(output,silentVideo,input.durationInFrames,attempt.audio,controller.signal);
+        const items=[...verify.items,...sound.items];verify={...verify,result:items.every(item=>item.pass)?"passed":"failed",items,audio:sound.record};}}
+    catch{if(stop)throw new RenderFailure(stop==="timeout"?"TIMEOUT":"RENDER_CANCELED",stop==="timeout"?RENDER_MESSAGES.TIMEOUT:RENDER_MESSAGES.RENDER_CANCELED);throw new RenderFailure("RENDER_VERIFY_FAILED",RENDER_MESSAGES.RENDER_VERIFY_FAILED);}
     if(verify.result!=="passed")throw new RenderFailure("RENDER_VERIFY_FAILED",RENDER_MESSAGES.RENDER_VERIFY_FAILED,false,verify);
     const digest=await fileSha256(output,{fresh:true});
     // publish: a new name only (link fails if the path exists); an earlier attempt that linked but did not commit
