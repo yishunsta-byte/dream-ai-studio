@@ -310,3 +310,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T124 independently reproduces the four backend failures against fixes.
 - T119 UI completion and Codex design T123 residual UX review continue separately.
 - Next: integrate findings, fix if required, then full render-flow acceptance; no backend PASS claimed yet.
+
+## Current parallel work
+
+- T124: backend cache/input/retry/network independent recheck.
+- T126: committed T119 UI-label/wait/focus follow-up verification, including exports browser gap.
+- T125: Codex design new three alternatives with desktop/mobile captures.
+- Next: show three designs upon return; integrate independent results before actual-render acceptance.

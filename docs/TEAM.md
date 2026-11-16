@@ -1037,3 +1037,9 @@
 - User explicitly requested three design alternatives again under new design ownership.
 - T125 / CX-DESIGN-01 / ready (ack pending): three distinct current-feature UI prototypes under docs/design/codex-options, comparison page and desktop/mobile captures, unique report only. Existing T115 prototypes/deployed A preserved; no product/backend edits or automatic redeployment.
 - Scope includes workroom/editor/render screens using the same fake content, responsive/keyboard/readability checks, tradeoffs and recommendation. Master will collect and show the alternatives to user.
+
+### T119 returned; T126 UI verification parallel to T125 (2026-11-17)
+
+- 6714617 / msg_925c01141bdd ready_review. Author556/13skip, lint/type/build and actual render-wait/cancel/play-toggle browser evidence. Exports waiting UI not directly verified due to author fixture gate.
+- T126 independent dispatched ready (receipt), report-only bounded ConfirmPanel/defaults/render-wait/play labels/1280-390 and actual valid exports-flow gap check.
+- Codex design continues T125 three new prototypes uninterrupted; informed of current UI behavior. T124 backend integrity recheck remains separate and pending.
