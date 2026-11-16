@@ -41,6 +41,24 @@
 
 ## 요청 기록
 
+### T-023 · 차단 코딩 작업 복구·F0161/2 구현 (parent=T015/P1 종료, priority=P1) — running
+
+- 실제수락msg_08992f1198d7. HEAD29d93a2확인, production/exports 서비스·3panel/preview·errors/helper/최소CSS·관련tests·고유T023인계점유. 원래T015별도작업공간미접근. Master는해당코드를동시수정하지않는다.
+
+- 사용자 최신지시: 남은리스트를확인해실제작업지휘. 기존T015는결과미회수·현재liveness미확인이라Master가의도적으로배정을철회/fence하고해당별도worktree/터미널/미확인프로세스를보존한다. 종료·코드미변경을단정하지않으며그곳변경은자동통합하지않는다.
+- 임시 구현책임 CC-DATA-01(이번작업명시적코딩겸임, 실제통신/구현검증능력은T021에서확인). 원래역할등록은데이터로유지. source master의production/result-preview/exports/errors/관련tests·고유T023인계만점유한다. 기존T015별도worktree에는접근/수정/통합하지않는다.
+- 완료조건 F0161/2·T013명세구현, 기존성공선택/ZIP불변·게이트·한글오류/허용재시도·1280/390대응, 의미있는회귀·build/lint/typecheck/전체tests·diff/커밋보고 ready_review. Master통합실행과구현미참여Codex재검수후판정. 위험/비용/권한확대없음.
+
+### T-024 · 사용자 흐름 확인 자료 준비 (parent=P1 종료, priority=P2) — running
+
+- 실제수락msg_6140931601d5. 확인페이지/고유인계2파일만점유, 원본11캡처읽기전용·사용자승인요청금지. 코드담당과비중첩.
+
+### T-025 · 결과 통합·실행검증·독립 재검수 준비 (parent=T023/P1 종료, priority=P1) — ready
+
+- 책임CX-MASTER-01. 실행기준은docs/handoffs/T-025-CX-MASTER-01-validation.md, 현재준비문서이며미실행검증을통과로표시하지않는다. T023반환후diff/테스트/실제격리UI·V13·파일무결성·T021/22하단검증을수행하고깨끗한커밋에서독립재검수를배정한다.
+
+- 담당 CC-DESIGN-01. 허용 docs/handoffs/P1-USER-REVIEW.html 및본인T024인계만. 기존캡처11장을프로젝트등록~ZIP흐름으로묶고상태/수정후교체대상을명확히표시. 현재제품불통과/필수수정·재검수대기이며사용자승인을지금요청하지않는다. 실제개인정보·키·절대경로없는이미지만, 앱코드/공용문서수정금지.
+
 ### T-021 · 복원본 백업 출처·파일 누락·다른 환경 경계 보완 (parent=T019, priority=P1) — done
 
 - 회수msg_535752bf25d1, 구현75c023c/6파일·새14검사/전체207검사보고. Master가실제diff/보고/DTO를검토하고T022화면연결후전체207검사/build경고0/NFT사적추적0/lint/typecheck·새OS가상복원본1280/390을검증했다. 독립재검수대상에는추가하되최종P1통과로표시하지않는다.
@@ -112,7 +130,9 @@
 - 완료조건: 기준-코드대조·불변/참조/중복누락/단위·읽은범위/건수·실제검증/추정/한계·심각도/추천·사용자결정필요여부. 실제data/storage/backups 접근금지, 재현은 메모리/임시가상fixture만. Master 취합/검증.
 - 전송 msg_d67f28a43286, 수락 msg_2fb6c6de8f77. 기존 공용문서 역할 오수정은 c4072b9에서 정리된 것으로 담당자가 회신. 현재 다른 작업자의 변경을 건드리지 않는다.
 
-### T-015 · 독립 검수 필수수정 구현 (parent=P1 종료, priority=P1) — blocked
+### T-015 · 독립 검수 필수수정 구현 (parent=P1 종료, priority=P1) — cancelled (배정 철회, T023 승계)
+
+- 사용자작업지휘지시에따라Master가ctx_c624062de24d를의도적으로abandon/fence했다. 영수증state=abandoned/processAction=none. 프로세스종료·자원삭제주장금지, 기존격리worktree변경자동통합금지. 현재책임과실행은T023으로승계했다.
 
 - 실제 원인 확인: dispatch ctx_c624062de24d는 input_accepted/live이나 첫 PowerShell `$env:ORCA_CLI_COMMAND; orca skills get orchestration` 실행 승인에 대기한다. 도구가 사람이 해당 창에서 승인해야 한다고 명시했다. acceptEdits는 셸 자동 승인을 뜻하지 않는다. 코딩 착수/실제 수정 완료로 보고하지 않는다. 메시지추가전송은 이 승인에 응답하지 못하고 queued로 남는다. 해결주체는 해당 Claude 창의 사용자 승인, 이후 동일dispatch 재개/검증. Master는 별도 디자인·데이터 결과 검토를 진행한다.
 
