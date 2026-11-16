@@ -4,38 +4,50 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-function migrationList() {
-  const first = readFileSync(join(process.cwd(), "lib/db/migrations/0001_initial.sql"), "utf8").replace(/\r\n/g,"\n");
-  const second = readFileSync(join(process.cwd(), "lib/db/migrations/0002_ownership.sql"), "utf8").replace(/\r\n/g,"\n");
-  const third = readFileSync(join(process.cwd(), "lib/db/migrations/0003_edit_snapshots.sql"), "utf8").replace(/\r\n/g,"\n");
-  const fourth = readFileSync(join(process.cwd(), "lib/db/migrations/0004_audit_backups.sql"), "utf8").replace(/\r\n/g,"\n");
-  return [{version:1,name:"0001_initial.sql",sql:first},{version:2,name:"0002_ownership.sql",sql:second},{version:3,name:"0003_edit_snapshots.sql",sql:third},{version:4,name:"0004_audit_backups.sql",sql:fourth}].map((migration)=>({...migration,sha256:createHash("sha256").update(migration.sql).digest("hex")}));
+// `verify` is the data check a step defines for itself (K-6 ③); it runs after the step is applied.
+export type Migration = { version:number; name:string; sql:string; sha256:string; verify?:(sqlite:Database.Database)=>void };
+export type AppliedMigration = { version:number; name:string; sha256:string };
+const productFiles=["0001_initial.sql","0002_ownership.sql","0003_edit_snapshots.sql","0004_audit_backups.sql"];
+export function migrationEntry(version:number,name:string,sql:string):Migration{const text=sql.replace(/\r\n/g,"\n");return {version,name,sql:text,sha256:createHash("sha256").update(text).digest("hex")};}
+// The product list. Tests may pass an isolated list (e.g. product + a test-only step); the product never adds one at runtime.
+export function productMigrations():Migration[]{return productFiles.map((name,index)=>migrationEntry(index+1,name,readFileSync(join(process.cwd(),"lib/db/migrations",name),"utf8")));}
+export function journal(sqlite:Database.Database):AppliedMigration[]|null{
+  if(!sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='__schema_migrations'").get())return null;
+  return sqlite.prepare("SELECT version,name,sha256 FROM __schema_migrations ORDER BY version").all() as AppliedMigration[];
 }
-type AppliedMigration = { version:number; name:string; sha256:string };
-export function verifyMigrations(sqlite: Database.Database) {
-  const expected = migrationList();
-  const hasJournal = sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='__schema_migrations'").get();
-  if (!hasJournal) throw new Error("데이터베이스 준비가 필요해요. npm.cmd run db:migrate를 실행해 주세요.");
-  const applied = sqlite.prepare("SELECT version,name,sha256 FROM __schema_migrations ORDER BY version").all() as AppliedMigration[];
-  if (applied.length !== expected.length || applied.some((row,index)=>row.version !== expected[index]?.version || row.name !== expected[index]?.name || row.sha256 !== expected[index]?.sha256)) {
-    throw new Error("데이터베이스 버전이나 마이그레이션 기록이 맞지 않아요. 적용 상태를 확인해 주세요.");
-  }
+export type MigrationCompat="same"|"upgrade"|"too_new"|"mismatch";
+// K-6 ①②: accept only an exact prefix of the current list. Gaps, duplicates, renamed or
+// re-hashed steps are a mismatch; a longer list whose prefix is the current list is too new.
+export function compareMigrations(recorded:readonly AppliedMigration[]|null,current:readonly AppliedMigration[]):MigrationCompat{
+  if(!recorded||!recorded.length)return "mismatch";
+  if(recorded.some((row,index)=>row.version!==index+1))return "mismatch";
+  const common=Math.min(recorded.length,current.length);
+  for(let index=0;index<common;index++){const a=recorded[index],b=current[index];if(a.version!==b.version||a.name!==b.name||a.sha256!==b.sha256)return "mismatch";}
+  return recorded.length===current.length?"same":recorded.length<current.length?"upgrade":"too_new";
+}
+export function verifyMigrations(sqlite: Database.Database,expected:readonly Migration[]=productMigrations()) {
+  const applied=journal(sqlite);
+  if (!applied) throw new Error("데이터베이스 준비가 필요해요. npm.cmd run db:migrate를 실행해 주세요.");
+  if (compareMigrations(applied,expected)!=="same") throw new Error("데이터베이스 버전이나 마이그레이션 기록이 맞지 않아요. 적용 상태를 확인해 주세요.");
   const brokenReferences = sqlite.pragma("foreign_key_check");
   if (!Array.isArray(brokenReferences) || brokenReferences.length) throw new Error("데이터 참조 검사에 실패했어요. 백업과 데이터 상태를 확인해 주세요.");
 }
-export function migrateDatabase(sqlite: Database.Database) {
+export type MigrateOptions={ migrations?:readonly Migration[]; now?:()=>number };
+// Applies the remaining steps in one transaction (a savepoint when the caller already holds one).
+export function migrateDatabase(sqlite: Database.Database,options:MigrateOptions={}) {
+  const expected=options.migrations??productMigrations(),now=options.now??Date.now;
   return sqlite.transaction(()=>{
     sqlite.exec("CREATE TABLE IF NOT EXISTS __schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, sha256 TEXT NOT NULL, applied_at TEXT NOT NULL) STRICT");
-    const expected = migrationList();
-    const applied=sqlite.prepare("SELECT version,name,sha256 FROM __schema_migrations ORDER BY version").all() as AppliedMigration[];
-    if(applied.some((row,index)=>row.version!==expected[index]?.version || row.name!==expected[index]?.name || row.sha256!==expected[index]?.sha256)) throw new Error("기존 마이그레이션 기록이 달라 적용을 중단했어요.");
+    const applied=journal(sqlite)!;
+    if(applied.length&&compareMigrations(applied,expected)!=="same"&&compareMigrations(applied,expected)!=="upgrade") throw new Error("기존 마이그레이션 기록이 달라 적용을 중단했어요.");
     let count=0;
     for (const migration of expected.slice(applied.length)) {
       sqlite.exec(migration.sql);
-      sqlite.prepare("INSERT INTO __schema_migrations(version,name,sha256,applied_at) VALUES(?,?,?,?)").run(migration.version,migration.name,migration.sha256,new Date().toISOString());
+      sqlite.prepare("INSERT INTO __schema_migrations(version,name,sha256,applied_at) VALUES(?,?,?,?)").run(migration.version,migration.name,migration.sha256,new Date(now()).toISOString());
       count++;
     }
-    verifyMigrations(sqlite);
+    for(const migration of expected.slice(applied.length))migration.verify?.(sqlite);
+    verifyMigrations(sqlite,expected);
     return count;
   }).immediate();
 }
