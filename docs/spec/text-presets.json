@@ -1,7 +1,7 @@
 {
   "specVersion": "2026-11-16.1",
   "owner": "planner",
-  "note": "P2-3 글자 프리셋 기본값. 구조는 PLAN 11.3 TextLayer의 style·box·animation과 같다. 구현은 이 파일을 읽어 text_presets 기본 행을 만든다(직접 수정 금지, 플래너 관리).",
+  "note": "P2-3 글자 프리셋 기본값. 구조는 PLAN 11.3 TextLayer의 style·box·animation과 같다. 기본 8종은 이 파일에서 바로 읽고 DB에 복사하지 않는다. text_presets 표는 사용자가 저장한 \"내 모양\"용 후속(P2-3 이후, T-033 U-5). 직접 수정 금지, 플래너 관리.",
   "units": {
     "fontSize": "짧은 변 1080px 기준 픽셀. 실제 크기 = 값 × (짧은 변 / 1080)",
     "strokeWidth": "fontSize와 같은 기준",
