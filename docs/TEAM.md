@@ -15,8 +15,8 @@
 | ID | 플랫폼/실제 연결 | 역할·작업 | 확인 상태 |
 |---|---|---|---|
 | CX-MASTER-01 | Codex CLI / term_3831c608-dc70-4b7f-aaba-742095a2481e | Master, T-012 운영구성/통합검증 | busy, 이 세션 |
-| CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, 기준·시안 정합 T056/T057 | returned, 결과 검토 완료 |
-| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터/임시코딩T058·설계T060 | T058 반환·T059 검수 중, T060 배정 |
+| CC-DESIGN-01 | Claude CLI / term_00718d24-27e9-4cd8-9f27-49e1064016d2 | **Claude design**, 기준·시안 정합·T064 읽기 대조 | T064 실제 요청, 수락 확인 대기 |
+| CC-DATA-01 | Claude CLI / term_a0a6f98c-c4ca-405a-9a7e-9fb263d26390 | 데이터/임시 코딩 T061 | 구현 미커밋 확인·진행 상태 회신 요청 |
 | CC-ENG-01 | Claude CLI acceptEdits / term_cc667bc2-39ee-4648-bc6b-3bb000a9ab47 | 옛코딩T015 | 배정철회/fence·별도자원보존, 물리종료미확인 |
 | CX-REVIEW-01 | Codex / dispatch ctx_fa91b94b9d65 | 독립검수, 격리 child worktree | returned, 제품 FAIL/F0161·2/V13부분 |
 | CX-REVIEW-03 | Codex / dispatch ctx_35f31485cffe | 최종집중독립검수T029 | returned, R018최종P1독립PASS |
@@ -42,7 +42,15 @@
 
 ## 요청 기록
 
+### T-064 · P2-1 중간 디자인·흐름 읽기 대조 (parent=T061) — ready
+
+- 사용자 남은 작업 체크·지휘 지시에 따라 CC-DESIGN-01에 실제 배정. 고유 T064 보고/본인 히스토리만. T061 WIP 코드 읽기와 T060/T063 대조로 저장 경로·현재기능유지/검수/ZIP·버전/경고·390/키보드 기준을 확인한다. WIP를 최종 결함으로 단정하지 않고 근거/추천/최종검증조건을 구분.
+- 제품파일/spec/PLAN/TEAM/캡처 수정금지, 구현 담당의 build/test와 별도 서버·브라우저 동시 실행 금지. 결과Master회수후수정범위조정, 새요구/P2-2착수없음.
+
+
 ### T-061 · P2-1 타임라인·리비전 실제 구현 (parent=P2-1, priority=P1) — running
+
+- 사용자 남은작업지휘 요청에 따라 root 미커밋0005/timelineDB·API·편집UI 진척을 확인했다. 담당에게 현재완료/잔여검증/차단·프로세스 회신 및 문맥손실 시 현재diff보존 재개를 요청했다. T064는 읽기만, 제품파일 점유는T061단독. 자체/독립검증은 완료보고후실행하며 WIP상태를통과로표현하지않음.
 
 - 실제수락·점유 msg_dbcc69f559d7, 시작HEAD025d650. 담당이신규0005/timelineDB·API·현재편집UI·검수/ZIP·이관오류/restore통합·tests/새s5/README/고유보고범위를확인했다. 기존SQL1~4/s4/실사용DB/기준·공용문서불변. T063문서담당과점유분리.
 
