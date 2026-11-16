@@ -83,11 +83,15 @@ function compareRestored(src:DbSnap,dst:DbSnap,exclude:Exclude,newTables:string[
   }
   return {matched,addedActivity};
 }
-function expectRestoreRows(dst:DbSnap,checked:{ticketId:string;destination:string},added:Row[],pendingJobs:number){
+// F039-4: the new activity row is written with the system clock (jobs log), not the injected `now`, so its time is
+// checked against the wall-clock window measured around this run's finish rather than only its ISO form.
+function expectRestoreRows(dst:DbSnap,checked:{ticketId:string;destination:string},added:Row[],pendingJobs:number,clock:{from:number;to:number}){
   const settings=dst.get("settings")!.rows,info=restoreStateSchema.parse(JSON.parse(text(settings.get(JSON.stringify([t("restore.info")]))!.value_json)!));
-  expect(info).toMatchObject({ticketId:checked.ticketId,backupId:ids.backup,destination:checked.destination,backupCreatedAt:"2026-01-05T00:15:00.000Z",restoredAt:stamp(),inheritedBackupIds:[ids.b0,ids.backup].sort()});expect(Array.isArray(info.protectedRoots)).toBe(true);
+  expect(info).toMatchObject({ticketId:checked.ticketId,backupId:ids.backup,destination:checked.destination,backupCreatedAt:"2026-01-05T00:15:00.000Z",restoredAt:stamp(),inheritedBackupIds:[ids.b0,ids.backup].sort()});
+  // F039-4: the source boundaries of this run, exactly (runtime root, data, storage, backups; the DB folder is data).
+  expect(info.protectedRoots).toEqual([runtime,join(runtime,"data"),join(runtime,"storage"),join(runtime,"backups")]);
   expect(JSON.parse(text(settings.get(JSON.stringify([t("backup.directory")]))!.value_json)!)).toBe(join(checked.destination,"backups"));
-  expect(added).toHaveLength(1);const [row]=added;expect(row.project_id).toBeNull();expect(row.actor).toEqual(t("local-user"));expect(row.action).toEqual(t("restore.completed"));expect(JSON.parse(text(row.detail_json)!)).toEqual({ticketId:checked.ticketId,backupId:ids.backup,pendingJobs});expect(isoCell(row.created_at)).toBe(true);expect(text(row.id)).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7/);
+  expect(added).toHaveLength(1);const [row]=added;expect(row.project_id).toBeNull();expect(row.actor).toEqual(t("local-user"));expect(row.action).toEqual(t("restore.completed"));expect(JSON.parse(text(row.detail_json)!)).toEqual({ticketId:checked.ticketId,backupId:ids.backup,pendingJobs});expect(isoCell(row.created_at)).toBe(true);const at=Date.parse(text(row.created_at)!);expect(at).toBeGreaterThanOrEqual(clock.from);expect(at).toBeLessThanOrEqual(clock.to);expect(text(row.id)).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7/);
 }
 
 describe("마이그레이션 기록 판정 (K-6 ①②)",()=>{
@@ -105,9 +109,9 @@ describe("고정 백업 s4 복원 (A2·A3·A4·A5)",()=>{
   it("A2 같은 구조: P_RESTORE로 조건 밖 행·칸은 그대로, 정규화 칸은 D_R 기대값, 파일·입력값 보존",async()=>{
     await source();const {zip}=await archived();const before=await fileDigest(zip),destination=join(root,"restored");
     const svc=service(),checked=await svc.inspect({backupId:ids.backup,destination});expect(checked).toMatchObject({compat:"same",fromVersion:4,toVersion:4,appVersion:"0.1.0",projects:3,pendingJobs:4});
-    await svc.finish(checked.ticketId);const src=snap((await extractS4(join(root,"original"))).db),dst=snap(join(destination,"data/app.db"));
+    const from=Date.now();await svc.finish(checked.ticketId);const clock={from,to:Date.now()};const src=snap((await extractS4(join(root,"original"))).db),dst=snap(join(destination,"data/app.db"));
     const {matched,addedActivity}=compareRestored(src,dst,()=>false);
-    expect(matched).toEqual({jobs:4,scene_versions:2,exports:1,backups:1,deletedSettings:3});expectRestoreRows(dst,checked,addedActivity,4);
+    expect(matched).toEqual({jobs:4,scene_versions:2,exports:1,backups:1,deletedSettings:3});expectRestoreRows(dst,checked,addedActivity,4,clock);
     expect(dst.get("settings")!.rows.has(JSON.stringify([t(`job.${ids.j31}.startedAt`)]))).toBe(true);
     expect(checkInputs(dst,ids)).toEqual([]);const db=openDatabase(join(destination,"data/app.db"),{readonly:true,fileMustExist:true});try{expect(schemaHash(db.sqlite)).toBe(record().schema);}finally{db.close();}
     const manifest=await readBackupManifest(S4_ZIP);for(const file of manifest.files)expect(await fileDigest(join(destination,file.path)),file.path).toEqual({sha256:file.sha256,sizeBytes:file.sizeBytes});
@@ -119,8 +123,8 @@ describe("고정 백업 s4 복원 (A2·A3·A4·A5)",()=>{
   it("A3 올려서 복원: 시험 전용 5단계를 staging에만 적용하고 기존 표는 보존, 새 데이터는 독립 검사",async()=>{
     const list=UPGRADE();await source(list);const {zip}=await archived();const before=await fileDigest(zip),destination=join(root,"restored");
     const svc=service({migrations:list}),checked=await svc.inspect({backupId:ids.backup,destination});expect(checked).toMatchObject({compat:"upgrade",fromVersion:4,toVersion:5});
-    await svc.finish(checked.ticketId);const src=snap((await extractS4(join(root,"original"))).db),dst=snap(join(destination,"data/app.db"));
-    const {matched,addedActivity}=compareRestored(src,dst,P_JOURNAL_AFTER_4,["test_k6_edit_index"]);expect(matched.jobs).toBe(4);expectRestoreRows(dst,checked,addedActivity,4);
+    const from=Date.now();await svc.finish(checked.ticketId);const clock={from,to:Date.now()};const src=snap((await extractS4(join(root,"original"))).db),dst=snap(join(destination,"data/app.db"));
+    const {matched,addedActivity}=compareRestored(src,dst,P_JOURNAL_AFTER_4,["test_k6_edit_index"]);expect(matched.jobs).toBe(4);expectRestoreRows(dst,checked,addedActivity,4,clock);
     const journal=[...dst.get("__schema_migrations")!.rows.values()];expect(journal.map(row=>[Number((row.version as {i:string}).i),text(row.name),text(row.sha256)])).toEqual(plain(list).map(row=>[row.version,row.name,row.sha256]));expect(isoCell(journal[4].applied_at)).toBe(true);
     const moved=[...dst.get("test_k6_edit_index")!.rows.values()].map(row=>[text(row.settings_key),text(row.project_id),row.content_revision,row.layer_count]).sort();
     expect(moved).toEqual([[`project.${ids.main}.edit.${ids.edit1}`,ids.main,{i:"3"},{i:"1"}],[`project.${ids.main}.edit.${ids.edit2}`,ids.main,{i:"5"},{i:"3"}]].sort());

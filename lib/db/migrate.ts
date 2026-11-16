@@ -15,6 +15,23 @@ export function journal(sqlite:Database.Database):AppliedMigration[]|null{
   if(!sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='__schema_migrations'").get())return null;
   return sqlite.prepare("SELECT version,name,sha256 FROM __schema_migrations ORDER BY version").all() as AppliedMigration[];
 }
+// F039-2: a database may be initialised from nothing only when it holds no user objects at all (an empty
+// journal table with exactly the product columns is the one allowed leftover). Any other object, a nonzero
+// user_version/application_id, or a journal that cannot be read means "unrecorded": its origin is unknown,
+// so it is never relabelled as a product database.
+export type DatabaseOrigin="fresh"|"recorded"|"unrecorded";
+const journalColumns=["version","name","sha256","applied_at"];
+export function databaseOrigin(sqlite:Database.Database):DatabaseOrigin{
+  let applied:AppliedMigration[]|null;
+  try{applied=journal(sqlite);}catch{return "unrecorded";}
+  if(applied?.length)return "recorded";
+  const objects=sqlite.prepare("SELECT type,name FROM sqlite_master WHERE name NOT LIKE 'sqlite\\_%' ESCAPE '\\'").all() as {type:string;name:string}[];
+  if(objects.some(object=>!(object.type==="table"&&object.name==="__schema_migrations")))return "unrecorded";
+  if(sqlite.pragma("user_version",{simple:true})!==0||sqlite.pragma("application_id",{simple:true})!==0)return "unrecorded";
+  if(applied&&JSON.stringify((sqlite.pragma("table_info(__schema_migrations)") as {name:string}[]).map(column=>column.name))!==JSON.stringify(journalColumns))return "unrecorded";
+  return "fresh";
+}
+export class UnrecordedDatabaseError extends Error{constructor(){super("마이그레이션 기록이 없는 기존 데이터베이스라 적용을 중단했어요.");this.name="UnrecordedDatabaseError";}}
 export type MigrationCompat="same"|"upgrade"|"too_new"|"mismatch";
 // K-6 ①②: accept only an exact prefix of the current list. Gaps, duplicates, renamed or
 // re-hashed steps are a mismatch; a longer list whose prefix is the current list is too new.
@@ -37,6 +54,7 @@ export type MigrateOptions={ migrations?:readonly Migration[]; now?:()=>number }
 export function migrateDatabase(sqlite: Database.Database,options:MigrateOptions={}) {
   const expected=options.migrations??productMigrations(),now=options.now??Date.now;
   return sqlite.transaction(()=>{
+    if(databaseOrigin(sqlite)==="unrecorded")throw new UnrecordedDatabaseError();
     sqlite.exec("CREATE TABLE IF NOT EXISTS __schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, sha256 TEXT NOT NULL, applied_at TEXT NOT NULL) STRICT");
     const applied=journal(sqlite)!;
     if(applied.length&&compareMigrations(applied,expected)!=="same"&&compareMigrations(applied,expected)!=="upgrade") throw new Error("기존 마이그레이션 기록이 달라 적용을 중단했어요.");

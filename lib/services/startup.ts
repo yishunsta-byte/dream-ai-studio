@@ -48,7 +48,7 @@ export function checkStorageStartup() {
 export function checkStartup() {
   const storage = checkStorageStartup();
   // 쓰기 실패 중에는 DB 파일에 접근하지 않는다.
-  const database = storage.canStart ? checkDatabase() : {ok:false,message:"저장 폴더를 확인한 뒤 데이터베이스를 점검해요."};
-  const checks: StartupCheck[] = [...storage.checks, { id:"database",label:"데이터베이스·마이그레이션",status:database.ok ? "pass" : "fail",message:database.ok ? "적용된 버전과 데이터 참조가 정상이에요." : database.message },checkProviderStartup()];
+  const database = storage.canStart ? checkDatabase() : {ok:false as const,message:"저장 폴더를 확인한 뒤 데이터베이스를 점검해요."};
+  const checks: StartupCheck[] = [...storage.checks, database.ok ? { id:"database",label:"데이터베이스·마이그레이션",status:"pass",message:"적용된 버전과 데이터 참조가 정상이에요." } : { id:"database",label:"데이터베이스·마이그레이션",status:"fail",message:database.message,...("detail" in database&&database.detail?{detail:database.detail}:{}),...("code" in database&&database.code?{code:database.code}:{}) },checkProviderStartup()];
   return { checks, canStart:canStart(checks) };
 }

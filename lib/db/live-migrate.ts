@@ -5,10 +5,12 @@ import { v7 } from "uuid";
 import Database from "better-sqlite3";
 import { editSnapshotSchema } from "@/lib/edit/schema";
 import type { DatabaseHandle } from "./connection";
-import { compareMigrations, journal, migrateDatabase, productMigrations, verifyMigrations, type Migration } from "./migrate";
+import { compareMigrations, databaseOrigin, journal, migrateDatabase, productMigrations, verifyMigrations, type Migration } from "./migrate";
 
-export type LiveMigrationCode="SCHEMA_MISMATCH"|"SNAPSHOT_EXISTS"|"SNAPSHOT_FAILED"|"DATABASE_BUSY"|"MIGRATION_FAILED";
-export class LiveMigrationError extends Error{constructor(readonly code:LiveMigrationCode,readonly snapshot:string|null=null){super(code);this.name="LiveMigrationError";}}
+export const liveMigrationCodes=["SCHEMA_MISMATCH","SNAPSHOT_EXISTS","SNAPSHOT_FAILED","DATABASE_BUSY","MIGRATION_FAILED"] as const;
+export type LiveMigrationCode=typeof liveMigrationCodes[number];
+// reason "unrecorded": SCHEMA_MISMATCH because a nonempty database has no readable journal (F039-2).
+export class LiveMigrationError extends Error{constructor(readonly code:LiveMigrationCode,readonly snapshot:string|null=null,readonly reason:"unrecorded"|null=null){super(code);this.name="LiveMigrationError";}}
 export type LiveMigrationResult={applied:number;from:number;to:number;snapshot:string|null};
 export type LiveMigrationOptions={snapshotDirectory:string;migrations?:readonly Migration[];now?:()=>number;afterSnapshot?:(path:string)=>void};
 const stampOf=(time:number)=>new Date(time).toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
@@ -27,7 +29,10 @@ export function checkMigratedData(sqlite:Database.Database,migrations:readonly M
 //   committed between the copy and the migration. Otherwise nothing is migrated.
 // - The copy is never deleted automatically. A failed migration rolls back and leaves the copy.
 export function migrateLiveDatabase(handle:DatabaseHandle,options:LiveMigrationOptions):LiveMigrationResult{
-  const sqlite=handle.sqlite,migrations=options.migrations??productMigrations(),now=options.now??Date.now,applied=journal(sqlite)??[];
+  const sqlite=handle.sqlite,migrations=options.migrations??productMigrations(),now=options.now??Date.now;
+  // F039-2: only a truly empty database is initialised without a snapshot; an unrecorded one is left untouched.
+  if(databaseOrigin(sqlite)==="unrecorded")throw new LiveMigrationError("SCHEMA_MISMATCH",null,"unrecorded");
+  const applied=journal(sqlite)??[];
   if(!applied.length){const count=migrateDatabase(sqlite,{migrations,now});return {applied:count,from:0,to:migrations.length,snapshot:null};}
   const compat=compareMigrations(applied,migrations);
   if(compat==="same"){verifyMigrations(sqlite,migrations);return {applied:0,from:applied.length,to:applied.length,snapshot:null};}
