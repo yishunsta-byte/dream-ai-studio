@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-042 · 독립 검수 DB 신규 판정·시작 안내·검증 보완 (parent=T035, priority=P1) — ready
+### T-042 · 독립 검수 DB 신규 판정·시작 안내·검증 보완 (parent=T035, priority=P1) — running
+
+- 실제 수락·점유 msg_32a56f135c75 수신, 시작HEAD9c56033. migration/CLI/startup·필요부품/상태보조·관련tests/README·고유보고 범위를 담당이 확인했다. T041제품수정은커밋후안정화, T042진행.
 
 - F039-3 디자인제안 f3c7d5a / msg_249e0d36247a 원문검토 후 A안(sidecar 실패기록+공통안내)을채택해구현담당에전달했다. from/to개수외journal fingerprint 등으로현재DB/코드대조, snapshot실제허용경계·존재검증후에만사본보존표현, sidecar크기/스키마/경로불신입력검사·외부runtime root·기록실패DB무영향을추가조건으로했다. 코드구현/화면시험은담당반환대기.
 
@@ -50,7 +52,9 @@
 - 범위 migration실행/CLI/startup·필요최소부품/관련tests/고유T042보고·README. 기존SQL/고정fixture원본/사용자data/공용문서 불변. 전체tests/lint/typecheck/build·격리실패/원본보존 증거·별도선택커밋 반환 후 독립재검수. 미래코드이관hash/0005는별도선행계약.
 
 
-### T-041 · 복원 확정 실패 뒤 재검사 경로 (parent=T035, priority=P1) — running
+### T-041 · 복원 확정 실패 뒤 재검사 경로 (parent=T035, priority=P1) — ready_review
+
+- 결과9c56033 / msg_68b81d622a76 회수. Master가 실제상태기반 retryable/terminal ticket clear·sessionStorage/초점·선택복구 diff와 보고를 검토했고 restore/maintenance-routes 2파일28검사를 직접 실행해 통과했다. 담당 전체261통과/생성1skip·lint/typecheck/build 및 실제원본변경1280/390/키보드 증거와 응답흉내 UI검증을 구분해 기록. T042수정후 독립재검수 전 done 아님.
 
 - 실제 수락·점유 msg_58bd90ceac28 수신. 담당 시작 HEAD 1bf1276, settings-panel/필요 restore API 계약·관련 tests/고유보고 점유 확인. T039 별도 child 검수와 수정 파일 충돌 없음.
 
