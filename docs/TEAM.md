@@ -1074,3 +1074,9 @@
 - fb5149a / msg_f63611e1245d documentation only: author states48/40px chosen before first actual measurement;16/32/96 sensitivity added afterward without changing verdict threshold.
 - T128 reviewer informed; author chronology statement distinguished from independently verifiable evidence.0.167s remains defined-video/detector scope and96-threshold0.233s remains documented sensitivity.
 - User-video/VTT/voice/phone states unchanged, no product code or measured-UI flag update.
+
+### T125 three new design alternatives received (2026-11-17)
+
+- 8fb888d / msg_8c9875372cb7 returned. Master read report and viewed all three desktop home captures directly.
+- New options:01 Studio Desk,02 Flow Control,03 Focus Canvas; comparison docs/design/codex-options/index.html. Author18 desktop/mobile combinations and22 PNG checks are self-QA, not independent certification.
+- Master recommends01 for existing workflow continuity and clear next actions;03 emphasizes creative preview,02 multi-project operations. User review request fulfilled by presenting all three. Existing deployed T115 A remains unchanged, no automatic new publication.
