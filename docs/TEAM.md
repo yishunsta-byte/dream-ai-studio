@@ -47,6 +47,8 @@
 
 ### T-022 · 백업 출처·파일 존재 DTO 화면 통합 (parent=T021, priority=P1) — done
 
+- 디자인 회신msg_d6c1c10f3bd1: 캡처상단의Callout/현환경성공·390줄바꿈은기준일치. 목록행/비활성옵션은해당캡처범위밖이라디자인육안미확인(이는Master실제DOM옵션검증과구분). 다음통합화면재검수때하단도캡처한다. worker이름표와대기열링크간gap0은기존사소후속이며현재필수수정과분리한다.
+
 - 책임CX-MASTER-01, 허용settings-panel.tsx·studio/page.tsx와본인인계/공식상태. local/inherited/unconfirmed·파일없음·검증이력과현재복원가능상태를구분하고restorable=false옵션/검사차단. 실제새fixture B1/B2→복원→B1파일없음→새로컬백업을만들어1280/390화면/옵션상태·가로넘침0확인. 기존개발서버를멈추지않고Next16분리출력근거로build검증. 상세T-022-CX-MASTER-01.md. T020UI검증도포함, 다음독립재검수필요.
 
 - 실제수락 msg_2082a301212c 확인. 담당점유 backup/restore 서비스·보조schema/paths·관련tests(backup-origin.test.ts 예정)·고유인계로확정. UI/공용문서/lockfile/migration과실데이터는미접근. Master는해당파일을동시에수정하지않고반환후DTO화면연결과검증을수행한다.
