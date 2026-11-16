@@ -1274,3 +1274,7 @@
 - msg_573c1ee41c6c report read/imported. Independent132+5/lint/type/build and actual ZIP/backup/shared-render-helper controls pass. F163-1: same-size source mutation after ZIP serialization but before commit still succeeds; ZIP's original bytes valid, contract still unmet.
 - T166 priority successful-path fresh source hash/size recheck before commit requested, including orphan/retry and ownership preservation. T165 type correction and T164 UI WIP protected/selective commits only. Acceptance withheld.
 - Reviewer processes ended; auto-review denied BUILD cleanup, fake runtime/evidence retained without bypass. No user DB/tool install changes.
+### T165 test narrowing received
+
+- msg_5e53e6af09b6 /7ef3b7c: author clean TS6.0.3/same lock reproduces neither original tsc nor generated-type failure. Root cause unconfirmed; type assertion replaced with explicit manifest2/audio guard, existing expectations and8 tests preserved.
+- UI owner informed to integrate that one test file in isolated validation and record identity; no WIP overwrite. T166 source precommit correction continues. No product writer acceptance from this test-only result.
