@@ -1,5 +1,9 @@
 # 검수 기록
 
+## T059 제한된 동기 코드 이관 계약 독립 PASS (2026-11-16)
+
+원CRLF독립379통과/생성1skip·lint/typecheck/build와실제T054재현·추가25mode/원SQL·s4보존을Master가원문검토해수용했다. T048~T058반환경계·동기제한수정통합완료, 현재SQL K6(T047)와코드계약준비게이트충족. P1사용자두승인도완료다. hostDBnativeasync금지의검토전제/단계별다른clock동등시험한계유지. 실제제품0005source등록/동봉·cwd·CLI/productionNext·오류UI·고정s5는이후P2-1제품통합검증조건이며이번에제품코드를구현했다고주장하지않는다. T060설계검토후구현배정. 상세 handoffs/T-059-SYNC-CODE-MIGRATION-REVIEW.md.
+
 ## R-024 · T054 반환 경계 재검수 — 잔여 FAIL (2026-11-16)
 
 독립관련95통과·T052late/deadline재현으로F0521/2범위PASS. nativePromise immediate/queued rejection이거부·rollback후Node프로세스를status1로종료하는F0541실제재현, T055최소수정배정. 상세 handoffs/T-054-CODE-MIGRATION-RETURN-RECHECK.md. 기존SQL K6/P1승인유지, v2수용/제품0005보류.

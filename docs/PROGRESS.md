@@ -1,5 +1,9 @@
 # 진행 기록
 
+## T059 제한된 동기 코드 이관 계약 독립 PASS (2026-11-16)
+
+원CRLF독립379통과/생성1skip·lint/typecheck/build와실제T054재현·추가25mode/원SQL·s4보존을Master가원문검토해수용했다. T048~T058반환경계·동기제한수정통합완료, 현재SQL K6(T047)와코드계약준비게이트충족. P1사용자두승인도완료다. hostDBnativeasync금지의검토전제/단계별다른clock동등시험한계유지. 실제제품0005source등록/동봉·cwd·CLI/productionNext·오류UI·고정s5는이후P2-1제품통합검증조건이며이번에제품코드를구현했다고주장하지않는다. T060설계검토후구현배정. 상세 handoffs/T-059-SYNC-CODE-MIGRATION-REVIEW.md.
+
 ## T047 현재 SQL K6 독립 PASS·잔여 계약 착수 (2026-11-16)
 
 T047이 b586d66 제품동일기준에서독립98관련검사·실제CLI/1280·390시작안내·원본/fixture보존을확인해F0451/2를닫았다. T045독립전체305/생성1skip·lint/typecheck/build및기존F039/F043통과증거와합쳐현재SQL K6범위PASS를Master가채택했다. T047전체307/production빌드/복원UI를재실행했다고주장하지않는다. 상세 handoffs/T-047-K6-FOCUSED-RECHECK.md. 코드데이터이관소스/hash계약은별도T048구현·검수전미완료,제품0005/타임라인은그뒤배정. 기존P1사용자두승인완료상태유지.

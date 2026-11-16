@@ -42,6 +42,11 @@
 
 ## 요청 기록
 
+### T-062 · K6 준비 통과·P2-1 구현 가능 상태 기준 반영 (parent=T059) — ready
+
+- CC-DESIGN-01, PLAN K6/18 상태·최소이력/고유보고·히스토리만. SQL/s4 T047 + restricted코드계약 T059 독립PASS와P1두승인완료로준비게이트충족, P2-1실제미구현/T060설계검토후배정구분. source동봉/cwd/CLI·productionNext/errorUI/고정s5는다음제품통합완료조건, hostDB신뢰한계·step별clock비교유지. 제품/시안/spec/공용상태불변.
+
+
 ### T-060 · 타임라인 구현 설계 입력 (parent=P2-1 준비) — running
 
 - 실제 수락·점유 msg_d2bdd5aa7b9e 수신, 시작HEAD424471d. 담당이 고유 설계 문서 한 파일만 수정하고 코드/SQL/fixture/PLAN/공용문서 불변 및 T059 필수 수정 우선을 확인했다.
@@ -50,7 +55,9 @@
 - T059 통과 전 코드/제품0005/SQL/fixture원본/기준·공용문서수정금지. 관련파일/완료조건/검증명령·미정추천·선택문서커밋반환후Master검토. T059필수수정이오면그작업우선.
 
 
-### T-059 · 동기 코드 이관 계약 독립 검수 (parent=T058/T054, priority=P1) — running
+### T-059 · 동기 코드 이관 계약 독립 검수 (parent=T058/T054, priority=P1) — done (제한된 동기 계약)
+
+- 최종msg_ff840d30fdde·원문보고검토/취합: 독립원CRLF379통과/생성1skip·lint/typecheck/build·T054재현과추가25mode·원본SQL/s4보존으로restricted동기CJS계약PASS를Master채택했다. hostDBasync금지검토/step별다른clock비교한계유지. 계약준비미완료게이트해소, 실제0005source동봉/CLI·productionNext/오류UI·고정s5는다음제품통합검증조건.
 
 - 실제worker ready dispatch ctx_ecbb60e0cbf7 / task task_1d8e663f594f / terminal term_362f3e79-2f2e-4c40-820b-cc482c17bd6e / child sync-code-migration-review. Orca wake로결과회수.
 
@@ -58,7 +65,7 @@
 - 원CRLF전체tests/lint/typecheck/build·실제T054원문(거부문구만필요최소조정)재현·원SQL/s4불변·PASS/FAIL고유T059보고. 제품0005/사용자DB/공용문서수정금지, 실제제품등록/Next/cwd/source동봉/오류UI는이후통합조건.
 
 
-### T-058 · 동기 전용 이관의 비동기 생성 제한 (parent=T055/T054, priority=P1) — ready_review
+### T-058 · 동기 전용 이관의 비동기 생성 제한 (parent=T055/T054, priority=P1) — done (제한된 동기 계약)
 
 - 추천설계 msg_5560b54fc140 검토채택: 해시검증후동일원문전체 async/await/import 보수거부(주석/문자열오탐명시), Promise/fromAsync등동기제한·require/crypto context함수/원시값창구로축소·settle복잡성제거. dbhost신뢰한계별도, 정상/오류경로host객체유출·이스케이프구문실측·기존crash시험안전거부status0·동기정상회귀를검증조건으로전달했다. 임의JS sandbox/모든비동기증명으로과장안함.
 
@@ -85,7 +92,7 @@
 - 1280/390 실제표시·넘침/포커스·390문구만제한·기존dashboard/settings회귀·캡처/정적예시한계·선택커밋반환후Master검토. T055와독립인시안준비이며제품P2-1/0005착수아님. 승인된방향변경/새승인요청없음.
 
 
-### T-055 · 거부 Promise 오류 생명주기 최소 보완 (parent=T054/T053, priority=P1) — ready_review
+### T-055 · 거부 Promise 오류 생명주기 최소 보완 (parent=T054/T053, priority=P1) — done (제한된 동기 계약)
 
 - 결과59a8d7f / msg_c44892a5ef84 회수. Master보고·관련2파일87검사직접통과, 반환nativePromise일반7경로처리증거와미처리4한계를구분. floating rejection은undefined정상commit뒤process종료라단순문서화만으로전체수용하지않고T058동기실행범위최소강제추가배정. 독립검수전done아님.
 
@@ -107,7 +114,7 @@
 - 고유T054보고만, 제품코드/fixture원본/사용자DB/제품0005/공용문서불변. PASS/FAIL·실행범위·내부timeout vs외부kill·신뢰경계/향후제품등록검증조건 반환후Master통합.
 
 
-### T-053 · 코드 이관 반환 경계·실패 context 재사용 보완 (parent=T052/T051, priority=P1) — ready_review
+### T-053 · 코드 이관 반환 경계·실패 context 재사용 보완 (parent=T052/T051, priority=P1) — done (제한된 동기 계약)
 
 - CC-DATA-01 임시코딩. loader/migrate필요최소/관련회귀/README/고유보고. 반환객체then을host에서조회·호출하지않고run undefined계약등최소안으로실행가능접근을timedVM내처리. 실패context후속재평가로rollbackDB늦은쓰기금지, A/B열린DB동일객체재사용과getter/then deadline 실제재현으로검증.
 - 결과78ee04e / msg_689dc173098b 회수. Master가로더실제원문·보고검토및관련2파일74검사를직접실행해통과. 담당전체350통과/생성1skip·lint/typecheck/build는별도증거, T054독립반환경계재검수전done아님.
@@ -129,7 +136,7 @@
 - 전체tests/lint/typecheck/build·원본SQL/s4불변·증거/신뢰경계·PASS/FAIL반환. 고유T052보고만,제품0005/사용자data/공용문서수정금지. 실제제품등록·Next소스동봉/오류안내는이후0005통합검증과구분.
 
 
-### T-051 · 실행 원문 결합·의존 그래프·결정성 계약 보완 (parent=T050/T048, priority=P1) — ready_review
+### T-051 · 실행 원문 결합·의존 그래프·결정성 계약 보완 (parent=T050/T048, priority=P1) — done (제한된 동기 계약)
 
 - 최종cc75f57 / msg_59b7825b9295 회수. Master실제hash diff로entry경로결합을확인했고관련2파일57검사를직접실행해통과. 담당전체333통과/생성1skip·lint/typecheck/build와구분하며T052독립검수전완료판정아님.
 
@@ -153,7 +160,7 @@
 - 관련+전체tests/lint/typecheck/build·실제가상CLI·모듈/원문불일치재현, 필수결함과신뢰된개발자등록의전제구분하여PASS/FAIL·근거반환. 제품0005/P2타임라인진입은통과후별도배정.
 
 
-### T-048 · 코드 데이터 이관 실행·소스 해시 계약 (parent=P2-1 준비, priority=P1) — ready_review
+### T-048 · 코드 데이터 이관 실행·소스 해시 계약 (parent=P2-1 준비, priority=P1) — done (제한된 동기 계약)
 
 - 80ed292 / msg_97c78b09e60c 결과회수. Master가code-migration구현/시험registry/보고를읽고관련2파일44검사를직접실행해통과. 실제run과해시원문간등록자신뢰경계·정규식검사의한계를핵심검토사항으로T050독립검수에배정한다. source root=현소스cwd/시험root만허용방향채택, 제품0005등록·표시연결은현재승인아님. 담당전체320통과/생성1skip·lint/typecheck/build는작성자증거와구분.
 
