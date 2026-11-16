@@ -42,6 +42,12 @@
 
 ## 요청 기록
 
+### T-040 · 개인 사용 주체 확인 기록 (parent=T037) — ready
+
+- 사용자 직접 답변 '개인 활동이야'를 Claude design 전달 msg_cb1b66262ac0로 수신했다. 이전 개인/조직 확인 대기는 해소됐다. 담당 CC-DESIGN-01에게 PLAN2.3/T0377장 최소 근거 반영과 고유 히스토리 갱신을 요청했다. 제품코드/설치/구매 없음.
+- P2-2 배정 시 확인한 정확버전4.0.543 및 추가 모든 패키지 LICENSE를 대조하고 개인 사용에 맞는 확인 옵션을 적용한다. 버전 변경/조직 사용·P7 전 재확인. T039 K6 독립 검수는 계속 진행한다.
+
+
 ### T-039 · K6/s4 독립 검수 (parent=T035, priority=P1) — running
 
 - 실제 worker ready: dispatch ctx_298f104f497a, task task_93a5636d7231, terminal term_cea140c9-f8af-4b0b-928c-e1bd43366197, child C:/Users/Administrator/orca/workspaces/dream-ai-studio/k6-independent-review. 결과는 Orca wake로 회수한다.
