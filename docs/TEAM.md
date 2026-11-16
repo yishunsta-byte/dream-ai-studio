@@ -734,3 +734,9 @@
 - T082 b9b1961 assets / 967002a spec+design returned msg_7685482d65f5. Seven official font files, OFL and SOURCE provenance reports reviewed; file verification accepted, browser rendering not yet verified. T081 partial product changes observed and protected.
 - Implementer notified of font size/loading, encoded URLs/family naming and checkout-vs-upstream license bytes; actual font/measurement/export verification remains required.
 - T083 / CC-DESIGN-01 / ready (ack pending): fonts.json verified metadata only, plus unique design-check report/history. Bounded read-only early review of current T081 WIP, direct findings to author. No product/assets changes; actual-font browser acceptance waits for implementation return.
+
+### T083 preparation completed (2026-11-16)
+
+- msg_e0c2c7735061: 3036c14 fonts verified metadata and c641918 bounded early UX review returned. Master read report. Actual font rendering/line measurement not yet verified.
+- E1 left-of-screen warning wording accepted; E5 new-timeline README clarification accepted with legacy r1 bytes preserved. Animation zero-opacity boundary is not automatically a defect: author must state/test actual semantics, and future rendered subtitle timing must measure them. Repeated emphasis and shortened text duration should be clearly explained.
+- T081 implementation continues; final UI/font/measurement checks remain pending author return. Existing incomplete UI was not classified as a defect.
