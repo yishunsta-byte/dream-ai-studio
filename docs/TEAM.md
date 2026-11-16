@@ -1018,3 +1018,9 @@
 - msg_23c56957b1e6 supersedes prior interim classification: after actual dialog interaction confirms hydration, two short verify/success transitions focus new H3 correctly and outside-link focus remains. Earlier body cases occurred after reload with DOM selector only.
 - Master withdraws definite normal R10 mandatory-defect classification and tells author not to change focus logic based solely on the earlier uncertain harness. Initial hydration boundary remains an observation for final report, not proven general runtime failure.
 - T120 priority and confirmed T119 scope unchanged.
+
+### T120 returned; T124 independent integrity recheck (2026-11-17)
+
+- c7f7774 / msg_cfe831b348ea ready_review. Master read report: author551/13skip, enabled9 E2Es, actual changed-cache pixel/input-swap/error/owned-nonloopback and lifecycle probes. Not independent acceptance.
+- T124 independent dispatched ready (receipt): original-CRLF checks and direct F116-1~4 reproductions, cache executed-byte/input-copy race limits, permanent/transient publication errors and Node/native source containment. Report-only child render-integrity-recheck.
+- T119 isolated UI completion continues; hydrated normal focus correction retained, no unsupported new focus defect declaration.

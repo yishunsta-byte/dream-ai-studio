@@ -303,3 +303,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - Normal actual E2E/cancel/backup checks passed independently but do not override wrong-input/integrity failures.
 - T118 UI review continues; T119 small UI work kept separate.
 - Next: fix return and independent integrity/runtime recheck before P2-4 acceptance.
+
+## Latest: integrity fixes returned; focused independent recheck
+
+- T120c7f7774 ready_review; author551 passed/13 skips plus9 enabled real E2Es.
+- T124 independently reproduces the four backend failures against fixes.
+- T119 UI completion and Codex design T123 residual UX review continue separately.
+- Next: integrate findings, fix if required, then full render-flow acceptance; no backend PASS claimed yet.
