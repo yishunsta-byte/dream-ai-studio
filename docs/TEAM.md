@@ -910,3 +910,4 @@
 - T110 independent dispatched ready: ctx/task/terminal per receipt, child render-guards-recheck, report-only. Exact new7/old1~6 preservation, product SQL guards, semantic restore and real CLI rollback checks required.
 - T108 package/lock/scripts WIP protected; author instructed to resume bundle-stall diagnosis and real toolchain smoke, no duplicate stuck processes. Exact-package expectation test to be updated meaningfully in separate T108 commit.
 - Sidecar generic migration diagnostic recorded as limitation for later scoped improvement; actual-user DB remains untouched.
+- T110 receipt: dispatch ctx_756512f4b205 / task task_3618d98017dc / terminal term_278d5436-07e6-4e7b-927c-6fe5c5982ee0; state ready, actual result pending.
