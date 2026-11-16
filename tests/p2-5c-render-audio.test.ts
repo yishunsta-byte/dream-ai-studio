@@ -33,7 +33,7 @@ beforeAll(async()=>{
   ({handle,storage}=await s5Copy(join(root,"s5"),productMigrations().slice(0,8)));
   saveTimeline(handle,null);const before=await rendersService(handle).request(P,{revision:jobsProject().contentRevision,timelineId:jobsProject().currentTimelineRevId},deps());
   storedRows=handle.sqlite.prepare("SELECT * FROM renders ORDER BY id").all() as typeof storedRows;
-  expect(migrateDatabase(handle.sqlite,{migrations:productMigrations(),now:Date.now})).toBe(1);
+  expect(migrateDatabase(handle.sqlite,{migrations:productMigrations(),now:Date.now})).toBe(2);
   promoted=handle.sqlite.prepare("SELECT * FROM renders ORDER BY id").all() as typeof promoted;
   rendersService(handle).cancel(before.renderId);
 },120000);
@@ -48,7 +48,7 @@ describe("봉투 A(기존 무음) 그대로",()=>{
       expect(renderInputJson(parsed)).toBe(row.input_json);expect(canonicalJson(renderInputSilentSchema.parse(parsed))).toBe(row.input_json);
     }
     expect(()=>checkRenderRows(handle.sqlite)).not.toThrow();
-    expect(journal(handle.sqlite)!.map(step=>step.version)).toEqual([1,2,3,4,5,6,7,8,9]);
+    expect(journal(handle.sqlite)!.map(step=>step.version)).toEqual([1,2,3,4,5,6,7,8,9,10]);
   });
   it("v1 타임라인 요청은 봉투 A(audioPlan 없음, output.audio none)이고, 0008까지만 아는 앱은 이 DB를 too_new로 거부한다",async()=>{
     saveTimeline(handle,null);const prepared=await prepareRender(handle,P,deps());

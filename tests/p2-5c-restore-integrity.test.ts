@@ -84,7 +84,7 @@ afterAll(async()=>{handle?.close();vi.unstubAllEnvs();if(root){if(dirname(await 
 describe("봉투 B 백업 복원 정합성 (T-144)",()=>{
   it("정상 B 백업은 다른 폴더로 복원되고 행·기록이 그대로",async()=>{
     const destination=join(root,"restored-ok"),svc=restoreService(handle,now),checked=await svc.inspect({backupId,destination});
-    expect(checked).toMatchObject({compat:"same",fromVersion:9,toVersion:9});await svc.finish(checked.ticketId);
+    expect(checked).toMatchObject({compat:"same",fromVersion:10,toVersion:10});await svc.finish(checked.ticketId);
     const restored=openDatabase(join(destination,"data/app.db"),{fileMustExist:true});
     try{expect(row(restored)).toEqual(row(handle));expect(()=>checkRenderRows(restored.sqlite)).not.toThrow();}finally{restored.close();}
   },120000);

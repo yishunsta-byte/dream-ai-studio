@@ -18,7 +18,8 @@ describe("REPLACE immutable history",()=>{
   handle.db.insert(schema.scenes).values({id:"s",projectId:"p",position:1,title:"fixture",description:"fixture",dialogueJson:"[]",characterIdsJson:"[]",durationSec:5}).run();
   handle.db.insert(schema.assets).values({id:"a",kind:"image",title:"fixture",role:"intermediate",origin:"generated",filePath:"fixture.png",mime:"image/png",sizeBytes:1,sha256:"a".repeat(64)}).run();
   handle.db.insert(schema.sceneVersions).values({id:"v",sceneId:"s",version:1,planId:"plan",kind:"image",inputSnapshotJson:"{}",status:"succeeded",resultAssetId:"a"}).run();
-  handle.db.insert(schema.exports).values({id:"e",projectId:"p",contentRevision:1,status:"succeeded",filePath:"fixture.zip",sha256:"a".repeat(64),manifestJson:"{}",completedAt:"2026-11-16"}).run();
+  // T-158: a finished row must agree with its manifest (0010); the REPLACE guard is what this test is about.
+  handle.db.insert(schema.exports).values({id:"e",projectId:"p",contentRevision:1,status:"succeeded",filePath:"projects/p/exports/e.zip",sha256:"a".repeat(64),manifestJson:JSON.stringify({manifestVersion:1,project:{id:"p"},contentRevision:1,kind:"editing-bundle",files:[{}]}),completedAt:"2026-11-16"}).run();
   expect(()=>replace("scene_versions","id","v")).toThrow("immutable");expect(()=>replace("exports","id","e")).toThrow("immutable");
   handle.sqlite.prepare("UPDATE plans SET status='approved',approved_scene_snapshot_json='[]',approved_at='2026-11-16' WHERE id='plan'").run();expect(()=>replace("plans","id","plan")).toThrow("immutable");expect(handle.sqlite.pragma("foreign_key_check")).toEqual([]);
  });

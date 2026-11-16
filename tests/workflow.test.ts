@@ -59,7 +59,7 @@ describe("서버 워크플로 게이트",()=>{
    handle.db.insert(reviewItems).values(required.map((item,index)=>({id:index===0?itemId:v7(),projectId,contentRevision:1,templateItemId:item.id,label:item.label,source:index<parsed.config.commonReview.length?"common":"menu",required:item.required,status:index===0?"unchecked":"pass"}))).run();
    expect(()=>service.approveReview(projectId,1)).toThrow();
    handle.db.update(reviewItems).set({status:"pass"}).where(eq(reviewItems.id,itemId)).run();service.approveReview(projectId,1);expect(service.requireApprovedReview(projectId).contentRevision).toBe(1);
-   const exportId=v7();handle.db.insert(exports).values({id:exportId,projectId,contentRevision:1,status:"succeeded",filePath:`projects/${projectId}/exports/${exportId}.zip`,manifestJson:'{"version":1}',sha256:"a".repeat(64),completedAt:new Date().toISOString()}).run();
+   const exportId=v7();handle.db.insert(exports).values({id:exportId,projectId,contentRevision:1,status:"succeeded",filePath:`projects/${projectId}/exports/${exportId}.zip`,manifestJson:JSON.stringify({manifestVersion:1,kind:"editing-bundle",project:{id:projectId},contentRevision:1,files:[{}]}),sha256:"a".repeat(64),completedAt:new Date().toISOString()}).run();
    service.changeContent(projectId,1,"edit","text.change",()=>{handle.db.update(scenes).set({dialogueJson:'[{"text":"수정"}]'}).where(eq(scenes.id,sceneId)).run();});
    expect(()=>service.requireApprovedReview(projectId)).toThrow();expect(handle.db.select().from(exports).get()?.sha256).toBe("a".repeat(64));
  });

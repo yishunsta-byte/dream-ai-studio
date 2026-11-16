@@ -9,10 +9,11 @@ import { openPromise } from "yauzl";
 import { openDatabase } from "@/lib/db/connection";
 import { compareMigrations, journal, productMigrations, type AppliedMigration, type Migration } from "@/lib/db/migrate";
 import { maintenanceRepository } from "@/lib/repo/maintenance";
-import { fileDigest, safeArchivePath } from "@/lib/export/zip";
+import { fileDigest, safeArchivePath, verifyZip } from "@/lib/export/zip";
 import { editSnapshotSchema } from "@/lib/edit/schema";
 import { checkTimelineRows } from "@/lib/db/timeline-data";
 import { checkRenderRows } from "@/lib/db/render-data";
+import { checkExportRows, exportManifests } from "@/lib/db/export-data";
 import { backupManifestSchema, SUPPORTED_MANIFEST_VERSIONS, type BackupManifest } from "./schema";
 import { BackupCompatError } from "./compat";
 import { within } from "./paths";
@@ -70,7 +71,11 @@ export async function verifyRestoredDatabase(folder:string,manifest:BackupManife
   checkTimelineRows(handle.sqlite);
   // T-105/T-109: render rows (input hash, saved timeline binding, job identity, file fields); their files are among
   // fileReferences above. Runs for a direct restore and again right after every staging upgrade.
-  checkRenderRows(handle.sqlite);}
+  checkRenderRows(handle.sqlite);
+  // T-158: export rows read through the manifest 1/2 contract (not the 0010 triggers), and each finished ZIP is opened
+  // and must hold exactly its stored manifest and file hashes (its own hash is in fileReferences above).
+  checkExportRows(handle.sqlite);
+  for(const row of exportManifests(handle.sqlite)){const key=`storage/${row.filePath}`,actual=join(folder,key);if(!safeArchivePath(key)||!within(folder,actual))throw new Error("Database file reference differs");await verifyZip(actual,row.manifest,signal);}}
   return {compat,schemaFrom:recorded.length,projects:(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM projects").get() as {n:number}).n,assets:(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM assets").get() as {n:number}).n,pendingJobs:(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM jobs WHERE status IN ('queued','running')").get() as {n:number}).n};
  }finally{handle.close();}
 }

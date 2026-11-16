@@ -9,6 +9,7 @@ import { compareMigrations, databaseOrigin, journal, migrateDatabase, productMig
 import { MigrationSourceError } from "./code-migration";
 import { checkTimelineRows } from "./timeline-data";
 import { checkRenderRows, RenderRowError } from "./render-data";
+import { checkExportRows } from "./export-data";
 
 export const liveMigrationCodes=["SCHEMA_MISMATCH","SNAPSHOT_EXISTS","SNAPSHOT_FAILED","DATABASE_BUSY","MIGRATION_FAILED","MIGRATION_SOURCE","MIGRATION_TIMEOUT"] as const;
 export type LiveMigrationCode=typeof liveMigrationCodes[number];
@@ -31,6 +32,8 @@ export function checkMigratedData(sqlite:Database.Database,migrations:readonly M
   checkTimelineRows(sqlite);
   // T-111: render rows read back after every live upgrade too (the same check restore runs), not only in 0007.
   checkRenderRows(sqlite);
+  // T-158: export rows (manifest 1/2 contract) read back after every live upgrade too.
+  checkExportRows(sqlite);
 }
 
 // K-6 ⑥ / T-017 3.5: before changing the DB the app is using, keep a consistent copy as a NEW file.

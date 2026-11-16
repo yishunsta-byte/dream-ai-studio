@@ -224,7 +224,7 @@ describe("0008 기능 게이트·예전 v1 소리·백업 복원",()=>{
     const timeline=JSON.parse(r1.timeline_json) as Record<string,unknown>;
     for(const bad of [{...timeline,audio:[{x:1}]},{...timeline,schemaVersion:3},{...timeline,schemaVersion:2,audioJoins:[],audioRights:[],audioMixProfile:"other"},{...timeline,schemaVersion:2,audioMixProfile:AUDIO_MIX_PROFILE}])
       expect(()=>insert(JSON.stringify(bad)),JSON.stringify(bad).slice(0,60)).toThrow(/timeline schema is not writable/);
-    const recorded=journal(handle.sqlite)!;expect(recorded.map(row=>row.version)).toEqual([1,2,3,4,5,6,7,8,9]);expect(recorded[7].name).toBe("0008_timeline_audio.sql");
+    const recorded=journal(handle.sqlite)!;expect(recorded.map(row=>row.version)).toEqual([1,2,3,4,5,6,7,8,9,10]);expect(recorded[7].name).toBe("0008_timeline_audio.sql");
     expect(compareMigrations(recorded,productMigrations().slice(0,7))).toBe("too_new");expect(compareMigrations(recorded,productMigrations())).toBe("same");
   });
   it("0008 이전에 쓰인 소리 있는 v1 행: 올려도 바이트 그대로 읽히고, 저장·되돌리기·렌더는 명시 거절",async()=>{
@@ -235,7 +235,7 @@ describe("0008 기능 게이트·예전 v1 소리·백업 복원",()=>{
       timelineRepository(handle).insert({id,project_id:ids.main,revision:2,content_revision:data.project.contentRevision+1,timeline_json:json,timeline_sha256:timelineSha256(json),source:"user",restored_from_id:null,migrated_from_key:null,created_at:"2026-11-16T00:00:00Z"});
       handle.sqlite.prepare("UPDATE projects SET content_revision=content_revision+1 WHERE id=?").run(ids.main);timelineRepository(handle).point(ids.main,id);}finally{handle.close();}}
     const before=new Database(file,{readonly:true});const kept=before.prepare("SELECT * FROM timeline_revisions WHERE id=?").get(historical);before.close();
-    const sqlite=new Database(file);try{sqlite.pragma("foreign_keys = ON");expect(migrateDatabase(sqlite,{migrations:productMigrations(),now})).toBe(2);}finally{sqlite.close();}
+    const sqlite=new Database(file);try{sqlite.pragma("foreign_keys = ON");expect(migrateDatabase(sqlite,{migrations:productMigrations(),now})).toBe(3);}finally{sqlite.close();}
     const handle=openDatabase(file,{fileMustExist:true});handles.push(handle);
     expect(handle.sqlite.prepare("SELECT * FROM timeline_revisions WHERE id=?").get(historical)).toEqual(kept);
     const timelines=timelineService(handle),data=timelines.get(ids.main);expect(data.timeline!.audio).toHaveLength(1);expect(data.timeline!.schemaVersion).toBe(1);
@@ -262,7 +262,7 @@ describe("0008 기능 게이트·예전 v1 소리·백업 복원",()=>{
     handle.sqlite.prepare("DELETE FROM settings WHERE key='backup.directory'").run();// the fixture's folder setting points outside this copy
     expect(handle.sqlite.prepare("SELECT COUNT(*) AS n FROM jobs WHERE status='running'").get()).toEqual({n:0});
     const request=backupService(handle,now).request()!,claimed=jobsService(handle,now).claim()!;expect(claimed.kind).toBe("backup");await runClaimedBackup(handle,claimed,now);
-    const destination=join(root,"restored"),svc=restoreService(handle,now),checked=await svc.inspect({backupId:request.id,destination});expect(checked).toMatchObject({compat:"same",fromVersion:9,toVersion:9});await svc.finish(checked.ticketId);
+    const destination=join(root,"restored"),svc=restoreService(handle,now),checked=await svc.inspect({backupId:request.id,destination});expect(checked).toMatchObject({compat:"same",fromVersion:10,toVersion:10});await svc.finish(checked.ticketId);
     const restored=openDatabase(join(destination,"data/app.db"),{fileMustExist:true});handles.push(restored);
     expect(restored.sqlite.prepare("SELECT * FROM timeline_revisions WHERE id=?").get(row.id)).toEqual(row);
     for(const file of files)expect(await fileDigest(join(destination,"storage",...file.filePath!.split("/")))).toEqual({sha256:file.sha256,sizeBytes:file.sizeBytes});
