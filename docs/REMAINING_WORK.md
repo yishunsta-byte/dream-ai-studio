@@ -411,3 +411,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T157 independent bounded PASS accepted: native exported cue timing max0.333ms, overlap and old byte preservation. Independent build incomplete; author build separate.
 - T158 manifest2/0010 and T156 fixed9 remain active. Source-audio editable ZIP follows their validation.
 - Physical phone/listening/native-hidden/general burn-in requirements remain open, not P2 completion.
+## Current: manifest2 compatibility accepted; source-audio ZIP implementation
+
+- T161 sample-consistency correction accepted with T159 old-app/restore evidence. Fixed s9 checkpoint integrated and Master9 tests passed.
+- Active T162 writes editable source-audio ZIP using verified manifest2/0010 contracts and existing gate preservation. UI preview and independent writer/restore verification follow return.
+- Physical phone/listening/native hidden and whole P2 completion remain open. No application deployment or user DB migration claimed.

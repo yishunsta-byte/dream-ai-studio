@@ -1250,3 +1250,8 @@
 - Master current-workspace s9 test run:9 PASS/2 intentional native-generation skips. Stage9 fixed archive preserved; current10 upgrade/row/file preservation controls pass. Master accepts fixed fixture checkpoint for preservation regression; no fresh-native-bitexact or independent-native-rerun claim.
 - Fresh native mix/MP4 byte determinism remains unguaranteed with unknown cause; immutable archive/source/restore SHA remains strict. Existing untracked user reports untouched. T161 sample fix independent review still pending before S3 packaging.
 - Author processes stopped; auto-review blocked author temp deletion and retained artifacts documented without bypass.
+### T161 accepted; T162 source-audio editable ZIP assigned
+
+- msg_250dd1fd8f38 report read/imported. Independent6+1/lint/type; actual old-issued ticket/current inspect-finish rejection, normal sample download/v1 bytes/rollback PASS. Master accepts T160 bounded correction plus T159 compatibility evidence.
+- T162 CC-DATA-01 requested msg_642be19f8a09: real source-audio packaging writer/read-only preview contract, pinned source integrity, archived/sample/dedup/rights/timeline fidelity, s9 restore->export tests. No final-video/import/gate unlock; UI separate after concrete DTO return.
+- Prior cleanup-denied artifacts retained; this reviewer turn preserved evidence without submitting deletion. User runtime/deployment unchanged.
