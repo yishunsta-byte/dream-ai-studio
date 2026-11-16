@@ -149,3 +149,10 @@ ci·시험·lint·typecheck·build 프로세스에서는 DREAM_DATA_ROOT를 unse
 ## 8. 플래너·Master에게 복사할 메시지
 
 > T085 독립 검수 대상 b4abd9b의 최종 판정은 FAIL입니다. 독립 원본 CRLF 전체 442통과/2skip, lint/typecheck/build 및 실제 edit→save→complete→수동 review approve→export job→ZIP download는 통과했고 raw timeline/used fonts/OFL 해시와 legacy SRT·기존 ZIP 보존도 확인했습니다. 필수 F085-1은 20초 font timeout에 실행 가능한 preview/font retry가 없고 loaded 후에도 확인 전이 남는 문제이며, F085-2는 서버의 기존 필수 표기가 64/white 신규 허용 분기로 box 이외 style 변경을 HTTP200으로 받아들이는 문제입니다. CC-DATA-01에 두 건의 수정과 독립 재검증을 배정해 주세요. 실제 휴대폰·화면 읽기 프로그램 및 exhaustive raster 경계는 미확인이고 P2-3b/render/audio는 범위 밖입니다. 보고서는 docs/handoffs/T-085-TEXT-EDITOR-INDEPENDENT-REVIEW.md, 원본 증거는 보고서의 OS temp 루트에 보존했으며 자체 서버·브라우저는 종료했습니다.
+## 9. 후속 수신 — T084/T086 범위 구분
+
+Master 메시지 `msg_c3b0a5078cb6`를 T085 완료 전달(`msg_2b3f2943f7c9`) 뒤 수신했다. 이 child에는 T084 보고서 파일이 없어 그 문서 자체를 읽었다고 주장하지 않는다. 메시지의 B1은 위 F085-1의 독립 운영 재현과 겹친다.
+
+B2(잠긴 필수 표기에 끝 시간 수정 불가한 beyond 경고)는 대상 코드에서 추가 대조했다. `text-editor.tsx:41`은 locked 여부 없이 “필요하면 끝 시간을 직접 줄여 주세요.”를 표시하고, `:173`은 locked 표기의 시간 입력을 제공하지 않는다. 기존 가짜 r1은 표기900frames/영상270frames이므로 해당 조건의 자료도 존재한다. 다만 이 후속 수신 뒤 별도 브라우저 재현은 하지 않았으며, 이를 새 독립 runtime PASS/FAIL로 승격하지 않는다. T084의 직접 실행 증거 및 T086 수정·Master 집중 검수와 함께 판단해야 한다.
+
+HEAD는 계속 b4abd9b이며 T086 또는 다른 추가 커밋을 가져오거나 합치지 않았다. 위 T085 broad 검수의 두 필수 수정, 자동 검사·실제 ZIP 결과와 제한은 그대로다.
