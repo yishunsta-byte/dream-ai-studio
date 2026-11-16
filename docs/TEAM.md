@@ -822,3 +822,9 @@
 - T095 design focused review requested msg_b856b0fc8574, unique report/history only.
 - T096 independent Codex dispatched ready: ctx_68047bb1d427 / task_822a246e4eb3 / term_a9020e22-bba7-4ea8-a95e-c5cac4960637; child p2-3b-lifecycle-recheck. Report-only originalCRLF suite and direct F093-1~4/rapid-save/cache ownership/rAF boundary verification, real dual-delay and31s, CDP/DB preservation.
 - P2-3b acceptance remains pending; author runtime results do not replace independent verdict.
+
+### T095 focused UX returned (2026-11-16)
+
+- badead0 / msg_a98b7e023c21: actual 1280/390 B0, delayed-save state/preservation, 409 focus/draft, invalid deletion and drag/key/selection fixes confirmed.
+- App-internal navigation discards unsaved drafts under current policy; no autosave claim observed. Optional explicit guidance/link confirmation follow-up recorded, not silently treated as persisted draft support.
+- T096 independent real31s/cache/API review remains pending; actual devices/accessibility and saved-wide/square layout limits retained.
