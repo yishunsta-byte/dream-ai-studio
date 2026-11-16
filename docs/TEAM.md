@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-061 · P2-1 타임라인·리비전 실제 구현 (parent=P2-1, priority=P1) — ready
+### T-061 · P2-1 타임라인·리비전 실제 구현 (parent=P2-1, priority=P1) — running
+
+- 실제수락·점유 msg_dbcc69f559d7, 시작HEAD025d650. 담당이신규0005/timelineDB·API·현재편집UI·검수/ZIP·이관오류/restore통합·tests/새s5/README/고유보고범위를확인했다. 기존SQL1~4/s4/실사용DB/기준·공용문서불변. T063문서담당과점유분리.
 
 - 담당CC-DATA-01 임시코딩, T060검토·T059/P1승인게이트충족으로실제배정. T060예상DB/0005·코드등록/스키마/서비스/API·현정적편집UI/검수/내보내기·source오류/timeout/CLI/startup/worker·tracing·관련tests/s5새fixture/README/고유보고 허용.
 - D1 durationFrames/null빈자리,D2기획·영상길이max상한/무절단경고,D4읽기무쓰기,D5깨진pointer실패,D6이관기존내용version/검수불변,D7스냅샷revision,D8오류코드,D9s5,D10명시저장채택. D3는현재편집UI저장신API전환완료때만410허용. pointer INSERT/UPDATE·같은projectrestore참조/REPLACE불변·중복ID/hash·stale선택검증 추가.
