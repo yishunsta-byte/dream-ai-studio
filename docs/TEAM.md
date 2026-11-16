@@ -1261,3 +1261,7 @@
 - T163 ctx_6ac82103b3f1 /task_c451ec1c6cf0 dispatched real source/hash/timeline/metadata/retry/restore/render-helper review; report only.
 - T164 CX-DESIGN-01 requested msg_333fe77eee6b, export UI components/read-only DTO only. No overlapping writer/schema/DB changes. Preview availability and source checks must not imply full hash PASS; no final video/import claim.
 - Current request checks source size, fresh same-size hash rejection occurs in job; this explicit limitation is part of review. User DB/deployment unchanged.
+### T164 acknowledged
+
+- msg_6fa3e809fa9a confirms CX-DESIGN-01 accepted T164. Scope exports-panel.tsx, dedicated CSS/UI tests/report only; page already forwards full DTO. Worker reports inspection/implementation started; no completion claim.
+- T163 writer review continues separately. Shared service/schema and user3013 protected.
