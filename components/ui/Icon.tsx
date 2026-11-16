@@ -10,6 +10,9 @@ const paths = {
   plus: "M12 5v14M5 12h14", folder: "M3 6h7l2 3h9v12H3z", home: "m3 10 9-7 9 7v11h-6v-7H9v7H3z",
   settings: "M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2",
   info: "M12 11v6m0-10h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
+  // P2-2 preview controls (T-068 1장): same 2px line as the set.
+  play: "M7 4.5v15l12-7.5z", pause: "M8 5v14M16 5v14",
+  "step-back": "M6 5v14M18 5l-9 7 9 7z", "step-forward": "M18 5v14M6 5l9 7-9 7z",
 } as const;
 export type IconName = keyof typeof paths;
 export function Icon({ name, className = "", ...props }: SVGProps<SVGSVGElement> & { name: IconName }) {

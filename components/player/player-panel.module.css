@@ -1,0 +1,35 @@
+/* P2-2 preview (T-068 1·5장). Design tokens only. */
+.panel { display:flex; flex-direction:column; gap:var(--sp-3); min-width:0; }
+.row { display:flex; flex-wrap:wrap; gap:var(--sp-2); align-items:center; }
+/* Stage: max 360px wide in the current aspect; the focus ring is drawn outside so it shows over the picture. */
+/* The frame line is a shadow, not a border, so the Player and the safe-area lines share one box (±1px, T-068 6-5). */
+.stage { position:relative; width:100%; max-width:360px; background:var(--bg-sunken); box-shadow:0 0 0 1px var(--line); border-radius:var(--radius-md); overflow:hidden; }
+.stage:focus-visible { outline:2px solid var(--line-focus); outline-offset:2px; box-shadow:0 0 0 1px var(--line), var(--focus-ring); border-radius:var(--radius-md); }
+.loading { position:absolute; inset:0; display:flex; flex-direction:column; gap:var(--sp-2); align-items:center; justify-content:center; padding:var(--sp-4); text-align:center; color:var(--fg-muted); font-size:var(--text-sm); }
+.safe { position:absolute; inset:0; pointer-events:none; }
+.safe > span { position:absolute; background:var(--st-danger-bg); opacity:.35; }
+.safe > i { position:absolute; border:1px dashed var(--st-danger-line); }
+.sample { position:absolute; left:var(--sp-2); top:var(--sp-2); }
+.waiting { position:absolute; right:var(--sp-2); top:var(--sp-2); display:inline-grid; place-items:center; width:28px; height:28px; border-radius:var(--radius-md); background:var(--bg-surface); color:var(--fg-muted); }
+.spin { animation:previewSpin 1.2s linear infinite; }
+@keyframes previewSpin { to { transform:rotate(360deg); } }
+.transport { display:flex; flex-wrap:wrap; gap:var(--sp-2); align-items:center; }
+.transport > button { min-width:var(--touch-min); } /* every control at least 44px wide on phones too (T-068 5장) */
+.time { font-variant-numeric:tabular-nums; font-size:var(--text-sm); color:var(--fg-strong); }
+.muted { color:var(--fg-muted); }
+.reason { font-size:var(--text-xs); color:var(--fg-muted); flex-basis:100%; }
+.errorBox { display:flex; flex-direction:column; gap:var(--sp-2); align-items:flex-start; max-width:360px; }
+.notes, .keys { font-size:var(--text-xs); color:var(--fg-muted); margin:0; }
+.notes p { margin:0 0 var(--sp-1); }
+.keys summary { cursor:pointer; min-height:var(--touch-min); display:flex; align-items:center; }
+.mobileOnly { display:none; }
+@media (max-width:639px) {
+  .stage { max-width:min(360px, 100%); }
+  .pcOnly { display:none; }
+  .mobileOnly { display:block; }
+}
+@media (prefers-reduced-motion:reduce) { .spin { animation:none; } }
+/* Before the Player code arrives (player-loader): an empty slot shows the loading box in the saved aspect. */
+.slot { min-width:0; }
+.slot:empty::before { content:attr(data-loading); display:flex; align-items:center; justify-content:center; width:100%; max-width:360px; aspect-ratio:var(--slot-ratio); padding:var(--sp-4); text-align:center; color:var(--fg-muted); font-size:var(--text-sm); background:var(--bg-sunken); border:1px solid var(--line); border-radius:var(--radius-md); }
+@media (max-width:639px) { .slot:empty::before { max-width:min(360px, 100%); } }

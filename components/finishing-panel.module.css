@@ -11,3 +11,6 @@
 .progress { width:100%; accent-color:var(--accent-bar); }
 .srt { white-space:pre-wrap; overflow-wrap:anywhere; font-family:var(--font-mono); font-size:var(--text-sm); }
 @media(max-width:1023px) { .editor { grid-template-columns:minmax(0,1fr); } }
+/* P2-2 phone (T-033 4.4, T-068 5장): preview + text wording only; scene order, shape, place and time on PC. */
+.mobileOnly { display:none; }
+@media(max-width:639px) { .pcOnly { display:none; } .mobileOnly { display:block; } }

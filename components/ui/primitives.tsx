@@ -18,8 +18,9 @@ export function IconButton({ label, icon, className = "", ...props }: Omit<Butto
 export function Card({ padding = "md", tone = "default", className = "", ...props }: HTMLAttributes<HTMLDivElement> & { padding?: "none" | "md"; tone?: "default" | "danger" }) {
   return <div {...props} className={`${styles.card} ${padding === "md" ? styles.padded : ""} ${tone === "danger" ? styles.dangerBorder : ""} ${className}`} />;
 }
-export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "accent"; children: ReactNode }) {
-  return <span className={`${styles.badge} ${tone === "accent" ? styles.accentBadge : ""}`}>{children}</span>;
+// variant "dashed": preview-only states (T-068 1장, e.g. "미리보기 비율 16:9 · 저장 안 됨").
+export function Badge({ tone = "neutral", variant = "solid", children }: { tone?: "neutral" | "accent"; variant?: "solid" | "dashed"; children: ReactNode }) {
+  return <span className={`${styles.badge} ${tone === "accent" ? styles.accentBadge : ""} ${variant === "dashed" ? styles.dashedBadge : ""}`}>{children}</span>;
 }
 export function PhaseChip({ phase }: { phase: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 }) {
   return <span className={styles.phase} style={{ background: `var(--phase-${phase})` }}>P{phase}</span>;
