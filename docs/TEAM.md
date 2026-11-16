@@ -903,3 +903,10 @@
 - msg_6f644f6fb13d report imported. Independent485 passed/3 skips and lint/type/build plus normal CLI/restore do not cover mandatory F107-1 linked job identity mutation, F107-2 NULL success SHA tuple, F107-3 false saved-timeline binding accepted by real restore.
 - T109 author assigned ahead of T108: preserve issued0006/s6 bytes, add0007 guards and strict host semantic validation, fail atomic on invalid old rows, add fixeds7 and migration/restore regressions. No actual user DB migration. Partial toolchain work retained, separate commits.
 - Foundation remains unaccepted pending focused independent recheck; design informed.
+
+### T109 returned; T110 recheck and T108 resumed (2026-11-17)
+
+- 8e2da31 / msg_3b50bcb8d623 ready_review, Master read report. Author496 passed/4 skips excluding separate uncommitted T108 package changes; CLI6→7 and invalid-data rollback evidence reported.
+- T110 independent dispatched ready: ctx/task/terminal per receipt, child render-guards-recheck, report-only. Exact new7/old1~6 preservation, product SQL guards, semantic restore and real CLI rollback checks required.
+- T108 package/lock/scripts WIP protected; author instructed to resume bundle-stall diagnosis and real toolchain smoke, no duplicate stuck processes. Exact-package expectation test to be updated meaningfully in separate T108 commit.
+- Sidecar generic migration diagnostic recorded as limitation for later scoped improvement; actual-user DB remains untouched.

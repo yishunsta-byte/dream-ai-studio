@@ -241,3 +241,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T109: protect linked-job identities, reject partial/NULL success-file tuple, validate saved-timeline binding during restore.
 - Preserve issued0006/s6; add0007/s7 rather than rewriting migration history.
 - T108 toolchain partial work preserved; foundation correction first. Next independent recheck, then worker/UI implementation.
+
+## Latest: 0007/s7 returned; independent verification and toolchain resume
+
+- T1098e2da31 ready_review, author496 passed/4 generation skips.
+- T110 independent guards/semantic restore/CLI6→7 recheck dispatched.
+- T108 resumes bundler-stall diagnosis and actual pinned-browser renderer smoke; package WIP separate.
+- Next: close foundation defects, verify real toolchain, then render worker/composition/API/UI.
