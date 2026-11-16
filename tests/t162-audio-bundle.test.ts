@@ -18,7 +18,7 @@ import { openDatabase, type DatabaseHandle } from "@/lib/db/connection";
 import { journal, migrateDatabase, productMigrations } from "@/lib/db/migrate";
 import { checkExportRows } from "@/lib/db/export-data";
 import { readBackupManifest, verifyBackupArchive } from "@/lib/backup/archive";
-import { manifestSchema } from "@/lib/export/schema";
+import { manifestSchema, type BundleManifest, type BundleManifestV2 } from "@/lib/export/schema";
 import { fileDigest, verifyZip } from "@/lib/export/zip";
 import { timelineSchema } from "@/lib/edit/timeline";
 import { runNextJob } from "@/lib/jobs/runner";
@@ -36,6 +36,10 @@ import { readS9 } from "./fixtures/backups/s9-compare";
 const record=readS9(S9_RECORD),ids=record.ids,P=ids.project;
 let root:string,folder:string,handle:DatabaseHandle,time:number;
 const now=()=>time,sleep=async(ms:number)=>{time+=ms;};
+// T-165: manifest 2 and its sound source entries are narrowed by checks, not by casts.
+type ManifestFile=BundleManifestV2["files"][number];type AudioFile=Extract<ManifestFile,{audio:unknown}>;
+const isAudioFile=(entry:ManifestFile):entry is AudioFile=>"audio" in entry&&entry.audio!==undefined;
+function manifest2(value:BundleManifest):BundleManifestV2{expect(value.manifestVersion).toBe(2);if(value.manifestVersion!==2)throw new Error("manifest 2 expected");return value;}
 const sha=(bytes:Buffer)=>createHash("sha256").update(bytes).digest("hex");
 const revision=()=>(handle.sqlite.prepare("SELECT content_revision AS r FROM projects WHERE id=?").get(P) as {r:number}).r;
 const asset=(id:string)=>handle.sqlite.prepare("SELECT * FROM assets WHERE id=?").get(id) as {id:string;title:string;file_path:string;sha256:string;size_bytes:number;duration_ms:number;is_mock:number;archived_at:string|null};
@@ -70,20 +74,19 @@ describe("s9 사본 9→10 → 실제 소리 원본 편집 묶음",()=>{
     expect(preview.manifestVersion).toBe(2);expect(preview.audioBlocked).toBe(false);expect(preview.audio.map(item=>item.assetId)).toEqual([ids.music,ids.voice].sort());
     expect(JSON.stringify(preview.audio)).not.toContain(asset(ids.voice).file_path);expect(JSON.stringify(preview.audio)).not.toMatch(/storage|[A-Z]:[\\/]/);
     const request=await runExport(),row=exportRow(request.id);expect(jobRow(request.jobId).status).toBe("succeeded");expect(row).toMatchObject({status:"succeeded",manifest_version:2});
-    const manifest=manifestSchema.parse(JSON.parse(row.manifest_json!)),file=join(folder,"storage",row.file_path!);
-    if(manifest.manifestVersion!==2)throw new Error("manifest 2 expected");
+    const manifest=manifest2(manifestSchema.parse(JSON.parse(row.manifest_json!))),file=join(folder,"storage",row.file_path!);
     expect(await verifyZip(file,manifest)).toBeTruthy();expect(()=>checkExportRows(handle.sqlite)).not.toThrow();
     const files=await zipFiles(file),timeline=currentTimeline(),parsed=timelineSchema.parse(JSON.parse(timeline.json));if(parsed.schemaVersion!==2)throw new Error("v2 expected");
     // every file of the manifest is in the ZIP with its exact hash
     for(const entry of manifest.files)expect(sha(files.get(entry.path)!),entry.path).toBe(entry.sha256);
     expect([...files.keys()].sort()).toEqual([...manifest.files.map(entry=>entry.path),"manifest.json"].sort());
     // sources: each asset once, bytes equal the stored file and the s9 record
-    const audio=manifest.files.filter(entry=>"audio" in entry);expect(audio).toHaveLength(2);
-    for(const [index,assetId] of [ids.music,ids.voice].sort().entries()){const a=asset(assetId),entry=audio[index] as (typeof audio)[number]&{audio:{assetId:string;roles:string[];isMock:boolean}};
+    const audio=manifest.files.filter(isAudioFile);expect(audio).toHaveLength(2);
+    for(const [index,assetId] of [ids.music,ids.voice].sort().entries()){const a=asset(assetId),entry=audio[index];
       expect(entry.path).toBe(`audio/0${index+1}_${assetId}${a.is_mock?"_SAMPLE":""}.wav`);expect(entry.audio).toEqual({assetId,roles:[parsed.audio.find(clip=>clip.assetId===assetId)!.role],isMock:!!a.is_mock});
       expect(sha(files.get(entry.path)!)).toBe(a.sha256);expect(sha(readFileSync(sourceFile(assetId)))).toBe(a.sha256);}
     expect(manifest.timeline).toEqual({revisionId:timeline.id,schemaVersion:2,audioMixProfile:"p2-5-local-v1"});
-    expect(manifest.isMock).toBe(true);expect(audio.some(entry=>(entry as {audio:{isMock:boolean}}).audio.isMock)?manifest.isMock:true).toBe(true);
+    expect(manifest.isMock).toBe(true);expect(audio.some(entry=>entry.audio.isMock)?manifest.isMock:true).toBe(true);
     expect(files.get("edit/timeline.json")!.toString("utf8")).toBe(timeline.json);
     const list=JSON.parse(files.get("edit/audio_sources.json")!.toString("utf8"));
     expect(list).toMatchObject({schemaVersion:1,timelineRevisionId:timeline.id,timelineFile:"edit/timeline.json",fps:30,audioMixProfile:"p2-5-local-v1",joins:parsed.audioJoins});
@@ -159,8 +162,8 @@ describe("같은 원본 여러 역할 · 보관 · 샘플 · 소리 없는 v2",(
     saveTimeline(value=>({...value,audio:[...value.audio,{id:v7(),assetId:ids.voice,role:"effect",startFrame:0,sourceInFrame:0,durationFrames:30,gainDb:-6,fadeInFrames:0,fadeOutFrames:0,duckUnderVoice:false}]}));
     handle.sqlite.prepare("UPDATE assets SET archived_at=? WHERE id=?").run("2026-11-17T09:00:00.000Z",ids.music);handle.sqlite.prepare("UPDATE assets SET is_mock=1 WHERE id=?").run(ids.voice);handle.sqlite.prepare("UPDATE assets SET is_mock=0 WHERE id=?").run(ids.music);
     approve();const request=await runExport();expect(jobRow(request.jobId).status).toBe("succeeded");
-    const row=exportRow(request.id),manifest=manifestSchema.parse(JSON.parse(row.manifest_json!)),files=await zipFiles(join(folder,"storage",row.file_path!));
-    const audio=manifest.files.filter(entry=>"audio" in entry) as {path:string;audio:{assetId:string;roles:string[];isMock:boolean}}[];
+    const row=exportRow(request.id),manifest=manifest2(manifestSchema.parse(JSON.parse(row.manifest_json!))),files=await zipFiles(join(folder,"storage",row.file_path!));
+    const audio=manifest.files.filter(isAudioFile);
     expect(audio.map(entry=>entry.audio.assetId).sort()).toEqual([ids.voice,ids.music].sort());
     const voice=audio.find(entry=>entry.audio.assetId===ids.voice)!,music=audio.find(entry=>entry.audio.assetId===ids.music)!;
     expect(voice.audio.roles).toEqual(["voice","effect"]);expect(voice.path).toMatch(/_SAMPLE\.wav$/);expect(voice.audio.isMock).toBe(true);expect(music.path).not.toContain("_SAMPLE");expect(music.audio.isMock).toBe(false);
