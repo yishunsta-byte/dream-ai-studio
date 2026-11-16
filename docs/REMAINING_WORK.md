@@ -58,3 +58,11 @@ This status supersedes earlier pending T069/T067 entries.
 - T070 independent focused review dispatched, ready receipt confirmed (ctx_72476c1e1e6d).
 - T067 technical design and T068 UX returned; Master integration review pending.
 - Next: resolve T070 findings; after PASS, reconcile designs and assign P2-2 implementation.
+
+## Latest: P2-1 accepted within verified scope; P2-2 assigned
+
+Supersedes earlier T070-pending entries.
+- T065 broad review + T070 focused PASS accepted; product 01f81f9. Independent 412 passed / 2 generation skips and build checks. Historical provenance limits remain documented in T070.
+- T071 implementation request sent to CC-DATA-01: Remotion Player preview, local keyboard/frame controls, preview-only ratios and state handling.
+- T072 design request sent to Claude design: checklist preparation and read-only UX validation when implementation returns.
+- Next: collect T071 implementation and evidence, T072 UX findings, then Master tests/review and independent verification. P2-2 is not complete or deployed.

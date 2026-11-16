@@ -630,3 +630,11 @@
 - T069 product 01f81f9 ready_review; author reports 412 passed / 2 generation skips, lint/typecheck/build passed. Master inspected shared host validator and P1 reader integration. Product acceptance pending.
 - T070 independent Codex: dispatch ctx_72476c1e1e6d; task task_67e4fee42cd1; terminal term_f3981af2-5e22-4211-9ba3-4ccd412455ee. New child p2-1-focused-recheck returned ready. Report-only scope T-070-P2-1-FOCUSED-RECHECK.md. Verify F065-1 restore reproduction and normal r1/r2/export compatibility; preserve originals and registered migrations.
 - T067 design 254368b and T068 UX 2671068 returned, Master review pending. P2-2 implementation waits for T070 PASS.
+
+### T070 integrated; T071/T072 assigned (2026-11-16)
+
+- T070 report imported, msg_8f317bf04061. Independent 412 passed / 2 generation skips, lint/typecheck/build and 14 focused checks PASS. T065 broad evidence plus T070 focused evidence accepted for P2-1. T069/T070 done.
+- Scope limitation: archived deletion and snapshot-external append-tail order cannot be completely authenticated from historical provenance. Active missing/changed clips are blocked by stale checks. This acceptance is not proof of every historical clip value or adversarial backup authenticity; follow-up provenance design remains.
+- T067/T068 design reviewed and accepted as P2-2 implementation inputs. Decisions: exact remotion/player 4.0.543 only, muted video, last valid preview on invalid time input with notice, renderer/media/cli deferred, local keyboard handling, visibility pause, existing-token icons/Badge extension allowed.
+- T071 / CC-DATA-01 / ready (ack pending): actual P2-2 implementation. Scope editor preview/Composition/PlayerPanel/pure conversion, related UI/CSS/tests, package/lock for two approved packages, unique report. No DB/migrations/API contract/shared-doc changes. Acceptance: production 1280/390, keyboard/focus, preview operations cause no DB/dirty/version changes or API writes, missing-file/fonts/error states, tests/lint/typecheck/build. Request msg_d63ab41ac9c0.
+- T072 / CC-DESIGN-01 / ready (ack pending): reconcile inputs/checklist now, read-only UX validation after T071 return. Unique report/history only, no product/shared-doc changes. Request msg_2b348489cdb7.

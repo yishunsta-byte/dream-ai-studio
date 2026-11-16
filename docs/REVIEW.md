@@ -378,3 +378,7 @@ P1-1 진행 가능. DB/워커 등 후속 기능의 통과를 의미하지 않는
 ## 알림 · P2 글자 기준 파일 (2026-11-15, 플래너)
 
 판정 아님 — 기준 변경 알림. `docs/spec/text-presets.json`(글자 종류 8개 기본 모양·위치·움직임, 9:16 안전영역 안 자동 계산 확인), `docs/spec/fonts.json`(OFL 1.1 글꼴 8종 + 설치 시 라이선스 파일 검사 규칙). PLAN 11.3 예시 위치를 안전영역 안으로 고침, T-5·T-6. P2-3에서 사용. 지금 코드 작업 없음.
+
+## P2-1 independent acceptance (2026-11-16)
+
+T065 broad review found F065-1; T069 01f81f9 fixed it. T070 independently confirmed actual inspect/finish rejection, normal P1 SRT byte compatibility, r2 and stale/review/export behavior, 412 passed / 2 generation skips, lint/typecheck/build and 14 focused checks. Master accepts P2-1 within this combined scope. Historical archived membership and snapshot-external appended order are not fully authenticated; see T-070-P2-1-FOCUSED-RECHECK.md. No production deployment or actual-user-data migration is claimed.
