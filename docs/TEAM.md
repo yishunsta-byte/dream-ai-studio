@@ -41,6 +41,11 @@
 
 ## 요청 기록
 
+### T-021 · 복원본 백업 출처·파일 누락·다른 환경 경계 보완 (parent=T019, priority=P1) — prepared
+
+- Master가T019전체보고를읽고재현3건을확인할수있는구체수정으로채택. 데이터담당 CC-DATA-01에 데이터서비스/회귀구현을명시위임(이번작업만코드수정허용). 코딩T015의production/export와비중첩. 허용 backup/restore 서비스·보조schema/paths·관련tests와고유인계. UI/공용문서/lockfile/SQL마이그레이션변경금지. Master가후속DTO화면통합/실행검증한다.
+- 완료조건: 복원전이력과현환경백업구분/lastSuccess거짓보호표시방지, 파일없음명확한오류·복원불가, 원래환경data/storage내목적지거절·원본불변, 정상같은PC의기존성공백업읽기복원유지. legacy복원본의분류불확실성은보수적으로표시하며시계순서만으로확정하지않는다. P2호환구현/기능확장아님.
+
 ### T-019 · 복원본의 이전 백업 선택 정책 확인 (parent=T016, priority=P2) — running
 
 - 담당 CC-DATA-01. 허용 docs/handoffs/T-019-CC-DATA-01.md 한파일, 실제사용자/기존fixtureDB접근금지. 이전성공백업행이복원본목록에남을때경로읽기/ID-meta검증/누락파일실패/성공오표시/최소표시구분을코드와필요시가상fixture로확인한다. 전송msg_296303943a1d, 수락msg_7d4d639f83a3. 현재P1필수와구분한읽기점검이다.
