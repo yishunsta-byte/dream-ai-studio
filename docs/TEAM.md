@@ -950,3 +950,10 @@
 - T115 / Claude design / ready (ack pending): three distinct comparable responsive UI prototypes under docs/design/ui-options plus unique report, no production-source edits. Actual request msg_b1394d97eaa2.
 - User explicitly delegated choosing one of three and deploying it. Master will select using workflow clarity, existing feature coverage and responsive/accessibility evidence, then publish the selected design preview. Clarification sent; no repeat selection approval needed.
 - Selected static design publication is distinct from migrating the SQLite/worker application to remote production. Existing T114 backend work continues.
+
+### T114 returned; T116 backend review and T117 UI integration (2026-11-17)
+
+- 3893e32 / msg_65ff2fb222ae ready_review. Master read report: author523/13skip plus explicit9 real e2e, actual child containment10 scenarios and scoped NetLog observations, lint/type/build. Evidence remains author verification.
+- T116 independent dispatched ready (receipt below), report-only actual backend/jobs/media/cancel/egress/trace and F113-1 containment review, isolated fake roots and readonly tools.
+- T117 author assigned render subroute/panel/CSS/entry link/UI checks only, using existing tokens/contracts. T115 design alternatives remain separately owned, no global shell redesign or prototype edits.
+- Historical s6 color-tag fixture stays immutable; not proof of current renderer verification. Bundle cache retention and actual subtitle/device measurement remain tracked limitations.

@@ -282,3 +282,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T114 actual backend must contain missing-after-preflight/browser-launch failures in bounded owned child and verify no residual server/browser/compositor; F113-1 integration requirement open.
 - Installer staging validation robustness and exhaustive network audit remain tracked.
 - Next: backend report/independent runtime validation, then render UI integration.
+
+## Current: render backend returned; independent review and UI integration
+
+- T116: actual backend/containment/media/job independent review.
+- T117: render request/progress/cancel/result/play/download UI implementation.
+- T115: three independent UI alternatives; Master selects and publishes one after comparison.
+- Next: address independent findings, validate integrated render UI, select design and publish verified design preview. Runtime application deployment remains distinct from static preview.
