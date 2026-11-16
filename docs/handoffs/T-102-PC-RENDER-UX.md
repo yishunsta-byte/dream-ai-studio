@@ -261,3 +261,25 @@
 | R-14 | 디스크 부족: 시작 전 막음 / 도중이면 실패 행, 자동 재시도 0번, 공간을 비운 뒤 다시 만들기 1번으로 성공 |
 | R-15 | 백업→복원 뒤 통과 MP4·취소 뒤 끝난 MP4 재생·받기 가능(해시 같음), "파일 없음" 0개 |
 | R-16 | 렌더 진행 중 다른 작업 화면에 "영상 만드는 중이라 기다려요" |
+
+---
+
+## 14. 화면이 필요로 하는 값 (T-114 API 맞추기용, 2026-11-17)
+
+이름은 T-114가 정한 것을 따름. **화면이 이 값을 추측하지 않도록** 서버가 주면 됨. 없으면 해당 표시를 숨김(가짜 값 금지).
+
+| 쓰는 곳 | 값 | 없을 때 |
+|---|---|---|
+| 시작 전 확인(3장) | `blockers[]` = `{code, params}` 전부(첫 번째만 아님). params 예: 장면 이름·글꼴 이름과 쓰는 글자·필요/남은 공간(바이트) | 막는 이유 없음 = 버튼 켬 |
+| 만들기 응답 | `{renderId, jobId, existing}` — `existing:true`면 중복 안내(5.2) | — |
+| 진행 카드 | `status`, `stage`(prepare/compose/verify), `progress`(compose에서만), `renderedFrames`·`totalFrames`, `startedAt`, `attempt`·`maxAttempts`, `cancelRequested` | stage 없으면 "준비 중" |
+| 대기 이유 | `waiting`: `worker_off` / `behind_job`(앞 작업 종류) / `retry_scheduled`(다음 시각) | 그냥 "차례를 기다려요" |
+| 결과 행 | `timelineRevision`, `contentRevision`, `stale`, `isSample`, `fileName`(표시=받기 같은 함수), `sizeBytes`, `fileExists`, `width`·`height`·`fps`·`codec`·`durationSec`·`audioStreams`, `finishedAt`, 걸린 시간 | — |
+| 확인 실패 | `verify` 항목별 기대값·실제값(어느 항목이 틀렸는지) | "파일 확인을 통과하지 못했어요" 한 줄 |
+| 취소 | `canceledLate`, `cleanupLeft[]`(상대경로) | 정리 성공 문구 |
+| 실패 | `errorCode` + 쉬운 이유 params(디스크 필요/남은, 영구/일시 구분, 시도 횟수) | 코드만 작은 글자 + 일반 문구 |
+| 측정 표시(6.1) | `subtitleMeasure`(`null` = 측정 전), `phonePlayback`(`null` = 확인 전) | 늘 "측정 전"/"확인 전" |
+| 안내 | `textOnlyChange`(직전 성공과 장면 같고 글자만 다름), `etaSec`(같은 PC 이전 성공 기록이 있을 때만) | 숨김 |
+| 다른 작업 화면 | 작업 목록에서 렌더 때문에 기다리는지(`blockedBy:'render'`) | 기존 대기 표시 |
+
+오류 코드는 화면 문구표(3장·6장)와 1:1. 새 코드가 생기면 문구를 같이 알려 주세요.
