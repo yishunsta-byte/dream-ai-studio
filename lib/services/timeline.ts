@@ -3,9 +3,9 @@ import { v7 } from "uuid";
 import { z } from "zod";
 import type { DatabaseHandle } from "@/lib/db/connection";
 import { withDatabase } from "@/lib/db/server";
-import { currentClips, readTimelineRow, timelineSha256, type TimelineRow } from "@/lib/db/timeline-data";
-import { editSnapshotSchema, requiredDisclosures, type EditInput, type EditSnapshot, type TextLayer as P1TextLayer } from "@/lib/edit/schema";
-import { canonicalJson, editViewFromTimeline, FPS, framesToSeconds, sameClip, textEndLimit, textFromP1, timelineSchema, totalFrames, type Timeline, type TimelineClip, type TimelineText } from "@/lib/edit/timeline";
+import { checkP1MigratedRow, currentClips, P1SourceMismatchError, readTimelineRow, timelineSha256, type TimelineRow } from "@/lib/db/timeline-data";
+import { requiredDisclosures, type EditInput, type EditSnapshot } from "@/lib/edit/schema";
+import { canonicalJson, editViewFromTimeline, FPS, framesToSeconds, sameClip, textEndLimit, timelineSchema, totalFrames, type Timeline, type TimelineClip, type TimelineText } from "@/lib/edit/timeline";
 import { finishingRepository } from "@/lib/repo/finishing";
 import { jobsRepository } from "@/lib/repo/jobs";
 import { timelineRepository } from "@/lib/repo/timeline";
@@ -17,6 +17,7 @@ import { workflowService } from "./workflow";
 // P2-1 timeline service (PLAN 11.2, T-060 3장, T-061). Reading never writes; saving and restoring are explicit and
 // go through workflow.changeContent (content revision + 1, later stages invalidated) in one immediate transaction.
 export const TIMELINE_CONFLICT="다른 창에서 먼저 저장했어요. 새로고침한 뒤 다시 고쳐 주세요.";
+export const TIMELINE_P1_MISMATCH="옮긴 타임라인이 원래 글자 설정과 달라요(글자·장면 순서·클립). 데이터 상태를 확인해 주세요.";
 export const TIMELINE_STALE="선택한 장면 결과가 타임라인을 저장한 뒤 바뀌었어요. 편집 화면에서 지금 선택으로 다시 저장해 주세요.";
 const MAX_JSON=1024*1024;
 const invalid=(message:string)=>new WorkflowError("INVALID_TRANSITION",message,400);
@@ -86,8 +87,9 @@ export function timelineService(handle:DatabaseHandle){const repo=timelineReposi
    const data=state(projectId);if(!data.row||!data.timeline)return {id:null,value:null,snapshot:null,stale:[],current:null};
    // The P1 path is taken only when the saved r1 (already read through schema + hash) still equals its source snapshot
    // moved by the 0005 rules; otherwise nothing is shown as that snapshot. Stale clips are reported either way.
-   if(data.row.source==="p1-migration"&&data.row.migrated_from_key){const raw=finishing.setting(data.row.migrated_from_key);if(!raw)throw new WorkflowError("STAGE_LOCKED","저장한 글자 설정을 확인해 주세요.");const stored=JSON.parse(raw.valueJson) as {layers:P1TextLayer[];sceneOrder:string[]},snapshot=editSnapshotSchema.parse(stored);
-    if(data.row.content_revision!==snapshot.content_revision||canonicalJson(data.timeline.text)!==canonicalJson(stored.layers.map(layer=>textFromP1(layer))))throw new WorkflowError("STAGE_LOCKED","옮긴 타임라인이 원래 글자 설정과 달라요. 데이터 상태를 확인해 주세요.");return {id:data.row.migrated_from_key.split(".").at(-1)!,value:{sceneOrder:snapshot.sceneOrder,layers:snapshot.layers},snapshot,stale:data.stale,current:data.current};}
+   // F065-1: the whole row is compared with its snapshot (texts, scene order, clip ids, record), not the texts only.
+   if(data.row.source==="p1-migration"){let source:ReturnType<typeof checkP1MigratedRow>;try{source=checkP1MigratedRow(handle.sqlite,data.row,data.timeline);}catch(error){if(error instanceof P1SourceMismatchError||error instanceof z.ZodError||error instanceof SyntaxError)throw new WorkflowError("STAGE_LOCKED",TIMELINE_P1_MISMATCH);throw error;}
+    return {id:source.key.split(".").at(-1)!,value:{sceneOrder:source.snapshot.sceneOrder,layers:source.snapshot.layers},snapshot:source.snapshot,stale:data.stale,current:data.current};}
    const view=editViewFromTimeline(data.timeline);
    return {id:data.row.id,value:view,snapshot:{schema_version:1,content_revision:data.row.content_revision,created_at:data.row.created_at,...view,timeline:data.current!},stale:data.stale,current:data.current};
   },

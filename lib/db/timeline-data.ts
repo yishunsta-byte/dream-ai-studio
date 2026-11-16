@@ -41,10 +41,35 @@ export function readTimelineRow(row:TimelineRow):Timeline{
   if(canonicalJson(timeline)!==row.timeline_json||timelineSha256(row.timeline_json)!==row.timeline_sha256)throw new Error("Timeline revision content differs from its hash");
   return timeline;
 }
-// After a migration or a restore: every revision readable, every pointer names a revision of its own project.
+// The ids 0005 derives from the snapshot key (same text rule as derivedUuid in 0005_timeline_shared.cjs).
+export function derived0005Id(source:string){const hex=createHash("sha256").update("dream-0005:"+source).digest("hex");return `${hex.slice(0,8)}-${hex.slice(8,12)}-8${hex.slice(13,16)}-${((parseInt(hex[16],16)&3)|8).toString(16)}${hex.slice(17,20)}-${hex.slice(20,32)}`;}
+export class P1SourceMismatchError extends Error{constructor(reason:string){super(`P1-moved timeline differs from its source: ${reason}`);this.name="P1SourceMismatchError";}}
+const KEY=/^project\.([0-9a-f-]{36})\.edit\.([0-9a-f-]{36})$/;
+// F065-1: a p1-migration row is accepted as "that P1 snapshot" only when everything the snapshot fixes still holds,
+// whatever the selection is today: its own project's key, the ids 0005 derives from that key, revision/time, aspect,
+// no audio, the texts moved by the spec rules and the scene order (snapshot order first; scenes 0005 appended after).
+// A hash-consistent row with another order or other clips is refused here, never read as the snapshot.
+export function checkP1MigratedRow(sqlite:Database.Database,row:TimelineRow,timeline:Timeline){
+  const fail=(reason:string)=>{throw new P1SourceMismatchError(reason);};
+  const key=row.migrated_from_key??"",match=KEY.exec(key);
+  if(row.source!=="p1-migration"||!match||match[1]!==row.project_id||row.revision!==1||row.restored_from_id!==null||row.id!==derived0005Id("row:"+key))fail("record");
+  const raw=sqlite.prepare("SELECT value_json FROM settings WHERE key=?").get(key) as {value_json:string}|undefined;if(!raw)fail("source snapshot missing");
+  const stored=JSON.parse(raw!.value_json) as {layers:P1TextLayer[]},snapshot=editSnapshotSchema.parse(stored);
+  if(row.content_revision!==snapshot.content_revision||row.created_at!==snapshot.created_at)fail("revision");
+  const project=sqlite.prepare("SELECT aspect FROM projects WHERE id=?").get(row.project_id) as {aspect:string}|undefined;
+  if(!project||timeline.aspect!==project.aspect||timeline.audio.length)fail("aspect or audio");
+  if(canonicalJson(timeline.text)!==canonicalJson(stored.layers.map(layer=>textFromP1(layer))))fail("text");
+  if(timeline.video.some(clip=>clip.id!==derived0005Id(`clip:${key}#${clip.sceneId}`)))fail("clip ids");
+  const order=snapshot.sceneOrder.filter((id,index,list)=>list.indexOf(id)===index),listed=new Set(order),ids=timeline.video.map(clip=>clip.sceneId);
+  const head=ids.filter(id=>listed.has(id));
+  if(ids.slice(0,head.length).some(id=>!listed.has(id))||canonicalJson(head)!==canonicalJson(order.filter(id=>ids.includes(id))))fail("scene order");
+  return {key,snapshot,stored};
+}
+// After a migration or a restore: every revision readable, every pointer names a revision of its own project, and
+// every P1-moved row still matches its source snapshot.
 export function checkTimelineRows(sqlite:Database.Database){
   if(!sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='timeline_revisions'").get())return;
-  for(const row of sqlite.prepare("SELECT * FROM timeline_revisions ORDER BY project_id,revision").all() as TimelineRow[])readTimelineRow(row);
+  for(const row of sqlite.prepare("SELECT * FROM timeline_revisions ORDER BY project_id,revision").all() as TimelineRow[]){const timeline=readTimelineRow(row);if(row.source==="p1-migration")checkP1MigratedRow(sqlite,row,timeline);}
   const broken=sqlite.prepare("SELECT COUNT(*) AS n FROM projects p WHERE p.current_timeline_rev_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM timeline_revisions t WHERE t.id=p.current_timeline_rev_id AND t.project_id=p.id)").get() as {n:number};
   if(broken.n)throw new Error("Timeline pointer differs");
 }
@@ -62,11 +87,10 @@ export function verifyTimelineMigration(sqlite:Database.Database){
     const key=`project.${project.id}.edit.${JSON.parse(pointer.value_json) as string}`;
     const raw=sqlite.prepare("SELECT value_json FROM settings WHERE key=?").get(key) as {value_json:string}|undefined;
     if(!raw)throw new Error("0005 source snapshot missing");
-    const stored=JSON.parse(raw.value_json) as {layers:P1TextLayer[]},snapshot=editSnapshotSchema.parse(stored);
     if(own.length!==1)throw new Error("0005 expected one revision per moved project");
     const row=own[0],timeline=readTimelineRow(row);
-    if(row.revision!==1||row.source!=="p1-migration"||row.migrated_from_key!==key||row.content_revision!==snapshot.content_revision||row.created_at!==snapshot.created_at||project.current_timeline_rev_id!==row.id)throw new Error("0005 revision record differs");
-    if(timeline.aspect!==project.aspect||canonicalJson(timeline.text)!==canonicalJson(stored.layers.map(layer=>textFromP1(layer))))throw new Error("0005 text differs from the P1 snapshot");
+    if(row.migrated_from_key!==key||project.current_timeline_rev_id!==row.id)throw new Error("0005 revision record differs");
+    const {snapshot}=checkP1MigratedRow(sqlite,row,timeline);
     const clips=currentClips(sqlite,project.id,snapshot.sceneOrder);
     if(clips.length!==timeline.video.length||clips.some((clip,index)=>!sameClip({...clip,id:timeline.video[index].id},timeline.video[index])))throw new Error("0005 scenes differ from the current selection");
     moved++;
