@@ -14,8 +14,9 @@ else {
   let handle:ReturnType<typeof openDatabase>|undefined;
   try {
     mkdirSync(join(runtimeRoot(),"data"),{recursive:true});
-    handle=openDatabase();
-    verifyMigrations(handle.sqlite);console.log(seedDatabase(handle,getMenuConfig()));
+    // Switch to WAL only after the database is verified as this app's (F043-2).
+    handle=openDatabase(undefined,{},{wal:false});
+    verifyMigrations(handle.sqlite);handle.sqlite.pragma("journal_mode = WAL");console.log(seedDatabase(handle,getMenuConfig()));
   } catch {
     console.error("데이터베이스 작업에 실패했어요. 버전·파일 권한·기존 마이그레이션 상태를 확인해 주세요. 기존 데이터를 초기화하지 않았어요.");
     process.exitCode=1;

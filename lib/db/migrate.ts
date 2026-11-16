@@ -15,12 +15,22 @@ export function journal(sqlite:Database.Database):AppliedMigration[]|null{
   if(!sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='__schema_migrations'").get())return null;
   return sqlite.prepare("SELECT version,name,sha256 FROM __schema_migrations ORDER BY version").all() as AppliedMigration[];
 }
-// F039-2: a database may be initialised from nothing only when it holds no user objects at all (an empty
-// journal table with exactly the product columns is the one allowed leftover). Any other object, a nonzero
-// user_version/application_id, or a journal that cannot be read means "unrecorded": its origin is unknown,
-// so it is never relabelled as a product database.
+// F039-2 / F043-1: a database may be initialised from nothing only when it holds no user objects at all. The one
+// allowed leftover is an EMPTY journal table whose stored definition is exactly the one this file creates (same
+// SQL text, the same four visible columns with no hidden/generated ones, STRICT, no defaults or checks). Any other
+// object, a nonzero user_version/application_id, a journal that cannot be read, or any other journal definition
+// means "unrecorded": its origin is unknown, so it is never relabelled as a product database.
 export type DatabaseOrigin="fresh"|"recorded"|"unrecorded";
-const journalColumns=["version","name","sha256","applied_at"];
+const JOURNAL_COLUMNS="version INTEGER PRIMARY KEY, name TEXT NOT NULL, sha256 TEXT NOT NULL, applied_at TEXT NOT NULL";
+const JOURNAL_STORED=`CREATE TABLE __schema_migrations (${JOURNAL_COLUMNS}) STRICT`;
+const journalShape=JSON.stringify([["version","INTEGER",0,null,1,0],["name","TEXT",1,null,0,0],["sha256","TEXT",1,null,0,0],["applied_at","TEXT",1,null,0,0]]);
+function canonicalEmptyJournal(sqlite:Database.Database){
+  const stored=sqlite.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='__schema_migrations'").get() as {sql:string}|undefined;
+  if(stored?.sql!==JOURNAL_STORED)return false;
+  const columns=(sqlite.pragma("table_xinfo(__schema_migrations)") as {name:string;type:string;notnull:number;dflt_value:unknown;pk:number;hidden:number}[]).map(column=>[column.name,column.type,column.notnull,column.dflt_value,column.pk,column.hidden]);
+  const table=(sqlite.pragma("table_list(__schema_migrations)") as {schema:string;type:string;strict:number;wr:number}[]).filter(row=>row.schema==="main");
+  return JSON.stringify(columns)===journalShape&&table.length===1&&table[0].type==="table"&&table[0].strict===1&&table[0].wr===0;
+}
 export function databaseOrigin(sqlite:Database.Database):DatabaseOrigin{
   let applied:AppliedMigration[]|null;
   try{applied=journal(sqlite);}catch{return "unrecorded";}
@@ -28,7 +38,7 @@ export function databaseOrigin(sqlite:Database.Database):DatabaseOrigin{
   const objects=sqlite.prepare("SELECT type,name FROM sqlite_master WHERE name NOT LIKE 'sqlite\\_%' ESCAPE '\\'").all() as {type:string;name:string}[];
   if(objects.some(object=>!(object.type==="table"&&object.name==="__schema_migrations")))return "unrecorded";
   if(sqlite.pragma("user_version",{simple:true})!==0||sqlite.pragma("application_id",{simple:true})!==0)return "unrecorded";
-  if(applied&&JSON.stringify((sqlite.pragma("table_info(__schema_migrations)") as {name:string}[]).map(column=>column.name))!==JSON.stringify(journalColumns))return "unrecorded";
+  if(applied&&!canonicalEmptyJournal(sqlite))return "unrecorded";
   return "fresh";
 }
 export class UnrecordedDatabaseError extends Error{constructor(){super("마이그레이션 기록이 없는 기존 데이터베이스라 적용을 중단했어요.");this.name="UnrecordedDatabaseError";}}
@@ -55,7 +65,7 @@ export function migrateDatabase(sqlite: Database.Database,options:MigrateOptions
   const expected=options.migrations??productMigrations(),now=options.now??Date.now;
   return sqlite.transaction(()=>{
     if(databaseOrigin(sqlite)==="unrecorded")throw new UnrecordedDatabaseError();
-    sqlite.exec("CREATE TABLE IF NOT EXISTS __schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, sha256 TEXT NOT NULL, applied_at TEXT NOT NULL) STRICT");
+    sqlite.exec(`CREATE TABLE IF NOT EXISTS __schema_migrations (${JOURNAL_COLUMNS}) STRICT`);
     const applied=journal(sqlite)!;
     if(applied.length&&compareMigrations(applied,expected)!=="same"&&compareMigrations(applied,expected)!=="upgrade") throw new Error("기존 마이그레이션 기록이 달라 적용을 중단했어요.");
     let count=0;

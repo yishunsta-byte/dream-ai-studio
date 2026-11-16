@@ -9,8 +9,9 @@ import { runtimeRoot } from "@/lib/config/runtime";
 import type { DatabaseHandle } from "./connection";
 
 export function withDatabase<T>(operation:(handle:DatabaseHandle)=>T):T {
-  const handle=openDatabase(undefined,{fileMustExist:true});
-  try {verifyMigrations(handle.sqlite);return operation(handle);}
+  // F043-2: switch to WAL only after the database is verified as this app's; an unknown one is left byte-for-byte.
+  const handle=openDatabase(undefined,{fileMustExist:true},{wal:false});
+  try {verifyMigrations(handle.sqlite);handle.sqlite.pragma("journal_mode = WAL");return operation(handle);}
   finally {handle.close();}
 }
 
@@ -18,17 +19,18 @@ export type DatabaseCheck={ok:true}|{ok:false;message:string;detail?:string[];co
 const copyCheck=(copy:MigrationCopy,detail:string[]=[],code?:string):DatabaseCheck=>({ok:false,message:copy.headline,detail:[...detail,copy.next],...(code?{code}:{})});
 // F039-3: when the DB check fails, explain why from the DB itself and, only if it belongs to exactly this DB state
 // and this app's migration list, from the last db:migrate failure record. The record is never trusted beyond that.
+// The database is opened read-only (F043-2): the startup check never changes it.
 export function checkDatabase(root=runtimeRoot(),list?:readonly Migration[]):DatabaseCheck {
   const file=join(root,"data","app.db");
   if(!existsSync(file))return copyCheck(prepareNeededCopy);
   try {
-    const migrations=list??productMigrations(),handle=openDatabase(file,{fileMustExist:true});
+    const migrations=list??productMigrations(),handle=openDatabase(file,{fileMustExist:true,readonly:true});
     try {
       try { verifyMigrations(handle.sqlite,migrations); return {ok:true as const}; }
       catch(error) {
         const record=readMigrationRecord(root);
         if(record?.result==="failed"&&record.code&&record.database===databaseFingerprint(handle.sqlite)&&record.app===migrationsFingerprint(migrations)){
-          const kept=keptSnapshot(root,record.snapshot);
+          const kept=keptSnapshot(root,record);
           return copyCheck(migrationFailureCopy(record.code,record.reason,!!kept),kept?[`바꾸기 전 복사본: ${kept}`]:[],record.code);
         }
         const origin=databaseOrigin(handle.sqlite);
