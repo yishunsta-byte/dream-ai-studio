@@ -42,7 +42,16 @@
 
 ## 요청 기록
 
-### T-040 · 개인 사용 주체 확인 기록 (parent=T037) — ready
+### T-041 · 복원 확정 실패 뒤 재검사 경로 (parent=T035, priority=P1) — ready
+
+- Claude design 읽기대조 f8e9b6a D1 / msg_3a714745a466 회수. Master가 settings-panel act()의 RESTORE_EXPIRED 단독 clear와 ticket 분기 확인. 서버 terminal 실패 뒤 검사하기가 숨는 문제에 대한 실제재현은 T039와 수정 담당에 배정했다.
+- 담당 CC-DATA-01 임시 코딩. settings-panel/필요 restore 오류·재시도 상태 계약/관련 tests/고유 T041보고만. terminal실패 ticket·sessionStorage 제거/입력보존, prepared 인증replay와 결과불명·CONFLICT 안전 재확인 보존. RESTORE_FAILED 코드만으로 재시도가능 단정 금지.
+- 완료 조건: 가상 terminal실패·sessionStorage 재로드 및 prepared replay 회귀, 실제1280/390/키보드·관련 tests/lint/typecheck/build·선택커밋·보고. 실제사용DB/고정fixture/공용문서 불변. 독립 T039 baseline과 분리해 수정 후 재검수.
+
+
+### T-040 · 개인 사용 주체 확인 기록 (parent=T037) — done
+
+- 046243b / msg_3a714745a466 실제 변경범위·보고를 확인해 개인 활동 근거/정확버전·재확인 조건 문서 반영 완료로 채택했다. 구매·설치 없음.
 
 - 사용자 직접 답변 '개인 활동이야'를 Claude design 전달 msg_cb1b66262ac0로 수신했다. 이전 개인/조직 확인 대기는 해소됐다. 담당 CC-DESIGN-01에게 PLAN2.3/T0377장 최소 근거 반영과 고유 히스토리 갱신을 요청했다. 제품코드/설치/구매 없음.
 - P2-2 배정 시 확인한 정확버전4.0.543 및 추가 모든 패키지 LICENSE를 대조하고 개인 사용에 맞는 확인 옵션을 적용한다. 버전 변경/조직 사용·P7 전 재확인. T039 K6 독립 검수는 계속 진행한다.
