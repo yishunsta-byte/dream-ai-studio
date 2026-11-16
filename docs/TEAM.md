@@ -1100,3 +1100,11 @@
 - T129 b3084c888a27c0b668968467dca50caf8f32d110 returned ready_review: script/tests/report corrections only. Author reports570 passed/13 skipped, lint/type and identical actual three-aspect MP4 hashes; no product measured flags changed.
 - Master read diff/report and reran original-workspace tests/measure-subtitle.test.ts with explicit bundled ffmpeg/ffprobe:14/14 PASS. ROI/input/CLI checks and exact-frame scoring inspected. This is Master verification, distinct from author self-check.
 - T131 assigned to existing T128 independent reviewer for bounded regression/input/CLI and actual failed-verdict exit-state gap. Existing actual-frame evidence inherited; no indiscriminate full rendering repetition required. Acceptance of T129 awaits that result; broader visibility/device/VTT exclusions remain.
+### T130 accepted as design proposal; T132 foundation implementation assigned (2026-11-17)
+
+- msg_223b1831057b /060145844526045497dcffdf488729ec6f68ccc1: Master read complete T130 and spot-checked current strict v1 audio schema and explicit service rejection. Design deliverable accepted as code-grounded proposal, not implemented/audio-tested behavior.
+- T132 CC-DATA-01 assigned P2-5A timeline opt-in v2 read/save/restore/CAS, bounded trim/fade/music crossfade validation, audio-reference protection, backup/restore and old-app compatibility gate; request msg_2b9d09bedbb0 sent to live terminal mailbox, acknowledgment pending.
+- Decisions: preserve all v1/P1 bytes/hashes and issued migrations1-7; no read-time conversion; no implicit extension/loop; reject unsupported historical nonempty v1 audio without guessed conversion. Initial music joins adjacent two only; no triple overlap. Rights records do not auto-approve usage, actual music must not evade existing review requirements.
+- Audio v2 must not silently pass through current silent renderer: fail clearly until stageC implements audio. Product UI/DSP/render execution integration excluded from T132 except necessary explicit render guard. Render envelope1/audioPlan1 and final audio format/measurement belong to subsequent stages.
+- DSP starting profile candidate: -14LUFS/TP-2/LRA7,48kHz stereo AAC192k. Final thresholds require actual DSP experiments; no present output-quality claim.
+- T131 independent measurement-helper recheck ongoing; whole P2/VTT/actual-phone acceptance remains open.

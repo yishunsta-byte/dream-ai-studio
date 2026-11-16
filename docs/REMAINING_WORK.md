@@ -351,3 +351,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T129 sent to implementation owner: report corrections and measurement tool input/CLI/frame/result validation; review pending, no acknowledgment claimed.
 - T130 sent to Codex design: current-code-grounded P2-5 audio UX/interface/implementation plan; review pending, no acknowledgment claimed.
 - Next: review fixes, then assign smallest audio implementation and independent verification. VTT/editable delivery, real-phone playback and semantic voice sync remain open. Product measured flags stay null and real-user DB untouched.
+## Latest: audio design accepted; foundation implementation assigned
+
+- T130 design proposal accepted after Master code spot-check; no actual audio processing PASS claimed.
+- T132 P2-5A audio timeline/save/restore/reference/backup compatibility foundation requested from CC-DATA-01. UI and DSP integration follow independent foundation verification; current renderer must reject audio rather than silently omit it.
+- T131 focused independent T129 validation review remains pending. Original subtitle matrix acceptance remains bounded; VTT/user footage/voice semantics/phone evidence remain open.
