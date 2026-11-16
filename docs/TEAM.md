@@ -1068,3 +1068,9 @@
 - msg_8717dc6c9dbb design reports three new desk/flow/canvas alternatives and18 actual desktop/mobile screen combinations checked; final report/cleanup pending. No final delivery claimed yet.
 - T1273ebf95c / msg_29612fb1b498 ready_review: author actual3-aspect120frame ROI test max0.167s at threshold48, SRT0; threshold96 produces0.233s sensitivity. User videos/VTT/voice semantics/phone not measured, UI unchanged.
 - T128 independent dispatched ready (receipt), report-only actual measurement/detector/rationale/sensitivity and reproduction review. Defined test matrix must not be represented as universal perceptual timing guarantee.
+
+### T127 threshold rationale supplement (2026-11-17)
+
+- fb5149a / msg_f63611e1245d documentation only: author states48/40px chosen before first actual measurement;16/32/96 sensitivity added afterward without changing verdict threshold.
+- T128 reviewer informed; author chronology statement distinguished from independently verifiable evidence.0.167s remains defined-video/detector scope and96-threshold0.233s remains documented sensitivity.
+- User-video/VTT/voice/phone states unchanged, no product code or measured-UI flag update.
