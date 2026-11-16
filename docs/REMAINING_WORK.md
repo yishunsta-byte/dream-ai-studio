@@ -338,3 +338,9 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T125 three new Codex design options ongoing.
 - Minor queued-attempt wording/common Button accessibility and documented local trust/device limitations remain separate.
 - Next: collect timing evidence and design alternatives, close P2-4 within actual verification scope and plan audio/P2-6 delivery.
+
+## Latest: new design return imminent; subtitle measurement under review
+
+- T125 three new UI options completed screen checks; final report/cleanup awaited.
+- T127 actual subtitle timing report returned; T128 independent detector/actual-render verification started.
+- Next: show three options, integrate measurement scope and gaps, then audio P2-5 preparation. VTT/user-video/device checks remain distinct.

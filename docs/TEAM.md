@@ -1062,3 +1062,9 @@
 - msg_827b92e79fc7 report imported/read. Independent focused17/lint/type/build, actual render-backed production/jobs/exports1280/390 links and keyboard, safe cancel/explicit cancel, media toggle and read-only DB/MP4 preservation PASS. Author exports gap closed.
 - Master accepts T119 bounded UI scope with T123/T121 inherited results. C1 common Button accessibility and C3 queued attempt0 shown as1/3 remain minor documented follow-ups; U1 hydration uncertainty not reclassified.
 - T127 actual rendered subtitle measurement continues; T125 new designs continue. No overall P2/device/screen-reader acceptance implied.
+
+### T125 near return; T127 timing report and T128 review (2026-11-17)
+
+- msg_8717dc6c9dbb design reports three new desk/flow/canvas alternatives and18 actual desktop/mobile screen combinations checked; final report/cleanup pending. No final delivery claimed yet.
+- T1273ebf95c / msg_29612fb1b498 ready_review: author actual3-aspect120frame ROI test max0.167s at threshold48, SRT0; threshold96 produces0.233s sensitivity. User videos/VTT/voice semantics/phone not measured, UI unchanged.
+- T128 independent dispatched ready (receipt), report-only actual measurement/detector/rationale/sensitivity and reproduction review. Defined test matrix must not be represented as universal perceptual timing guarantee.
