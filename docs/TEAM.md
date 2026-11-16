@@ -682,3 +682,8 @@
 - T074 9e94316 was not part of independent target ad0501b; design confirmed visual refinement separately. Keep evidence scopes distinct.
 - T075 / CC-DATA-01 / ready (ack pending): initial/remount/retry failure UI and recovery, editor/save usable, no render-phase parent-state warnings; bounded player and related tests/report only. Actual fault-injection runtime evidence required. Request msg_fa5a95a95e6f.
 - Design notified msg_84bc48f67106. P2-2 completion remains blocked on fix and independent focused recheck.
+
+### T075 returned; T076 focused independent recheck (2026-11-16)
+
+- T075 3e24c71 returned msg_85b23c714b08, ready_review. Master read report and fallback/effect integration source. Author 425 passed / 2 skips, lint/typecheck/build and actual production initial/aspect/retry failure and recovery evidence. Production console cannot prove absence of development warnings.
+- T076 independent Codex dispatched, ready: ctx_ef9168b270dd / task_a678c4a15c03 / term_26392f19-bedc-471d-bf57-36d5b1a28cb7, child p2-2-error-recheck. Report-only scope. Direct runtime reproduction of changed failure/recovery/focus/save/read-only paths plus T074 visuals, development-warning check where feasible. Inherit clearly identified T073 broad checks. P2-2 acceptance pending.

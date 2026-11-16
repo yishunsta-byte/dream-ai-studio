@@ -88,3 +88,10 @@ Supersedes earlier independent-review-pending status.
 - Independent actual MP4, trim, scene-zero, 424 tests and build passed; these do not override the required error-path failure.
 - T074 visual refinement design-confirmed; outside T073 independent target.
 - Next: T075 fix/evidence, independent focused recheck including current visual refinement, then P2-2 acceptance decision.
+
+## Latest: T075 returned; T076 independent recheck started
+
+Supersedes T075-fix-pending entries.
+- T075 3e24c71 fixes initial/aspect/retry Player error handling; author 425 passed / 2 generation skips and runtime checks.
+- T076 independent focused recheck dispatched (ctx_ef9168b270dd), including error/recovery and T074 visual refinements.
+- Next: collect independent verdict; required defects need fixes/recheck before P2-2 acceptance. Actual phone/screen-reader/real hidden remain explicitly unverified.
