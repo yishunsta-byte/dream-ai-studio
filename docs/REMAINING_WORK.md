@@ -72,3 +72,11 @@ Supersedes earlier T070-pending entries.
 - T071: implementation WIP observed; author owns product files and final validation/report.
 - T072: early read-only code/UX review requested now; final visual checks after T071 return.
 - Master: collect reports, resolve findings, verify and assign independent review. Product acceptance remains pending.
+
+## Latest: P2-2 implementation returned, validation pending
+
+Supersedes earlier implementation-in-progress entries.
+- T071 ad0501b ready_review; author reports 424 passed / 2 generation skips and production checks.
+- T072 final visual/UX review requested.
+- T073 independent review started (ctx_9874bc63970e), including actual video and missing runtime-state checks.
+- Next: collect both reports, fix required findings, independently recheck before accepting P2-2. No deployment or actual-phone/screen-reader PASS claimed.

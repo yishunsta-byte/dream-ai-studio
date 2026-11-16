@@ -658,3 +658,9 @@
 - Report 1841cea / msg_22255dfc5838 received. Design directly delivered candidates to implementer msg_48f395580cbe.
 - Master inspected current player-panel WIP: B1 focus restoration to saved-aspect button, B2 stable stage accessible name without time, B3 corrected keyboard guidance already present. These are code observations, not browser or screen-reader PASS.
 - Requested final production evidence for these points; C1 loading aspect and C2 mobile wording remain bounded optional refinements. T071 validation and final T072 visual review pending.
+
+### T071 returned; T072/T073 validation assigned (2026-11-16)
+
+- T071 ad0501b ready_review, msg_3513d8b569c2. Master read author report: 424 passed / 2 generation skips, lint/typecheck/build, production preview keyboard/ratio/DB/requests evidence. Author explicitly lacks actual video, Player-level error and scene-zero browser checks; actual phone/screen-reader also unverified.
+- T072 final UX validation requested from CC-DESIGN-01 (msg_49c6a9fcf07b), unique report/history only, no shared build or product changes.
+- T073 independent Codex dispatched: ctx_9874bc63970e / task_ea10b850a124 / term_c9315d8f-d0de-487f-b08c-695e4efe7b63, child p2-2-player-review, ready receipt. Scope report-only; independent suite/runtime plus actual MP4, Player error/reload and empty UI gap closure in own fake environment. Product acceptance pending.
