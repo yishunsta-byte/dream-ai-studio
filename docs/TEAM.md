@@ -49,7 +49,9 @@
 - CC-DATA-01 임시코딩, lib/db migration실행·명시적소스/해시보조·필요최소manifest연결/관련tests/README/고유보고. 기존SQL1~4/hash불변, 제품0005/타임라인/사용자DB/고정fixture덮기금지. verify와실행을구분하고실제소스·영향의존범위를versioned결합hash로기록,같은트랜잭션·결정성·옛행보존·직접/복원동등·실패rollback/사전snapshot·ZIP보존을테스트전용5단계로입증한다.
 - 관련/전체tests/lint/typecheck/build·근거·선택커밋반환후독립검수. 이번계약은0005전미완료조건이며현재SQL K6통과와구분한다.
 
-### T-049 · SQL K6 통과·남은 코드 이관 계약 기준 반영 (parent=T047) — ready
+### T-049 · SQL K6 통과·남은 코드 이관 계약 기준 반영 (parent=T047) — done
+
+- 45b9367 / msg_e915d924c165 회수, Master실제PLAN diff·고유보고검토: SQL범위통과와T048미완료/0005보류, 독립전체305계승·집중98을정확히구분해문서검토완료. U1/U3/U7방향기록·spec숫자보류유지, 새제품요구/사용자승인추가없음. 문서만검증.
 
 - CC-DESIGN-01, PLAN K6/18 최소상태주석·고유보고/히스토리만. T047독립98와T045독립305계승을구분, 현재SQL호환/s4통과와T048 codehash미구현분리. 제품코드/공용상태불변, 사용자승인재요청없음.
 
