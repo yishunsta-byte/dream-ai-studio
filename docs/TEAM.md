@@ -41,7 +41,13 @@
 
 ## 요청 기록
 
-### T-021 · 복원본 백업 출처·파일 누락·다른 환경 경계 보완 (parent=T019, priority=P1) — running
+### T-021 · 복원본 백업 출처·파일 누락·다른 환경 경계 보완 (parent=T019, priority=P1) — done
+
+- 회수msg_535752bf25d1, 구현75c023c/6파일·새14검사/전체207검사보고. Master가실제diff/보고/DTO를검토하고T022화면연결후전체207검사/build경고0/NFT사적추적0/lint/typecheck·새OS가상복원본1280/390을검증했다. 독립재검수대상에는추가하되최종P1통과로표시하지않는다.
+
+### T-022 · 백업 출처·파일 존재 DTO 화면 통합 (parent=T021, priority=P1) — done
+
+- 책임CX-MASTER-01, 허용settings-panel.tsx·studio/page.tsx와본인인계/공식상태. local/inherited/unconfirmed·파일없음·검증이력과현재복원가능상태를구분하고restorable=false옵션/검사차단. 실제새fixture B1/B2→복원→B1파일없음→새로컬백업을만들어1280/390화면/옵션상태·가로넘침0확인. 기존개발서버를멈추지않고Next16분리출력근거로build검증. 상세T-022-CX-MASTER-01.md. T020UI검증도포함, 다음독립재검수필요.
 
 - 실제수락 msg_2082a301212c 확인. 담당점유 backup/restore 서비스·보조schema/paths·관련tests(backup-origin.test.ts 예정)·고유인계로확정. UI/공용문서/lockfile/migration과실데이터는미접근. Master는해당파일을동시에수정하지않고반환후DTO화면연결과검증을수행한다.
 
@@ -52,7 +58,9 @@
 
 - 담당 CC-DATA-01. 허용 docs/handoffs/T-019-CC-DATA-01.md 한파일, 실제사용자/기존fixtureDB접근금지. 이전성공백업행이복원본목록에남을때경로읽기/ID-meta검증/누락파일실패/성공오표시/최소표시구분을코드와필요시가상fixture로확인한다. 전송msg_296303943a1d, 수락msg_7d4d639f83a3. 현재P1필수와구분한읽기점검이다.
 
-### T-020 · 복원 중단 이름표·중복 날짜 문구 정리 (parent=T016, priority=P3) — ready_review
+### T-020 · 복원 중단 이름표·중복 날짜 문구 정리 (parent=T016, priority=P3) — done
+
+- T022의실제1280/390가상복원본화면에서명시이름표/중복날짜제거·상단출처유지와가로넘침0을확인했다. 디자인코드대조외에Master실제화면검증을추가했다.
 
 - 디자인 대조 msg_9ff96c6a7cc4 회수: CC-DESIGN-01이51a3df4 diff를직접확인해이름표/중복제거/출처Callout유지가명세와일치함을확인했다. 코드대조완료이며실제1280/390화면은T015통합검수때확인할항목으로유지한다. 사용자결정없음.
 
