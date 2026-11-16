@@ -42,7 +42,15 @@
 
 ## 요청 기록
 
-### T-054 · 반환 경계·늦은 쓰기 집중 독립 재검수 (parent=T053/T052, priority=P1) — running
+### T-055 · 거부 Promise 오류 생명주기 최소 보완 (parent=T054/T053, priority=P1) — ready
+
+- CC-DATA-01 임시코딩, loader/관련회귀/deadlinechild/고유보고·README필요최소. nativePromise거부를timedVM내안전intrinsic으로처리하되undefined계약유지/일반thenable·getter host미접촉·freshcontext·롤백후무쓰기유지. 전역unhandledRejection억제/Nodewarn플래그금지.
+- 즉시/queuedRejected 원문 A/B3회열린DB·journal/rollback·정상후속·100ms대기완료·status0, T052late/deadline·관련/전체tests/lint/typecheck/build증거후집중독립검수. SQL/s4/사용자DB/제품0005/공용문서불변.
+
+
+### T-054 · 반환 경계·늦은 쓰기 집중 독립 재검수 (parent=T053/T052, priority=P1) — done (잔여 FAIL)
+
+- 결과msg_4340aa69b6df·원문취합. 독립관련95통과/T052late원문3회/deadline재현으로F0521/2실행범위PASS, nativePromise immediate/queued rejection이동기거부/rollback후Node status1종료로잔여F0541 FAIL. T055timedVM내최소처리배정,전역오류억제금지. 제품0005보류/SQL K6·P1승인유지.
 
 - 실제worker ready dispatch ctx_5b16e9ceb53b / task task_3eb8769df6a9 / terminal term_f36caf6c-708b-4958-9b7e-86b679bb0d71 / child code-migration-return-recheck. Orca wake로결과회수.
 

@@ -1,5 +1,9 @@
 # 검수 기록
 
+## R-024 · T054 반환 경계 재검수 — 잔여 FAIL (2026-11-16)
+
+독립관련95통과·T052late/deadline재현으로F0521/2범위PASS. nativePromise immediate/queued rejection이거부·rollback후Node프로세스를status1로종료하는F0541실제재현, T055최소수정배정. 상세 handoffs/T-054-CODE-MIGRATION-RETURN-RECHECK.md. 기존SQL K6/P1승인유지, v2수용/제품0005보류.
+
 ## R-023 · T052 코드 이관 v2 — FAIL (2026-11-16)
 
 독립원CRLF333통과/생성1skip·lint/typecheck/build, F050수정/entry해시·제한loader는범위PASS. 반환값thenable의host경로microtask가Arollback후B실행때A쓰기와getter/then timeout누락을실제재현(F0521/2)해v2수용FAIL. T053반환경계최소수정배정. 상세 handoffs/T-052-CODE-MIGRATION-V2-REVIEW.md. 기존SQL K6/P1승인유지·0005진입보류. 검수잘못생성fake경로삭제는자동승인policy거부로보존,우회없음.
