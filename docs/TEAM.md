@@ -44,6 +44,8 @@
 
 ### T-042 · 독립 검수 DB 신규 판정·시작 안내·검증 보완 (parent=T035, priority=P1) — ready
 
+- F039-3 디자인제안 f3c7d5a / msg_249e0d36247a 원문검토 후 A안(sidecar 실패기록+공통안내)을채택해구현담당에전달했다. from/to개수외journal fingerprint 등으로현재DB/코드대조, snapshot실제허용경계·존재검증후에만사본보존표현, sidecar크기/스키마/경로불신입력검사·외부runtime root·기록실패DB무영향을추가조건으로했다. 코드구현/화면시험은담당반환대기.
+
 - 담당 CC-DATA-01, T041 완료 후 순차. F039-2 nonempty DB journal없음/빈기록은 failclosed·원본불변, 진짜빈DB만 초기화. 직접 migrateDatabase도 같은정책. F039-3 이관실패 시작안내는 DB무수정·사본존재에맞는정확문구, F039-4 V_RUN 실제경계/시각 각각 assert.
 - 범위 migration실행/CLI/startup·필요최소부품/관련tests/고유T042보고·README. 기존SQL/고정fixture원본/사용자data/공용문서 불변. 전체tests/lint/typecheck/build·격리실패/원본보존 증거·별도선택커밋 반환 후 독립재검수. 미래코드이관hash/0005는별도선행계약.
 
