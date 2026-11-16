@@ -41,7 +41,9 @@
 
 ## 요청 기록
 
-### T-023 · 차단 코딩 작업 복구·F0161/2 구현 (parent=T015/P1 종료, priority=P1) — running
+### T-023 · 차단 코딩 작업 복구·F0161/2 구현 (parent=T015/P1 종료, priority=P1) — ready_review
+
+- 회수msg_a25307605d40/8808928. Master가11파일diff와보고검토후직접build/lint/typecheck·221검사/운영audit0·실제가상UI실패/기존선택보존/다운로드15파일hash·1280/390을확인했다. 제품독립필수닫힘은아직아님. 잔여STORAGE_FAILED UI/V13와추가백업변경은독립재검수로이관. T025실제결과절에근거기록.
 
 - 실제수락msg_08992f1198d7. HEAD29d93a2확인, production/exports 서비스·3panel/preview·errors/helper/최소CSS·관련tests·고유T023인계점유. 원래T015별도작업공간미접근. Master는해당코드를동시수정하지않는다.
 
@@ -56,6 +58,8 @@
 - 실제수락msg_6140931601d5. 확인페이지/고유인계2파일만점유, 원본11캡처읽기전용·사용자승인요청금지. 코드담당과비중첩.
 
 ### T-025 · 결과 통합·실행검증·독립 재검수 준비 (parent=T023/P1 종료, priority=P1) — ready
+
+- Master통합검증완료,독립재검수배정준비. 실제실행/미실행은T025인계첫절에명시. T026디자인필수불일치없음회수, F0161/2는독립실행후닫는다.
 
 - 책임CX-MASTER-01. 실행기준은docs/handoffs/T-025-CX-MASTER-01-validation.md, 현재준비문서이며미실행검증을통과로표시하지않는다. T023반환후diff/테스트/실제격리UI·V13·파일무결성·T021/22하단검증을수행하고깨끗한커밋에서독립재검수를배정한다.
 
