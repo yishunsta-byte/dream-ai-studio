@@ -11,7 +11,8 @@ export const SAFE_AREA={"9:16":{top:0.12,bottom:0.2,right:0.12,left:0},"16:9":{t
 export type PreviewAsset={kind:string;available:boolean;isMock?:boolean};
 export type PreviewSource={type:"empty"}|{type:"missing"}|{type:"image";src:string}|{type:"video";src:string;trimBefore:number};
 export type PreviewClip={sceneId:string;sceneNumber:number;from:number;durationInFrames:number;source:PreviewSource};
-export type PreviewText={id:string;content:string;style:TimelineText["style"];box:TimelineText["box"];from:number;durationInFrames:number;movedForPreview:boolean;animated:boolean};
+// P2-3: animation drawn per frame, fontMissing per text (its family could not be loaded), mark = editor outline.
+export type PreviewText={id:string;content:string;style:TimelineText["style"];box:TimelineText["box"];animation:TimelineText["animation"];from:number;durationInFrames:number;movedForPreview:boolean;animated:boolean;fontMissing:boolean;mark:"selected"|"warning"|null};
 export type PreviewProps={fps:typeof FPS;aspect:PreviewAspect;width:number;height:number;durationInFrames:number;videoFrames:number;clips:PreviewClip[];texts:PreviewText[];reducedMotion:boolean;sample:boolean;fontMissing:boolean};
 
 const assetSrc=(id:string)=>`/api/assets/${encodeURIComponent(id)}`;
@@ -29,7 +30,7 @@ function boxForPreview(text:TimelineText,aspect:PreviewAspect,height:number):{bo
 }
 
 // null = nothing to show (no scene and no text): the "비어 있음" state, no Player (durationInFrames must be > 0).
-export function previewProps(timeline:Timeline,assets:ReadonlyMap<string,PreviewAsset>,options:{aspect:PreviewAspect;reducedMotion:boolean;fontMissing?:boolean}):PreviewProps|null{
+export function previewProps(timeline:Timeline,assets:ReadonlyMap<string,PreviewAsset>,options:{aspect:PreviewAspect;reducedMotion:boolean;fontMissing?:boolean;missingFamilies?:readonly string[];selectedTextId?:string|null;warnings?:ReadonlySet<string>}):PreviewProps|null{
   const size=PREVIEW_SIZE[options.aspect],videoFrames=totalFrames(timeline.video);
   if(timeline.video.length===0)return null;
   let from=0,sample=false;
@@ -42,10 +43,13 @@ export function previewProps(timeline:Timeline,assets:ReadonlyMap<string,Preview
   const texts=timeline.text.map((text):PreviewText=>{
     const placed=differs?boxForPreview(text,options.aspect,size.height):{box:text.box,moved:false};
     const animated=text.animation.in!=="none"||text.animation.out!=="none"||text.animation.emphasis!=="none";
-    return {id:text.id,content:text.content,style:text.style,box:placed.box,from:text.timing.startFrame,durationInFrames:text.timing.endFrame-text.timing.startFrame,movedForPreview:placed.moved,animated};
+    const fontMissing=(options.fontMissing??false)||(options.missingFamilies??[]).includes(text.style.fontFamily);
+    // Warnings count only in the saved aspect (T-080 6.1); a warning outline wins over the selected one (6.3).
+    const mark=!differs&&options.warnings?.has(text.id)?"warning":options.selectedTextId===text.id?"selected":null;
+    return {id:text.id,content:text.content,style:text.style,box:placed.box,animation:text.animation,from:text.timing.startFrame,durationInFrames:text.timing.endFrame-text.timing.startFrame,movedForPreview:placed.moved,animated,fontMissing,mark};
   });
   const durationInFrames=Math.max(videoFrames,...timeline.text.map(text=>text.timing.endFrame));
-  return {fps:FPS,aspect:options.aspect,width:size.width,height:size.height,durationInFrames,videoFrames,clips,texts,reducedMotion:options.reducedMotion,sample,fontMissing:options.fontMissing??false};
+  return {fps:FPS,aspect:options.aspect,width:size.width,height:size.height,durationInFrames,videoFrames,clips,texts,reducedMotion:options.reducedMotion,sample,fontMissing:(options.fontMissing??false)||(options.missingFamilies??[]).length>0};
 }
 
 // T-068 3장: MM:SS.FF (FF 00~29), H:MM:SS.FF from one hour.

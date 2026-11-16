@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type RefObject } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MutableRefObject, type RefObject } from "react";
 import { Player, type ErrorFallback, type PlayerRef } from "@remotion/player";
 import { clampFrame, formatFrameTime, PREVIEW_ASPECTS, previewProps, SAFE_AREA, spokenFrameTime, type PreviewAspect, type PreviewAsset, type PreviewProps } from "@/lib/edit/preview";
 import type { Timeline } from "@/lib/edit/timeline";
+import type { FontRef } from "@/lib/edit/fonts";
+import { fontKey, fontUses, loadFonts, type FontState } from "./font-loader";
 import { Badge, Button, Callout, EmptyState, IconButton, SampleBadge } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { TimelineComposition } from "./timeline-composition";
@@ -11,7 +13,12 @@ import styles from "./player-panel.module.css";
 
 // P2-2 preview (T-067 3.3, T-068, T-072). Shows the timeline on screen; never saves, never calls a write API.
 // Keys are handled only on the stage and its buttons (no document/window key handlers): typing elsewhere is untouched.
-export type PlayerPanelProps={projectId:string;timeline:Timeline|null;savedAspect:PreviewAspect;assets:ReadonlyMap<string,PreviewAsset>;dirty:boolean;timeInvalid:boolean};
+// P2-3 (T-080): the editor passes its fonts, the selected text and the texts it warns about (outlines), and gets a
+// small control to read the frame and seek ("지금 재생 위치로", "이 글자 처음으로"). Without textWarnings the panel keeps
+// its own P2-2 frame check.
+export type PreviewControl={frame:()=>number;seek:(frame:number)=>void};
+export type PlayerPanelProps={projectId:string;timeline:Timeline|null;savedAspect:PreviewAspect;assets:ReadonlyMap<string,PreviewAsset>;dirty:boolean;timeInvalid:boolean;fonts?:readonly FontRef[];selectedTextId?:string|null;textWarnings?:ReadonlySet<string>;controlRef?:MutableRefObject<PreviewControl|null>};
+const NO_FONTS:readonly FontRef[]=[];
 type Status="paused"|"playing"|"waiting"|"error";
 // F073-1: a render error on the first mount, after an aspect change or on a retry happens before the event listeners
 // below are attached, so the Player error event is lost. The fallback the Player draws in place of the picture tells
@@ -38,30 +45,26 @@ const StageView=memo(function StageView({playerRef,props,initialFrame,onFailed}:
 
 const motionQuery="(prefers-reduced-motion: reduce)";
 const subscribeMotion=(notify:()=>void)=>{const media=window.matchMedia(motionQuery);media.addEventListener("change",notify);return ()=>media.removeEventListener("change",notify);};
-// The Pretendard face from next/font: the first family of --font-pretendard, loaded before the Player is drawn
-// (delayRender has no effect in the Player, T-067 3.5). A missing or blocked file → drawn with a fallback, marked.
-async function fontReady(weights:readonly number[]){
-  const family=getComputedStyle(document.documentElement).getPropertyValue("--font-pretendard").split(",")[0]?.trim();if(!family)return false;
-  const timeout=new Promise<false>(resolve=>setTimeout(()=>resolve(false),8000));
-  const load=Promise.all(weights.map(weight=>document.fonts.load(`${weight} 64px ${family}`,"가A1"))).then(sets=>sets.every(set=>set.length>0&&set.every(face=>face.status==="loaded")),()=>false);
-  return Promise.race([load,timeout]);
-}
-
-export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInvalid}:PlayerPanelProps){
+export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInvalid,fonts=NO_FONTS,selectedTextId=null,textWarnings,controlRef}:PlayerPanelProps){
   const rootRef=useRef<HTMLDivElement>(null);
   // Master D-4: while a time field is wrong the last valid timeline stays on the stage (derived state, no effect).
   const json=timeline?JSON.stringify(timeline):null,[shownJson,setShownJson]=useState(json);
   if(json!==null&&json!==shownJson)setShownJson(json);
   const shown=useMemo(()=>shownJson?JSON.parse(shownJson) as Timeline:null,[shownJson]);
   const [aspect,setAspect]=useState<PreviewAspect>(savedAspect),[safeOn,setSafeOn]=useState(true);
-  const [font,setFont]=useState<"checking"|"ok"|"missing">("checking"),[status,setStatus]=useState<Status>("paused");
+  const [status,setStatus]=useState<Status>("paused");
   const [frame,setFrame]=useState(0),[mount,setMount]=useState({key:0,initialFrame:0}),[announce,setAnnounce]=useState(""),[outside,setOutside]=useState(false);
   const reducedMotion=useSyncExternalStore(subscribeMotion,()=>window.matchMedia(motionQuery).matches,()=>false);
   const playerRef=useRef<PlayerRef|null>(null),stageRef=useRef<HTMLDivElement>(null),quiet=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
-  const weights=useMemo(()=>[...new Set((shown?.text??[]).map(text=>text.style.fontWeight))].sort().join(","),[shown]);
-  useEffect(()=>{let live=true;void fontReady(weights?weights.split(",").map(Number):[700]).then(ok=>{if(live)setFont(ok?"ok":"missing");});return ()=>{live=false;};},[weights]);
-  const props=useMemo(()=>shown?previewProps(shown,assets,{aspect,reducedMotion,fontMissing:font==="missing"}):null,[shown,assets,aspect,reducedMotion,font]);
-  const ready=font!=="checking"&&props!==null,last=props?props.durationInFrames-1:0;
+  // Fonts of the texts on the stage, loaded before the Player is first drawn (delayRender has no effect in the Player,
+  // T-067 3.5). Later font changes keep the Player up and redraw when the new face arrives.
+  const key=useMemo(()=>fontKey(fontUses(shown?.text??[])),[shown]);
+  const [fontResult,setFontResult]=useState<{key:string;states:Record<string,FontState>}|null>(null);
+  useEffect(()=>{let live=true;const uses=new Map(key?key.split("|").map(part=>{const [family,weights]=part.split(":");return [family,weights.split("/").map(Number)] as const;}):[]);
+    void loadFonts(uses,fonts).then(states=>{if(live)setFontResult({key,states});});return ()=>{live=false;};},[key,fonts]);
+  const missing=useMemo(()=>Object.entries(fontResult?.states??{}).filter(([,state])=>state!=="ok"),[fontResult]);
+  const props=useMemo(()=>shown?previewProps(shown,assets,{aspect,reducedMotion,missingFamilies:missing.map(([family])=>family),selectedTextId,warnings:textWarnings}):null,[shown,assets,aspect,reducedMotion,missing,selectedTextId,textWarnings]);
+  const ready=fontResult!==null&&props!==null,last=props?props.durationInFrames-1:0;
 
   // Player events → our state (play/pause/ended/waiting/resume/error/frameupdate, N2 PlayerStateEventMap).
   useEffect(()=>{
@@ -75,16 +78,17 @@ export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInv
   useEffect(()=>()=>clearTimeout(quiet.current),[]);
   // Safe-area check on the drawn text (spec rule: the real outline), for the frame on screen.
   useEffect(()=>{
-    if(!ready||!props)return;const id=requestAnimationFrame(()=>{
+    if(!ready||!props||textWarnings)return;const id=requestAnimationFrame(()=>{
       const container=playerRef.current?.getContainerNode();if(!container)return;const rect=container.getBoundingClientRect(),safe=SAFE_AREA[props.aspect];
       const inner={top:rect.top+rect.height*safe.top,bottom:rect.bottom-rect.height*safe.bottom,left:rect.left+rect.width*safe.left,right:rect.right-rect.width*safe.right};
       setOutside([...container.querySelectorAll<HTMLElement>("[data-text-body]")].some(element=>{const box=element.getBoundingClientRect();return box.width>0&&(box.top<inner.top-0.5||box.bottom>inner.bottom+0.5||box.left<inner.left-0.5||box.right>inner.right+0.5);}));
     });return ()=>cancelAnimationFrame(id);
-  },[frame,props,ready,mount.key]);
+  },[frame,props,ready,mount.key,textWarnings]);
 
   const seek=useCallback((target:number)=>{const player=playerRef.current;if(!player||!props)return;const next=clampFrame(target,props.durationInFrames);player.seekTo(next);setFrame(next);
     // Screen readers hear the place once the keys stop for 0.3 s (T-068 3장), not on every repeat.
     clearTimeout(quiet.current);quiet.current=setTimeout(()=>setAnnounce(spokenFrameTime(next)),300);},[props]);
+  useEffect(()=>{if(controlRef)controlRef.current={frame:()=>playerRef.current?.getCurrentFrame()??0,seek};});
   const toggle=useCallback((event?:Parameters<PlayerRef["play"]>[0])=>{const player=playerRef.current;if(!player||!props)return;
     if(player.isPlaying()){player.pause();return;}
     // At the last frame play starts again from 0 (T-068 2.1).
@@ -130,8 +134,8 @@ export function PlayerPanel({projectId,timeline,savedAspect,assets,dirty,timeInv
       <Button variant="secondary" size="sm" aria-pressed={safeOn} onClick={()=>setSafeOn(old=>!old)}>안전 영역 보기</Button>
     </div>
     <p className="sr-only" aria-live="polite">{announce}</p>
-    {outside&&<Callout tone="warning" title="글자가 안전 영역을 벗어났어요.">{`문구 길이·크기·위치를 고치고 미리보기를 다시 확인해 주세요.${font==="missing"?" (대신 그린 글꼴 기준)":""}`}</Callout>}
-    {font==="missing"&&<Callout tone="warning" title="Pretendard 글꼴 파일을 찾지 못해 기본 글꼴로 대신 보여 줘요.">영상 만들기 전에 글꼴을 확인해 주세요.</Callout>}
+    {outside&&<Callout tone="warning" title="글자가 안전 영역을 벗어났어요.">{`문구 길이·크기·위치를 고치고 미리보기를 다시 확인해 주세요.${missing.length?" (대신 그린 글꼴 기준)":""}`}</Callout>}
+    {missing.length>0&&<Callout tone="warning" title={`${missing.map(([family])=>family).join(", ")} 글꼴을 불러오지 못해 기본 글꼴로 대신 보여 줘요.`}>{missing.some(([,state])=>state==="timeout")?"글꼴 파일이 커서 20초 안에 다 읽지 못했어요. 미리보기를 다시 불러와 보세요. ":""}영상 만들기 전에 글꼴을 확인해 주세요.</Callout>}
     <div className={styles.notes}>
       {timeInvalid&&<p>시간 칸을 고칠 때까지 마지막으로 맞았던 내용으로 보여 줘요.</p>}
       {dirty&&!timeInvalid&&<p>저장하지 않은 고침도 미리보기에 보여요.</p>}

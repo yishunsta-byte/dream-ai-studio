@@ -5,6 +5,8 @@ import type { DatabaseHandle } from "@/lib/db/connection";
 import { withDatabase } from "@/lib/db/server";
 import { editInputSchema, editSnapshotSchema, requiredDisclosures, srtText, type EditInput, type EditSnapshot } from "@/lib/edit/schema";
 import { applyEditView, editViewFromTimeline, FPS, framesToSeconds, textEndLimit, type Timeline } from "@/lib/edit/timeline";
+import { newTextLayer } from "@/lib/edit/text-ops";
+import { selectableFonts } from "@/lib/fonts/registry";
 import { finishingRepository } from "@/lib/repo/finishing";
 import { jobsRepository } from "@/lib/repo/jobs";
 import { workflowRepository } from "@/lib/repo/workflow";
@@ -28,9 +30,20 @@ export function editingService(handle:DatabaseHandle){const repo=finishingReposi
  // The SRT the bundle writes for the saved timeline (a moved r1 keeps its P1 times), shown while nothing is changed.
  // A row that fails its checks shows no saved preview here; review/export refuse it with their own message.
  function savedSrt(projectId:string,saved:boolean){if(!saved)return null;try{const view=timelines.editView(projectId);return view.value?srtText(view.value.layers):null;}catch{return null;}}
+ // P2-3a: the timeline the text editor starts from — the saved one with the current clips in its order, or (nothing
+ // saved) a draft whose required disclosures use the spec disclosure look over the whole plan (Master D-4). Computed,
+ // never stored. Saved texts are passed as they are (P1 values included).
+ function draft(timeline:Timeline,saved:boolean,clips:Timeline["video"],required:string[],plannedFrames:number):Timeline{
+  if(saved)return {...timeline,video:clips};
+  return {...timeline,video:clips,text:required.map((content,index)=>newTextLayer("disclosure",{startFrame:0,videoFrames:0,plannedFrames,content,stack:index}))};
+ }
+ // R-6: the P1 seconds of a moved r1 (shown next to its frame times until the first save), read from its snapshot.
+ function p1Times(projectId:string,fromP1:boolean){if(!fromP1)return null;try{const view=timelines.editView(projectId);return view.value?Object.fromEntries(view.value.layers.map(layer=>[layer.id,{startSec:layer.startSec,endSec:layer.endSec}])):null;}catch{return null;}}
  const service={
   get:(projectId:string)=>{const {project,state,timeline,value,durationSec}=base(projectId),production=productionService(handle).get(projectId);
-   return {projectId,revision:project.contentRevision,aspect:project.aspect,durationSec,lengthSec:project.lengthSec,maxEndSec:framesToSeconds(textEndLimit(state.clips,project.lengthSec)),production,savedId:state.current?.id??null,timelineId:state.current?.id??null,current:state.current,base:timeline,clips:state.clips,stale:state.stale,warnings:state.warnings,completed:states.stages(projectId).find(row=>row.stage==="edit")?.status==="approved",value,savedSrt:savedSrt(projectId,state.current!==null),fromP1:state.current?.source==="p1-migration"};},
+   const required=requiredDisclosures(z.record(z.string(),z.unknown()).parse(JSON.parse(project.inputsJson))),plannedFrames=durationSec*FPS,fromP1=state.current?.source==="p1-migration";
+   return {projectId,revision:project.contentRevision,aspect:project.aspect,durationSec,lengthSec:project.lengthSec,maxEndSec:framesToSeconds(textEndLimit(state.clips,project.lengthSec)),production,savedId:state.current?.id??null,timelineId:state.current?.id??null,current:state.current,base:timeline,clips:state.clips,stale:state.stale,warnings:state.warnings,completed:states.stages(projectId).find(row=>row.stage==="edit")?.status==="approved",value,savedSrt:savedSrt(projectId,state.current!==null),fromP1,
+    draft:draft(timeline,state.timeline!==null,state.clips,required,plannedFrames),fonts:selectableFonts(),requiredDisclosures:required,plannedFrames,p1Times:p1Times(projectId,fromP1)};},
   // Static-editor values saved as a timeline revision (server-side callers and tests; the screen posts the timeline).
   save:(projectId:string,revision:number,input:unknown)=>atomic(()=>{const values=editInputSchema.parse(input),{project,state,timeline}=base(projectId);assertRevision(revision,project.contentRevision);let next:Timeline;try{next=applyEditView(timeline,values,state.clips);}catch{throw new WorkflowError("INVALID_TRANSITION","현재 장면을 빠짐없이 한 번씩 배치해 주세요.",400);}const saved=timelines.save(projectId,revision,state.current?.id??null,next);return {revision:saved.revision,id:saved.timelineId};}),
   complete:(projectId:string,revision:number)=>atomic(()=>{const project=context(projectId);assertRevision(revision,project.contentRevision);const state=timelines.state(projectId);if(!state.current)throw new WorkflowError("STAGE_LOCKED","글자 설정을 먼저 저장해 주세요.");if(state.stale.length)throw new WorkflowError("STAGE_LOCKED",TIMELINE_STALE);return workflow.changeStage(projectId,"edit","complete",revision);}),

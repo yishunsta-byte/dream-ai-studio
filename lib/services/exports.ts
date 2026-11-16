@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
 import { unlink } from "node:fs/promises";
 import { linkSync, unlinkSync } from "node:fs";
-import { extname, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import { z } from "zod";
 import { v7 } from "uuid";
 import type { DatabaseHandle } from "@/lib/db/connection";
@@ -14,6 +14,8 @@ import { generationInputSchema } from "@/lib/jobs/schema";
 import { exportJobSchema, manifestSchema, type BundleManifest } from "@/lib/export/schema";
 import { fileDigest, verifyZip, writeZip, type BundleSource } from "@/lib/export/zip";
 import { srtText } from "@/lib/edit/schema";
+import { timelineSchema } from "@/lib/edit/timeline";
+import { FONT_MIME, fontStatuses } from "@/lib/fonts/registry";
 import { finishingRepository } from "@/lib/repo/finishing";
 import { jobsRepository } from "@/lib/repo/jobs";
 import { planningRepository } from "@/lib/repo/planning";
@@ -33,7 +35,7 @@ const fontFile=()=>join(process.cwd(),"public/fonts/PretendardVariable.woff2"),l
 type Plan={id:string;version:number;script:string;stepsJson:string};
 type Project={id:string;title:string;inputsJson:string};
 type LayoutScene={scene:{id:string;title:string};version:{id:string;version:number;jobId:string|null};asset:{isMock:boolean;filePath:string|null;mime:string|null;sizeBytes:number|null;width:number|null;height:number|null;durationMs:number|null;rightsNote:string|null};filename:string|null};
-type LayoutInput={project:Project;plan:Plan;edit:{id:string|null;value:{layers:Parameters<typeof srtText>[0]}|null;snapshot:unknown};revision:number;reviews:{status:string;label:string;required:boolean;note:string|null}[];selected:LayoutScene[]};
+type LayoutInput={project:Project;plan:Plan;edit:{id:string|null;value:{layers:Parameters<typeof srtText>[0]}|null;snapshot:unknown;timelineJson?:string|null};revision:number;reviews:{status:string;label:string;required:boolean;note:string|null}[];selected:LayoutScene[]};
 export type BundleEntry={path:string;mime:string}&({source:"scene";index:number;item:LayoutScene}|{source:"text";text:string}|{source:"file";filename:string});
 export function scenePath(index:number,item:Pick<LayoutScene,"scene"|"version"|"asset">){return `scenes/${String(index+1).padStart(2,"0")}_${item.scene.id}_v${item.version.version}${item.asset.isMock?"_SAMPLE":""}${extname(item.asset.filePath??"")}`;}
 // The single list of bundle files in ZIP order. runClaimedExport writes exactly these entries
@@ -41,7 +43,11 @@ export function scenePath(index:number,item:Pick<LayoutScene,"scene"|"version"|"
 export function bundleLayout(handle:DatabaseHandle,input:LayoutInput):BundleEntry[]{
  const jobs=jobsRepository(handle),entries:BundleEntry[]=[],text=(path:string,value:string,mime="text/plain")=>entries.push({path,mime,source:"text",text:value});
  input.selected.forEach((item,index)=>entries.push({path:scenePath(index,item),mime:item.asset.mime??"application/octet-stream",source:"scene",index,item}));
- text("README.txt",`P1 편집용 묶음입니다. 완성 영상은 포함하지 않습니다.\n${input.selected.some(item=>item.asset.isMock)?"샘플 포함 · 실제 생성 결과가 아닌 시험용 자료입니다.\n":""}영상 조립과 글자 합성은 P2 범위입니다. SRT는 직접 입력한 시간만 사용합니다.\n`);
+ // P2-3 (Master D-8): a user or restored timeline also gives its stored bytes and the font files it names. A moved P1
+ // r1 (timelineJson null) keeps exactly the P1 layout, so bundles of that version stay the same byte for byte.
+ const timelineJson=input.edit.timelineJson??null,families=timelineJson?[...new Set(timelineSchema.parse(JSON.parse(timelineJson)).text.map(layer=>layer.style.fontFamily as string))].filter(family=>family!=="Pretendard"):[];
+ const fonts=families.length?fontStatuses().filter(font=>families.includes(font.family)&&font.installed):[],absent=families.filter(family=>!fonts.some(font=>font.family===family));
+ text("README.txt",`${timelineJson?"":"P1 "}편집용 묶음입니다. 완성 영상은 포함하지 않습니다.\n${input.selected.some(item=>item.asset.isMock)?"샘플 포함 · 실제 생성 결과가 아닌 시험용 자료입니다.\n":""}영상 조립과 글자 합성은 P2 범위입니다. SRT는 직접 입력한 시간만 사용합니다.\n${timelineJson?"글자 모양·위치·움직임은 edit/timeline.json에 있어요.\n":""}${absent.map(family=>`글꼴 ${family} 파일을 찾지 못해 넣지 못했어요. 직접 확인해 주세요.\n`).join("")}`);
  text("script/script.txt",input.plan.script);
  text("script/plan.md",`# 승인 기획 v${input.plan.version}\n\n${input.plan.script}\n\n${JSON.stringify(JSON.parse(input.plan.stepsJson),null,2)}`);
  text("edit/text_overlays.json",JSON.stringify({revisionId:input.edit.id,...(input.edit.snapshot as object|null)},null,2),"application/json");
@@ -53,6 +59,8 @@ export function bundleLayout(handle:DatabaseHandle,input:LayoutInput):BundleEntr
  text("review/checklist.md",`# 내용 버전 r${input.revision} 검수\n\n${input.reviews.map(item=>`- [${item.status==="pass"?"x":" "}] ${item.label}${item.required?" (필수)":""}${item.note?` · ${item.note}`:""}`).join("\n")}`);
  entries.push({path:"fonts/PretendardVariable.woff2",mime:"font/woff2",source:"file",filename:fontFile()});
  text("LICENSES/Pretendard-OFL.txt",readFileSync(licenseFile(),"utf8"));
+ if(timelineJson){text("edit/timeline.json",timelineJson,"application/json");
+  for(const font of fonts){const name=basename(font.file!);entries.push({path:`fonts/${font.folder}/${name}`,mime:FONT_MIME[extname(name).slice(1).toLowerCase()]??"application/octet-stream",source:"file",filename:font.file!});text(`LICENSES/${font.folder}-OFL.txt`,readFileSync(font.license!,"utf8"));}}
  return entries;
 }
 function entryBytes(entry:BundleEntry){if(entry.source==="text")return Buffer.byteLength(entry.text,"utf8");if(entry.source==="scene")return entry.item.asset.sizeBytes??0;try{return statSync(entry.filename).size;}catch{return 0;}}
@@ -65,7 +73,7 @@ export function exportService(handle:DatabaseHandle){const repo=finishingReposit
  // missing scene results — those are listed as missing and block creation.
  function preview(projectId:string){const project=jobs.project(projectId);if(!project)throw new WorkflowError("NOT_FOUND","프로젝트를 찾을 수 없어요.",404);const plan=project.approvedPlanId?jobs.plan(project.approvedPlanId):undefined;if(!plan||plan.status!=="approved")return {ready:false as const,reason:"기획을 승인하면 묶음에 들어갈 파일을 미리 볼 수 있어요."};
   // A saved timeline that cannot be read (e.g. a moved r1 that differs from its P1 source) is shown with its reason.
-  let edit:ReturnType<ReturnType<typeof timelineService>["editView"]>,timelineError:string|null=null;try{edit=timelineService(handle).editView(projectId);}catch(error){edit={id:null,value:null,snapshot:null,stale:[],current:null};timelineError=error instanceof WorkflowError?error.message:"저장한 타임라인을 확인해 주세요.";}
+  let edit:ReturnType<ReturnType<typeof timelineService>["editView"]>,timelineError:string|null=null;try{edit=timelineService(handle).editView(projectId);}catch(error){edit={id:null,value:null,snapshot:null,stale:[],current:null,timelineJson:null};timelineError=error instanceof WorkflowError?error.message:"저장한 타임라인을 확인해 주세요.";}
   const missing:{sceneNumber:number;title:string;reason:string}[]=[],present:LayoutScene[]=[];
   states.scenes(projectId).forEach((scene,index)=>{const version=scene.selectedVersionId?jobs.versions(scene.id).find(row=>row.id===scene.selectedVersionId):undefined;const asset=version?.resultAssetId?jobs.assets([version.resultAssetId])[0]:undefined;const filename=asset?resolveStoredFile(asset.filePath):null;if(!version||version.status!=="succeeded"||!asset){missing.push({sceneNumber:index+1,title:scene.title,reason:`장면 ${index+1}의 결과를 선택해 주세요.`});return;}if(!filename)missing.push({sceneNumber:index+1,title:scene.title,reason:`장면 ${index+1}의 결과 파일을 찾을 수 없어요.`});present.push({scene,version,asset,filename});});
   const entries=bundleLayout(handle,{project,plan,edit,revision:project.contentRevision,reviews:repo.reviews(projectId,project.contentRevision),selected:present}).map(entry=>({path:entry.path,sizeBytes:entryBytes(entry),missing:entry.source==="scene"&&!entry.item.filename,sample:entry.source==="scene"&&entry.item.asset.isMock}));

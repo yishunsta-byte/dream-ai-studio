@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { EditInput, TextLayer as P1TextLayer } from "./schema";
+import { READABLE_FONT_FAMILIES } from "./fonts";
 
 // P2-1 timeline (PLAN 11.2·11.3, T-060, spec text-presets.json migration.fromP1Values). Pure and client-safe: the
 // editing screen builds the timeline it saves with these helpers, and the server checks it again with the same rules.
@@ -25,7 +26,8 @@ const shadow=z.strictObject({color:hex,opacity:z.number().min(0).max(1),blur:z.n
 const background=z.strictObject({color:hex,opacity:z.number().min(0).max(1),paddingX:z.number().min(0).max(200),paddingY:z.number().min(0).max(200),radius:z.number().min(0).max(200)});
 export const timelineTextSchema=z.strictObject({
   id:z.uuidv7(),kind:z.enum(TEXT_KINDS),content:z.string().max(500).refine(text=>text.trim().length>0,{message:"문구를 적어 주세요."}),speakerCharacterId:ref.nullable(),
-  style:z.strictObject({fontFamily:z.literal("Pretendard"),fontSize:z.number().int().min(18).max(120),fontWeight:z.number().int().min(100).max(900),color:hex,
+  // P2-3: any readable family (append-only list); the server allows only selectable ones for new or changed text.
+  style:z.strictObject({fontFamily:z.enum(READABLE_FONT_FAMILIES),fontSize:z.number().int().min(18).max(120),fontWeight:z.number().int().min(100).max(900),color:hex,
     stroke:z.strictObject({color:hex,width:z.number().min(0).max(40)}).nullable(),shadow:shadow.nullable(),background:background.nullable(),
     align:z.enum(["left","center","right"]),letterSpacing:z.number().min(-1).max(1),lineHeight:z.number().min(0.8).max(3),maxLines:z.number().int().min(1).max(10)}),
   box:z.strictObject({x:z.number().min(0).max(1),y:z.number().min(0).max(1),anchor:z.enum(["center","top-left"]),widthRatio:z.number().min(0.05).max(1),rotation:z.number().min(-180).max(180)}),
