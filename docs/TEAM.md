@@ -49,7 +49,9 @@
 - d8768a8 완료 보고 msg_8bdf18be0a02 회수. Master 보고·server/timeline/0005 핵심 원문 검토 및 전체34파일407통과/생성2skip 직접 실행. 새 Codex child 독립 검수 배정. 작성자 lint/typecheck/build·CLI/production·양폭 증거, 미실행 P1 pre/post 실제 캡처 비교·s4 placeholder 제약을 구분해 검수한다.
 - 전체 tests/lint/typecheck/build·저장/되돌리기/CAS/검수·ZIP·원본보존·s4/s5/직접복원동등·source 동봉/cwd/오류/production Next·실제양폭키보드 흐름을 검증. 고유T065보고만, 제품/fixture/사용자DB/공용문서 불변. 원본 비교 미실행을 통과로 과장하지 않는다.
 
-### T-066 · P2-1 최종 디자인 읽기 대조 (parent=T061/T064) — ready
+### T-066 · P2-1 최종 디자인 읽기 대조 (parent=T061/T064) — done (읽기·캡처)
+
+- 556ee0e/202d317 및 msg_bd3a6d0ab387·msg_e9642dc38ec5 회수. Master최종보고전체·r1-edit390원본확인, T064반영·9장육안대조범위와정지캡처Tab미확인/이관전픽셀비교없음한계를채택했다. V1 r1시간칸과P1 SRT차이·r2전체프레임변환안내혼동은T065에전달, V2원P1값대비/V3모바일stale줄맞춤은후속분리. 제품HEAD d8768a8 고정,새실행검증으로과장안함.
 
 - CC-DESIGN-01, 고유 T066 보고/히스토리만. 최종 코드의 T064 항목·PLAN/spec·r1/P1 SRT 안내·현재 저장경로를 읽기 대조. 구현자 캡처 원본 공유 후 육안 대조 가능. 독립 T065와 구분하며 별도 server/build/browser/제품·기준·공용문서 수정 금지.
 
