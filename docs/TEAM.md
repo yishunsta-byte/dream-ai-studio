@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-041 · 복원 확정 실패 뒤 재검사 경로 (parent=T035, priority=P1) — ready
+### T-041 · 복원 확정 실패 뒤 재검사 경로 (parent=T035, priority=P1) — running
+
+- 실제 수락·점유 msg_58bd90ceac28 수신. 담당 시작 HEAD 1bf1276, settings-panel/필요 restore API 계약·관련 tests/고유보고 점유 확인. T039 별도 child 검수와 수정 파일 충돌 없음.
 
 - Claude design 읽기대조 f8e9b6a D1 / msg_3a714745a466 회수. Master가 settings-panel act()의 RESTORE_EXPIRED 단독 clear와 ticket 분기 확인. 서버 terminal 실패 뒤 검사하기가 숨는 문제에 대한 실제재현은 T039와 수정 담당에 배정했다.
 - 담당 CC-DATA-01 임시 코딩. settings-panel/필요 restore 오류·재시도 상태 계약/관련 tests/고유 T041보고만. terminal실패 ticket·sessionStorage 제거/입력보존, prepared 인증replay와 결과불명·CONFLICT 안전 재확인 보존. RESTORE_FAILED 코드만으로 재시도가능 단정 금지.
