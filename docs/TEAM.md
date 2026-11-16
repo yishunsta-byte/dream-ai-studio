@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-054 · 반환 경계·늦은 쓰기 집중 독립 재검수 (parent=T053/T052, priority=P1) — ready
+### T-054 · 반환 경계·늦은 쓰기 집중 독립 재검수 (parent=T053/T052, priority=P1) — running
+
+- 실제worker ready dispatch ctx_5b16e9ceb53b / task task_3eb8769df6a9 / terminal term_f36caf6c-708b-4958-9b7e-86b679bb0d71 / child code-migration-return-recheck. Orca wake로결과회수.
 
 - 78ee04e 대상 새Codex child. T052 late/deadline 원문재현·A/B같은객체반복·열린연결뒤쓰기없음·정상후속작업, entry/getter/오류문자열화 timed경계·freshcontext/삼킨require/캡처원문identity 검증. 관련코드/compat/restore회귀와선행T052범위계승구분.
 - 고유T054보고만, 제품코드/fixture원본/사용자DB/제품0005/공용문서불변. PASS/FAIL·실행범위·내부timeout vs외부kill·신뢰경계/향후제품등록검증조건 반환후Master통합.
