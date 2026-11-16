@@ -42,6 +42,12 @@
 
 ## 요청 기록
 
+### T-056 · P2 편집 시안의 기존 명세 정합 준비 (parent=화면준비) — ready
+
+- 디자인읽기차이dc01573 / msg_c00d34638607 원문검토후CC-DESIGN-01에배정. prototype #p2-edit 내부/필요해당화면한정style·고유보고/히스토리만. G1~10 기존spec/T033채택방향정합, 다른화면/공용토큰/제품코드/기준spec불변·이관숫자추가보류·U4미정확정표시금지.
+- 1280/390 실제표시·넘침/포커스·390문구만제한·기존dashboard/settings회귀·캡처/정적예시한계·선택커밋반환후Master검토. T055와독립인시안준비이며제품P2-1/0005착수아님. 승인된방향변경/새승인요청없음.
+
+
 ### T-055 · 거부 Promise 오류 생명주기 최소 보완 (parent=T054/T053, priority=P1) — running
 
 - 설계 msg_5f6592619f9d 검토후 capturedPromise.then intrinsic을timedVM내적용하는안채택. 일반then/getter미접촉·거부/rollback·freshcontext유지, nativeconstructor/species 예외때handler미부착·종료여부를subprocess로별도확인하도록조건추가. floating미반환rejection은현재잔여반환값범위와분리해한계를보고하되검증전해결로표시하지않음. 전역listener/warnflag금지유지.
