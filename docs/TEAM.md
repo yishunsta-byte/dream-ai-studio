@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-039 · K6/s4 독립 검수 (parent=T035, priority=P1) — ready
+### T-039 · K6/s4 독립 검수 (parent=T035, priority=P1) — running
+
+- 실제 worker ready: dispatch ctx_298f104f497a, task task_93a5636d7231, terminal term_cea140c9-f8af-4b0b-928c-e1bd43366197, child C:/Users/Administrator/orca/workspaces/dream-ai-studio/k6-independent-review. 결과는 Orca wake로 회수한다.
 
 - 구현 미참여 Codex에 새 child 격리 검수 배정. 기준 ebd0dff 제품 변경. Master 자체 전체 tests 28파일258통과/생성모드1skip를 직접 재실행했다. 자체검증과 독립 판정은 구분한다.
 - 코드/원본 고정 fixture 수정 금지, 고유 T039 보고서만. K6 전항·T034 비교 프로파일·live snapshot/동시성/원본보존·실패/replay·누락 migration journal/제품이전버전·UI1280/390/키보드·기존 migrations 불변·시작 안내·미래 code migration hash 계약을 점검. 필요한 가상시험은 OS임시root/전용loopback만. 실제사용data/기존서버/타worker 점유 금지.
