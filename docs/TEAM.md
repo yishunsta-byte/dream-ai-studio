@@ -1024,3 +1024,10 @@
 - c7f7774 / msg_cfe831b348ea ready_review. Master read report: author551/13skip, enabled9 E2Es, actual changed-cache pixel/input-swap/error/owned-nonloopback and lifecycle probes. Not independent acceptance.
 - T124 independent dispatched ready (receipt): original-CRLF checks and direct F116-1~4 reproductions, cache executed-byte/input-copy race limits, permanent/transient publication errors and Node/native source containment. Report-only child render-integrity-recheck.
 - T119 isolated UI completion continues; hydrated normal focus correction retained, no unsupported new focus defect declaration.
+
+### T123 residual UX review returned (2026-11-17)
+
+- msg_acd922c79131 report-only result received: fixed3580883 confirmed B0/C4/U1. Hydrated focus normal; earlier body observation remains pre-hydration uncertainty, not mandatory defect.
+- Failure/blocker/late/missing display probes distinguish injected rows from actual renderer behavior; late file404 observed. 1280/390 overflow0; CSS scale/reflow is not native200% or real-device/screen-reader PASS.
+- T119 author may include honest media-open label and pre-attempt wording with existing cancel/render-wait scope. Global Button accessibility refactor deferred. Final targeted design check follows committed T119 return.
+- T124 backend integrity independent review continues; no frontend result substitutes for it.
