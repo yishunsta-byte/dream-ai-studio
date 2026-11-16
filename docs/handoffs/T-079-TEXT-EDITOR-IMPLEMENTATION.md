@@ -130,8 +130,8 @@ plannedFrames: number              // 기획 장면 합계 × 30 (표기 기본 
 |---|---|---|
 | 머리 | 종류 select(8종, spec label) · 시간 | 종류 고정 |
 | 문구 | textarea, 500자, 아래에 "최대 {m}줄" + 줄 수 경고 | 읽기 전용(fixedTexts) |
-| 빠른 모양 | spec 8 프리셋 칩(이름 = spec label). 누르면 바로 바뀌고 Toast "‘훅’ 모양을 적용했어요. 위치·문구·시간은 그대로예요." + "되돌리기"(이 적용 하나만 취소). 옆 체크 "기본 위치도 함께"(기본 꺼짐) | 숨김 |
-| 글꼴 | select. 항목 이름을 그 글꼴로 그려요(로드 실패 시 기본 글꼴). 설치 안 된 글꼴은 `disabled` + "(설치 전)". 굵기 select는 그 글꼴 `weights`만 보여요 | 숨김 |
+| 빠른 모양 | spec 프리셋 칩 **7개**(표기 제외, T-080 R-1, 이름 = spec label). 누르면 바로 바뀌고 Toast "‘훅’ 모양을 적용했어요. 위치·문구·시간은 그대로예요." + "되돌리기"(이 적용 하나만 취소). 옆 체크 "기본 위치도 함께"(기본 꺼짐) | 숨김 |
+| 글꼴 | select. 항목 이름을 그 글꼴로 그려요(로드 실패 시 기본 글꼴). 설치·라이선스를 통과하지 못한 글꼴은 **목록에서 숨겨요**(T-080 R-2). 저장값의 글꼴을 지금 쓸 수 없으면 "{이름} · 지금 없음"을 고른 상태로 보이고 미리보기는 대체 글꼴 칩을 보여요. 굵기 select는 그 글꼴 `weights`만 보여요 | 숨김 |
 | 크기 | number 18~120 | 숨김(서버 고정) |
 | 색 | 색 견본(color) + 외곽선 켜기/색/두께(0~40) | 숨김 |
 | 배경·그림자 | 프리셋 값 표시 + 켜기/끄기만(세부 값 편집은 넣지 않음, 3.3) | 숨김 |
@@ -155,8 +155,8 @@ plannedFrames: number              // 기획 장면 합계 × 30 (표기 기본 
 
 | 추가 | 쓰임 |
 |---|---|
-| `selectedTextId` | 선택 글자에 남색 안쪽 테두리 |
-| `textWarnings: Record<id, ("safe"\|"lines"\|"beyond")[]>` | 경고 글자에 노란 테두리(DESIGN 6.8) |
+| `selectedTextId` | 선택 글자 테두리: 2px `--accent-bar` + 바깥 1px `--bg-sidebar`(T-080 R-4) |
+| `textWarnings: Record<id, ("safe"\|"lines"\|"beyond")[]>` | 경고 글자 테두리: 2px dashed `--st-warning-line` + 바깥 1px `--bg-sidebar`(T-080 R-4) |
 | `fonts`(2.4) | 컴포지션이 글꼴별 `@font-face`/`FontFace`를 로드해요. 재생 중 새 글꼴은 `useBufferState().delayPlayback()`(T-067 D5). 못 읽으면 지금 칩 "글꼴 없음 · 대신 보여요" |
 | `getFrame` ref | 3.1 "지금 재생 위치로" |
 
@@ -189,7 +189,7 @@ plannedFrames: number              // 기획 장면 합계 × 30 (표기 기본 
 
 - 화면 밖 고정 칸(`position:fixed; left:-10000px; visibility:hidden; pointer-events:none`)에 **저장 비율 크기 그대로(예 1080×1920)** 컴포지션 좌표계를 만들어요. 그 안에 Player가 쓰는 **같은 `TextView`**를 움직임 없이 그려요. 측정과 미리보기, 이후 렌더가 같은 부품과 같은 글꼴 파일을 써요.
 - 글꼴이 준비되면(`document.fonts.load`, 글꼴별) 글자마다 이렇게 재요.
-  - 바깥 사각형 = `data-text-body`의 `getBoundingClientRect()`(배경 패딩 포함) + 외곽선 두께/2(가운데 외곽선) + 그림자(|x|·|y| + blur)를 넓혀요. 그다음 컴포지션 좌표로 바꿔요.
+  - 바깥 사각형 = `data-text-body`의 `getBoundingClientRect()`(배경 패딩 포함) + **외곽선 두께**(T-080: `stroke.width` = 바깥으로 보이는 두께, 그리기는 `-webkit-text-stroke: 2×width` + `paint-order: stroke fill`) + 그림자(|x|·|y| + blur)를 넓혀요. 그다음 컴포지션 좌표로 바꿔요.
   - 줄 수 = `Range.getClientRects()`의 서로 다른 줄 top 개수예요.
 - 결과는 `{id → {rect, lines, fontLoaded}}`이에요. 초안이 바뀔 때 `requestAnimationFrame` 한 번으로 모아 다시 재요.
 - 판정은 순수 함수 `textWarnings(measured, aspect, maxLines)`로 빼서 시험해요.
@@ -225,7 +225,7 @@ plannedFrames: number              // 기획 장면 합계 × 30 (표기 기본 
 - 새 server-only `lib/fonts/registry.ts` `installedFonts()`: `fonts.json`을 읽고 글꼴마다 파일 존재(`public/fonts/<folder>/`)와 라이선스 전체 본문 검사(spec installRule)를 해요. 결과는 `{family, weights, url, installed, reason}`이에요. Pretendard는 지금 경로 `public/fonts/` 바로 아래를 그대로 써요.
 - 시험: 라이선스 파일이 없거나 본문에 "SIL Open Font License"·"Version 1.1"이 없으면 목록에서 빠지는지 봐요(가짜 폴더 fixture). 실제 설치 글꼴은 모두 통과해야 해요.
 - **나머지 7종 파일 받기는 따로 배정을 추천해요**(D-7). 공식 배포처에서 내려받아야 하고(외부 접속), 받은 파일 해시와 배포 커밋을 `SOURCE.md`에 남겨요. 저장소 용량이 늘어요(특히 Noto Sans/Serif KR 가변 글꼴). 크기는 설치 때 재요. 변환·부분 글꼴 도구는 새 의존성이라 쓰지 않고, 배포 파일(woff2가 없으면 ttf) 그대로 써요.
-- 설치 전에도 P2-3a는 동작해요. 목록에는 Pretendard만 고를 수 있고 나머지는 "(설치 전)"이에요.
+- 설치 전에도 P2-3a는 동작해요. 목록에는 Pretendard만 보여요(나머지는 숨김, T-080 R-2).
 
 ### 5.2 미리보기 글꼴
 
@@ -312,6 +312,8 @@ plannedFrames: number              // 기획 장면 합계 × 30 (표기 기본 
 | D-9 | 나누기 | P2-3a(편집 칸·프리셋·글꼴·경고·저장·미리보기) / P2-3b(타임라인 글자 줄·키) |
 
 ### 7.1 디자인·spec 확인 요청 (T080 Claude design에 직접 전달)
+
+> **T-080 답(b3c7af7, `msg_934ca8e0abb3`) 반영:** ① 자간 = 짧은 변 1080 기준 px ② 외곽선 = 바깥으로 보이는 두께 ③ 필수 표기 지울 수 없음 + 종류별 이유 글(T-080 2.3) ④ "광고"만. 구현 때 `TextView` 자간을 `px`로, 외곽선을 `2×width` + `paint-order`로 고치고, "P2-3 이전 경로(P1 이관·정적 편집기)는 letterSpacing 0·stroke null만 씀" 시험을 추가해요(R-3). 옮긴 r1의 시간 안내는 P1 원래 초를 읽을 수 있을 때만 보여요(R-6). 아래는 원래 질문이에요.
 
 1. **`letterSpacing` 단위:** spec `units`에 없어요. 미리보기 `TextView`는 `em`으로 그리는데, 훅 프리셋 −1이 `−1em`이면 글자가 완전히 겹쳐요. **"짧은 변 1080px 기준 px"로 정하는 것을 추천**해요(fontSize와 같은 기준). 정해지면 `TextView` 한 줄을 고쳐요.
 2. **외곽선 두께 뜻:** `-webkit-text-stroke`는 가운데 기준이라 바깥으로는 두께의 절반만 나와요. spec `width`가 전체 두께인지 바깥 두께인지 정해 주세요. 측정·렌더를 같게 맞추려는 것이에요.
