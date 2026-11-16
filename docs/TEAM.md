@@ -42,7 +42,15 @@
 
 ## 요청 기록
 
-### T-050 · 코드 데이터 이관 해시 계약 독립 검수 (parent=T048, priority=P1) — running
+### T-051 · 실행 원문 결합·의존 그래프·결정성 계약 보완 (parent=T050/T048, priority=P1) — ready
+
+- CC-DATA-01 임시코딩. code-migration/migrate·필요로더/registry·시험코드fixture/관련tests/README·고유보고. 실행결합추천설계를먼저Master공유하고실제검증원문과다른run허용금지, parser기반일반runtimeimport graph/loader일치·암묵SQLclock제한·규칙/도구버전가정정확화·CRLF시험입력정정.
+- 기존SQL1~4/hash·고정s4·사용자DB·공용문서·제품0005불변. 실제F050재현거부/정상결정적변환·rollback/snapshot/directrestore·원checkout전체tests/lint/typecheck/build·원본보존 증거반환후독립재검수. 일반JS sandbox나임의적대적코드전부차단을요구하지않는다.
+
+
+### T-050 · 코드 데이터 이관 해시 계약 독립 검수 (parent=T048, priority=P1) — done (계약 FAIL)
+
+- 결과msg_61f42f6b7d32·원문취합. 독립실제재현F0501 원문/run분리인증,F0502일반import문법외부의존누락,F0503암묵SQL현재시각때문에계약FAIL. F0504 CRLF시험입력오류도보완. SQL4/rollback복원 scopedPASS, 전체320+skip1은fixtureLF정규화복사본조건부결과·lint/typecheck/build통과와구분. T051필수수정배정,제품0005금지유지.
 
 - 실제worker ready dispatch ctx_08601a9a11e1 / task task_3c33bac20050 / terminal term_b273d3a7-3b37-4d24-b856-6ffd7084bcbb / child code-migration-contract-review. Orca wake로결과회수.
 

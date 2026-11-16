@@ -1,5 +1,9 @@
 # 검수 기록
 
+## R-022 · T050 코드 이관 해시 계약 — FAIL (2026-11-16)
+
+원문/run분리·일반runtimeimport의존누락·암묵SQL현재시각을실제재현해새계약수용FAIL. 기존SQL4호환/fixture변환rollback·snapshot·복원은scopedPASS유지. 독립전체320+1skip은fixtureLF정규화복사본조건부결과며원CRLFcheckout은시험입력1건실패, lint/typecheck/build통과. F0501~4를T051에배정했다. 상세 handoffs/T-050-CODE-MIGRATION-INDEPENDENT-REVIEW.md. 제품0005추가전계약수정·독립재검수필수, P1승인/SQL K6PASS는변경없다.
+
 ## T047 현재 SQL K6 독립 PASS·잔여 계약 착수 (2026-11-16)
 
 T047이 b586d66 제품동일기준에서독립98관련검사·실제CLI/1280·390시작안내·원본/fixture보존을확인해F0451/2를닫았다. T045독립전체305/생성1skip·lint/typecheck/build및기존F039/F043통과증거와합쳐현재SQL K6범위PASS를Master가채택했다. T047전체307/production빌드/복원UI를재실행했다고주장하지않는다. 상세 handoffs/T-047-K6-FOCUSED-RECHECK.md. 코드데이터이관소스/hash계약은별도T048구현·검수전미완료,제품0005/타임라인은그뒤배정. 기존P1사용자두승인완료상태유지.
