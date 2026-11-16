@@ -210,3 +210,11 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T104 independent bounded display/recovery integrity verification started (ctx_f6c7dfa9b086).
 - T101 renderer technical preparation continues; T102 UX returned.
 - Next: close P2-3b scope after T104 and reconcile renderer designs for concrete implementation assignment.
+
+## Latest next-stage assignments
+
+- T104: prior recovery display verification pending.
+- T105: actual render-record/0006/s6/backup-restore foundation implementation assigned.
+- T106: renderer UX/decision/license-note reconciliation assigned.
+- After foundation validation: renderer packages/browser pinned setup, actual render worker/composition/ffprobe, UI and independent runtime verification.
+- Preserve all old migrations/fixtures/user data; successful render files included in backups.

@@ -875,3 +875,11 @@
 - aa7aae0 / msg_d79f0bab907a ready_review. Master read report: overflow reproduced as transient ruler ticks after1440→1280, not recovery text; overflow:clip contains ruler. Recovery clarity/fallback focus/metadata refinements included; author468 passed/2 skips and build.
 - T104 independent dispatched ready: ctx_f6c7dfa9b086 / task_8faf41ad7e86 / term_4ae7905a-110e-4a53-adaf-84a8706a1980, child recovery-layout-recheck. Bounded report-only actual resize/bulk recovery/copy-download equality/focus check, inheriting T100 broad core PASS.
 - T101 technical renderer preparation continues in parallel; T102 UX ready. No renderer install/implementation yet.
+
+### T101 accepted with decisions; T105/T106 assigned (2026-11-16)
+
+- T1013795037 / msg_96ba5cf1e57d reviewed. Decisions: exact4.0.543 renderer stack, licenseKey null with pinned-license eligibility record; separate pinned browser installation later; audio0 for P2-4; renders table; concurrency1; Korean-safe slug; global jobs1.
+- Successful and retained-late MP4s MUST be included in backup inventory; proposal to omit reproducible output rejected. Disk-full retry requires changed capacity/explicit corrective action.
+- T105 implementation author assigned render-record/0006/repo/backup-restore/fixed-s6 foundation only. Preserve SQL1~5/s4/s5, do not migrate actual user DB. No renderer/browser/package/UI installation in this subtask.
+- T106 design assigned bounded render decision/UX/license-note reconciliation, no product changes.
+- T104 prior display check runs independently; renderer worker/composition/UI implementation follows foundation verification.
