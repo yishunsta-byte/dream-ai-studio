@@ -1148,3 +1148,9 @@
 - T138 CC-DATA-01 assigned priority DSP-only fixes and regressions via msg_6730ed97ea2d. Include one-audio-stream policy and observer cleanup. Preserve T137 current WIP; separate selective DSP commit and report required. No deployed/source tool changes or user-data access.
 - T137 renderer integration finalization paused pending corrected DSP contract and independent recheck. Existing migrate/render-data/errors/0009 WIP observed and protected; not staged by Master. No claim that active worker already stopped or acknowledged.
 - Next: collect safe-boundary acknowledgment and fixes, independently reproduce all four controls, then resume renderer integration. DSP/output/P2 overall remain incomplete.
+### T137 safe boundary acknowledged; T138 verification isolation (2026-11-17)
+
+- msg_16d82586a9a2 confirms T138 priority accepted and T137 paused at four unstaged files: render-data.ts, migrate.ts, errors.ts and new0009_render_audio.sql. Other renderer integration paths/tests untouched, no tests or completion claimed.
+- Worker reports current shared full suite may fail because unfinished9-step migration expectations remain8. This is explicit WIP, not a ready-review regression or evidence of DSP failure.
+- Master requested T138-only validation in a safe copied baseline with selective fixes; no reset/stash, unrelated expectation changes or false shared-workspace full PASS. Report actual baseline/source identity and check location. Existing WIP remains protected and uncommitted.
+- Next: T138 return and independent focused verification before T137 resume. No user decision needed.
