@@ -1224,3 +1224,9 @@
 - Master accepts VTT behavior in this scope. Independent build incomplete due cross-drive dependency path; author build remains separate evidence. Burn-in/device/general media sync not accepted.
 - T158 compatibility implementation and T156 fixed9 generation continue; observed their WIP protected and excluded from Master staging.
 - Reviewer browser/processes stopped, auto-review denied temp cleanup. Copies/fake DB/dependency junction retained; no bypass or cleanup-complete claim.
+### T158 ready_review; T159 independent compatibility review
+
+- msg_c72325dbad92 /2c79ee9 report reviewed. Author668/17skip/lint/type/build, strict manifest2 +0010/export row/backup ZIP binding. Real old-app execution not performed by author.
+- T159 ctx_b234432713c9 /task_d4cf096e60f3 dispatched: independent row/trigger/rollback/actual old9-app and real ZIP restore verification. Acceptance pending.
+- T156 informed msg_1ca745e4e312: fixed9 generation remains on frozen stage9; current restore9->10 is upgrade, not same. Fixture/test scope must distinguish both rather than relabel old fixture.
+- Source audio packaging waits for verified compatibility and s9 checkpoint. User DB/deployment unchanged.
