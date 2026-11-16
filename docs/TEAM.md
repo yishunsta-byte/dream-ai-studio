@@ -1196,3 +1196,8 @@
 - msg_8c7b236f2ef8 /1e82d0208074284027c9651e1a80df0d23d69a01 report imported/read. Independent47/lint/type/build and many real editor lifecycle checks pass; F150-1 P1 overrides acceptance: join preview's stale full timeline discards later gain/rights edits on Apply.
 - T152 priority minimal component/helper fix requested; actual preview lifecycle and saved-GET preservation regression required, no unrelated native-player refactor. U2/U3 acceptance withheld.
 - Actual hidden/listening/device remain unverified. Reviewer server/browser stopped; automatic approval denied temp deletion, so fake runtime/copies remain without bypass. User3013 untouched.
+### T152 ready_review; T153 independent join lifecycle recheck
+
+- msg_2b8c853e5b89 /9127cf2023799561d0984f25fd52a3ebb4c20365 report/stat read. Latest-draft join recomputation/explicit re-confirmation and narrow undo/insert updates; author7 tests plus655/17skip and actual1280 save lifecycle evidence, no independent PASS yet.
+- T153 ctx_f2add742edff /task_91e47798218f dispatched: original stale-preview loss, confirmation invalidation, save/raw/recovery and bounded390/keyboard review, report only.
+- U2/U3 acceptance still withheld. Existing untracked T122/T137 reports preserved. No user DB/deployment changes.
