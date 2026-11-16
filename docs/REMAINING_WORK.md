@@ -156,3 +156,10 @@ Supersedes T075-fix-pending entries.
 - T090: PC timeline text tracks, frame/second keyboard movement, pointer drag/end handles, cancel and focus ownership; explicit save only.
 - T091: interaction UX/checklist and minimal PLAN status update.
 - Next: collect code/UX, test and independently review. P2-3b, rendering/audio and later deliverables remain; P2 overall incomplete.
+
+## Latest: P2-3b returned; validation assigned
+
+- T0907d55b96 ready_review; author458 passed/2 skips.
+- T092 final UX and T093 independent runtime/data validation assigned.
+- High-attention area: post-send draft preservation across delayed response/refresh, next-save CAS and stale cache boundaries, plus one-action pointer/keyboard semantics.
+- Next: findings/fixes/recheck before P2-3b acceptance; render/audio stages remain.

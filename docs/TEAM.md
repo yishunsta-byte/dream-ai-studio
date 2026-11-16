@@ -795,3 +795,10 @@
 
 - 706d387 / msg_37f5d8a63f17 returned. Local pointer/keyboard/roving-focus/locked-text/cancel/mobile criteria accepted for T090. No autosave or extra media tracks introduced.
 - Save-response race is a code-review concern, not yet reproduced: author instructed to inject delayed POST and ensure edits during save are either prevented with clear state or preserved across refresh/remount; failed/409 saves must retain draft. Final review includes this condition.
+
+### T090 returned; T092/T093 final validation (2026-11-16)
+
+- T090 7d55b96 / msg_3368a090f171 ready_review, Master read report. Author458 passed/2 skips, lint/type/build and runtime evidence. Delayed-save edit loss reproduced and replaced by retained post-send drafts, not locking. Design accepts direction (msg_cd3fd7586d2b), actual validation pending.
+- T092 / CC-DESIGN-01 requested final TL/C5 design checks (msg_4250d4a4c0ee), unique report/history only.
+- T093 independent Codex dispatched ready: ctx_07aeaa8488e9 / task_58814ed0ed27 / term_b09f1d37-cf82-4ad1-a360-05e3036677d0; child p2-3b-track-review. Original-CRLF full checks, actual pointer/key queue/cancel/focus and delayed-save retention/CAS/cache boundary runtime verification. Report-only.
+- P2-3b not accepted yet; no further feature progression until mandatory findings resolved.
