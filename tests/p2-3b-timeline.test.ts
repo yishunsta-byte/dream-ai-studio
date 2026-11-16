@@ -3,7 +3,7 @@
 // the frame store, and the boundaries (no page-wide keys, no server code, no fetch in the row).
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { afterSave, barKeyAction, clipKeyAction, liveTimeFields, rulerSteps, shiftTiming } from "@/lib/edit/text-ops";
+import { afterSave, barKeyAction, clipKeyAction, laterChanges, liveTimeFields, rulerSteps, shiftTiming } from "@/lib/edit/text-ops";
 import type { Timeline } from "@/lib/edit/timeline";
 import { createFrameStore } from "@/components/player/frame-store";
 
@@ -66,7 +66,9 @@ describe("경계",()=>{
     expect(panel).not.toMatch(/setInterval|autosave/i);expect(panel.match(/fetch\(`\/api\/projects\/\$\{data\.projectId\}\/timeline`/g)).toHaveLength(1);
     // T-093: one handover owned by the saving editor, gone with it; no time limit; a late answer of a gone editor does nothing.
     expect(panel.match(/^let /gm)).toEqual(["let "]);expect(panel).toContain("let handover:Handover|null=null;");expect(panel).toContain("if(!mounted.current)return;");
-    expect(panel).toContain("return ()=>{mounted.current=false;if(handover?.owner===me)handover=null;};");expect(panel).toContain("from.saved&&from.owner!==me&&from.projectId===data.projectId&&from.fromRevision!==data.revision");
+    expect(panel).toContain("return ()=>{mounted.current=false;if(handover?.owner===me)handover=null;};");// T-096 F096-1: taken over only by the editor of exactly the version this save made (its answer's revision + timeline id).
+    expect(panel).not.toContain("fromRevision");expect(panel).toContain("from.arrived.revision===data.revision&&from.arrived.timelineId===data.timelineId");
+    expect(panel).toContain("{draft:initial,kept:false,times:{},selectedId:from.selectedId,missed}");expect(panel).toContain("handover=arrived?{...handover,arrived}:null");
     expect(panel).toContain("startRefresh(()=>router.refresh())");expect(panel).not.toMatch(/Date\.now\(\)|30_000/);expect(panel).toContain("저장하는 동안 고친 내용은 아직 저장하지 않았어요.");
     expect(panel).toContain('response.status===409?CONFLICT');expect(panel).toContain("busy||posting.current)return;posting.current=true;");expect(panel).toContain("finally{posting.current=false;}");expect(panel).toContain('role="alert" ref={errorRef} tabIndex={-1}');
   });
@@ -93,5 +95,21 @@ describe("저장 수명·시간 칸·끄는 중 키 (T-093 F093-1·3·4)",()=>{
     const row=readFileSync("components/text-editor/text-timeline.tsx","utf8"),editor=readFileSync("components/text-editor/text-editor.tsx","utf8");
     expect(row).toContain("now.startFrame!==state.origin.startFrame||now.endFrame!==state.origin.endFrame");expect(row).toContain("다른 글자를 골라 옮기기를 취소했어요.");
     expect(editor).toMatch(/removeText\(old,removed\.id\)\);setTimes\(/);
+  });
+});
+
+describe("다른 창의 더 새 버전이 돌아왔을 때 (T-096 F096-1)",()=>{
+  const layer=(id:string,content:string,start=0)=>({id,kind:"subtitle",content,speakerCharacterId:null,timing:{startFrame:start,endFrame:start+30}});
+  const tl=(text:ReturnType<typeof layer>[],video:unknown[]=[]):Timeline=>({schemaVersion:1,aspect:"9:16",video,audio:[],text} as unknown as Timeline);
+  it("보낸 뒤 고친 글자만 목록으로: 고침·새로 넣음·뺌·장면 순서, 건드리지 않은 글자는 없음",()=>{
+    const sent=tl([layer("a","A"),layer("b","B"),layer("c","C")],[{id:"v1"},{id:"v2"}]);
+    const later=tl([layer("a","A2"),layer("b","B"),layer("d","D",40)],[{id:"v2"},{id:"v1"}]);
+    const out=laterChanges(sent,later);
+    expect(out.texts.map(item=>[item.change,item.id,item.content])).toEqual([["changed","a","A2"],["added","d","D"],["removed","c","C"]]);
+    expect(out.order).toBe(true);
+  });
+  it("시간만 옮겨도 고친 글자, 아무것도 안 고쳤으면 빈 목록",()=>{
+    const sent=tl([layer("a","A")]);expect(laterChanges(sent,tl([layer("a","A",5)])).texts[0]).toMatchObject({change:"changed",timing:{startFrame:5,endFrame:35}});
+    expect(laterChanges(sent,sent)).toEqual({texts:[],order:false});
   });
 });

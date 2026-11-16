@@ -5,7 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type 
 import { useRouter } from "next/navigation";
 import type { EditingData } from "@/lib/services/editing";
 import { canonicalJson, framesToSeconds, textEndLimit, timelineSrt, totalFrames, type Timeline } from "@/lib/edit/timeline";
-import { afterSave, beyondVideo, liveTimeFields, replaceText, safeViolations } from "@/lib/edit/text-ops";
+import { afterSave, beyondVideo, laterChanges, liveTimeFields, replaceText, safeViolations, type LaterChange } from "@/lib/edit/text-ops";
+import { kindLabel } from "@/lib/edit/presets";
+import { formatFrameTime } from "@/lib/edit/preview";
 import { Badge, Button, Card, Callout } from "./ui/primitives";
 import { useToast } from "./ui/interactive";
 import styles from "./finishing-panel.module.css";
@@ -29,7 +31,10 @@ export async function finishingRequest(projectId:string,revision:number,action:s
 // version. Only its owner writes it and it is removed when the owner goes away (the refresh's new editor has read it
 // by then), so a save of an editor that is gone, a cancelled change or a later visit can never bring a draft back
 // (F093-2). No time limit: a slow refresh keeps everything.
-type Handover={owner:symbol;projectId:string;fromRevision:number;sent:Timeline;saved:boolean;draft:Timeline;times:TimeState;selectedId:string|null};
+// It is taken over only by the editor of exactly the version this save made (content revision + timeline id from the
+// save's answer, T-096 F096-1). If the refresh brings a newer version saved elsewhere, that version is shown as it is:
+// what was changed after sending is listed for the person, never laid over it (no silent rebase, no merge).
+type Handover={owner:symbol;projectId:string;sent:Timeline;arrived:{revision:number;timelineId:string}|null;draft:Timeline;times:TimeState;selectedId:string|null};
 let handover:Handover|null=null;
 const CONFLICT="다른 창에서 먼저 저장했어요. 지금 고친 내용은 그대로 있어요. 새로고침하면 고친 내용이 사라지니, 필요한 문구를 따로 적어 둔 뒤 새로고침해 주세요.";
 export function EditingPanel({data}:{data:EditingData}){return <Editor key={data.projectId} data={data}/>;}
@@ -40,15 +45,18 @@ function Editor({data}:{data:EditingData}){
  const initial=data.draft,savedJson=useMemo(()=>canonicalJson(initial),[initial]);
  const [me]=useState(()=>Symbol("editor"));
  // Taken over from the saving editor of the previous revision (read, not cleared: a thrown-away render may read again).
- const [took]=useState(()=>{const from=handover;return from&&from.saved&&from.owner!==me&&from.projectId===data.projectId&&from.fromRevision!==data.revision?{...afterSave(from.draft,from.sent,initial),times:from.times,selectedId:from.selectedId}:null;});
+ const [took]=useState(()=>{const from=handover;if(!from||!from.arrived||from.owner===me||from.projectId!==data.projectId)return null;
+  if(from.arrived.revision===data.revision&&from.arrived.timelineId===data.timelineId)return {...afterSave(from.draft,from.sent,initial),times:from.times,selectedId:from.selectedId,missed:null};
+  // A newer version from elsewhere: shown as it is. Changes made after sending (if any) are only listed.
+  const missed=laterChanges(from.sent,from.draft);return missed.texts.length||missed.order?{draft:initial,kept:false,times:{},selectedId:from.selectedId,missed}:null;});
  const [draft,setDraft]=useState<Timeline>(took?.draft??initial),[frameStore]=useState(createFrameStore);
  const [selectedId,setSelectedId]=useState<string|null>(took?.selectedId&&(took.draft.text.some(layer=>layer.id===took.selectedId))?took.selectedId:initial.text[0]?.id??null);
  const [times,setTimes]=useState<TimeState>(took?.times??{}),[measure,setMeasure]=useState<MeasureResult|null>(null),[placeCheck,setPlaceCheck]=useState<ReadonlySet<string>>(()=>new Set());
- const [completing,setCompleting]=useState(false),[error,setError]=useState(""),[kept,setKept]=useState(!!took?.kept);const router=useRouter(),notify=useToast(),controlRef=useRef<PreviewControl|null>(null),statusRef=useRef<HTMLParagraphElement>(null),errorRef=useRef<HTMLParagraphElement>(null),formRef=useRef<HTMLFormElement>(null);
+ const [completing,setCompleting]=useState(false),[error,setError]=useState(""),[kept,setKept]=useState(!!took?.kept),[missed,setMissed]=useState(took?.missed??null),missedRef=useRef<HTMLDivElement>(null);const router=useRouter(),notify=useToast(),controlRef=useRef<PreviewControl|null>(null),statusRef=useRef<HTMLParagraphElement>(null),errorRef=useRef<HTMLParagraphElement>(null),formRef=useRef<HTMLFormElement>(null);
  const [saving,setSaving]=useState<"post"|"refresh"|null>(null),[refreshing,startRefresh]=useTransition(),mounted=useRef(true),posting=useRef(false);
  useEffect(()=>{mounted.current=true;
   // The saved version is on screen: focus on its saved-state line (T-084 C-2).
-  if(took)statusRef.current?.focus();
+  if(took?.missed)missedRef.current?.focus();else if(took)statusRef.current?.focus();
   return ()=>{mounted.current=false;if(handover?.owner===me)handover=null;};},[me,took]);
  // While this editor's save is on its way, its latest state is what the next editor takes over.
  useEffect(()=>{if(handover?.owner===me)handover={...handover,draft,times,selectedId};});
@@ -85,14 +93,15 @@ function Editor({data}:{data:EditingData}){
  function forSave():Timeline{const saved=new Map(initial.text.map(layer=>[layer.id,layer.content]));return {...draft,text:draft.text.map(layer=>saved.get(layer.id)===layer.content?layer:{...layer,content:layer.content.trim()})};}
  async function save(event?:FormEvent){event?.preventDefault();// Clicks before the screen shows the busy button (double click, Enter + click) send one POST only.
   if(timeInvalid||emptyText||busy||posting.current)return;posting.current=true;const sent=draft;setSaving("post");setError("");
-  handover={owner:me,projectId:data.projectId,fromRevision:data.revision,sent,saved:false,draft,times,selectedId};
+  handover={owner:me,projectId:data.projectId,sent,arrived:null,draft,times,selectedId};
   try{const response=await fetch(`/api/projects/${data.projectId}/timeline`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"save",revision:data.revision,timelineId:data.timelineId,timeline:forSave()})});const result=await response.json();
    // An editor that is gone (the page was left) does nothing with a late answer.
    if(!mounted.current)return;
    if(!response.ok)throw new Error(response.status===409?CONFLICT:result.error??"저장하지 못했어요.");
    if(result.result?.created===false){if(handover?.owner===me)handover=null;setSaving(null);notify({tone:"success",message:"바뀐 내용이 없어 새 버전을 만들지 않았어요."});statusRef.current?.focus();return;}
    notify({tone:"success",message:"새 타임라인 버전을 저장했어요. 현재 내용으로 다시 검수해 주세요."});
-   if(handover?.owner===me)handover={...handover,saved:true};setSaving("refresh");startRefresh(()=>router.refresh());
+   const arrived=result.result&&typeof result.result.revision==="number"&&typeof result.result.timelineId==="string"?{revision:result.result.revision as number,timelineId:result.result.timelineId as string}:null;
+   if(handover?.owner===me)handover=arrived?{...handover,arrived}:null;setSaving("refresh");startRefresh(()=>router.refresh());
   }catch(error){if(!mounted.current)return;if(handover?.owner===me)handover=null;setSaving(null);setError((error as Error).message);requestAnimationFrame(()=>errorRef.current?.focus());}
   finally{posting.current=false;}}
  async function complete(){setCompleting(true);setError("");try{await finishingRequest(data.projectId,data.revision,"complete-edit");router.push(`/projects/${data.projectId}/review`);router.refresh();}catch(error){setError((error as Error).message);requestAnimationFrame(()=>errorRef.current?.focus());}finally{if(mounted.current)setCompleting(false);}}
@@ -112,6 +121,11 @@ function Editor({data}:{data:EditingData}){
   {stale&&<Callout title="선택한 장면 결과가 바뀌었어요." tone="warning">저장한 타임라인과 지금 선택이 달라요. 이 화면은 지금 선택으로 보여 줘요. 저장해야 검수로 넘어갈 수 있어요.</Callout>}
   {empty>0&&<Callout title={`결과를 선택하지 않은 장면이 ${empty}개 있어요.`} tone="warning">빈 자리로 순서와 길이만 지켜요. 내보내기 전에 만들기 단계에서 결과를 선택해 주세요.</Callout>}
   {error&&<p role="alert" ref={errorRef} tabIndex={-1}>{error}</p>}
+  {missed&&<div ref={missedRef} tabIndex={-1} className={editorStyles.missed}><Callout tone="warning" title="저장하는 동안 다른 창에서 더 새 버전을 저장했어요.">
+   <p>지금 화면은 그 새 버전{data.current?` (타임라인 r${data.current.revision})`:""}이에요. 저장을 보낸 뒤 고친 내용은 이 버전에 넣지 않았어요. 아래를 보고 필요한 것만 다시 고쳐 주세요.</p>
+   <ul>{missed.texts.map(item=><MissedItem key={item.change+item.id} item={item}/>)}{missed.order&&<li>장면 순서를 바꿨어요.</li>}</ul>
+   <Button variant="secondary" size="sm" onClick={()=>{setMissed(null);requestAnimationFrame(()=>statusRef.current?.focus());}}>확인했어요</Button>
+  </Callout></div>}
   <div className={styles.editor}>
    <Card><div className="stack"><h2>미리보기</h2>
     <PlayerLoader projectId={data.projectId} timeline={draft} savedAspect={data.aspect as Timeline["aspect"]} assets={assets} dirty={dirty} timeInvalid={timeInvalid} fonts={data.fonts} selectedTextId={selectedId} textWarnings={warned} controlRef={controlRef} frameStore={frameStore}/>
@@ -130,4 +144,8 @@ function Editor({data}:{data:EditingData}){
   {data.completed&&!dirty&&!stale?<Link className="action-link" href={`/projects/${data.projectId}/review`}>현재 내용 검수하기</Link>:<Button loading={completing} disabledReason={savingNow?"저장이 끝난 뒤 넘어갈 수 있어요.":dirty||!data.savedId?"글자 설정을 먼저 저장해 주세요.":stale?"지금 선택으로 다시 저장해 주세요.":undefined} onClick={()=>void complete()}>수정 확인 완료 · 검수로</Button>}<Link href={`/projects/${data.projectId}/export`}>이전 편집용 묶음 보기 →</Link>
   <TextMeasure texts={draft.text} aspect={draft.aspect} fonts={data.fonts} onResult={onMeasure}/>
  </div>;
+}
+const CHANGE_LABEL={changed:"고친 글자",added:"새로 넣은 글자",removed:"뺀 글자"} as const;
+function MissedItem({item}:{item:LaterChange}){
+ return <li><span className={editorStyles.missedHead}>{CHANGE_LABEL[item.change]}</span> · {kindLabel(item.kind)} · {formatFrameTime(item.timing.startFrame)}–{formatFrameTime(item.timing.endFrame)}<br/><span className={editorStyles.missedText}>{item.content||"문구 없음"}</span></li>;
 }

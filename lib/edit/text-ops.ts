@@ -138,6 +138,16 @@ export function rulerSteps(totalFrames:number,widthPx:number){
 export function afterSave(current:Timeline,sent:Timeline,saved:Timeline):{draft:Timeline;kept:boolean}{
   const kept=canonicalJson(current)!==canonicalJson(sent);return {draft:kept?current:saved,kept};
 }
+// What was changed after a save was sent (T-096 F096-1): listed for the person when the version that came back is not
+// this save's, never put into that version. Texts in the order of the newer draft; removed texts after them.
+export type LaterChange={id:string;change:"changed"|"added"|"removed";kind:TextKind;content:string;timing:TimelineText["timing"]};
+export function laterChanges(sent:Timeline,later:Timeline):{texts:LaterChange[];order:boolean}{
+  const before=new Map(sent.text.map(layer=>[layer.id,layer])),now=new Set(later.text.map(layer=>layer.id)),texts:LaterChange[]=[];
+  for(const layer of later.text){const old=before.get(layer.id);if(old&&canonicalJson(old)===canonicalJson(layer))continue;
+    texts.push({id:layer.id,change:old?"changed":"added",kind:layer.kind,content:layer.content,timing:layer.timing});}
+  for(const layer of sent.text)if(!now.has(layer.id))texts.push({id:layer.id,change:"removed",kind:layer.kind,content:layer.content,timing:layer.timing});
+  return {texts,order:canonicalJson(sent.video)!==canonicalJson(later.video)};
+}
 // Typed time fields ("<id>:start" / "<id>:end") count only for texts that are still there (T-093 F093-3A).
 export function liveTimeFields<T>(fields:Readonly<Record<string,T>>,texts:readonly {id:string}[]):Record<string,T>{
   const ids=new Set(texts.map(text=>text.id));return Object.fromEntries(Object.entries(fields).filter(([key])=>ids.has(key.split(":")[0])));
