@@ -135,3 +135,10 @@ Supersedes T075-fix-pending entries.
 - T084 found two required issues: font-timeout recovery mismatch and unactionable locked-disclosure warning.
 - T086 author fixes assigned; T085 broad independent review continues on original b4abd9b.
 - Next: collect broad review and fixes, independently recheck changed paths before P2-3a acceptance.
+
+## Latest: T085 FAIL; T086/T087 required fixes
+
+- T086 covers font retry/late completion state and locked-disclosure misleading duration warning.
+- T087 adds server enforcement that existing required disclosures change only box; no id-replacement/new-preset bypass.
+- Independent broad tests and actual export ZIP succeeded, but mandatory findings prevent P2-3a acceptance.
+- Next: collect both fixes, design focused checks and independent runtime/API recheck.

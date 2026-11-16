@@ -754,3 +754,10 @@
 - T086 / CC-DATA-01 / ready (ack pending): real font retry/late-load reconciliation and required-disclosure warning correction, related tests/report only. Optional small cancel/save focus and empty-text guidance fixes allowed; sticky deferred. Request msg_8d5cbe5d8c3c.
 - T085 independent broad review remains b4abd9b, informed msg_c3b0a5078cb6. No automatic target change.
 - Design allowed only fonts.json role duplicate-prefix cleanup plus own report/history; final focused UX recheck follows T086 return. Request msg_c48263bf768b.
+
+### T085 FAIL collected; additional server fix T087 (2026-11-16)
+
+- T085 msg_2b3f2943f7c9 report imported. Independent original-CRLF442 passed/2 skips, lint/type/build and actual edit-review-export-job-ZIP download/hashes passed. Value/font/preset/measurement evidence documented separately.
+- F085-1 is the same font timeout/retry issue already assigned T086; no duplicate work.
+- F085-2: existing locked disclosure non-box changes accepted by new-disclosure P1/preset fallback. T087 assigned to same author sequentially with T086, unique report and separate commit; existing id/non-box fields immutable, new creation distinct, actual HTTP rejection/DB unchanged and box-only success required.
+- T084 UI findings and T085 server findings remain distinct. Product acceptance FAIL pending fixes and independent focused recheck.
