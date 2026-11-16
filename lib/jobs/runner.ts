@@ -10,6 +10,7 @@ import { MediaError } from "@/lib/media/inspect";
 import { WorkflowError } from "@/lib/domain/stages";
 import { runClaimedBackup } from "@/lib/services/backups";
 import { runClaimedExport } from "@/lib/services/exports";
+import { runClaimedRender } from "./render";
 const outputSchema=z.strictObject({type:z.literal("media"),files:z.array(z.object({bytes:z.instanceof(Uint8Array),mime:z.enum(["image/png","video/mp4","audio/wav"])})).length(1),usage:z.object({costMicros:z.literal(0),currency:z.literal("KRW")}).optional()});
 export async function runNextJob(handle:DatabaseHandle,options:{now?:()=>number;sleep?:(ms:number)=>Promise<void>;provider?:(input:ReturnType<typeof generationInputSchema.parse>,version:number,attempt:number)=>Provider}={}){
  const now=options.now??Date.now,sleep=options.sleep??(ms=>new Promise(resolve=>setTimeout(resolve,ms))),service=jobsService(handle,now);service.heartbeatWorker();const job=service.claim();if(!job)return false;
@@ -17,6 +18,7 @@ export async function runNextJob(handle:DatabaseHandle,options:{now?:()=>number;
  try {
   if(job.kind==="backup"){await runClaimedBackup(handle,job,now);return true;}
   if(job.kind==="export"){await runClaimedExport(handle,job,now);return true;}
+  if(job.kind==="render"){await runClaimedRender(handle,job,{now});return true;}
   const input=generationInputSchema.parse(JSON.parse(job.inputSnapshotJson)),provider=options.provider?.(input,job.version,job.attempts)??createMockProvider(input,job.version,job.attempts,now);
   let providerId=job.providerJobId;if(!providerId){const submitted=await provider.submit({capability:input.kind,model:input.model,prompt:input.description,params:{aspect:input.aspect,durationSec:input.durationSec}},job.idempotencyKey);if(!submitted.providerJobId)throw new ProviderFailure("UNKNOWN","샘플 제공자의 작업 번호가 없어요.");providerId=submitted.providerJobId;service.providerStarted(job.id,job.attempts,providerId);}
   let pollWait=5000;const started=Date.parse(job.startedAt);if(!job.providerJobId)await sleep(750);

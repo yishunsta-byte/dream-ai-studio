@@ -218,7 +218,8 @@ describe("경계 (T-079 6.2-11)",()=>{
       expect(source).not.toMatch(/from "(server-only|@\/lib\/(db|repo|services|fonts)\/|node:|better-sqlite3)/);expect(source).not.toMatch(/(document|window)\.addEventListener\(\s*"key/);expect(source).not.toMatch(/fetch\(/);}
     const panel=readFileSync("components/editing-panel.tsx","utf8").replace(/\r\n/g,"\n");expect(panel).not.toMatch(/(document|window)\.addEventListener\(\s*"key/);expect(panel).not.toContain("Ctrl");
     expect(readFileSync("components/player/text-measure.tsx","utf8")).toContain("import { TextView } from \"./timeline-composition\"");
-    const composition=readFileSync("components/player/timeline-composition.tsx","utf8");expect(composition).toContain("letterSpacing:`${style.letterSpacing}px`");expect(composition).toContain("`${style.stroke.width*2}px ${style.stroke.color}`");
+    // T-114: TextView moved to the shared core (preview and render draw the same text).
+    const composition=readFileSync("components/player/composition-core.tsx","utf8");expect(composition).toContain("letterSpacing:`${style.letterSpacing}px`");expect(composition).toContain("`${style.stroke.width*2}px ${style.stroke.color}`");
     expect(presetFor("hook").style.letterSpacing).toBe(-1);
   });
 });
