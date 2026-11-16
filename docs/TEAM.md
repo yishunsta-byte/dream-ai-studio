@@ -638,3 +638,10 @@
 - T067/T068 design reviewed and accepted as P2-2 implementation inputs. Decisions: exact remotion/player 4.0.543 only, muted video, last valid preview on invalid time input with notice, renderer/media/cli deferred, local keyboard handling, visibility pause, existing-token icons/Badge extension allowed.
 - T071 / CC-DATA-01 / ready (ack pending): actual P2-2 implementation. Scope editor preview/Composition/PlayerPanel/pure conversion, related UI/CSS/tests, package/lock for two approved packages, unique report. No DB/migrations/API contract/shared-doc changes. Acceptance: production 1280/390, keyboard/focus, preview operations cause no DB/dirty/version changes or API writes, missing-file/fonts/error states, tests/lint/typecheck/build. Request msg_d63ab41ac9c0.
 - T072 / CC-DESIGN-01 / ready (ack pending): reconcile inputs/checklist now, read-only UX validation after T071 return. Unique report/history only, no product/shared-doc changes. Request msg_2b348489cdb7.
+
+### T072 preparation reviewed; T071 criteria synchronized (2026-11-16)
+
+- T072 preparation 7b85fc7 returned (msg_6791386aca0e); sections 1-2 read by Master. Full UX review remains pending T071 implementation.
+- G1-G9 reconciliation accepted: preview duration includes text tails; existing native-disabled buttons leave Tab order with visible reason; last-valid preview notice; reduced-motion notice only when relevant; ratio switch preserves position/focus; missing media cannot remain buffering; unsaved notice only while dirty.
+- Sent implementation criteria to CC-DATA-01 msg_071475e7edb4 and direct-cooperation authorization reminder to design msg_c50f0ffd44bb. No additional user decision required.
+- Video synchronization default is a package configuration reference, not measured app quality; do not expose 0.45 seconds as an acceptance result. Actual render caption timing remains a later-stage validation.
