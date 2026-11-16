@@ -42,6 +42,12 @@
 
 ## 요청 기록
 
+### T-042 · 독립 검수 DB 신규 판정·시작 안내·검증 보완 (parent=T035, priority=P1) — ready
+
+- 담당 CC-DATA-01, T041 완료 후 순차. F039-2 nonempty DB journal없음/빈기록은 failclosed·원본불변, 진짜빈DB만 초기화. 직접 migrateDatabase도 같은정책. F039-3 이관실패 시작안내는 DB무수정·사본존재에맞는정확문구, F039-4 V_RUN 실제경계/시각 각각 assert.
+- 범위 migration실행/CLI/startup·필요최소부품/관련tests/고유T042보고·README. 기존SQL/고정fixture원본/사용자data/공용문서 불변. 전체tests/lint/typecheck/build·격리실패/원본보존 증거·별도선택커밋 반환 후 독립재검수. 미래코드이관hash/0005는별도선행계약.
+
+
 ### T-041 · 복원 확정 실패 뒤 재검사 경로 (parent=T035, priority=P1) — running
 
 - 실제 수락·점유 msg_58bd90ceac28 수신. 담당 시작 HEAD 1bf1276, settings-panel/필요 restore API 계약·관련 tests/고유보고 점유 확인. T039 별도 child 검수와 수정 파일 충돌 없음.
@@ -59,7 +65,9 @@
 - P2-2 배정 시 확인한 정확버전4.0.543 및 추가 모든 패키지 LICENSE를 대조하고 개인 사용에 맞는 확인 옵션을 적용한다. 버전 변경/조직 사용·P7 전 재확인. T039 K6 독립 검수는 계속 진행한다.
 
 
-### T-039 · K6/s4 독립 검수 (parent=T035, priority=P1) — running
+### T-039 · K6/s4 독립 검수 (parent=T035, priority=P1) — done (수용 FAIL)
+
+- 결과 msg_9a8e52161b9b 회수 및 보고서 원문 취합. 독립258통과/생성1skip·lint/typecheck/build와 실제s3→s4/1280·390키보드복원은 통과했으나 F039-1 terminal실패UI막힘/F039-2 nonempty missing·emptyjournal 무사본초기화 실제재현으로 K6수용 FAIL. F1=T041, F2/F3시작안내/F4예외기대값=T042 순차수정 배정. 미래코드이관hash는0005전 별도조건. 담당 own 프로세스종료·fixture불변 확인, 임시fake root2개삭제는자동승인검토policy거부로보존(우회하지 않음).
 
 - 실제 worker ready: dispatch ctx_298f104f497a, task task_93a5636d7231, terminal term_cea140c9-f8af-4b0b-928c-e1bd43366197, child C:/Users/Administrator/orca/workspaces/dream-ai-studio/k6-independent-review. 결과는 Orca wake로 회수한다.
 
