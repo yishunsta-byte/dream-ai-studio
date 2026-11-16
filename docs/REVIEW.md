@@ -1,5 +1,9 @@
 # 검수 기록
 
+## R-021 · T045 K6 DB 보호 재검수 — scoped FAIL (2026-11-16)
+
+독립305통과/생성1skip·lint/typecheck/build와기존F043/F039실행범위PASS. 잔여F0451 최초없는경로에검사후unknownDB생성시거부전WAL변경/F0452 digest없는legacy사본의동일schema/journal·상이업무데이터확인표현 실제재현. T046최소수정배정, legacy확인근거없으면unconfirmed로결정. 상세 handoffs/T-045-K6-INDEPENDENT-RECHECK.md. 수정후독립재검수전K6수용/0005보류, 미래code이관hash계약미구현조건유지.
+
 ## R-020 · T043 K6 수정 독립 재검수 — FAIL (2026-11-16)
 
 독립29파일280통과/생성1skip·lint/typecheck/build, 복원실패후재검사·포커스·저장값해제(F0391)와V_RUN검증(F0394)은실행범위내PASS. 추가F0431 비정규빈journal무사본초기화/F0432 시작점검·거부CLI의rawDELETE→WAL원본bytes변경/F0433 손상머리글사본을확인된사본안내를실제재현해K6수용FAIL. T044수정배정, 수정후독립재검수전0005진입금지. 상세 handoffs/T-043-K6-INDEPENDENT-RECHECK.md, 기존P1완료/승인과별도새변경검수. 현재미검증한계는보고유지.

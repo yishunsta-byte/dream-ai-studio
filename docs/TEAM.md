@@ -42,7 +42,15 @@
 
 ## 요청 기록
 
-### T-045 · K6 DB 보호 필수3건 독립 재검수 (parent=T044, priority=P1) — running
+### T-046 · 신규 경로 경합·legacy 사본 안내 잔여 수정 (parent=T045/T035, priority=P1) — ready
+
+- CC-DATA-01 임시코딩. migrate-command/migration-record·필요최소호출/관련회귀/고유보고만. 모든쓰기연결provenance전wal:false, 최초존재여부로persistentPRAGMA허용하지않음. legacy digest없으면유용한실패안내만유지/사본확인은unconfirmed로failclosed, 자동hash승격없음.
+- 완료조건 실제원문afterProbe unknownDELETE bytes/논리/mode불변·사본없음, same-schema/journal 다른업무행/진짜legacy모두unconfirmed·새digest정상confirmed, 기존fresh/upgrade/noop/복원replay·전체tests/lint/typecheck/build·1280/390증거·선택커밋. SQL/고정fixture/사용자DB/공용문서/0005불변, 이후독립focused재검수.
+
+
+### T-045 · K6 DB 보호 필수3건 독립 재검수 (parent=T044, priority=P1) — done (수용 FAIL)
+
+- 결과msg_9e7d6687cd4a·원문보고취합. 독립305통과/생성1skip·lint/typecheck/build, 기존F043/F039회귀·실제양폭시작안내/terminal재검사·prepared인증복구는실행범위PASS. 잔여F0451 최초없는경로afterProbe후unknownDB WAL변경/F0452 digest없는legacy가다른업무행사본확인으로수용FAIL. T046최소수정배정, owned서버/브라우저종료·fake증거보존.
 
 - 실제worker ready dispatch ctx_554493d1a416 / task task_4a97ab2b8e31 / terminal term_01101526-060a-489c-b4eb-fc89d7482ee8 / child k6-db-protection-recheck. 결과는Orca wake로회수.
 
