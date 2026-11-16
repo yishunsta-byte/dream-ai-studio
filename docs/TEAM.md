@@ -42,7 +42,9 @@
 
 ## 요청 기록
 
-### T-059 · 동기 코드 이관 계약 독립 검수 (parent=T058/T054, priority=P1) — ready
+### T-059 · 동기 코드 이관 계약 독립 검수 (parent=T058/T054, priority=P1) — running
+
+- 실제worker ready dispatch ctx_ecbb60e0cbf7 / task task_1d8e663f594f / terminal term_362f3e79-2f2e-4c40-820b-cc482c17bd6e / child sync-code-migration-review. Orca wake로결과회수.
 
 - 대상94a13c2 새Codex child. 반환/미반환Promise·nestedasync/dynamicimport·일반then/getter/proxy가생성전안전거부/status0·rollback/미적용·A/B후속정상, source/hash/entry/closedrequire/crypto원시값창구와timeout·직접복원동등 회귀. 새동기문법제한오탐/신뢰된hostDB한계를구분한다.
 - 원CRLF전체tests/lint/typecheck/build·실제T054원문(거부문구만필요최소조정)재현·원SQL/s4불변·PASS/FAIL고유T059보고. 제품0005/사용자DB/공용문서수정금지, 실제제품등록/Next/cwd/source동봉/오류UI는이후통합조건.
