@@ -142,3 +142,10 @@ Supersedes T075-fix-pending entries.
 - T087 adds server enforcement that existing required disclosures change only box; no id-replacement/new-preset bypass.
 - Independent broad tests and actual export ZIP succeeded, but mandatory findings prevent P2-3a acceptance.
 - Next: collect both fixes, design focused checks and independent runtime/API recheck.
+
+## Latest: fixes returned, independent recheck started
+
+- T086 ea2956e and T087 1112f7b returned; author449 passed /2 skips.
+- T088 design focused review underway/requested.
+- T089 independent focused runtime/API review dispatched (ctx_26b8a588299c).
+- Next: resolve remaining mandatory findings or accept P2-3a within combined verified scope, then plan P2-3b.

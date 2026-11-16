@@ -771,3 +771,9 @@
 
 - msg_b68a9a03b6e9: T086 ea2956e returned with author448 tests/lint/type/build and runtime evidence; T087 server invariants implemented, regression/API evidence and commit pending, no blocker reported.
 - T088 / CC-DESIGN-01 / ready (ack pending): focused B1/B2 and small focus/empty-text refinements on fixed ea2956e in own temp runtime, unique report/history only. No shared product/build mutation. Independent API recheck follows T087 return.
+
+### T086/T087 returned; T089 independent focused recheck started (2026-11-16)
+
+- msg_4d52a7db6183: ea2956e and 1112f7b ready_review. Master read both reports; author449 passed/2 skips, lint/type/build, actual HTTP rejection/box-only/new-disclosure evidence. T088 design runtime review remains separate.
+- T089 independent Codex dispatched ready: ctx_26b8a588299c / task_a0bc45b44d25 / term_21517da7-2dd8-42bc-920e-2593818d1cfa; child p2-3a-fix-recheck. Report-only, actual font timeout/late/retry races and HTTP locked-disclosure invariants, original-CRLF full checks, focus/warnings/read-only verification. Broad T085 evidence inherited explicitly.
+- P2-3a acceptance pending independent and design results; no author result substituted for independent PASS.
