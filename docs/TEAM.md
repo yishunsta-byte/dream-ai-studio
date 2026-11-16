@@ -42,7 +42,15 @@
 
 ## 요청 기록
 
-### T-057 · 렌더 시안·기존 수용 기준 정합 준비 (parent=P2 화면준비) — ready
+### T-058 · 동기 전용 이관의 비동기 생성 제한 (parent=T055/T054, priority=P1) — ready
+
+- CC-DATA-01 임시코딩, loader/필요검증보조/회귀/README·고유보고. Promise글로벌·async/dynamicimport 등통상비동기생성을실행전/런타임좁은.cjs계약으로failclosed하는추천안공유후구현. 일반Promise species처리범위확장을추가하지않는다.
+- floating/returned Promise·nestedasync·dynamicimport가안전거부/status0·미적용/열린DB무쓰기, 기존정상동기변환/require/crypto/rollback/snapshot/directrestore·전체tests/lint/typecheck/build·T054원문재현증거후독립검수. 보수적문법오탐/신뢰단계hostsqlite async금지한계명시, 전역listener/warn플래그금지. SQL/s4/사용자DB/제품0005/공용문서불변.
+
+
+### T-057 · 렌더 시안·기존 수용 기준 정합 준비 (parent=P2 화면준비) — done
+
+- 4f543e0 / msg_b825b8923c34 회수. Master고유보고·변경범위·390캡처검토와담당1280/390Tab9/9·넘침0/회귀증거채택으로정합완료. 자막0.08초는정적예시/실측없음·휴대폰실기기미검증을구분,제품렌더검증완료아님. 고정메뉴fullPage촬영겹침한계유지.
 
 - 디자인읽기9d8c7b9 / msg_f291fcf688f7 원문검토후CC-DESIGN-01배정. #p2render·필요화면한정style/PLAN13 MP4예시·18검증방법최소/고유보고·히스토리만. slug_aspect_rTimeline[_SAMPLE] 통일, 오래된성공보존/불일치표시, 취소임시파일정리성공예시와기존성공보존구분.
 - 자막0.2s는JSON/SRT/VTT경계비교만아니라실제가상렌더표시프레임과의최대오차검증으로정의, 음성의미싱크별도·미측정통과금지. 휴대폰실기기증거필요/에뮬레이션대체금지, 도구없을때만사람협조·새상시승인게이트추가안함. 날짜후속/라이선스새화면없음.
@@ -57,7 +65,9 @@
 - 1280/390 실제표시·넘침/포커스·390문구만제한·기존dashboard/settings회귀·캡처/정적예시한계·선택커밋반환후Master검토. T055와독립인시안준비이며제품P2-1/0005착수아님. 승인된방향변경/새승인요청없음.
 
 
-### T-055 · 거부 Promise 오류 생명주기 최소 보완 (parent=T054/T053, priority=P1) — running
+### T-055 · 거부 Promise 오류 생명주기 최소 보완 (parent=T054/T053, priority=P1) — ready_review
+
+- 결과59a8d7f / msg_c44892a5ef84 회수. Master보고·관련2파일87검사직접통과, 반환nativePromise일반7경로처리증거와미처리4한계를구분. floating rejection은undefined정상commit뒤process종료라단순문서화만으로전체수용하지않고T058동기실행범위최소강제추가배정. 독립검수전done아님.
 
 - 설계 msg_5f6592619f9d 검토후 capturedPromise.then intrinsic을timedVM내적용하는안채택. 일반then/getter미접촉·거부/rollback·freshcontext유지, nativeconstructor/species 예외때handler미부착·종료여부를subprocess로별도확인하도록조건추가. floating미반환rejection은현재잔여반환값범위와분리해한계를보고하되검증전해결로표시하지않음. 전역listener/warnflag금지유지.
 
