@@ -1006,3 +1006,9 @@
 - T123 assigned to Codex design: remaining render UX cases on fixed3580883, blockers/failure-late-missing states/labels/focus/1280-390/200% zoom, isolated runtime and unique report only. T119 commit-dependent checks deferred explicitly.
 - Late-canceled retained output remains unserved/API404, not automatically selectable; source UX contradiction to be reported, not silently changed.
 - T120 backend integrity fixes stay coding priority, no overlapping product edits.
+
+### T123 interim focus defect reproduced (2026-11-17)
+
+- msg_d1c3c1f3f5af: Codex design on fixed3580883 repeated UI-injected running→verify/success transition causes focused progress region removal and body focus. Explicitly not a real renderer completion-cause test.
+- Master adds R10 focus correction to T119 before its final return: transfer focus only if disappearing progress area owned focus; do not steal unrelated user focus. T120 backend priority unchanged.
+- Play button opens paused media observed as minor naming/behavior follow-up. T123 remaining UX checks continue, no product edits by design.
