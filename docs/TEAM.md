@@ -849,3 +849,9 @@
 - T099 design review requested msg_c1a20d4244b6, report/history only, actual 1280/390 warning/copy/fallback/download/focus clarity.
 - T100 independent Codex dispatched ready: ctx_7d222feb0135 / task_ce3215807f6f / term_0b9be041-5b66-465c-96b6-f1b3d6f6bf63; child p2-3b-conflict-recheck. Exact-response ownership, actual dual-writer no overwrite, full recovery payloads and normal lifecycle regression required; originalCRLF full suite/CDP/DB/bytes preservation.
 - Product acceptance pending; no new-stage implementation started.
+
+### T099 conflict recovery UX returned (2026-11-16)
+
+- 8f9d0ce / msg_f00c05a57caa: actual dual-window 1280/390 B0, full recovery display/copy/fallback/download equality/focus/dismiss and beforeunload confirmed.
+- Five minor clarity/accessibility refinements recorded; author asked to hold product target while T100 deep ownership/JSON/runtime review runs. Direct UX evidence is not substituted for independent verdict.
+- Actual devices/screen-reader/touch and deeper server ordering remain separately scoped.
