@@ -957,3 +957,10 @@
 - T116 independent dispatched ready (receipt below), report-only actual backend/jobs/media/cancel/egress/trace and F113-1 containment review, isolated fake roots and readonly tools.
 - T117 author assigned render subroute/panel/CSS/entry link/UI checks only, using existing tokens/contracts. T115 design alternatives remain separately owned, no global shell redesign or prototype edits.
 - Historical s6 color-tag fixture stays immutable; not proof of current renderer verification. Bundle cache retention and actual subtitle/device measurement remain tracked limitations.
+
+### T115 selected design published (2026-11-17)
+
+- msg_21049e6b0244 report and three1280 screenshots reviewed. Master selected A (task priority/actions, existing-shell fit) under user's explicit selection/deployment delegation.
+- Selected static preview deployed successfully through Sites private publication: https://dream-ai-studio-ui-20261117.starnm.chatgpt.site ; comparison /options/index.html.
+- Site appgprj_6afb352c79b481918fdceef10f6eba76; deployment appgdep_6afb35b74d888191a6b2c79c25c8c45b status succeeded; source ce18cc4be6996142e005b8c0156d9f99e8b1d744 in separate D:/starwork/sites/dream-ai-studio-ui-20261117.
+- Static fake-design content only, not remote SQLite/worker app. Existing app source/data unchanged by deployment. T115 done; T114/T117 work remains separate.
