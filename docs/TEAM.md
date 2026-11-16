@@ -42,7 +42,15 @@
 
 ## 요청 기록
 
-### T-042 · 독립 검수 DB 신규 판정·시작 안내·검증 보완 (parent=T035, priority=P1) — running
+### T-043 · K6 필수 수정 독립 재검수 (parent=T039/T041/T042, priority=P1) — ready
+
+- 새 구현 미참여 Codex child에서 f8e4e28(T0419c56033 포함)을 독립 검토한다. T039 F1~4 재현·수정확인, sidecar 불신입력/지문/사본참조 정확성, 원본보존/스냅샷/재시도/실제1280·390/키보드 범위. 제품코드·고정fixture원본·사용자data 수정금지. 고유T043보고만.
+- 전체tests/lint/typecheck/build 및 실제실패→재검사/준비replay·unrecorded거부/진짜fresh·시작안내를독립검증하고 PASS/FAIL·잔여조건·미실행한계를반환한다. Master전체280통과와독립실행은구분. 코드이관hash는미래0005전별도조건으로유지.
+
+
+### T-042 · 독립 검수 DB 신규 판정·시작 안내·검증 보완 (parent=T035, priority=P1) — ready_review
+
+- 결과 f8e4e28 / msg_227a56e788d9 회수. Master가 보고·실제sidecar검증코드를검토하고 전체29파일280통과/생성1skip를직접재실행했다. T041과묶어T043독립재검수전done아님. 코드데이터이관hash미구현은0005전추가조건,복원활동시각의시스템시계/주입시계차이는기존한계로구분한다.
 
 - 실제 수락·점유 msg_32a56f135c75 수신, 시작HEAD9c56033. migration/CLI/startup·필요부품/상태보조·관련tests/README·고유보고 범위를 담당이 확인했다. T041제품수정은커밋후안정화, T042진행.
 
