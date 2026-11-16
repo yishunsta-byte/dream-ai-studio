@@ -1,3 +1,5 @@
+> 최신 사용자 역할 지정 · 2026-11-17: Codex Master(CX-MASTER-01)가 모든 작업의 총괄 지휘자다. 작업 분해·배정·우선순위·충돌 조정·결과 회수·통합·테스트·독립 검수·최종 보고를 책임진다. 새 디자인·UI 담당은 Codex design(CX-DESIGN-01, 사용자 표기 Codex desine)이다. Claude design(CC-DESIGN-01)의 이전 전담 지정은 과거 기록이며 새 작업에 적용하지 않는다. 기존 담당은 T121로 인계하고 새 담당은 T122로 수신·범위 확인한다. 제품 파일 수정은 Master가 정한 작업별 단일 담당·허용 범위를 따른다. 사용자만 최종 의사결정권자이며 이미 승인된 일반 업무는 반복 승인 없이 진행한다.
+
 # 팀 협업 보고서 (Claude design ↔ Codex)
 
 은영님 지시(2026-11-15): Claude design과 Codex는 한 팀으로 일한다. 플래너·디자인 담당의 이름은 **Claude design**이다(2026-11-16 은영님 최종 지정 — "Claude Code"·"Claude(design)"으로 바꾸지 않는다).
@@ -978,3 +980,11 @@
 - Mandatory F116-1 executed cache bytes not authenticated; F116-2 post-recheck equal-size media swap published success; F116-3 permanent publish errors retried; F116-4 Node overload/native non-loopback fetch bypass.
 - T120 author priority assignment sent msg_4cd3f435315d: verified owned cache and stable attempt input copies, original-cause retry classification, exact allowlisted child sources and normalized network calls; actual adversarial timing/pixel/non-loopback tests required.
 - T119 partial UI work preserved/separate. T118 fixed-target UX review continues, backend integrity acceptance withheld.
+
+### Design/UI role transition (2026-11-17, explicit user direction)
+
+- CX-MASTER-01 is the sole overall coordinator, responsible for all work assignments/integration/testing/reports.
+- CX-DESIGN-01 / Codex design / term_bcdf8896-08ec-4087-b70f-8396c47841b3 discovered connected Codex session. New design/UI owner, T122 intake requested; acknowledgment pending.
+- CC-DESIGN-01 prior design owner: T121 handover requested (msg_479 if absent use actual request receipt, not assumed acceptance); no new design/UI assignment. Existing work preserved.
+- Actual handover request msg_cfc-placeholder must not be treated as delivery ID; authoritative tool receipts for this transition are msg IDs in the conversation. New intake request and coding-owner notice were actually sent.
+- T120 backend and T119 existing bounded UI work remain with their assigned writer until coordinated transfer; no concurrent edits.
