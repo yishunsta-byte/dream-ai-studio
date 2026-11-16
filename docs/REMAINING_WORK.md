@@ -391,3 +391,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T138 required fixes ready_review, author isolated611/13skip; T139 original-reproduction recheck requested.
 - T137 WIP remains protected and paused until DSP acceptance. No product audio render/UI/deployment completion claimed.
 - Next: resolve verdict, resume integration with revised tool/commit contract, then independent actual render verification.
+## Latest: residual post-commit cleanup defect and tool identity audit
+
+- T139 original DSP fixes pass, but F139-1 cleanup EBUSY overrides committed success. T140 correction requested; no module acceptance yet.
+- Installed FFmpeg hash difference independently observed and confirmed by Master; actor/time not established. Evidence-preserving audit and exact-known-hash restoration requested before further product execution.
+- T137 integration stays paused with WIP protected. Next: focused independent cleanup/tool recheck then resume.
