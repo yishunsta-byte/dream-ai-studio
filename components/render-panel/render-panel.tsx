@@ -95,7 +95,7 @@ export function RenderPanel({projectId,data,saved}:{projectId:string;data:Render
       <p><StatusPill status="locked"/> 소리를 붙이는 단계(P2-5)와 자막 파일(P2-6)이 끝나면 열려요. 편집용 묶음 내보내기는 지금처럼 쓸 수 있어요.</p>
     </section></Card>
 
-    <ConfirmPanel open={confirm} title="영상 만들기를 취소할까요?" description="만들던 부분은 버려요. 이미 만든 영상은 그대로예요." confirmLabel="취소하기" tone="danger" confirming={busy==="cancel"} onDismiss={()=>setConfirm(false)} onConfirm={()=>void cancel()}/>
+    <ConfirmPanel open={confirm} title="영상 만들기를 취소할까요?" description="만들던 부분은 버려요. 이미 만든 영상은 그대로예요." confirmLabel="취소하기" closeLabel="계속 만들기" tone="danger" confirming={busy==="cancel"} onDismiss={()=>setConfirm(false)} onConfirm={()=>void cancel()}/>
   </div>;
 }
 
@@ -141,7 +141,7 @@ function ResultRow({render,playing,onPlay,remake}:{render:RenderView;playing:boo
       {render.status==="canceled"&&<p>{canceledCopy(render)}</p>}
       <p className={styles.meta}><time dateTime={render.finishedAt??render.createdAt}>{when(render.finishedAt??render.createdAt)}</time>{render.elapsedSec!==null&&` · ${duration(render.elapsedSec)} 걸림`}{render.status==="failed"&&render.errorCode&&<span className={styles.code}> · {render.errorCode}{render.error?` · ${render.error.attempts}/${render.error.maxAttempts}번 시도`:""}</span>}</p>
       <div className={styles.actions}>
-        {usable&&<><Button variant="secondary" aria-expanded={playing} aria-controls={videoId} onClick={onPlay}>{playing?"재생 닫기":"재생"}</Button><a className={styles.download} href={`/api/renders/${render.id}/file?download`} download={render.fileName}>내려받기{render.sizeBytes!==null&&` · ${mb(render.sizeBytes)}`}</a></>}
+        {usable&&<><Button variant="secondary" aria-expanded={playing} aria-controls={videoId} onClick={onPlay}>{playing?"영상 닫기":"영상 보기"}</Button><a className={styles.download} href={`/api/renders/${render.id}/file?download`} download={render.fileName}>내려받기{render.sizeBytes!==null&&` · ${mb(render.sizeBytes)}`}</a></>}
         {usable&&render.stale&&remake("지금 내용으로 만들기","secondary")}
         {(render.status==="failed"||render.status==="canceled"||(ok&&!render.fileExists))&&remake("다시 만들기","secondary")}
       </div>

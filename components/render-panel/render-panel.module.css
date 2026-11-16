@@ -44,3 +44,5 @@
 }
 @media (prefers-reduced-motion:reduce) { .bar progress { transition:none; } }
 .back { display:inline-flex; align-items:center; min-height:var(--touch-min); }
+.wait { display:flex; flex-wrap:wrap; gap:var(--sp-2); align-items:center; margin:0; padding:var(--sp-2) var(--sp-3); border:1px solid var(--st-running-line); border-radius:var(--radius-sm); background:var(--st-running-bg); font-size:var(--text-sm); color:var(--fg-default); }
+.waitLink { display:inline-flex; align-items:center; min-height:var(--touch-min); font-weight:var(--weight-semibold); }

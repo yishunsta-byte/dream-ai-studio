@@ -9,6 +9,7 @@ import { Field, useToast } from "./ui/interactive";
 import { Icon } from "./ui/Icon";
 import { ResultPreview, type PlaceholderState } from "./result-preview";
 import styles from "./production-panel.module.css";
+import { RenderWaitNote, useRenderWait } from "./render-panel/render-wait";
 type Scene=ProductionData["scenes"][number];type Version=Scene["versions"][number];
 function placeholder(version:Version|undefined):PlaceholderState{if(!version)return {status:"none"};if(version.status==="queued")return {status:"queued",queuePosition:version.job?.queuePosition??null};if(version.status==="running")return {status:"running",elapsedSec:version.job?.elapsedSec??null};if(version.status==="failed")return {status:"failed"};if(version.status==="canceled")return {status:"canceled"};return {status:"none"};}
 function linkHref(key:ErrorLinkKey,projectId:string){return key==="plan"?`/projects/${projectId}/plan`:key==="library"?"/library":key==="budget"?"/settings":"/jobs";}
@@ -20,6 +21,7 @@ function JobNotice({version,projectId,kept,compact=false}:{version:Version;proje
 export function ProductionPanel({data}:{data:ProductionData}){
  const [scenario,setScenario]=useState("success"),[busy,setBusy]=useState(""),[error,setError]=useState("");const router=useRouter(),notify=useToast();
  const pending=data.scenes.some(scene=>scene.versions.some(version=>["queued","running"].includes(version.status)));
+ const waitFor=useRenderWait(data.scenes.flatMap(scene=>scene.versions.filter(version=>version.status==="queued"&&version.job).map(version=>version.job!.id)));
  useEffect(()=>{if(!pending)return;const timer=setInterval(()=>router.refresh(),2000);return()=>clearInterval(timer);},[pending,router]);
  // Toast once when a version this screen saw waiting turns into a failure while polling.
  const seen=useRef<Map<string,string>|null>(null);
@@ -37,6 +39,7 @@ export function ProductionPanel({data}:{data:ProductionData}){
   const pill=latestFailed?"failed":latest?.status==="running"?"running":latest?.status==="queued"?"queued":null;
   return <Card key={scene.id} tone={latestFailed&&!kept?"danger":"default"}><div className="stack"><div className={styles.scene}><ResultPreview key={preview?.asset?.id??`empty-${latest?.id??"none"}`} asset={preview?.asset??null} state={placeholder(latest)}/><section className="stack"><h2>장면 {number} · {scene.title}{pill&&<> <StatusPill status={pill}/></>}</h2><p>{scene.description} · {scene.durationSec}초</p><p>{selected?`선택 v${selected.version} · 기획 v${selected.planVersion} 기준`:"선택한 결과 없음"} · 결과 {scene.versions.length}개</p>
   {latestPending&&latest&&<div className={styles.pending} role="status"><span>{latest.status==="queued"?`v${latest.version} 대기 중${latest.job?.queuePosition?` · ${latest.job.queuePosition}번째`:""}`:`v${latest.version} 만드는 중${latest.job?.elapsedSec!=null?` · ${latest.job.elapsedSec}초`:""}`}{latest.job?.cancelRequested?" · 취소 요청함":""}</span>{latest.job&&!latest.job.cancelRequested&&<Button size="sm" variant="ghost" aria-label={`장면 ${number} 작업 취소`} loading={busy===latest.job.id} disabled={busy!==""&&busy!==latest.job.id} onClick={()=>void jobAction(latest.job!.id,"cancel",`장면 ${number} 작업 취소를 요청했어요.`)}>취소</Button>}</div>}
+  {latest?.job&&(()=>{const wait=waitFor(latest.job.id);return wait&&<RenderWaitNote wait={wait} currentProjectId={data.projectId}/>;})()}
   {(latestFailed||latestWaiting)&&latest&&<JobNotice version={latest} projectId={data.projectId} kept={kept}/>}
   {latestWaiting&&latest?.job&&!latest.job.cancelRequested&&<Button size="sm" variant="ghost" aria-label={`장면 ${number} 자동 재시도 취소`} loading={busy===latest.job.id} disabled={busy!==""&&busy!==latest.job.id} onClick={()=>void jobAction(latest.job!.id,"cancel",`장면 ${number} 작업 취소를 요청했어요.`)}>취소</Button>}
   {scene.needsRecheck&&<><StatusPill status="warning">기획 변경 후 확인 필요</StatusPill><Button variant="secondary" disabledReason={!selected?"결과를 선택한 뒤 확인해 주세요.":undefined} disabled={busy!==""} onClick={()=>void change("keep",{sceneId:scene.id,expectedVersionId:scene.selectedVersionId})}>이대로 둘게요</Button></>}<p>0원(샘플) · 실제 생성 결과가 아닌 시험용 자료예요.</p></section>

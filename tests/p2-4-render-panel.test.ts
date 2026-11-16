@@ -76,6 +76,7 @@ describe("영상 만들기 화면", ()=>{
     const markup=html(data({renders:[base]})),page=text(markup);
     expect(page).toContain("파일 확인 통과");expect(page).toContain("1080×1920 · 30.0초 · H.264 · 30fps · 소리 없음 · 다음 단계에서 붙여요");
     expect(page).toContain("확인 안 한 것: 자막 표시 오차 측정 전 · 휴대폰 재생 확인 전");
+    expect(page).toContain("영상 보기");expect(markup).not.toContain(">재생<");
     expect(markup).toContain('href="/api/renders/r1/file?download"');expect(page).toContain("내려받기 · 12.4MB");expect(markup).toContain('download="핸드크림_9x16_r5.mp4"');
     expect(markup).toContain('aria-expanded="false"');expect(page).not.toContain("완성 영상이에요");
   });
@@ -91,7 +92,7 @@ describe("영상 만들기 화면", ()=>{
     const markup=html(data({renders:[failed]})),page=text(markup);
     expect(page).toContain("파일은 만들었지만 색 정보 표시가 기준(bt709·tv)과 달라요, 길이가 30초가 아니라 29.2초예요");expect(page).toContain("그래서 완성으로 치지 않았어요.");
     expect(page).toContain("RENDER_VERIFY_FAILED · 1/3번 시도");expect(page).toContain("다시 만들기");
-    expect(markup).not.toContain("/file?download");expect(page).not.toContain("파일 확인 통과");expect(markup).not.toContain(">재생<");
+    expect(markup).not.toContain("/file?download");expect(page).not.toContain("파일 확인 통과");expect(markup).not.toContain(">영상 보기<");
   });
   it("실패 문구는 원인·자동 재시도 횟수를 따르고, 취소는 정리 결과를 말한다", ()=>{
     const failed=(code:string,attempts:number,message:string|null=null)=>view({status:"failed",errorCode:code,errorMessage:message,error:{code,retryable:code==="RENDER_BROWSER_CRASHED"||code==="STORAGE_FAILED",attempts,maxAttempts:3}});

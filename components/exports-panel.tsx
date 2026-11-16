@@ -10,6 +10,7 @@ import { useToast } from "./ui/interactive";
 import { Icon } from "./ui/Icon";
 import { finishingRequest } from "./editing-panel";
 import styles from "./exports-panel.module.css";
+import { RenderWaitNote, useRenderWait } from "./render-panel/render-wait";
 type Row=ExportsData["rows"][number];type Preview=Extract<ExportsData["preview"],{ready:true}>;
 const date=(value:string|null)=>value?new Date(value).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"}):"—";
 // Folder summary rows from the same entry list the bundle is written from.
@@ -21,6 +22,7 @@ function HashLine({hash}:{hash:string}){const [open,setOpen]=useState(false);con
 function Failure({row,onRetry,onCreate,busy,canCreate}:{row:Row;onRetry:()=>void;onCreate:()=>void;busy:boolean;canCreate:boolean}){const id=useId(),copy=exportErrorCopy({code:row.errorCode,retryable:row.retryable,message:row.error});
  return <section aria-labelledby={id} className={styles.failure}><h3 id={id} className={styles.failureTitle}><Icon name="warning" className={styles.icon} aria-hidden="true"/><span>{copy.title}</span></h3><p>{copy.reason}</p><p><strong>{copy.next}</strong></p>{copy.action==="retry"&&row.jobId?<Button loading={busy} onClick={onRetry}>{copy.actionLabel}</Button>:copy.action==="recreate"?<Button loading={busy} disabledReason={!canCreate?"현재 내용의 검수 승인이 필요해요.":undefined} onClick={onCreate}>{copy.actionLabel}</Button>:null}{copy.links.map(link=><Link key={link.key} href="/jobs">{link.label}</Link>)}<p className={styles.code}>{copy.codeLine}</p></section>;}
 export function ExportsPanel({data}:{data:ExportsData}){const [pending,setPending]=useState(""),[error,setError]=useState("");const router=useRouter(),notify=useToast();const working=data.rows.some(row=>["running","queued"].includes(row.jobStatus??""));useEffect(()=>{if(!working)return;const timer=setInterval(()=>router.refresh(),2000);return()=>clearInterval(timer);},[working,router]);
+ const waitFor=useRenderWait(data.rows.filter(row=>row.jobStatus==="queued"&&row.jobId).map(row=>row.jobId!));
  const preview=data.preview.ready?data.preview:null,missing=preview?.missing[0]?.reason;
  async function create(){setPending("create");setError("");try{await finishingRequest(data.projectId,data.revision,"export");router.refresh();}catch(error){setError((error as Error).message);}finally{setPending("");}}
  async function jobAction(jobId:string,action:"retry"|"cancel"){setPending(jobId);setError("");try{const response=await fetch("/api/jobs",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({id:jobId,action})});const result=await response.json();if(!response.ok)throw new Error(result.error);notify({tone:"success",message:action==="retry"?"묶음 만들기를 다시 시도해요.":"묶음 만들기 취소를 요청했어요."});router.refresh();}catch(error){setError((error as Error).message);}finally{setPending("");}}
@@ -30,6 +32,7 @@ export function ExportsPanel({data}:{data:ExportsData}){const [pending,setPendin
  {!data.rows.length&&<EmptyState icon="folder" title="아직 만든 묶음이 없어요" description="검수를 승인한 뒤 편집용 묶음을 만들어 주세요."/>}
  {data.rows.map(row=>{const failed=row.status==="failed"&&row.jobStatus!=="canceled",running=["running","queued"].includes(row.jobStatus??"")&&row.status==="running";return <Card key={row.id} tone={failed?"danger":"default"}><div className="stack"><h2>내용 r{row.revision} · 편집용 묶음</h2><div className="cluster"><StatusPill status={row.status==="succeeded"?"done":row.jobStatus==="canceled"?"canceled":row.jobStatus==="queued"?"queued":row.status==="failed"?"failed":"running"}/>{row.isMock&&<SampleBadge/>}{row.revision!==data.revision&&<Badge>지금 내용과 다름</Badge>}</div>
   {running&&row.jobId&&<div className="cluster"><span>{row.jobStatus==="queued"?"대기 중":"만드는 중"} · {date(row.createdAt)}</span><Button size="sm" variant="ghost" loading={pending===row.jobId} onClick={()=>void jobAction(row.jobId!,"cancel")}>취소</Button></div>}
+  {row.jobId&&(()=>{const wait=waitFor(row.jobId);return wait&&<RenderWaitNote wait={wait} currentProjectId={data.projectId}/>;})()}
   {failed&&<Failure row={row} busy={pending===row.jobId||pending==="create"} canCreate={data.canCreate} onRetry={()=>void jobAction(row.jobId!,"retry")} onCreate={()=>void create()}/>}
   {row.status==="failed"&&row.jobStatus==="canceled"&&<p>만들기를 취소했어요. 반쯤 만든 파일은 남기지 않았어요.</p>}
   {row.status==="succeeded"&&<dl className={styles.kv}>{row.fileName&&<><dt>파일 이름</dt><dd className={styles.mono}>{row.fileName}</dd></>}<dt>크기</dt><dd>{row.sizeBytes!==null?`${formatBytes(row.sizeBytes)} (${formatExactBytes(row.sizeBytes)})`:"파일 없음"}</dd><dt>만든 시각 · 파일</dt><dd>{date(row.completedAt??row.createdAt)} · 파일 {row.fileCount}개</dd>{row.sha256&&<><dt>검증된 해시</dt><dd><HashLine hash={row.sha256}/></dd></>}</dl>}
