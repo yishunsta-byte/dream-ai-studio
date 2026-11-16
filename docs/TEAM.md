@@ -1043,3 +1043,10 @@
 - 6714617 / msg_925c01141bdd ready_review. Author556/13skip, lint/type/build and actual render-wait/cancel/play-toggle browser evidence. Exports waiting UI not directly verified due to author fixture gate.
 - T126 independent dispatched ready (receipt), report-only bounded ConfirmPanel/defaults/render-wait/play labels/1280-390 and actual valid exports-flow gap check.
 - Codex design continues T125 three new prototypes uninterrupted; informed of current UI behavior. T124 backend integrity recheck remains separate and pending.
+
+### T124 integrated with explicit local trust boundary (2026-11-17)
+
+- msg_74b57ca5479c report imported and read. Independent551/13skip, nine real E2Es, lint/type/build; all four original F116 reproductions PASS. Active same-user attempt-copy tampering remains F124-1/2 under the reviewer's stronger requested boundary.
+- Master decision: accept T120 fixes within personal local application's existing trust model: trusted app/source/tools and worker-owned attempt directories have no active adversarial same-privilege writer. No normal application writer to these attempt objects was identified. Original cache/source mutations and publication/retry/URL failures are closed.
+- Preserve reviewer FAIL findings verbatim; this is scoped acceptance, not an unconditional executed-byte immutability or OS sandbox guarantee. Same-user chmod/write-restore ABA and attempt JS mutation are not defended. Multi-user/untrusted-code/remote production requires separate reviewed isolation.
+- No unsolicited broad ACL/sandbox rewrite assigned. T126 integrated UI review remains pending; P2-4 overall and subtitle/device validation remain incomplete.

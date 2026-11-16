@@ -317,3 +317,10 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T126: committed T119 UI-label/wait/focus follow-up verification, including exports browser gap.
 - T125: Codex design new three alternatives with desktop/mobile captures.
 - Next: show three designs upon return; integrate independent results before actual-render acceptance.
+
+## Current: original backend defects closed within local trust scope
+
+- T124 independent original four reproductions PASS; scoped backend acceptance under trusted worker-owned local attempt directory.
+- Stronger same-user malicious attempt-file mutation findings F124-1/2 remain documented, not claimed fixed or OS-isolated.
+- T126 render UI final check pending; T125 design three alternatives in progress.
+- Next: finish UI integration review, actual rendered subtitle-boundary measurement and end-to-end acceptance. P2-4 overall not yet complete.
