@@ -42,6 +42,13 @@
 
 ## 요청 기록
 
+### T-039 · K6/s4 독립 검수 (parent=T035, priority=P1) — ready
+
+- 구현 미참여 Codex에 새 child 격리 검수 배정. 기준 ebd0dff 제품 변경. Master 자체 전체 tests 28파일258통과/생성모드1skip를 직접 재실행했다. 자체검증과 독립 판정은 구분한다.
+- 코드/원본 고정 fixture 수정 금지, 고유 T039 보고서만. K6 전항·T034 비교 프로파일·live snapshot/동시성/원본보존·실패/replay·누락 migration journal/제품이전버전·UI1280/390/키보드·기존 migrations 불변·시작 안내·미래 code migration hash 계약을 점검. 필요한 가상시험은 OS임시root/전용loopback만. 실제사용data/기존서버/타worker 점유 금지.
+- 완료 조건은 직접 tests/lint/typecheck/build 및 독립 재현 근거/필수결함·남은조건·PASS/FAIL 반환. 코드이관 해시 미구현은 미래0005 진입 전 계약으로 분리 평가하고 K6완료 범위를 과장하지 않는다.
+
+
 ### T-038 · 설정 시안의 P1 구현 정합 (parent=P1 후속 문서 정합) — done
 
 - 88aa642 / msg_68c3d35033a8 회수. Master가 실제 diff·고유 보고·390 캡처를 검토해 #settings 내부 정합과 출처/파일없음/복원 안내·줄맞춤을 확인했다. 담당의 ego1280/390 넘침0·dashboard390 회귀 증거를 채택하며 Master의 브라우저 재실행으로 표현하지 않는다. 정적 시안 한계/스크린리더 미검증 유지. T038 완료, T037 순차 보완 중.
@@ -50,7 +57,9 @@
 - 완료 조건: local 백업 집계·출처3종·파일없음/검증이력·복원 비활성/복원본 안내를 1280/390 실제 표시·넘침 검사 후 증거/한계 반환. T037 보완과 같은 담당이 순차 진행. 새 사용자 승인 요구 없음.
 
 
-### T-035 · K6 이전 백업 호환·고정 s4 구현 (parent=P2-1 준비, priority=P1) — running
+### T-035 · K6 이전 백업 호환·고정 s4 구현 (parent=P2-1 준비, priority=P1) — ready_review
+
+- 구현 ebd0dff / msg_3ae2016fac5d 회수. Master가 핵심 migration/복원 코드를 읽고 전체 tests를 직접 재실행: 28파일258통과, 생성모드1skip. 새 라이브 DB 이관은 실행하지 않았다. T039 독립 검수 전 done 아님.
 
 - 담당 CC-DATA-01에 임시 코딩 명시 위임. 실제 전송 msg_5e8865daac09, 수락·점유 msg_8481faf208c5. PLAN K6/T017/T034 최종08fe734 기준.
 - 범위: 백업/복원·migrate 실행 보조/DTO·최소 복원 UI·관련 tests와 가상 고정 s4/README/고유 T035 보고. 기존 migration0001~0004 변경·0005 추가·타임라인·실사용 data/storage/backups 접근 금지. planner 문서와 공용 상태는 별도 담당.
