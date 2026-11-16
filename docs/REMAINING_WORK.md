@@ -187,3 +187,9 @@ Supersedes T075-fix-pending entries.
 - Exact-response ownership fix returned, not independently accepted.
 - T098 must preserve all local draft fields/raw input in recoverable conflict data; text/time summary is insufficient.
 - Next: collect complete recovery, then independent dual-writer and draft-preservation recheck plus UX validation.
+
+## Latest: complete recovery returned, final conflict validation assigned
+
+- T098df094f9 ready_review; author467 passed/2 skips.
+- T099 UX and T100 independent ownership/recovery validation started.
+- Next: findings/fixes or P2-3b acceptance within combined evidence; later rendering/audio pending.

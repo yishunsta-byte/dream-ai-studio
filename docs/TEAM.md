@@ -842,3 +842,10 @@
 - Master rejects loss of local style/box/animation/order/raw-invalid-time as a mere policy exception to draft preservation. Text/time summary alone is incomplete recovery.
 - T098 / CC-DATA-01 / ready (ack pending): preserve complete conflict recovery payload (local timeline, raw time fields, selection and baseline identifiers), explicit copy/download without automatic merge/rebase/server writes. Actual dual-writer byte/value preservation and 1280/390 access required before independent recheck.
 - Design informed; P2-3b acceptance remains pending.
+
+### T098 returned; T099/T100 conflict recovery reviews (2026-11-16)
+
+- df094f9 / msg_d76296cd4ecc ready_review, Master read full recovery report. Author467 passed/2 skips, lint/type/build, actual dual-writer external preservation and complete draft/raw-input copy/download evidence. Recovery remains in-memory with explicit loss notice on dismiss/navigation.
+- T099 design review requested msg_c1a20d4244b6, report/history only, actual 1280/390 warning/copy/fallback/download/focus clarity.
+- T100 independent Codex dispatched ready: ctx_7d222feb0135 / task_ce3215807f6f / term_0b9be041-5b66-465c-96b6-f1b3d6f6bf63; child p2-3b-conflict-recheck. Exact-response ownership, actual dual-writer no overwrite, full recovery payloads and normal lifecycle regression required; originalCRLF full suite/CDP/DB/bytes preservation.
+- Product acceptance pending; no new-stage implementation started.
