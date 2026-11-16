@@ -869,3 +869,9 @@
 - 8a393c4 / msg_e3f398dc4f1a report reviewed; design-only, no runtime validation.
 - Master accepts render subroute within edit (no added workflow stage), one active render per project under existing global worker lease, requests permitted at390, immutable result naming with original T057 base and collision suffix.
 - Existing P1 manual-edit ZIP/review flow must not be retroactively gated on new rendering. Technical output/completion contract awaits T101. No renderer implementation/install authorized by this design record alone.
+
+### T103 returned; T104 bounded independent display check (2026-11-16)
+
+- aa7aae0 / msg_d79f0bab907a ready_review. Master read report: overflow reproduced as transient ruler ticks after1440→1280, not recovery text; overflow:clip contains ruler. Recovery clarity/fallback focus/metadata refinements included; author468 passed/2 skips and build.
+- T104 independent dispatched ready: ctx_f6c7dfa9b086 / task_8faf41ad7e86 / term_4ae7905a-110e-4a53-adaf-84a8706a1980, child recovery-layout-recheck. Bounded report-only actual resize/bulk recovery/copy-download equality/focus check, inheriting T100 broad core PASS.
+- T101 technical renderer preparation continues in parallel; T102 UX ready. No renderer install/implementation yet.

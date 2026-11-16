@@ -203,3 +203,10 @@ Supersedes T075-fix-pending entries.
 5. Later: render implementation/independent validation, audio P2-5, SRT/VTT and editable ZIP P2-6, real-device evidence where available.
 
 T100 core ownership/recovery is PASS, not still waiting. Rendering preparation is actual assigned work; renderer implementation/install has not started. User decisions currently unnecessary.
+
+## Latest: layout fix returned; bounded validation parallel to renderer design
+
+- T103aa7aae0 returned, author468 passed/2 skips; transient resize ruler overflow fixed.
+- T104 independent bounded display/recovery integrity verification started (ctx_f6c7dfa9b086).
+- T101 renderer technical preparation continues; T102 UX returned.
+- Next: close P2-3b scope after T104 and reconcile renderer designs for concrete implementation assignment.
