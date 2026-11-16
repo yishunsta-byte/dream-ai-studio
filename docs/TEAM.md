@@ -728,3 +728,9 @@
 - T081 / CC-DATA-01 / ready (ack pending): actual editor/preview/measurement/server validation/export integration and tests, per T079 6.1. Sole product writer, no fonts-assets/spec writes. Request msg_70f9fbd4a57f.
 - T082 / CC-DESIGN-01 / ready (ack pending): bounded spec/DESIGN alignment and official seven-font assets/licenses/provenance in new public/fonts subfolders. Existing Pretendard untouched; coordinate filenames with T081. No product/package/shared-state writes. Request msg_a8fa43b50304.
 - Acceptance requires actual production, font measurement, old r1/ZIP preservation, new export completeness, related/full tests and independent review. No user decision currently required.
+
+### T082 returned; T081 integration and T083 design review (2026-11-16)
+
+- T082 b9b1961 assets / 967002a spec+design returned msg_7685482d65f5. Seven official font files, OFL and SOURCE provenance reports reviewed; file verification accepted, browser rendering not yet verified. T081 partial product changes observed and protected.
+- Implementer notified of font size/loading, encoded URLs/family naming and checkout-vs-upstream license bytes; actual font/measurement/export verification remains required.
+- T083 / CC-DESIGN-01 / ready (ack pending): fonts.json verified metadata only, plus unique design-check report/history. Bounded read-only early review of current T081 WIP, direct findings to author. No product/assets changes; actual-font browser acceptance waits for implementation return.
