@@ -917,3 +917,9 @@
 - msg_68918a0f0c86 report imported. Independent496 passed/4 skips, lint/type/build; F107-1/2/3, atomic rollback, issued bytes and actual restore/MP4 preservation PASS.
 - F110-1 remains: actual CLI discards offending render UUID and validator cause, not merely public-sidecar detail. Foundation acceptance held on this requested diagnostic gate.
 - T111 / implementation author / ready (ack pending): typed safe cause preservation/output or identified log, generic public code retained. Allow only validator reason+UUID, no raw input/path/secret stack dump. Actual invalid fake6→7 cause and unchanged DB/no partial guards/prebackup validation required. Separate from T108 package work.
+
+### T111 returned; T112 diagnostic verification / T108 investigation (2026-11-17)
+
+- 10b8aa1 / msg_91aa252c2a03 ready_review. Author reports safe allowlisted UUID/reason CLI diagnostic, actual invalid fake6→7 rollback/cause and normal/noop, related checks/lint/type/build. Root T108 package expectation failure remains separately owned; do not claim full root suite green.
+- T112 independent dispatched ready (see receipt): focused typed safety/actual stderr/rollback/sidecar and migration-data validation boundaries, committed target excludes root T108 WIP.
+- T108 investigation narrowed: bundle completes; missing-browser failure leaves Remotion TCP server so Node stays alive. Author instructed preflight before starting server and own-process/server cleanup verification. Three-aspect H.264/yuv420p bt709 smoke reported as author evidence, not independent PASS.

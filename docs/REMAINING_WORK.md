@@ -255,3 +255,9 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T111: preserve safe render ID/validation cause in real CLI migration diagnostics; atomic rollback unchanged.
 - T108 toolchain investigation continues after this bounded correction.
 - Next: focused CLI recheck, foundation acceptance, then actual render worker/API/UI.
+
+## Current: CLI correction returned; toolchain process cleanup underway
+
+- T112 independently checks T111 safe diagnostic output and rollback preservation.
+- T108 finishes exact dependencies/package test update, pinned browser preflight and success/cancel/missing-browser no-process/server-leak smoke.
+- Next: foundation acceptance from T110+T112, independent toolchain validation, then render worker/composition/API/UI implementation.
