@@ -50,6 +50,8 @@
 
 ### T-061 · P2-1 타임라인·리비전 실제 구현 (parent=P2-1, priority=P1) — running
 
+- 진행 msg_1cf3a8d98e42 수신: timeline스키마/0005·등록/DB검사·API CAS/현UI저장전환/검수·ZIP/stale차단/오류안내 구현은미커밋·typecheck통과. s4사본r1프레임/빈자리실측,차단없음. 전체검사/신규회귀/s5/CLI·productionNext/양폭키보드·보고/커밋은남음. Master가원P1 r1 ZIP동일성우회·공백보존·구fixture4단계고정과현재5단계별도검증을지시했다. 구현완료/통과로과장하지않음.
+
 - 사용자 남은작업지휘 요청에 따라 root 미커밋0005/timelineDB·API·편집UI 진척을 확인했다. 담당에게 현재완료/잔여검증/차단·프로세스 회신 및 문맥손실 시 현재diff보존 재개를 요청했다. T064는 읽기만, 제품파일 점유는T061단독. 자체/독립검증은 완료보고후실행하며 WIP상태를통과로표현하지않음.
 
 - 실제수락·점유 msg_dbcc69f559d7, 시작HEAD025d650. 담당이신규0005/timelineDB·API·현재편집UI·검수/ZIP·이관오류/restore통합·tests/새s5/README/고유보고범위를확인했다. 기존SQL1~4/s4/실사용DB/기준·공용문서불변. T063문서담당과점유분리.
