@@ -44,6 +44,8 @@
 
 ### T-051 · 실행 원문 결합·의존 그래프·결정성 계약 보완 (parent=T050/T048, priority=P1) — running
 
+- 설계 msg_a7764d3f7705 검토 후 제한.cjs 원문을한번읽어검증한동일문자열로실행하는추천안을채택·실제회신했다. 해시검증전top-level실행금지/SQL해시순환해결,동기timeout·async거부,닫힌require/crypto창구,verify query_only복구·기존영향,VM보안sandbox아님·개별결정성검증·CLI/Next동일로더·v1/v2구분을조건으로했다. 설계채택이지구현/검증통과아님.
+
 - 실제 수락·점유 msg_5a9c3d42bad6 수신, 시작HEAD7eb12c5. 담당이 code-migration/migrate·필요로더·시험코드fixture/관련tests/README해당단락·고유T051보고 점유를확인했고 실행결합추천설계를먼저공유할예정이다.
 
 - CC-DATA-01 임시코딩. code-migration/migrate·필요로더/registry·시험코드fixture/관련tests/README·고유보고. 실행결합추천설계를먼저Master공유하고실제검증원문과다른run허용금지, parser기반일반runtimeimport graph/loader일치·암묵SQLclock제한·규칙/도구버전가정정확화·CRLF시험입력정정.
