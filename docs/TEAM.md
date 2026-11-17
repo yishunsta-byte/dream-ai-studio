@@ -1641,3 +1641,9 @@
 - 고정84cf507 생성준비안내범위수용. Master직접t207 실행34/34PASS(exit0),폼/저장/서비스import없이서버auth→준비/local안내. 작성자관련189/실HTTP18/양폭키보드는작성자근거로구분. 실제생성/Storage업로드/API쓰기개통아님.
 - Front는T220배정전T219커밋/검증이완료되어checkpoint취소가아닌완료보고로반영. 수용전달및추가안내UI배정없이보호본문/조작차단T220우선계속지시. Backend B14파일읽기무결성기반개발기존배정유지.
 - DEC-SSL-01미수신·운영설정변경보류. 턴 밖 자동 점검 미설정,별도주기실행기없음.
+
+### 점검 / B14 Storage 메타데이터 연결 경계 확인
+- 마지막 확인 시각: 2026-11-17 20:54:42 +09:00 (Asia/Seoul). Orca진행이벤트·Git/최근handoffs확인. 신규완료인계없음,Front T220미커밋layout/session/shell변경은기존배정범위로보호. 기존미추적T122/T137보존.
+- Backend B14진행중,기존B12 asset DTO에는ownerId/MIME없음보고. 현재B14 OwnedStorageAsset는필수owner/MIME로독립구현계속,검수된B12수정미배정. 실제연결미완료를명시하고추정owner/kind→MIME/타입assert/항상true우회금지지시.
+- B15후속후보는owner-filtered실DB row의owner_id/MIME메타데이터반환과신뢰서버연결의좁은변경으로예약만. 현재착수미배정,B14고정SHA/검수뒤정확범위재배정예정. service/policy검증과실Storage/개통구분유지.
+- Front T220우선계속,운영SSL DEC미수신·설정변경보류. 턴 밖 자동 점검 미설정.
