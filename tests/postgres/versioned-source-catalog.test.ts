@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { randomUUID, createHash } from "node:crypto";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -8,7 +8,7 @@ import { runPostgresMigrations } from "@/lib/db/postgres/migration-runner";
 import { inspectMigrationTarget } from "@/lib/db/postgres/migration-target";
 import { loadPostgresMigrations, postgresMigrationManifest } from "@/lib/db/postgres/migration-manifest";
 import { loadPostgresMigrationsV2, postgresMigrationManifestsV2 } from "@/lib/db/postgres/migration-manifest-v2";
-import { inspectPostgresMigrationStateV2, postgresCatalogDescriptorsV2, postgresCatalogQueriesV2 } from "@/lib/db/postgres/migration-state-v2";
+import { inspectPostgresMigrationStateV2, readPostgresCatalogV2, postgresCatalogDescriptorsV2, postgresCatalogQueriesV2 } from "@/lib/db/postgres/migration-state-v2";
 vi.mock("server-only", () => ({}));
 const root = new URL("../../lib/db/postgres/", import.meta.url);
 const sha = (raw: string) => createHash("sha256").update(raw).digest("hex");
@@ -59,6 +59,13 @@ describe("B22 fixed opt-in source contracts", () => {
     expect(Object.isFrozen(postgresCatalogDescriptorsV2[4].columns[0])).toBe(true);
     expect(postgresCatalogDescriptorsV2[4].constraints.some(row => String(row.definition).includes("FOREIGN KEY (owner_id, object_id)"))).toBe(true);
     for (const query of Object.values(postgresCatalogQueriesV2)) expect(query.trim()).toMatch(/^SELECT\b/);
+  });
+  it("fixed principals are disjoint owner/public/named-role JSON variants", () => {
+    const row = postgresCatalogDescriptorsV2[4].relations.find(r => r.name === "assets")!;
+    expect(row.owner).toEqual({ kind: "owner" });
+    const acl = row.acl as unknown[][];
+    expect(acl.some(a => JSON.stringify(a[1]) === '{"kind":"role","name":"dream_api"}')).toBe(true);
+    expect(postgresCatalogDescriptorsV2[4].types.some(t => (t.acl as unknown[][]).some(a => JSON.stringify(a[1]) === '{"kind":"public"}'))).toBe(true);
   });
 });
 
@@ -217,6 +224,19 @@ describe.skipIf(process.env.DREAM_PG_B22_SCHEMA_TEST !== "1")("B22 owned actual 
       expect((await c.query("SHOW transaction_read_only")).rows[0].transaction_read_only).toBe("on");
     }, true);
   });
+  it("R foreign EXECUTE grantee named $owner rejects with actual owner unchanged", async () => {
+    await transaction(async c => {
+      await c.query('CREATE ROLE "$owner" NOLOGIN NOINHERIT; REVOKE EXECUTE ON FUNCTION dream.storage_raw_hash(text,text) FROM dream_test_admin; GRANT EXECUTE ON FUNCTION dream.storage_raw_hash(text,text) TO "$owner"');
+      const actual = (await c.query("SELECT pg_get_userbyid(p.proowner) AS owner,pg_get_userbyid(a.grantee) AS grantee,pg_get_userbyid(a.grantor) AS grantor,a.privilege_type FROM pg_proc p CROSS JOIN LATERAL aclexplode(p.proacl) a WHERE p.oid='dream.storage_raw_hash(text,text)'::regprocedure")).rows;
+      expect(actual).toEqual([{ owner: "dream_test_admin", grantee: "$owner", grantor: "dream_test_admin", privilege_type: "EXECUTE" }]);
+      const statements: string[] = [];
+      const reader = { query: async (sql: string) => { statements.push(sql); return c.query(sql); } } as unknown as PoolClient;
+      const result = await inspectPostgresMigrationStateV2(reader, { ...options, version: 4 }).then(value => ({ accepted: true, value }), error => ({ accepted: false, code: error.code }));
+      const historyRead = statements.some(sql => sql.startsWith("SELECT ordinal,id,checksum FROM"));
+      await appendFile(join(process.env.DREAM_PG_B22_EVIDENCE_ROOT!, "owner-observations.jsonl"), JSON.stringify({ name: "acl-only-execute", actual, result, historyRead }) + "\n");
+      expect(result).toMatchObject({ accepted: false, code: "MIGRATION_STATE" }); expect(historyRead).toBe(false);
+    });
+  });
   it("target identity/search path mismatch rejects; unexpected driver errors are redacted", async () => {
     await transaction(async c => {
       await expect(inspectPostgresMigrationStateV2(c, { ...options, version: 4, port: options.port + 1 })).rejects.toMatchObject({ code: "MIGRATION_TARGET" });
@@ -225,5 +245,80 @@ describe.skipIf(process.env.DREAM_PG_B22_SCHEMA_TEST !== "1")("B22 owned actual 
     }, true);
     const reader = { query: async () => { throw Error("postgresql://private:secret@unapproved.invalid/db"); } } as unknown as PoolClient;
     await expect(inspectPostgresMigrationStateV2(reader, { ...options, version: 4 })).rejects.toMatchObject({ code: "MIGRATION_FAILED", message: "MIGRATION_FAILED" });
+  });
+  it.each([
+    ["table", 'ALTER TABLE dream.assets OWNER TO "$owner"', "SELECT pg_get_userbyid(relowner) AS owner,relowner=(SELECT oid FROM pg_roles WHERE rolname=session_user) AS same_owner FROM pg_class WHERE oid='dream.assets'::regclass"],
+    ["journal", 'ALTER TABLE dream_migrations.history OWNER TO "$owner"', "SELECT pg_get_userbyid(relowner) AS owner,relowner=(SELECT oid FROM pg_roles WHERE rolname=session_user) AS same_owner FROM pg_class WHERE oid='dream_migrations.history'::regclass"],
+    ["schema", 'ALTER SCHEMA dream OWNER TO "$owner"', "SELECT pg_get_userbyid(nspowner) AS owner,nspowner=(SELECT oid FROM pg_roles WHERE rolname=session_user) AS same_owner FROM pg_namespace WHERE nspname='dream'"],
+    ["function", 'ALTER FUNCTION dream.storage_guard() OWNER TO "$owner"', "SELECT pg_get_userbyid(proowner) AS owner,proowner=(SELECT oid FROM pg_roles WHERE rolname=session_user) AS same_owner FROM pg_proc WHERE oid='dream.storage_guard()'::regprocedure"],
+    ["domain", 'ALTER DOMAIN dream.safe_uint OWNER TO "$owner"', "SELECT pg_get_userbyid(typowner) AS owner,typowner=(SELECT oid FROM pg_roles WHERE rolname=session_user) AS same_owner FROM pg_type WHERE oid='dream.safe_uint'::regtype"],
+  ])("R foreign %s owner named literal $owner rejects before journal read", async (name, sql, native) => {
+    await transaction(async c => {
+      await c.query('CREATE ROLE "$owner" NOLOGIN NOINHERIT'); await c.query(sql);
+      const actual = (await c.query(native)).rows[0]; expect(actual).toEqual({ owner: "$owner", same_owner: false });
+      const statements: string[] = [];
+      const reader = { query: async (query: string) => { statements.push(query); return c.query(query); } } as unknown as PoolClient;
+      const result = await inspectPostgresMigrationStateV2(reader, { ...options, version: 4 }).then(value => ({ accepted: true, value }), error => ({ accepted: false, code: error.code }));
+      const historyRead = statements.some(query => query.startsWith("SELECT ordinal,id,checksum FROM"));
+      await appendFile(join(process.env.DREAM_PG_B22_EVIDENCE_ROOT!, "owner-observations.jsonl"), JSON.stringify({ name, actual, result, historyRead }) + "\n");
+      expect(result).toMatchObject({ accepted: false, code: "MIGRATION_STATE" }); expect(historyRead).toBe(false);
+    });
+  });
+  it.each([
+    ['REVOKE ALL ON dream.assets FROM dream_test_admin; GRANT ALL ON dream.assets TO "$owner"', "table grantee"],
+    ['REVOKE ALL ON SCHEMA dream_migrations FROM dream_test_admin; GRANT ALL ON SCHEMA dream_migrations TO "$owner"', "schema grantee"],
+    ['REVOKE USAGE ON DOMAIN dream.safe_uint FROM dream_test_admin; GRANT USAGE ON DOMAIN dream.safe_uint TO "$owner"', "domain grantee"],
+    ['GRANT SELECT(title) ON dream.assets TO "$owner"', "column grantee"],
+  ])("FIX rejects foreign marker ACL substitution %s (%s)", async sql => {
+    await transaction(async c => {
+      await c.query('CREATE ROLE "$owner" NOLOGIN NOINHERIT'); await c.query(sql);
+      await expect(inspectPostgresMigrationStateV2(c, { ...options, version: 4 })).rejects.toMatchObject({ code: "MIGRATION_STATE" });
+      const catalog = await readPostgresCatalogV2(c);
+      expect(JSON.stringify(catalog)).toContain('{"kind":"role","name":"$owner"}');
+    });
+  });
+  it("FIX names an actual foreign grantor as role, never as session owner", async () => {
+    await transaction(async c => {
+      await c.query('CREATE ROLE "$owner" NOLOGIN; GRANT USAGE ON SCHEMA dream TO "$owner"; GRANT SELECT ON dream.assets TO "$owner" WITH GRANT OPTION; SET LOCAL ROLE "$owner"; GRANT SELECT ON dream.assets TO dream_api; RESET ROLE');
+      const native = (await c.query("SELECT pg_get_userbyid(a.grantor) AS grantor FROM pg_class c CROSS JOIN LATERAL aclexplode(c.relacl) a WHERE c.oid='dream.assets'::regclass AND a.grantor=(SELECT oid FROM pg_roles WHERE rolname='$owner')")).rows;
+      expect(native.length).toBeGreaterThan(0);
+      const catalog = await readPostgresCatalogV2(c);
+      const assets = (catalog.relations as Record<string, unknown>[]).find(r => r.name === "assets")!;
+      expect((assets.acl as unknown[][]).some(a => JSON.stringify(a[0]) === '{"kind":"role","name":"$owner"}')).toBe(true);
+      await expect(inspectPostgresMigrationStateV2(c, { ...options, version: 4 })).rejects.toMatchObject({ code: "MIGRATION_STATE" });
+    });
+  });
+  it("FIX pseudo PUBLIC and a literal uppercase PUBLIC role remain distinct", async () => {
+    await transaction(async c => {
+      await c.query('CREATE ROLE "PUBLIC" NOLOGIN; REVOKE USAGE ON DOMAIN dream.safe_uint FROM PUBLIC; GRANT USAGE ON DOMAIN dream.safe_uint TO "PUBLIC"');
+      const catalog = await readPostgresCatalogV2(c);
+      const domain = (catalog.types as Record<string, unknown>[]).find(r => r.name === "safe_uint")!;
+      expect((domain.acl as unknown[][]).some(a => JSON.stringify(a[1]) === '{"kind":"role","name":"PUBLIC"}')).toBe(true);
+      expect((domain.acl as unknown[][]).some(a => JSON.stringify(a[1]) === '{"kind":"public"}')).toBe(false);
+      await expect(inspectPostgresMigrationStateV2(c, { ...options, version: 4 })).rejects.toMatchObject({ code: "MIGRATION_STATE" });
+    });
+  });
+  it.each(["$owner", "PUBLIC", '{"kind":"owner"}'])("FIX actual session owner named %s remains valid by OID", async name => {
+    const identifier = (value: unknown) => `"${String(value).replaceAll('"', '""')}"`;
+    const quoted = identifier(name);
+    await transaction(async c => {
+      await c.query(`CREATE ROLE ${quoted} NOLOGIN SUPERUSER`);
+      // Transfer only explicit project descriptor objects, never bootstrap/system
+      // objects owned by the synthetic initdb administrator. All changes roll back.
+      for (const schema of postgresCatalogDescriptorsV2[4].schemas) await c.query(`ALTER SCHEMA ${identifier(schema.name)} OWNER TO ${quoted}`);
+      for (const relation of postgresCatalogDescriptorsV2[4].relations) await c.query(`ALTER TABLE ${identifier(relation.schema)}.${identifier(relation.name)} OWNER TO ${quoted}`);
+      for (const domain of postgresCatalogDescriptorsV2[4].types) await c.query(`ALTER DOMAIN ${identifier(domain.schema)}.${identifier(domain.name)} OWNER TO ${quoted}`);
+      for (const fn of postgresCatalogDescriptorsV2[4].functions) await c.query(`ALTER FUNCTION ${identifier(fn.schema)}.${identifier(fn.name)}(${fn.arguments}) OWNER TO ${quoted}`);
+      await c.query(`SET LOCAL SESSION AUTHORIZATION ${quoted}`);
+      expect((await c.query("SELECT session_user AS name")).rows[0].name).toBe(name);
+      expect(await inspectPostgresMigrationStateV2(c, { ...options, version: 4, username: name })).toEqual({ state: "complete", version: 4, pending: 0 });
+    });
+  });
+  it("FIX regular foreign owner rejects and rollback restores exact original owner", async () => {
+    await drift("CREATE ROLE b22_fix_foreign NOLOGIN; ALTER TABLE dream.assets OWNER TO b22_fix_foreign");
+    await transaction(async c => {
+      expect(await inspectPostgresMigrationStateV2(c, { ...options, version: 4 })).toEqual({ state: "complete", version: 4, pending: 0 });
+      expect((await c.query("SELECT count(*)::int AS n FROM pg_roles WHERE rolname IN ('$owner','PUBLIC','b22_fix_foreign')")).rows[0].n).toBe(0);
+    }, true);
   });
 });
