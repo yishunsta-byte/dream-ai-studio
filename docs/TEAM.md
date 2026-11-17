@@ -1360,3 +1360,7 @@
 - msg_851e548cf25e /994a894 report/stat read. Actual portablePG18.7 driver13+unit20 authorPASS, isolated runner ownership/stop evidence. Managed database/production callers still disconnected, not complete cloud backend.
 - Original independent reviewer requested B3-R fresh-cluster real driver verification, report only. Backend assigned B4-C project-read/verified-actor/safe-error contract document, no concurrent B3/auth product edits.
 - Current Design shell WIP protected. T187 auth recheck remains separate; no push/deploy yet.
+### T187 auth accepted; T189 deployment verification assigned
+
+- T187 report b29bcf2 read:150 actual related+15 independent tests/lint/type/build,79 HTTP observations and actual SDK/normal controls PASS. Original154 claim not reused. Fixed authentication scope accepted; original T185 FAIL remains historical.
+- T189 Front requested committed-snapshot secret scan/build/auth regression/push/Vercel SHA/readback, excluding Design WIP and leaving local3013 intact. Postgres code remains unwired and SQL not applied. No full-cloud completion claim.
