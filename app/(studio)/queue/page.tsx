@@ -1,2 +1,4 @@
 import { redirect } from "next/navigation";
-export default function QueueAlias() { redirect("/jobs"); }
+import { legacyPageGate } from "@/lib/auth/legacy-page-gate";
+export default async function QueueAlias() {
+ const blocked=await legacyPageGate();if(blocked)return blocked; redirect("/jobs"); }

@@ -6,8 +6,10 @@ import { listJobs } from "@/lib/services/jobs";
 import { checkStartup } from "@/lib/services/startup";
 import { Badge, Card, Callout, PageHeader } from "@/components/ui/primitives";
 import { SettingsPanel, type StartupSummary } from "@/components/settings-panel";
+import { legacyPageGate } from "@/lib/auth/legacy-page-gate";
 export const dynamic="force-dynamic";
-export default function SettingsPage() {
+export default async function SettingsPage() {
+ const blocked=await legacyPageGate();if(blocked)return blocked;
  const config=getMenuConfig(),startup=checkStartup();
  const startupSummary:StartupSummary={...startup,checkedAt:new Date().toISOString()};
  // Preserve the startup boundary: no DB-dependent settings reads after a failed check.

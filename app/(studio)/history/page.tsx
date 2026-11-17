@@ -2,9 +2,11 @@
 import { readHistory, historyQuerySchema } from "@/lib/services/history";
 import { checkStartup } from "@/lib/services/startup";
 import { Badge, Button, Card, Callout, EmptyState, PageHeader, SampleBadge, StatusPill } from "@/components/ui/primitives";
+import { legacyPageGate } from "@/lib/auth/legacy-page-gate";
 export const dynamic="force-dynamic";
 const status=(value:string)=>value==="succeeded"?"done":value==="running"?"running":value==="queued"?"queued":value==="canceled"?"canceled":"failed";
 export default async function HistoryPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
+ const blocked=await legacyPageGate();if(blocked)return blocked;
  if(!checkStartup().canStart)return <><PageHeader title="생성·활동 기록"/><Callout title="기록을 읽기 전에 시작 점검이 필요해요." tone="warning"><Link href="/setup">시작 점검 확인</Link></Callout></>;
  const raw=await searchParams;if(raw.projectId==="")delete raw.projectId;const data=(()=>{try{return readHistory(historyQuerySchema.parse(raw));}catch{return null;}})();if(!data)return <><PageHeader title="생성·활동 기록"/><Callout title="기록을 읽지 못했어요." tone="warning"><p>조회 조건과 시작 점검을 확인해 주세요.</p><Link href="/history">전체 기록으로 돌아가기</Link></Callout></>;const href=(page:number,type=data.type)=>`/history?${new URLSearchParams({type,page:String(page),...(data.projectId?{projectId:data.projectId}:{})})}`;return <><PageHeader title="생성·활동 기록" description="저장한 생성 결과와 변경 이력을 읽기 전용으로 살펴봐요." actions={<Link href="/settings">백업·복원 설정</Link>}/><nav className="cluster" aria-label="기록 종류"><Link aria-current={data.type==="generation"?"page":undefined} href={href(1,"generation")}>생성 기록</Link><Link aria-current={data.type==="activity"?"page":undefined} href={href(1,"activity")}>활동 기록</Link><Link href="/jobs">작업 대기열</Link></nav>
  <form className="cluster" action="/history"><input type="hidden" name="type" value={data.type}/><label htmlFor="history-project">프로젝트</label><select id="history-project" name="projectId" defaultValue={data.projectId??""}><option value="">전체 프로젝트</option>{data.projects.map(project=><option key={project.id} value={project.id}>{project.title}</option>)}</select><Button type="submit">기록 찾기</Button></form><p className="muted">전체 {data.total}건 · 페이지당 50개 · {data.page}/{data.pages}쪽</p>

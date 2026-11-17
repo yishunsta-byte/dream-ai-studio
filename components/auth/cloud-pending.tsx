@@ -8,8 +8,8 @@ export function CloudPending({ account }: { account: string | null }) {
     <div className={styles.panel}>
       <div className={styles.brand}><span className={styles.logo} aria-hidden="true">D</span><div><strong>Dream AI Studio</strong><span>나만의 콘텐츠 작업실</span></div></div>
       <h1 className={styles.title}>클라우드 작업실을 준비하고 있어요</h1>
-      {account && <p className={styles.lead}>로그인은 됐어요.</p>}
-      <Callout tone="info" title="아직 여기서는 작업을 저장할 수 없어요">작품·자료·영상을 클라우드 저장소로 옮기는 중이에요. 옮기기가 끝나면 이 주소에서 바로 작업할 수 있어요. 그동안은 내 PC 작업실에서 계속해 주세요.</Callout>
+      {account && <p className={styles.lead}>로그인은 정상적으로 됐어요.</p>}
+      <Callout tone="info" title="작업실 기능은 아직 클라우드로 옮기지 않았어요">작품·자료·영상·작업 기록은 아직 내 PC 작업실에만 있어요. 클라우드 저장소로 옮기는 작업이 끝나면 이 주소에서 바로 작업할 수 있어요. 그동안은 내 PC 작업실에서 계속해 주세요.</Callout>
       {account && <div className={styles.pendingAccount}><AccountMenu email={account} /></div>}
     </div>
   </main>;

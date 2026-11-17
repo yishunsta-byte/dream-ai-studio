@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { getMenuConfig } from "@/lib/menus/server";
 import { Badge, Card, Callout, EmptyState, PageHeader, PhaseChip } from "@/components/ui/primitives";
 import { listProjects } from "@/lib/services/projects";
+import { legacyPageGate } from "@/lib/auth/legacy-page-gate";
 
 export default async function MenuPage({ params }: { params: Promise<{ menuId: string }> }) {
+ const blocked=await legacyPageGate();if(blocked)return blocked;
   const { menuId } = await params;
   const config = getMenuConfig();
   const menu = config.menus.find((entry) => entry.id === menuId);

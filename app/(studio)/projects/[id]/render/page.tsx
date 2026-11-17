@@ -9,9 +9,11 @@ import { Tabs } from "@/components/ui/interactive";
 import { BreadcrumbLabel } from "@/components/breadcrumb";
 import { RenderPanel, type SavedRenderTimeline } from "@/components/render-panel/render-panel";
 import styles from "@/components/render-panel/render-panel.module.css";
+import { legacyPageGate } from "@/lib/auth/legacy-page-gate";
 
 // 영상 만들기: a sub-screen of 수정·조립 (T-102 D-1, no new stage).
 export default async function ProjectRenderPage({params}:{params:Promise<{id:string}>}){
+ const blocked=await legacyPageGate();if(blocked)return blocked;
   const {id}=await params;
   let data;try{data=readProject(id);}catch(error){if(error instanceof WorkflowError&&error.status===404)notFound();throw error;}
   const {project,snapshot,states}=data,edit=states.find(item=>item.stage==="edit"),locked=!edit||edit.status==="locked";

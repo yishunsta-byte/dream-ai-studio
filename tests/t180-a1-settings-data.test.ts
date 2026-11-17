@@ -33,27 +33,27 @@ beforeEach(()=>{
 afterEach(()=>{vi.useRealTimers();});
 
 describe("T180 A1 settings read boundary",()=>{
- it("reuses one startup read and keeps independent, serializable observation times",()=>{
-  const element=panel(SettingsPage())!;
+ it("reuses one startup read and keeps independent, serializable observation times",async()=>{
+  const element=panel((await SettingsPage()))!;
   expect(checkStartup).toHaveBeenCalledTimes(1);
   expect(element.props.startupSummary).toEqual({checks,canStart:true,checkedAt:"2026-11-17T04:00:01.000Z"});
   expect(element.props.initialReadAt).toBe("2026-11-17T04:00:02.000Z");
   expect(element.props.initial).toEqual({rows:[],lastSuccess:null,lastFailure:null,workerOnline:false});
   expect(JSON.parse(JSON.stringify(element.props))).toEqual(element.props);
  });
- it("does not read DB-dependent settings after startup fails",()=>{
+ it("does not read DB-dependent settings after startup fails",async()=>{
   vi.mocked(checkStartup).mockReturnValue({canStart:false,checks:[]});
-  const tree=SettingsPage();expect(panel(tree)).toBeUndefined();
+  const tree=(await SettingsPage());expect(panel(tree)).toBeUndefined();
   for(const read of [readBackups,listJobs,readBackupConfiguration,readRestoreInformation])expect(read).not.toHaveBeenCalled();
   expect(renderToStaticMarkup(tree)).toContain("시작 점검이 필요해요.");
  });
- it.each([readBackups,listJobs,readBackupConfiguration,readRestoreInformation])("keeps a read failure separate from empty backup data (%#)",read=>{
+ it.each([readBackups,listJobs,readBackupConfiguration,readRestoreInformation])("keeps a read failure separate from empty backup data (%#)",async read=>{
   vi.mocked(read).mockImplementationOnce(()=>{throw Error("fixture read failure");});
-  const tree=SettingsPage();expect(panel(tree)).toBeUndefined();
+  const tree=(await SettingsPage());expect(panel(tree)).toBeUndefined();
   const html=renderToStaticMarkup(tree);expect(html).toContain("설정을 읽지 못했어요.");expect(html).not.toContain("아직 백업이 없어요");
  });
- it("describes warning and missing heartbeat without claiming completion or process exit",()=>{
-  const html=renderToStaticMarkup(SettingsPage());
+ it("describes warning and missing heartbeat without claiming completion or process exit",async()=>{
+  const html=renderToStaticMarkup((await SettingsPage()));
   expect(html).toContain("확인할 항목 있음");expect(html).toContain("최근 응답을 확인하지 못했어요.");
   expect(html).toContain('dateTime="2026-11-17T04:00:01.000Z"');expect(html).toContain('dateTime="2026-11-17T04:00:02.000Z"');
   expect(html).not.toContain("작업 처리기 꺼짐");expect(html).toContain("모든 기능의 검증 완료를 뜻하지 않아요.");

@@ -5,8 +5,10 @@ import { listProjects } from "@/lib/services/projects";
 import { readRecentOperations } from "@/lib/services/history";
 import { checkStartup } from "@/lib/services/startup";
 import { stageOrder } from "@/lib/domain/stages";
+import { legacyPageGate } from "@/lib/auth/legacy-page-gate";
 
-export default function Home() {
+export default async function Home() {
+ const blocked=await legacyPageGate();if(blocked)return blocked;
   const config = getMenuConfig();
   if(!checkStartup().canStart)return <><PageHeader title="작업실"/><Callout title="작업 전에 시작 점검이 필요해요." tone="warning"><Link href="/setup">시작 점검 확인</Link></Callout></>;
   const projects=listProjects();

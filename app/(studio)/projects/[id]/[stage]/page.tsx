@@ -15,8 +15,10 @@ import { readExports } from "@/lib/services/exports";
 import { EditingPanel } from "@/components/editing-panel";
 import { ReviewPanel } from "@/components/review-panel";
 import { ExportsPanel } from "@/components/exports-panel";
+import { legacyPageGate } from "@/lib/auth/legacy-page-gate";
 
 export default async function ProjectStagePage({params}:{params:Promise<{id:string;stage:string}>}) {
+ const blocked=await legacyPageGate();if(blocked)return blocked;
  const {id,stage}=await params;if(!stageOrder.includes(stage as Stage))notFound();
  let data;try{data=readProject(id);}catch(error){if(error instanceof WorkflowError&&error.status===404)notFound();throw error;}
  const {project,snapshot,states,inputs}=data;

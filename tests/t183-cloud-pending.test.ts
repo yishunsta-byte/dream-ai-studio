@@ -7,7 +7,12 @@ const state = vi.hoisted(() => ({ canStart: false, account: null as string | nul
 vi.mock("@/lib/services/startup", () => ({
   checkStartup: () => ({ canStart: state.canStart, checks: [{ id: "data", label: "data 폴더", status: state.canStart ? "pass" : "fail", message: "파일을 저장할 수 없어요." }] }),
 }));
-vi.mock("@/lib/auth/render", () => ({ currentAccountEmail: async () => state.account }));
+vi.mock("server-only", () => ({}));
+// T-200: 레이아웃 입구 가드가 getRenderAuth를 쓴다. 계정이 있으면 verified, 없으면 local로 둔다.
+vi.mock("@/lib/auth/render", () => ({
+  currentAccountEmail: async () => state.account,
+  getRenderAuth: async () => state.account ? { kind: "verified", userId: "00000000-0000-4000-8000-000000000183", email: state.account } : { kind: "local" },
+}));
 vi.mock("@/lib/menus/server", () => ({ getMenuConfig: () => ({ groups: [], menus: [], workspaces: [] }) }));
 
 const saved = process.env.VERCEL;
@@ -35,7 +40,8 @@ describe("T-183 저장 폴더 점검 위치와 클라우드 준비 화면", () =
     state.account = "owner@example.com";
     const html = await layout();
     expect(html).toContain("클라우드 작업실을 준비하고 있어요");
-    expect(html).toContain("아직 여기서는 작업을 저장할 수 없어요");
+    expect(html).toContain("작업실 기능은 아직 클라우드로 옮기지 않았어요");
+    expect(html).toContain("로그인은 정상적으로 됐어요");
     expect(html).toContain("owner@example.com");
     expect(html).toContain("로그아웃");
     expect(html).not.toContain("시작 점검");

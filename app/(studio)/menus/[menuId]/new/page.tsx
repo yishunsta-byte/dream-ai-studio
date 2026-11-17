@@ -4,8 +4,10 @@ import { PageHeader } from "@/components/ui/primitives";
 import { ProjectForm } from "@/components/project-form";
 import { projectChoices } from "@/lib/services/projects";
 import { snapshotForMenu } from "@/lib/menus/snapshot";
+import { legacyPageGate } from "@/lib/auth/legacy-page-gate";
 
 export default async function NewProjectPage({ params }: { params: Promise<{ menuId: string }> }) {
+ const blocked=await legacyPageGate();if(blocked)return blocked;
   const { menuId } = await params;
   const config=getMenuConfig();
   const menu = config.menus.find((entry)=>entry.id===menuId);

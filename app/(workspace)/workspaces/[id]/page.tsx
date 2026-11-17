@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { getMenuConfig } from "@/lib/menus/server";
 import { Card, Callout, PageHeader, PhaseChip } from "@/components/ui/primitives";
+import { legacyPageGate } from "@/lib/auth/legacy-page-gate";
 
 export default async function WorkspacePage({ params }: { params: Promise<{ id: string }> }) {
+ const blocked=await legacyPageGate();if(blocked)return blocked;
   const { id } = await params;
   const workspace = getMenuConfig().workspaces.find((entry)=>entry.id===id);
   if (!workspace) notFound();

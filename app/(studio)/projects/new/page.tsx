@@ -1,2 +1,4 @@
 import { redirect } from "next/navigation";
-export default function NewProjectAlias(){redirect("/menus/shopping-shorts/new");}
+import { legacyPageGate } from "@/lib/auth/legacy-page-gate";
+export default async function NewProjectAlias(){
+ const blocked=await legacyPageGate();if(blocked)return blocked;redirect("/menus/shopping-shorts/new");}
