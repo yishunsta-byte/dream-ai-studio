@@ -1351,3 +1351,7 @@
 - T186 report/commit dec2be18755d3db1f264e9d81ca2e9b92ece8620 returned local origin/JSON defense and honest logout partial/failure handling, no push/deploy.
 - Master read report/stat. T187 requested msg_50f4af06df81 from Tester after preserving T185 original findings: original actual failures and normal SDK/network/UI controls, fixed snapshot only. Existing B3 package WIP protected.
 - No independent authentication acceptance or production update yet.
+### T185 original final FAIL preserved; T187 active
+
+- msg_c0631bcc5f63: Tester final original a278e80 report read. Actual F184-1/2 and normal controls preserved;767/23skip after clean env, API/settings/backup/runtime verified within scope. No T186 result merged into original verdict.
+- T187 fixed dec2be1 snapshot recheck accepted and started. Mobile title clipping U185-1 P3 is a separate follow-up, not an authentication acceptance blocker. Backend package/new Postgres WIP protected.
