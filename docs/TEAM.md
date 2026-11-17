@@ -1439,3 +1439,7 @@
 - msg_808009678a9c /74e3be7 report read. Author actualTLS/Next-dev HTTP7 controls and236 related tests/lint/type, no production build/managed activation claim.
 - T201 Tester requested fixed GET/auth/tenant/no-store/legacy combination review. T199 and T200 remain independent legacy checks.
 - B5 Backend assigned real checksum/history/lock/dry-run migration runner and isolated apply/idempotency/rollback/provision tests, no managed DDL or changes to issued SQL. Concrete managed provision readiness follows independent acceptance.
+### B5 public target provenance supplied
+
+- B5 requested public project identity source while continuing implementation. Master supplied original Front msg_377e681fe114 and msg_eb75ca2fe4c9: https://osvjfyjlbixmvnjkxdry.supabase.co, dream-ai-studio, Seoul. This is historical reported public metadata, not current managed-connection verification.
+- No secrets read, no automatic production DSN/default or managed application authorized. Runner work continues with synthetic targets.
