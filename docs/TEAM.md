@@ -1949,7 +1949,7 @@
 ### 점검 / B22 owner 표식 충돌 필수 수정 배정
 - 지정 wake msg_5132f140cd26 및 정기알림 msg_8d7e229c658e, Git/최근 handoffs 확인. 고정853e861 원71PASS 독립재현 이후 추가검수에서 literal role $owner와 소유자 정규화 표식이 충돌. relation/journal/schema/function/domain 실제 foreign owner 5변형이 정상 complete4 pending0 수용, native same_owner=false와 일반foreignrole거부·rollback정상대조 확인 보고. 5건은 공통원인 한 결함의 변형이며 최종고유보고 아직 미제출.
 - journal owner도 metadata를 통과해 historyRead=true. 검사대상 identity/owner admission 계약 위반으로 필수FAIL 판정; apply/TLS/lock 외범위요구나 현runtime권한우회 입증으로 혼동하지 않음. 첫추가19 중13PASS/5제품결함변형/1검수fixtureSQL오타는 구분하고 fixture 기대 유지 수정 후 최종수량 반환 예정.
-- Backend B22-FIX 실제전송 msg_3c75087e6c08: 기존B22 source/state/test/runner·고유FIX인계만, OID/typedidentity 등 충돌없는 근본검증·모든owner/ACL정규화감사·원실패기대baseline·정상경계·journalread전거부 검증. 원SQL1..4/v1/runtime/운영 불변·새Codex창 금지. 수락은 회신 전 미확인.
+- Backend B22-FIX 실제전송 msg_3c75087e6c08: 기존B22 source/state/test/runner·고유FIX인계만, OID/typedidentity 등 충돌없는 근본검증·모든owner/ACL정규화감사·원실패기대baseline·정상경계·journalread전거부 검증. 원SQL1..4/v1/runtime/운영 불변·새Codex창 금지. 후속 msg_715c64b20308로 Backend 수신·범위 수락 및 baseline 재현/OID·ACL 감사 착수 계획 확인.
 - 기존Tester msg_f01c11615d74 실제통지: 고정원후보 검수 마무리·최소재현 Backend 직접인계허용·원기대유지/정상대조/소유정리·고유최종보고만. 새수정본 혼입하지 않음. 공유기존 T122/T137 보존·새미기록인계없음.
 - 예약 실제상태 01:00:01 실행 LastTaskResult0/다음01:30 KST, 현재Master 정기알림 수신과 대조. 별도agent/새창 생성없음. B22수용/v2apply 보류, 관련운영결정 대기와 로컬수정을 분리.
 - 마지막 확인 시각: 2026-11-18 01:01:24 +09:00 (Asia/Seoul).
