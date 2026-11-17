@@ -1,3 +1,4 @@
+import { requireApiAuth } from "@/lib/auth/api";
 import { createReadStream } from "node:fs";
 import { Readable } from "node:stream";
 import { z } from "zod";
@@ -18,5 +19,9 @@ async function serve(request:Request,params:Promise<{id:string}>,head:boolean){
     return new Response(head?null:Readable.toWeb(createReadStream(/*turbopackIgnore: true*/file.absolute,{start:range.start,end:range.end})) as ReadableStream<Uint8Array>,{status:range.partial?206:200,headers});
   }catch(error){const {status,body}=renderErrorBody(error);return Response.json(body,{status});}
 }
-export function GET(request:Request,{params}:{params:Promise<{id:string}>}){return serve(request,params,false);}
-export function HEAD(request:Request,{params}:{params:Promise<{id:string}>}){return serve(request,params,true);}
+export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
+ const denied=await requireApiAuth();if(denied)return denied;
+return serve(request,params,false);}
+export async function HEAD(request:Request,{params}:{params:Promise<{id:string}>}){
+ const denied=await requireApiAuth();if(denied)return denied;
+return serve(request,params,true);}

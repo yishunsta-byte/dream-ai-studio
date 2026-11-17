@@ -1,3 +1,4 @@
+import { requireApiAuth } from "@/lib/auth/api";
 import { createReadStream, statSync } from "node:fs";
 import { Readable } from "node:stream";
 import { readAsset } from "@/lib/services/library";
@@ -5,7 +6,9 @@ import { mediaErrorResponse } from "@/lib/services/http-error";
 import { resolveStoredFile } from "@/lib/storage/paths";
 import { parseByteRange } from "@/lib/media/range";
 export const runtime="nodejs";
-export async function GET(request:Request,{params}:{params:Promise<{id:string}>}) {
+export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
+ const denied=await requireApiAuth();if(denied)return denied;
+
  try {
   const {id}=await params;const asset=readAsset(id);const file=resolveStoredFile(asset.filePath);
   if(asset.kind==="link"||!file)return Response.json({error:"파일을 찾을 수 없어요."},{status:404});

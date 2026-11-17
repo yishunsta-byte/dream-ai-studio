@@ -1,3 +1,4 @@
+/* global console, URL */
 // Standalone SQL integration test; isolated PGlite dependency, no Supabase credentials.
 // npm install --prefix tmp/pg-schema-validation --no-save --ignore-scripts --package-lock=false @electric-sql/pglite@0.5.16
 // node tests/postgres/schema-rls.mjs

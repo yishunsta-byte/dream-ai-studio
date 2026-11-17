@@ -1,3 +1,4 @@
+import { requireApiAuth } from "@/lib/auth/api";
 import { z } from "zod";
 import { WorkflowError } from "@/lib/domain/stages";
 import { approveProjectPlan, confirmProjectBrief, saveProjectPlan, planningInputSchema } from "@/lib/services/planning";
@@ -8,7 +9,9 @@ const bodySchema=z.discriminatedUnion("action",[
  z.strictObject({action:z.literal("save-plan"),revision,input:planningInputSchema}),
  z.strictObject({action:z.literal("approve-plan"),revision,planId:z.uuidv7()}),
 ]);
-export async function POST(request:Request,{params}:{params:Promise<{id:string}>}) {
+export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
+ const denied=await requireApiAuth();if(denied)return denied;
+
  try {
   const {id}=await params;if(!z.uuidv7().safeParse(id).success)return Response.json({error:"프로젝트를 찾을 수 없어요."},{status:404});
   const body=bodySchema.parse(await request.json());
