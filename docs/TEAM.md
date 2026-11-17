@@ -2052,3 +2052,8 @@
 - Front msg_b4978eb38efb 신규공개home요구/Designer우선변경통지·현T229보완/검증계속. 완성공개작품showcase와private창작/관리/초안/원본분리, 공개선택자산만후속계약으로노출·실DB/PC파일일괄게시없음. 선택후제품home구현범위별도, 현재Auth/root/layout임의수정없음. Master PLAN/통합기준에신규요구·현재단계/후속공개데이터계약미완료명시.
 - 제한소스검색에서기존public publishing catalog를확인하지못했음(선택rg범위만이며전체부재증명아님). 현재실콘텐츠를이미노출/배포했다고보고하지 않음. 기존Frontend관리/B25병행·추가비용/운영권한확대없음·새Codex창agentworktree없음.
 - Backend B25 msg_d799b3cd2eab의표현매핑수신: owner/authority는원Auth일반UUID, object/asset/intent/request는원계약v7 유지, SQL별도열없는policy/권한/incomingVersion은versionedserverenvelope/raw보존교차검증. Master msg_5cf79835e218로원계약유지·범위수락/신뢰증명아님/정확시각roundtrip검증지시. 잘못된owner까지v7확대문구정정, 원SQL/모델무단변경금지.
+### 점검 / T232 최우선 수락·T231 부분 인계 확인
+- 실제 점검 완료 시각: 2026-11-18 02:29:41 +09:00 (Asia/Seoul). 지정 wake msg_96a753313c59·Git/최근신규수정handoffs/T231부분보고/B25scope원문 확인. T232 Design최우선수신·범위수락·직접현재공개site참고/3안제작의사확인. T231새검사중단경계보존·Front실제추가차이전송msg_71271bf652a9 보고수신. 새Codex창/agent/worktree없음.
+- 미기록파일T231 untracked를읽고 fixed6308791 partialsource대조로등록. 명세정합항목과未실행양폭/재조회/접근성·security를구분, 원Masterempty/시각요청은중복결함으로계수하지 않음. source13px중요문구/44px측정·sameURL재조회근거 추가요청이Front전달됐고현재CSS후보에note-md/linkmin44px 변경흔적을확인했으나새SHA/실측PASS로판정하지 않음. report파일자체를Master stage하지 않음.
+- B25 신규인계scope/running확인, model/SQL원계약보존·versionedraw envelope·정확시간 매핑계획, 테스트완료보고없음. 기존B25/FrontT229계속, 디자인은T232우선·T231후속증거대조는미완료로남김. 기존T122/T137보존.
+- 후속지휘는기존T232수락범위의3안완성·비교index/PC390/참고근거/추천반환을유지. 예시와실공개콘텐츠구분, 실제private자료/운영home게시미실행. 표에T232수신상태갱신, 점검은문서/소스차이범위이며브라우저시안/시험/배포성공주장없음.

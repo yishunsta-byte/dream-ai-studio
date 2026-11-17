@@ -19,7 +19,7 @@
 | 버전별 CLI | B24 eccac35·R3b683d4 수용 | 원59·독립43, actual children22+20 검사. fingerprint는 사용자 승인 증명 아님 |
 | 업로드 예약 DB 변환 | **B25 Backend 구현 배정·수락** | reserved-only codec·SQL parameter/row 변환·실PG roundtrip/rollback→고정본 독립검수 |
 | 클라우드 개인 관리 | **T229 Front 구현·Master 문구 보완 / T230 명세 수용·T231 대조 배정** | 실제 project 조회 기반 읽기 전용 상태·미연결 정직 표시·세션 경계·양폭 검수 |
-| 공개 멀티미디어 메인 | 사용자 신규 요구: 방문자가 완성 콘텐츠를 보는 화려한 쇼케이스. **T232 Design 새3안 우선 배정** | YouTube/Suno/영상사이트 현재화면 참고·3개서로다른구조·1280/390비교. 기존T208보존, private초안/파일 일괄공개 없음 |
+| 공개 멀티미디어 메인 | 사용자 신규 요구: 방문자가 완성 콘텐츠를 보는 화려한 쇼케이스. **T232 Design 새3안 최우선 수락·제작 진행** | YouTube/Suno/영상사이트 현재화면 참고·3개서로다른구조·1280/390비교. 기존T208보존, private초안/파일 일괄공개 없음 |
 | 운영·비용 | 실제 Supabase Free50MB, 앱 요구2GiB 미충족. SSL DEC-SSL-01 미결정 | 무료 synthetic 개발 계속. 유료 전환·운영 SSL 변경은 승인 전 미실행 |
 | 운영 정리 | kzxq 사용자 승인 삭제 보고·Master404 확인, 주운영 보존 | Vercel2FA는 사용자 보류. 같은 질문 반복 없음 |
 | AI·확장 | 로컬 mock 기반 유지 | P3 실AI 예산/계정·P4분야·P5게시·P6고급·P7협업·P8전문은 아래 진입 기준 적용 |
@@ -52,7 +52,7 @@
 |---|---|---|---|
 | B25 / P2 | Backend · 수신·수락 | 예약전용 pure DB codec/parameter/decoder·test/ownedPG runner/인계. 원문/ID/정책/시간/owner 일치·음성 입력·실PG roundtrip/rollback | 작성자 검사 후 고정 SHA 제출→기존 Tester 독립검수→Master 판정 |
 | T229 / P2 | Front · 수신·착수 | /cloud/manage 읽기 전용 UI·목록 표시건수/상태·조회오류·미연결 안내·목록 링크. Auth/layout/backend 불변 | Front 합성 동작·메인 PC 격리 build, 기존 Tester 독립검수·Design 시각 대조 |
-| T232 / P2·사용자 우선 | Design · 신규 요청 전송 | 공개 방문자 중심 영상·음악·이미지 쇼케이스 새3안/비교index/1280·390캡처·상태/출처·추천안 | Master3안비교→선택/구현범위결정→Front구현·Tester검수. T231은 기존 증거 보존 후 후순위 |
+| T232 / P2·사용자 우선 | Design · 수신·최우선 수락 | 공개 방문자 중심 영상·음악·이미지 쇼케이스 새3안/비교index/1280·390캡처·상태/출처·추천안 | Master3안비교→선택/구현범위결정→Front구현·Tester검수. T231은 기존 증거 보존 후 후순위 |
 
 차단이나 추가 권한이 보고되지 않은 실행 가능한 구현은 위 담당이 계속한다. 대기 시간을 채우는 중복 과제는 만들지 않는다. 고정본 수신 뒤 검수·결함 수정·후속 범위를 배정하며 문서/단위 검사 완료마다 운영 배포하지 않는다.
 ## 4. 클라우드 전환 순서
