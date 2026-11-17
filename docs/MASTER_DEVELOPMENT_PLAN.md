@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 07:52 KST): B36수정5cefa0d는R2 13c2ba9 SOURCE/DESIGN PASS수용(F36-1표현gap폐쇄·native/reference未證). Backend B37 localSQL5발행P/source-onlyv3manifest·strict검증/sourceunit/인계4경로배정(수신미확인). 原Ddraft·SQL1~4·closedv1v2·adapterDpin불변, 이번P에knownfuse제거/header만허용·실행SQL=E, DBparser/native/registry-runnerCLI/reference/provision/운영연결은별도후속. B35actualACKloss수용·운영activation미실행/Front사용자직접push전. 이최신판정이아래과거상태보다우선한다.
+최신 판정(2026-11-18 08:14 KST): B37 고정6011284는 독립9ebf012 SOURCE PASS 수용. P=f37dc54d…5339, E/P 실행 본문 동일38252bytes; 독립171PASS/100skip·반례8·실제 filesystem loader5개·type/lint0. 소스 수용이며 SQL P 실행/native/reference/대상 승인·운영 활성화 증거는 아니다. Backend B38는 B36 수정5cefa0d 기준 strict14-category catalog 관측 모듈/단위검사/고유보고 정확3경로를 msg_5e0d09e45edf로 수락했다. 고정 SELECT reader·raw decoder·typed normalizer까지만 구현하며 Golden/reference/state comparator/runner/provenance 승격과 DB/parser/native 실행은 별도 후속이다. 원D/P·SQL1~4·closedv1/v2·manifest-v3·adapterDpin은 보호한다. 결과 고정→Tester 독립검수→Master 판정. B35 actual ACK loss 수용·운영 activation 미실행·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
