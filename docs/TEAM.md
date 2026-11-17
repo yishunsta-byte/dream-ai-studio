@@ -1503,3 +1503,8 @@
 - T205 8263cb7 원문 확인, 기준1c36974 시험 시계/cleanup 수정 지정 범위 수용. Date fake/set/real 3문 이외 AST토큰·assertion·제품·fixture 동일, s9 hash 보존. 독립 원14 PASS, 실제/미래각14+cleanup예외2 PASS·복원16/16. 원본미래13 FAIL/1 PASS 대조와원본과거14 PASS 확인.
 - 작성자 전체1177 PASS/53 skip은 독립결과와 합산하지 않음. 과거단발1실패는 원로그/실패명 미보존으로 원인미확인 유지, 소급해결 선언하지 않음.
 - Tester 다음 T209 배정: 고정1c36974 합성Auth에서 실제브라우저 client navigation/prefetch/back-forward/세션만료·로그아웃/계정잔상과private저장소차단 검증. 제품 수정 미배정, 도구없으면 미검증으로 반환. T207/B5/3013/.next 보호. 고유 T-209-BROWSER-SESSION-REVIEW.md. 전달완료, 수락/결과는 후속확인.
+
+### B5-FIX 수락 확인 / B7 안전 중단 사실
+- Backend msg_b6ce22b4df1b 수락 확인. B5-FIX 기준 db77e07. 계획: F1 runner/template 공통 reserved role 허용 그래프 검사, F2 공개 runner API의 독립pool 제거·검증target으로 내부pool 생성/종료. Master는 JS실행시 기존pool 입력도 명시거부하고 테스트factory로 신뢰경계 재개방하지 않도록 보완 지시.
+- B7은 managed SQL/transaction 시작 전 중단. 기존 gh인증/repo metadata 및 Supabase 로그인 프로젝트명/ref 일치 확인까지만 완료 보고. Supabase/Vercel CLI 없음, 선택env 확인은 DB URL류 없음·DBpassword 존재 여부만(값 비출력). Connect endpoint는 미확인. 실제 DB 접속·권한·TLS·빈스키마 확인은 아직 미완료.
+- Backend는 B5-FIX 우선 계속, B7 추가조회 재개는 후속배정. 사용자가 결정할 새 사안 없음.
