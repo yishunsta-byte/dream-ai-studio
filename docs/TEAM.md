@@ -1278,3 +1278,7 @@
 
 - msg_5e53e6af09b6 /7ef3b7c: author clean TS6.0.3/same lock reproduces neither original tsc nor generated-type failure. Root cause unconfirmed; type assertion replaced with explicit manifest2/audio guard, existing expectations and8 tests preserved.
 - UI owner informed to integrate that one test file in isolated validation and record identity; no WIP overwrite. T166 source precommit correction continues. No product writer acceptance from this test-only result.
+### T166 returned; T167 original late-source reproduction
+
+- msg_c84f4f9054e2 /48380174ba9ad0e4cd2a635c7cf11be2993e2bc7 report/stat read. Successful writer/orphan path fresh audio digest before commit added; author6 regressions,703/19skip includes UI WIP, isolated product build separate. No independent PASS yet.
+- T167 ctx_0c3361e5779b /task_b800375592cd original reviewer dispatched bounded original mutation/orphan/noreplace/rollback recheck. UI DTO unchanged, T164 work protected. Local trust/ABA limits explicit.
