@@ -1,0 +1,79 @@
+{
+  "environment": "actual SettingsPanel fixture bundle, synthetic fetch only",
+  "before": {
+    "version": "f38fb10",
+    "before": [
+      "위치 저장 실패 예시"
+    ],
+    "after": [
+      "백업 상태를 새로 읽지 못했어요. 상태 새로고침을 눌러 주세요."
+    ],
+    "mutationErrorLost": true
+  },
+  "results": [
+    {
+      "name": "1280: polling failure preserves action error",
+      "passed": true
+    },
+    {
+      "name": "1280: recovery clears read error only",
+      "passed": true
+    },
+    {
+      "name": "1280: manual refresh preserves action error + draft",
+      "passed": true
+    },
+    {
+      "name": "1280: layout",
+      "passed": true
+    },
+    {
+      "name": "390: polling failure preserves action error",
+      "passed": true
+    },
+    {
+      "name": "390: recovery clears read error only",
+      "passed": true
+    },
+    {
+      "name": "390: manual refresh preserves action error + draft",
+      "passed": true
+    },
+    {
+      "name": "390: layout",
+      "passed": true
+    },
+    {
+      "name": "manual read failure recovers through polling",
+      "passed": true
+    },
+    {
+      "name": "old failure: polling does not overlap",
+      "passed": true
+    },
+    {
+      "name": "old failure cannot overwrite newer read",
+      "passed": true
+    },
+    {
+      "name": "old success: polling does not overlap",
+      "passed": true
+    },
+    {
+      "name": "old success cannot overwrite newer read",
+      "passed": true
+    },
+    {
+      "name": "restore error remains alongside read error, ticket preserved",
+      "passed": true
+    },
+    {
+      "name": "recovery leaves restore error + same ticket",
+      "passed": true
+    },
+    {
+      "name": "manual refresh does not clear restore failure",
+      "passed": true
+    }
+  ]
+}
