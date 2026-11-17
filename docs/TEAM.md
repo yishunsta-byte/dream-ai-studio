@@ -1860,3 +1860,9 @@
 - B20신규격리폴더23:41/23:44/23:49활동흔적확인,완료인계아직없음. 선택b20 commandline소유native/node조회는출력없음(전체실행종료/장기세션유휴증거아님). 안전cleanup artifact와파일목록만확인,credential/log원문노출안함. Backend에다음작업경계실진행/검증/차단/남은행동회신요청,중단·중복cluster요청없음.
 - 지정수용완료: T225세션/입력/nav경계·B19-R5순수프로토콜,미연결B12/B14/B15로컬계약. B20미발행draft는진행/검수전,실서비스개통/운영SQL미적용. 작업리스트/원SQL/기존T122/T137미추적보존.
 - Front T227자동push권한거절로도구조치대기·SSL DEC미수신·Supabase실Free50MB/2GiB未충족/유료未구매·T208디자인미선택상태구분. 무작정일괄승인/우회/배포완료선언없음. 턴 밖 자동 점검 미설정.
+
+### 점검 / B20 실검증 17PASS·보고 및 커밋 단계 확인
+- 마지막 확인 시각: 2026-11-17 23:51:31 +09:00 (Asia/Seoul). Orca진행회신·최근handoffs/Git확인. msg_df99369b로B20현재차단없음/범위수락·진행확인. 고유완료인계/고정SHA는아직미수신,기존미추적draft/test/runner및T122/T137보호.
+- 작성자최종실PG17PASS/0skip(exit0) at23:49:35KST,소유runner정상종료·PGstop. 직전Master가같은latestroot cleanup-safe의postmaster/listener없음실확인한근거와대조. 16→17은unboundcleanup nullidentitydigest追加대조이며반복합산안함.
+- 남은행동: 최종stop/hash/정적검사·고유mapping/한계보고·허용4파일선택commit·고정SHA ready_review반환. 新권한/범위결정필요없으므로현재작업계속,중복재배정/중단요청안함. schema独立수용/운영적용선언안함.
+- 원SQL3/history/18표/rolegraph기대유지·registrar/SECDEF전이fn/runtime未実装報告。배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
