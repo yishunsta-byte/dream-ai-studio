@@ -50,7 +50,7 @@ try {
   const overlays = {};
   // T-213: 고정 HEAD 위에 탭 세션 수정 파일만 덮어쓴다(T-207 검증기를 복사해 같은 PG·fake Auth 환경을 쓴다).
   const t213 = ["app/api/auth/session/route.ts", "lib/auth/session-sync.ts", "components/auth/use-session-watch.ts",
-    "components/auth/account-menu.tsx", "components/auth/login-form.tsx", "components/auth/new-password-form.tsx"];
+    "components/auth/account-menu.tsx", "components/auth/login-form.tsx", "components/auth/new-password-form.tsx", "components/auth/login.module.css"];
   for (const path of t213) {
     const bytes = await readFile(join(repo, path));
     await mkdir(dirname(join(app, path)), { recursive: true }); await writeFile(join(app, path), bytes);
