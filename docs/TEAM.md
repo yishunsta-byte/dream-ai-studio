@@ -1554,3 +1554,10 @@
 - B8 dfce2ae 보고확인. Direct는DNS AAAA존재/A없음·실IPv6 TCP ENETUNREACH로장비경로미지원. Session pooler는공식로그인dashboard 다운로드CA와관찰root SHA일치,자기probe CA설정/rejectUnauthorized true/hostname검증유지후TLS1.3 authorized 및readonly BEGIN/catalog SELECT/ROLLBACK 성공.
 - PG170012, CREATE/CREATEROLE/Auth UUID FK REFERENCES prerequisites true, dream/history없음/reservedroles0. client→pooler 검증TLS와 pg_stat_ssl ssl=false인 pooler→DB관찰은구분,내부전송암호화입증안됨. liveAuth프로젝트를staging으로재분류하지않음. 실제DDL/migration/runtime권한/배포미실행.
 - B9 Backend배정: 공식primary문서와실제제공Session계약을확인후명시별도Session profile 최소지원검토/구현. immutable제공target/role매핑/hash/CA와현재가드엄격유지,transaction pooler포괄허용·direct위장·endpoint추측금지. 발행SQL·제품DB/Auth/B3B4/package불변,실제managed는readonly범위만. 지원근거없으면대안반환,고정SHA독립검수전적용금지.
+
+### OPS-215 운영 점검 규칙 v1.1 적용
+- 담당 CX-MASTER-01, 범위 AI_TEAM_RULES.md/docs/team/CODEX_MASTER.md/docs/TEAM.md, 완료조건: 사용자 요청 6항목 문서화·실제전달·확인시각 기록. 버전1.1, 변경이유 사용자점검주기 명시요청, 적용시점 이 기록부터. 기존배정/권한/수정범위 확대없음.
+- 마지막 확인 시각: 2026-11-17 20:12:39 +09:00 (Asia/Seoul). 계기: 사용자 운영지침 변경 요청. 실제확인: 공통/Master지침, git status, handoffs 파일명-TEAM 대조와 미추적 T-122/T-137 보고 첫부분·기존 T143/T145 수용기록 대조. 전 인계 전문 재검수나 전체 테스트를 수행한 것은 아님.
+- 미기록 인계 대조: T-122-CODEX-DESIGN-INTAKE.md와 T-137-AUDIO-RENDER-INDEPENDENT-REVIEW.md는 기존미추적 파일로 보존. 과거 배정/검수와 연결되므로 새 작업으로 중복배정하지 않음. 전체파일명 링크가 없는 T200/T201/T204/T206/T207/T210/B5/B5-FIX/B6는 기존 ID/커밋 수신기록과 구분, 미수신 완료로 추정하지 않음.
+- 판정/후속: 운영규칙 문서검증 완료(diff --check). Front T213 및 Backend B9 기존배정 계속, 새 제품수정 배정없음. Front/Backend/Design/Tester에 규칙 실제전송 4건(msg_02668fbad71b/msg_87076a257344/msg_bd74d2dd55a9/msg_2c058af6c8bb); terminal mailbox 전달이며 상대 규칙숙지·수락은 아직미확인.
+- 턴 밖 자동 점검: 미설정. 스케줄러/상주실행기/주기wake 설치없음. 실행중5분기준 및 수신이벤트 즉시확인은 Orca wake/polling금지/턴종료절차와함께적용. 다음 확인은 활성턴의5분도래 또는 수신이벤트 처리시점이며, 턴종료후5분자동실행을예약한 것이 아님.
