@@ -1430,3 +1430,7 @@
 - B4-I-R report read: actual49 + regression33/51 +13 boundary controls/lint/type pass. Master accepts request-adapter scope only; API/RSC/managed still distinct. Report imported for exact details.
 - T198acfbd0b ready_review; T199 ctx_e494e81b26ea /task_c645942800f1 assigned independent actual API gate controls. T200 Front assigned per-page legacy-loader gating, no business opening until review.
 - T196 msg_5ee7546170b3 report read: fd334a6 actual-Next original header failure reproduced then fixed,32 state/resize observations,52/lint/type/build pass. Header correction accepted within scope, no production deploy yet.
+### T194 main-home alternatives received and presented
+
+- msg_4303af80b994 /d539523 report read. Master directly viewed all three1280 PNGs: A Open Desk, B Production Deck, C Story Table. Recommend A for clear new/continue actions and project visibility; this is design review, not independent behavior certification.
+- Author42 layouts/51 interactions/8 compare links and44 captures are self-QA. Static artifacts only, no production UI change or user selection presumed. Comparison/three views presented to user.
