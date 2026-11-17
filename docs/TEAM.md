@@ -1923,3 +1923,9 @@
 - 마지막 확인 시각: 2026-11-18 00:32:34 +09:00 (Asia/Seoul). 지정 wake msg_1709155ff359 및 Git/최근 handoffs 확인. Backend B22 실제 수신·범위 수락·running 확인. 새 미추적 B22-VERSIONED-SOURCE-CATALOG.md 원문 확인: 지정7경로 선기록·고정입력9d38899/61ceb115·reference PG와 검사target 분리·literal descriptor·v1/runtime/운영 보호 및 v1.3 수신 확인. 완료보고 아님; 해당 WIP와 기존 T122/T137 보존.
 - 후속 판정: 현재 B22 구현 계속, 중복 배정 없음. descriptor를 검사target에서 학습하지 않고 수용source 별도소유reference에서 생성·검토 후 고정하는 범위 수락 확인. 결과 고정SHA 반환 후 독립검수 필요, v2 apply/CLI는 아직 미배정.
 - 실제 Windows 예약 상태 재확인: 00:30:00 실행 LastTaskResult0, 다음01:00:00 KST. 기존Master 수신msg_0d1736d7161f와 대조하여 메시지전용 정규실행 성공 확인. 새 Codex/점검agent창 미생성, 별도Codex자동화 중지 유지.
+### 점검 / T227 사용자 직접 push·운영 응답 확인 / T228 식별 추가검증
+- 마지막 확인 시각: 2026-11-18 00:35:07 +09:00 (Asia/Seoul). 지정 wake msg_ff130b39ba92·새 T227 adc1890 전문/Git/최근 handoffs 확인. Backend B22 신규 source/manifest/state/runner·handoff WIP 및 기존 T122/T137 보존. 배포 source는 현재로컬HEAD가 아닌8ffe3c75임을 구분.
+- Front 보고: 자체push는여전히자동권한거절이었고 사용자직접 동일exactSHA fast-forward 실행. Master 실제 git ls-remote로 origin master=8ffe3c75b5eaa908ee000f574cf688dd65125378 확인. 이전 도구차단은 사용자행동으로 해소된 것으로 기록; Master/다른도구 우회push 없음.
+- Front GitHub Vercel success3QDyZWKqj9ddY8Aw2ZXcCiyEeUEV 및같은push의별도kzxq FqNrw2VMGFLcBJzm9ETmsXwWfrmM 보고, 운영loginchunk dream-auth-session으로새빌드서빙 확인. 대시보드Current는 아직미열람이라 엄밀식별 미검증 유지.
+- Master actual 익명 HTTPS: https://dream-ai-studio-orpin.vercel.app/login 200 private/no-store, /cloud/projects307→login next no-store, /api/projects401 no-store. 실계정로그인·새Storage/DB/쓰기개통 검증아님. 롤백조건 발견없음.
+- T228 Front 실제전송 msg_c15754ccc28b: 기존수단으로읽기전용 Current/Ready/exactSHA 및두번째프로젝트주소·연결·plan/용도확인, 고유보고만반환. 수락아직미확인. 삭제/설정/env/배포/계정/유료변경금지, 새Codex창 미생성. Master플랜의배포차단 및오래된턴밖미설정문구를 현상태로갱신.
