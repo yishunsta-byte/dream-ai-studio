@@ -1319,3 +1319,6 @@
 - msg_23cd64fb07bb /86e00fd report read. Author actual4 opt-in E2Es PASS, audio-v2 text-only preserves scene/audio/old MP4 and gain-change false. Independent T174 ctx_51d74467b249 /task_792bbd289161 dispatched; no independent acceptance yet.
 - Master confirmed review sample exists at tmp/p2-review/samples/s9-subtitle-audio_9x16.mp4,173416bytes. Synthetic subtitle+AAC4s local file, no external upload or user DB.
 - Actual phone check requested via asynchronous text input with concrete file and observations; response pending, silence is not PASS. Technical T173/T174 work continues independently. Listening/device/general P2 completion remain unclaimed.
+### T173/T174 bounded acceptance
+
+- Reports read; T173 stored16:9/1:1 actual save/render/layout checks pass, native-hidden remains unverified. T174 independent4E2Es/lint/type pass; sample peak discrepancy retained. T175 display fix requested, no completion claim.
