@@ -1726,3 +1726,9 @@
 - B18관찰: exactorg projects2/paused1·현재Free·Pro From25/month비교표까지만확인,Upgrade plan-card 미click·결제정보미열람·설정변경없음. org전체plan/공유quota/pausedcompute미과금은primary자료근거,실청구총액/일할/세금/당일금액/최종버튼未確認。25달러를실org견적으로확정안함.
 - Backend B16-FIX두문서우선진행수락확인·계속지시. B18은추가provider조사중단,이후고유보고에현checkpoint/조건부시나리오/미확인정리만허용,구매/타pausedproject변경금지. 현작업중단유발하는무내용회신요구안함.
 - T225독립검수/T226 exact배포준비기존상태유지,DEC-SSL-01미수신·운영변경보류. 턴 밖 자동 점검 미설정.
+
+### 점검 / T225 독립 수용·T227 exact SHA 배포 실행 지시
+- 마지막 확인 시각: 2026-11-17 21:52:15 +09:00 (Asia/Seoul). Orca완료보고·T225원문/최근handoffs/Git확인. 신규f2ef965e수신,Backend B16-FIX공유문서WIP기존범위보호,기존T122/T137보존.
+- 고정8ffe3c75 T225지정범위PASS수용: 실제합성local폼DOM/값/selection/포커스보존·사용자초점미탈취,sidebar/drawer/nav/counts/oldjobs epoch폐기,cloud세원경로·partial/nativehistory/legacy/newpending회귀확인. 관련427/원HTTP14/build/typegen/tsc/lint/verify PASS,중복수·관측21총합과구분. 자연exp/실hidden/BFCache/실Authmanaged未検証·과거미확정이동한계유지,원T221FAIL보존.
+- T227 Front배포실행배정(기존사용자배포승인): remote44582839가유지될때만8ffe3c75:master exactfastforward push,HEAD/force금지·Vercelsource/ID/Ready/Current확인·운영익명HTTPS스모크. 환경/DB/SSL/Storage/실계정변경미허용. 실제승격뒤criticalauth회귀는정확이전E5k... InstantRollback만복구허용,Git이력보존.
+- preparation과실배포완료구분,현재는지시전송완료·결과대기. Tester에수용/후속운영스모크예정전달,실배포전별도조회/polling미배정. DEC-SSL-01미수신·DB운영변경보류,턴 밖 자동 점검 미설정.
