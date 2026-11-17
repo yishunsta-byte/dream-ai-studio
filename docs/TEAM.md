@@ -1696,3 +1696,9 @@
 - T224 고정8ffe3c7 ready_review,작성자18/관련427/HTTP14·실DOM입력selection/초점/aside/drawer/epoch 검증반환. T225원Tester에실원두재현및cloud원경계회귀독립배정. T221FAIL은보존,아직세션수용아님.
 - B15-R 075eec8b 고정1d561c12 미연결trustedserver계약PASS수용. 원19/B12 20/focused97/독립18·typegen/tsc/lint확인,중복합산금지. COMMIT응답유실503에도durable행존재가능/비신뢰pool sandbox아님/inflightSQL hardabort아님. 실Storage/업로드/RLS/DB등록/API/Vercelreadiness미수용. Backend수용전달/B16설계계속.
 - Front T226 exact8ffe3c7 배포후보·격리검증/환경키·예상동작/rollback계획준비만배정. T225수용전push/deploy/환경변경미허용,HEADrace금지. DB연결·쓰기optin아직닫힘. DEC-SSL-01미수신/운영변경보류,턴 밖 자동 점검 미설정.
+
+### 점검 / B16 아키텍처 제출·독립 설계검토 / B17 실제 한도 확인
+- 마지막 확인 시각: 2026-11-17 21:39:15 +09:00 (Asia/Seoul). Orca이벤트·B16원문/최근handoffs/Git확인. B16 79787f9설계만ready_review,운영plan/limits未確認。既存T122/T137保護,新未記録報告없음.
+- B16-R 기존독립검수자재개요청: signedprivateupload→fenced worker同artifact실byte/native검증→final불변publish/재검증→receipt+asset atomic등록→Vercel短txDBonly admission,권한/lease/cancel/revocation/GC·COMMIT불확실/creation멱등·versioned3→4migration兼容性検討。제품/실managed/SQL실행미배정.
+- Backend B17 실제Supabase plan/단일파일global·bucket cap·현재장비최소worker준비read-only확인배정. 2GiB요구유지,사용자object/결제정보읽기·업그레이드/한도Save/실bucket/정책/2GB벤치/유료traffic/설치금지. 부족한도/비용은사실확인후Master취합,추측Pro질문금지.
+- Front T226 exact배포후보준비·TesterT225세션재검수유지. DEC-SSL-01미수신·운영변경보류,턴 밖 자동 점검 미설정.
