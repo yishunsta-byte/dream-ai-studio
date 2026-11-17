@@ -1918,3 +1918,8 @@
 - 실행 중5분/이벤트 즉시처리·미기록 handoff 대조·후속배정·마지막 시각 기록 유지. 현재 실제 점검에서 새 B20-R3 보고3ec0ddfa 확인: 고정9d38899 원104PASS+추가독립6PASS·typegen/tsc/lint·원소스불변/소유PG정리 보고. 원3FAIL/R2-F1 해소 근거와 보고원문 검토하여 선택DDL연결 범위 PASS 수용. full executor/운영readiness/managed 미수용·SQL4 현manifest 미등록 유지.
 - v1.3은 v1.2 별도CX-CHECK-30M 실행 구조를 대체한다. 현재 대화 수신 실패 시 새창/다른Master로 대체하지 않는다. 후속 B22 범위는 별도 실제 배정, 배포/SSL/과금 게이트 불변.
 - 최종확인 2026-11-18 00:31:27 +09:00 : B22 Backend 실제전송 msg_4483e4e47049, 수락아직미확인. Front/Design/Tester에도 v1.3 메시지전용 예약·새창금지 실제통지 영수증확보, 읽음미확인. B22 단일책임Backend·신규source/descriptor/읽기전용 inspector·전용test/handoff·B21참조만허용, apply/runtime/운영미배정. 기존다른작업자 창은사용자협업세션으로보존.
+
+### 점검 / B22 착수·v1.3 수신·메시지전용 예약 확인
+- 마지막 확인 시각: 2026-11-18 00:32:34 +09:00 (Asia/Seoul). 지정 wake msg_1709155ff359 및 Git/최근 handoffs 확인. Backend B22 실제 수신·범위 수락·running 확인. 새 미추적 B22-VERSIONED-SOURCE-CATALOG.md 원문 확인: 지정7경로 선기록·고정입력9d38899/61ceb115·reference PG와 검사target 분리·literal descriptor·v1/runtime/운영 보호 및 v1.3 수신 확인. 완료보고 아님; 해당 WIP와 기존 T122/T137 보존.
+- 후속 판정: 현재 B22 구현 계속, 중복 배정 없음. descriptor를 검사target에서 학습하지 않고 수용source 별도소유reference에서 생성·검토 후 고정하는 범위 수락 확인. 결과 고정SHA 반환 후 독립검수 필요, v2 apply/CLI는 아직 미배정.
+- 실제 Windows 예약 상태 재확인: 00:30:00 실행 LastTaskResult0, 다음01:00:00 KST. 기존Master 수신msg_0d1736d7161f와 대조하여 메시지전용 정규실행 성공 확인. 새 Codex/점검agent창 미생성, 별도Codex자동화 중지 유지.
