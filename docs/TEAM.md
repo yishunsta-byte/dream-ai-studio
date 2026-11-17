@@ -2146,3 +2146,8 @@
 - 실제 점검 완료 시각: 2026-11-18 03:30:49 +09:00 (Asia/Seoul). 정규알림 msg_6869bc7301a4 기존Master수신·예약 actual03:30:01 result0/next04:00 KST 대조. Git/최근신규수정handoffs/고유T236보고경로·작업root metadata만확인, 아직최종검수보고없음. 직전B26기술결정이후새완료반환/설정변경없음, 기존T122/T137보존.
 - Backend는방금수락한B26정정+B27미발행draft범위계속(실DB실행금지). T236은후속배정/서비스인계이후actual관찰보고미수신이므로Tester에이번도구영수증으로현재실제진행·결함해소/차단/남은반환경계회신요청. 지연/연결상태만으로유휴/종료/실패단정안함·대체worker/중복서비스생성없음.
 - Design새3안정적반환수용·제품방향전환미실행, Front는T236mainPC지원/계약재대조경계유지. 새자료없는과거검증전체를반복하지않고변경·미확인만기록, 독립결과도착후수용/수정/후속배정. 새창agentworktree/운영배포/DB·권한변경없음.
+### 점검 / T236 지정 관측 완료·최종 인계 정리
+- 실제 점검 완료 시각: 2026-11-18 03:32:09 +09:00 (Asia/Seoul). 지정wake msg_7ea28f60c99f·Git/최근handoffs 확인. T236 실제지정관측완료/차단없음·최종보고작성/정리중이라는회신수신. 아직고유최종보고commit미반환으로수용확정전. B26문서WIP는Backend허용범위로보호, T122/T137 보존.
+- Tester보고: 원91/type/lint0·F2341목록양폭44·F2342background양폭2회/foreground1회A→notice→A 및sameDOM/time, 독립retry500/epoch/offline/rapidcleared/lateSame·native키보드/HTTP7회귀·소유React원component fixture8(입력/선택/다중경계/외부focus/삭제/disabled/scroll等)PASS. testfixture esbuildbundle은productionbuild와구분. 0.328125px native scroll정수양자화는1devicepixel기준, focus/44px기대는완화안함.
+- author원browser script는6group완료뒤자동retry재검증경합ERR라전체PASS로계수하지않고독립gate동작으로보완했다고명시. 전체actualscript성공/완전망장애보장으로확대안함. 원1088blob·제품302내용동일/CRLF268·overlay7/과거artifact대조 및source출처감사 보고, 최종보고원문에서대조예정.
+- 브라우저finish/Front조정stop·Front3ports없음보고는수신했으나Tester자체native재확인과최종실반환이남음. 신규가설/중복검수추가없음. 최종PASS수용후현재T229+목록fix+focus묶음후보의메인PC배포사전검증을다음범위로준비하며운영미배포현상태유지. BackendB27오프라인draft계속·새창agentworktree없음.
