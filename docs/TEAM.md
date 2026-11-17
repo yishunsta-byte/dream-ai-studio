@@ -1310,3 +1310,7 @@
 - T173 CX-DESIGN-01 requested read-only stored16:9/1:1 layout and possible actual native-hidden validation. No fabricated hidden evidence or new device access assumed.
 - Master will align obsolete PLAN status/final-package scope after evidence review. User DB/server redeployment still unperformed.
 - T172 first send failed CLI argument parsing and did not deliver. Retried corrected plain body successfully; delivery receipt is the authoritative assignment, not the failed attempt. T173 actual send msg_16a046ab5956 confirmed.
+### T173 acknowledgment and PLAN status alignment
+
+- msg_a4e32ac9b1d0: design owner accepted read-only stored-aspect/native visibility checks at44b036a; no implementation or completion claimed.
+- Master updated obsolete PLAN18 renderer implementation status and PLAN13 final/ package scope to verified milestone evidence/T154 decision. No exit criterion, product gate or user approval changed. Physical-phone/listening and current T172/T173 gaps remain explicit.
