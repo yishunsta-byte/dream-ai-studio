@@ -1,9 +1,13 @@
 /* T-229 클라우드 개인 관리(읽기 전용). 기존 토큰만 쓴다. 390px에서도 한 칸씩, 가로 넘침 없음. */
-.grid { display:grid; gap:var(--sp-4); grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); min-width:0; }
-.counts { list-style:none; margin:0; padding:0; display:grid; gap:var(--sp-2); }
-.counts li { display:flex; justify-content:space-between; gap:var(--sp-3); align-items:center; min-width:0; }
-.number { font-variant-numeric:tabular-nums; font-weight:600; }
-.ready { list-style:none; margin:0; padding:0; display:grid; gap:var(--sp-3); }
-.ready li { display:grid; gap:var(--sp-1); min-width:0; }
-.readyHead { display:flex; flex-wrap:wrap; justify-content:space-between; gap:var(--sp-2); align-items:center; }
-.meta { color:var(--fg-muted); font-size:var(--text-xs); overflow-wrap:anywhere; }
+.nav { display:flex; flex-wrap:wrap; gap:var(--sp-2) var(--sp-4); align-items:center; }
+/* 새 이동·다시 불러오기 링크: 누르는 영역 44px 이상(T-230), 긴 문장은 줄바꿈 */
+.link { display:inline-flex; align-items:center; min-height:44px; padding:0 var(--sp-1); overflow-wrap:anywhere; }
+.current { display:inline-flex; align-items:center; min-height:44px; font-weight:var(--weight-semibold); }
+.lead { font-size:var(--text-lg); }
+.note { font-size:var(--text-md); color:var(--fg-muted); overflow-wrap:anywhere; }
+.number { font-variant-numeric:tabular-nums; font-weight:var(--weight-semibold); }
+.counts { margin:0; display:grid; gap:var(--sp-2); grid-template-columns:repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+.counts > div { display:flex; justify-content:space-between; gap:var(--sp-3); align-items:center; min-width:0; }
+.counts dd { margin:0; }
+.grid { display:grid; gap:var(--sp-4); grid-template-columns:repeat(auto-fit, minmax(min(100%, 240px), 1fr)); min-width:0; }
+.unlinkedHead { display:flex; flex-wrap:wrap; gap:var(--sp-2); align-items:center; margin:0 0 var(--sp-2); }

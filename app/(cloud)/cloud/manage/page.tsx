@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Callout, Card, PageHeader, StatusPill } from "@/components/ui/primitives";
-import { CloudReadLocal, CloudReadOnlyNote } from "@/components/cloud/project-list-readonly";
+import { CloudReadLocal } from "@/components/cloud/project-list-readonly";
 import { loginPath } from "@/lib/auth/config";
 import { getRenderAuth } from "@/lib/auth/render";
 import { readCloudProjects, type CloudProjectCard } from "@/lib/cloud/project-read-page";
@@ -10,18 +10,23 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = { title: "개인 관리 · Dream AI Studio" };
 
-// 클라우드 개인 관리(T-229, 계획 T-180의 클라우드 읽기 전용 판).
-// - 인증을 먼저 판정한다(이 주소로 돌아오도록 next=/cloud/manage). 그 뒤에만 기존 owner 목록 읽기(readCloudProjects)를 1번 한다.
-// - 숫자는 "이번에 실제로 불러온 목록"에서만 센다. 전체 총수·DB/처리기 상태로 부풀리지 않는다.
-// - Storage·작업 처리기·백업은 클라우드에 아직 연결하지 않았다고 그대로 알린다(가짜 수치·성공 배지 없음).
-// - 쓰기·복원·재시작·결제 버튼, 폼, 자동 새로고침이 없다. 다시 불러오기는 이 주소로 가는 링크다.
-const ORDER: readonly CloudProjectCard["status"][] = ["warning", "running", "approval", "queued", "done"];
-const time = (iso: string) => new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Seoul" }).format(new Date(iso));
-// T-230 요구: 연결하지 않은 항목은 "미연결·확인할 수 없음"으로만 알린다(0·정상·재시작·복원 행동 없음).
-const READY = [
-  { id: "storage", title: "자료 파일 보관", text: "사진·영상 같은 자료 파일을 클라우드에 올리는 기능은 아직 연결하지 않아 상태를 확인할 수 없어요." },
-  { id: "worker", title: "작업 처리기", text: "클라우드 작업 처리기는 아직 연결하지 않아 실행 여부를 확인할 수 없어요. 작업은 내 PC 작업실에서 처리해요." },
-  { id: "backup", title: "백업", text: "클라우드 백업은 아직 연결하지 않아 백업 상태를 확인할 수 없어요. 백업과 복원은 내 PC 작업실에서 해요." },
+// 클라우드 개인 관리(T-229, UX 명세 T-230).
+// - 인증을 먼저 판정한다(로그인 뒤 이 주소로 돌아오도록 next=/cloud/manage). 그 뒤에만 기존 owner 목록 읽기(readCloudProjects)를 1번 한다.
+// - 건수·분포는 이번에 성공적으로 받은 같은 배열에서만 센다(합계 = 표시 건수). 전체 총수·처리기·DB 상태로 부풀리지 않는다.
+// - 조회 시각은 목록 읽기에 성공한 뒤의 서버 시각이다. 읽기 실패에는 0·조회 시각을 만들지 않는다.
+// - 작업 처리기·파일 저장소·백업은 "미연결"로만 알린다(가짜 수치·정상/실패 배지·실행 버튼 없음).
+// - 폼·버튼·쓰기·자동 새로고침이 없다. 다시 불러오기는 같은 주소로 가는 일반 링크(새 문서 요청 = 새 서버 읽기)다.
+const ORDER: readonly CloudProjectCard["status"][] = ["warning", "running", "approval", "done", "queued"];
+const KST = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Seoul" });
+function Moment({ iso }: { iso: string }) {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return <>확인 불가</>;
+  return <time dateTime={at.toISOString()}>{KST.format(at)} (한국시간)</time>;
+}
+const UNLINKED = [
+  { id: "worker", title: "작업 처리기", text: "이 화면에서는 최근 응답과 실행 상태를 확인할 수 없어요." },
+  { id: "storage", title: "파일 저장소", text: "사용량과 파일 보관 상태는 아직 확인할 수 없어요." },
+  { id: "backup", title: "백업", text: "백업 이력과 복구 가능 여부는 아직 확인할 수 없어요." },
 ] as const;
 
 export default async function CloudManagePage() {
@@ -33,43 +38,45 @@ export default async function CloudManagePage() {
   if (auth.kind === "local") return <CloudReadLocal title="개인 관리" />;
   const result = await readCloudProjects();
   if (result.kind === "local") return <CloudReadLocal title="개인 관리" />;
-  const observedAt = new Date().toISOString();
   const projects = result.kind === "ok" ? result.data : null;
-  const latest = projects?.reduce<string | null>((max, project) => (!max || project.updatedAt > max ? project.updatedAt : max), null) ?? null;
+  const readAt = projects ? new Date().toISOString() : null; // 성공한 읽기 뒤에만
   return <>
-    <PageHeader title="개인 관리" description={<CloudReadOnlyNote />} actions={<Link href="/cloud/manage">다시 불러오기</Link>} />
-    <p className={styles.meta}>자동으로 새로 고치지 않아요. 최신 내용은 "다시 불러오기"를 눌러 확인해 주세요.</p>
-    <div className={styles.grid}>
-      <Card>
-        <section aria-labelledby="manage-projects" className="stack">
-          <h2 id="manage-projects">내 프로젝트</h2>
-          {!projects
-            ? <Callout tone="warning" title="프로젝트 상태를 불러오지 못했어요">잠시 뒤 다시 시도해 주세요. <Link href="/cloud/manage">다시 불러오기</Link></Callout>
-            : !projects.length
-              ? <p>아직 클라우드에 옮긴 프로젝트가 없어요. 지금까지 만든 작품은 내 PC 작업실에 있어요.</p>
+    <nav aria-label="클라우드 보기" className={styles.nav}>
+      <Link href="/cloud/projects" className={styles.link}>내 프로젝트</Link>
+      <span aria-current="page" className={styles.current}>개인 관리(현재)</span>
+    </nav>
+    <PageHeader title="개인 관리" description="클라우드에 표시된 내 프로젝트와 연결 범위를 확인해요. 지금은 보기만 할 수 있어요."
+      actions={<a href="/cloud/manage" className={styles.link}>다시 불러오기</a>} />
+    <Card>
+      <section aria-labelledby="manage-projects" className="stack">
+        <h2 id="manage-projects">표시 목록</h2>
+        {!projects
+          ? <Callout tone="warning" title="관리 정보를 불러오지 못했어요">잠시 뒤 다시 불러와 주세요. <a href="/cloud/manage" className={styles.link}>다시 불러오기</a></Callout>
+          : <>
+            <p className={styles.lead}>표시 목록 <strong className={styles.number}>{projects.length}개</strong></p>
+            <p className={styles.note}>이번에 불러온 프로젝트 목록 기준이에요.</p>
+            <p className={styles.note}>목록 조회 시각 <Moment iso={readAt!} /></p>
+            {!projects.length
+              ? <p className={styles.note}>이번에 불러온 목록에 프로젝트가 없어요.</p>
               : <>
-                <p>표시 목록 <strong className={styles.number}>{projects.length}개</strong> <span className="muted">(이번에 불러온 목록 기준)</span></p>
-                <p className={styles.meta}>목록을 불러온 시각 <time dateTime={observedAt}>{time(observedAt)}</time></p>
-                <p className={styles.meta}>기록된 프로젝트 상태 기준이에요. 실제 처리기 연결이나 지금 실행 중인지는 확인하지 않아요.</p>
-                <ul className={styles.counts} aria-label="상태별 프로젝트 수">
-                  {ORDER.map((status) => <li key={status}><StatusPill status={status} /><span className={styles.number}>{projects.filter((project) => project.status === status).length}개</span></li>)}
-                </ul>
-                {latest && <p className={styles.meta}>프로젝트 마지막 수정(가장 최근) <time dateTime={latest}>{time(latest)}</time></p>}
+                <h3 id="manage-dist">기록된 상태 분포</h3>
+                <dl className={styles.counts} aria-labelledby="manage-dist">
+                  {ORDER.map((status) => <div key={status}><dt><StatusPill status={status} /></dt><dd className={styles.number}>{projects.filter((project) => project.status === status).length}개</dd></div>)}
+                </dl>
+                <p className={styles.note}>기록된 프로젝트 상태 기준이며, 처리기의 현재 실행 여부를 뜻하지 않아요.</p>
               </>}
-          <p><Link href="/cloud/projects">내 프로젝트 보기 →</Link></p>
-        </section>
-      </Card>
-      <Card>
-        <section aria-labelledby="manage-ready" className="stack">
-          <h2 id="manage-ready">클라우드 연결 준비 상태</h2>
-          <ul className={styles.ready}>
-            {READY.map((item) => <li key={item.id}>
-              <span className={styles.readyHead}><strong>{item.title}</strong><StatusPill status="locked">미연결 · 확인할 수 없음</StatusPill></span>
-              <span className="muted">{item.text}</span>
-            </li>)}
-          </ul>
-        </section>
-      </Card>
-    </div>
+          </>}
+        <p><Link href="/cloud/projects" className={styles.link}>내 프로젝트 보기 →</Link></p>
+      </section>
+    </Card>
+    <section aria-labelledby="manage-unlinked" className="stack">
+      <h2 id="manage-unlinked">연결 범위</h2>
+      <div className={styles.grid}>
+        {UNLINKED.map((item) => <Card key={item.id}>
+          <h3 className={styles.unlinkedHead}>{item.title} <StatusPill status="locked">미연결</StatusPill></h3>
+          <p className={styles.note}>{item.text}</p>
+        </Card>)}
+      </div>
+    </section>
   </>;
 }

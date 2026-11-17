@@ -73,14 +73,17 @@ function untouched() {
 function common(markup: string) {
   expect(markup.match(/<h1[\s>]/g)?.length).toBe(1);
   expect(markup).not.toMatch(/<form|<input|<button|<textarea|<select/);
-  // 연결하지 않은 항목은 셋 다 미연결로만
-  expect(markup.match(/미연결 · 확인할 수 없음/g)?.length).toBe(3);
-  for (const word of ["자료 파일 보관", "작업 처리기", "백업"]) expect(markup).toContain(word);
-  // 과장·가짜 상태 금지
-  expect(text(markup)).not.toMatch(/전체 프로젝트|정상 작동|모두 정상|재시작|복원하기|결제|DATABASE|postgres|supabase\.co|DREAM_|[A-Z]:\\|\/Users\//i);
-  // 다시 불러오기는 이 주소로 가는 링크
-  expect(markup).toContain('href="/cloud/manage"');
+  // 연결하지 않은 항목 셋은 "미연결"만(0·정상·실패 배지 없음), 처리기→저장소→백업 순서
+  expect(markup.match(/>미연결</g)?.length).toBe(3);
+  const t = text(markup);
+  expect(t.indexOf("작업 처리기 미연결")).toBeLessThan(t.indexOf("파일 저장소 미연결"));
+  expect(t.indexOf("파일 저장소 미연결")).toBeLessThan(t.indexOf("백업 미연결"));
+  expect(t).not.toMatch(/전체 프로젝트|정상 작동|모두 정상|재시작|복원하기|결제|0B|0%|DATABASE|postgres|supabase\.co|DREAM_|[A-Z]:[\\/]|\/Users\//i);
+  // 현재 위치 표시, 다시 불러오기 = 같은 주소의 일반 링크(새 문서 요청)
+  expect(markup).toContain('aria-current="page"');
+  expect(markup).toMatch(/<a [^>]*href="\/cloud\/manage"[^>]*>다시 불러오기<\/a>/);
 }
+const dist = (markup: string) => [...markup.matchAll(/<div><dt><span[^>]*>.*?<\/svg>([^<]+)<\/span><\/dt><dd[^>]*>(\d+)개<\/dd><\/div>/g)].map((match) => [match[1], Number(match[2])]);
 
 describe("T-229 인증 판정이 데이터 읽기보다 먼저", () => {
   it.each([
@@ -105,49 +108,61 @@ describe("T-229 인증 판정이 데이터 읽기보다 먼저", () => {
 });
 
 describe("T-229 로그인 상태 화면", () => {
-  it("정상: 표시 건수=받은 목록 수, 상태 5종 합계=표시 건수, 읽은 시각과 프로젝트 수정 시각을 따로, 기록 기준 안내", async () => {
-    cloud(); state.list.mockResolvedValue(ok(ROWS));
-    const markup = html(await page()), page_ = text(markup);
-    expect(state.list).toHaveBeenCalledTimes(1);
-    common(markup);
-    expect(page_).toContain("표시 목록 4개");
-    expect(page_).toContain("이번에 불러온 목록 기준");
-    const counts = [...markup.matchAll(/<li><span[^>]*>.*?<\/svg>([^<]+)<\/span><span[^>]*>(\d+)개<\/span><\/li>/g)].map((match) => [match[1], Number(match[2])]);
-    expect(counts).toEqual([["확인 필요", 1], ["만드는 중", 1], ["승인 대기", 0], ["대기", 0], ["완료", 2]]);
-    expect(counts.reduce((sum, [, n]) => sum + (n as number), 0)).toBe(4);
-    expect(page_).toContain("기록된 프로젝트 상태 기준이에요. 실제 처리기 연결이나 지금 실행 중인지는 확인하지 않아요.");
-    expect(page_).toContain("목록을 불러온 시각");
-    expect(markup).toContain('dateTime="2026-11-17T03:00:00.000Z"'); // 가장 최근 수정(받은 목록 중)
-    expect(page_).toContain("프로젝트 마지막 수정(가장 최근)");
-    // 개별 프로젝트 제목·owner·id는 이 화면에 나열하지 않는다(목록 화면으로 링크)
-    expect(markup).not.toContain(A);
-    expect(markup).not.toContain("합성 11");
-    expect(markup).toContain('href="/cloud/projects"');
-    untouched();
+  it("정상: 표시 건수=받은 목록 수, 5종 분포 합계=건수(dl), 성공 조회 시각(한국시간)과 기록 기준 안내", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-11-18T03:04:00.000Z"));
+    try {
+      cloud(); state.list.mockResolvedValue(ok(ROWS));
+      const markup = html(await page()), t = text(markup);
+      expect(state.list).toHaveBeenCalledTimes(1);
+      common(markup);
+      expect(t).toContain("표시 목록 4개");
+      expect(t).toContain("이번에 불러온 프로젝트 목록 기준이에요.");
+      expect(dist(markup)).toEqual([["확인 필요", 1], ["만드는 중", 1], ["승인 대기", 0], ["완료", 2], ["대기", 0]]);
+      expect(dist(markup).reduce((sum, [, n]) => sum + (n as number), 0)).toBe(4);
+      expect(t).toContain("기록된 프로젝트 상태 기준이며, 처리기의 현재 실행 여부를 뜻하지 않아요.");
+      // 조회 시각 = 읽기 성공 시각(프로젝트 수정 시각 아님)
+      expect(markup).toContain('dateTime="2026-11-18T03:04:00.000Z"');
+      expect(t).toMatch(/목록 조회 시각 .*12:04.*\(한국시간\)/);
+      expect(markup).not.toContain("2026-11-17T03:00:00.000Z");
+      expect(markup).not.toContain(A);
+      expect(markup).not.toContain("합성 11");
+      expect(markup).toContain('href="/cloud/projects"');
+      untouched();
+    } finally { vi.useRealTimers(); }
   });
-  it("비어 있음: 0을 '정상'으로 꾸미지 않고 옮긴 프로젝트가 없다고 안내, 상태 표·읽은 시각 없음", async () => {
+  it("비어 있음(성공): 0개+조회 시각, 지어낸 설명(옮김·PC 보관) 없이 '이번 목록에 없음'", async () => {
     cloud(); state.list.mockResolvedValue(ok([]));
-    const markup = html(await page());
+    const markup = html(await page()), t = text(markup);
     common(markup);
-    expect(text(markup)).toContain("아직 클라우드에 옮긴 프로젝트가 없어요");
-    expect(markup).not.toContain("상태별 프로젝트 수");
+    expect(t).toContain("표시 목록 0개");
+    expect(t).toContain("목록 조회 시각");
+    expect(t).toContain("이번에 불러온 목록에 프로젝트가 없어요.");
+    expect(t).not.toMatch(/옮긴|내 PC 작업실에 있어요|삭제/);
+    expect(dist(markup)).toEqual([]);
     untouched();
   });
-  it("목록 읽기 실패(503): 숫자 없이 실패 안내 + 다시 불러오기, 연결 준비 상태는 그대로", async () => {
+  it("목록 읽기 실패(503): 0·분포·조회 시각 없이 실패 안내+다시 불러오기, 연결 범위는 그대로", async () => {
     cloud(); state.list.mockResolvedValue({ status: 503, body: { error: "x", code: "PROJECT_READ_UNAVAILABLE" }, headers: {} });
-    const markup = html(await page());
+    const markup = html(await page()), t = text(markup);
     common(markup);
-    expect(text(markup)).toContain("프로젝트 상태를 불러오지 못했어요");
-    expect(markup).not.toContain("표시 목록");
-    expect(markup).not.toContain("목록을 불러온 시각");
+    expect(t).toContain("관리 정보를 불러오지 못했어요");
+    expect(t).toContain("잠시 뒤 다시 불러와 주세요.");
+    expect(t).not.toMatch(/\d+개|목록 조회 시각/);
+    expect(markup).not.toContain("<time");
     untouched();
+  });
+  it("비정상 날짜가 와도 화면 전체가 실패하지 않는다(시각 표시는 조회 시각만)", async () => {
+    cloud(); state.list.mockResolvedValue(ok([row("00000000-0000-4000-8000-000000000015", "queued", "not-a-date")]));
+    const markup = html(await page());
+    expect(text(markup)).toContain("표시 목록 1개");
+    expect(markup).not.toContain("Invalid Date");
   });
 });
 
 describe("T-229 정적 경계", () => {
   const source = readFileSync("app/(cloud)/cloud/manage/page.tsx", "utf8");
   it("서버 화면: client·fetch·타이머·쓰기 없음, legacy 서비스 import 없음, 인증을 읽기보다 먼저", () => {
-    expect(source).not.toMatch(/"use client"|fetch\(|setInterval|setTimeout|method:|router\.refresh/);
+    expect(source).not.toMatch(/"use client"|fetch\(|setInterval|setTimeout|method:|router\.refresh|useEffect/);
     const imports = source.split(/\r?\n/).filter((line) => line.startsWith("import "));
     expect(imports.join("\n")).not.toMatch(/lib\/services\/(?!postgres)|lib\/db|lib\/storage|better-sqlite3|startup|menus\/server/);
     expect(source.indexOf("await getRenderAuth()")).toBeLessThan(source.indexOf("await readCloudProjects()"));
