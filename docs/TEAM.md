@@ -1561,3 +1561,10 @@
 - 미기록 인계 대조: T-122-CODEX-DESIGN-INTAKE.md와 T-137-AUDIO-RENDER-INDEPENDENT-REVIEW.md는 기존미추적 파일로 보존. 과거 배정/검수와 연결되므로 새 작업으로 중복배정하지 않음. 전체파일명 링크가 없는 T200/T201/T204/T206/T207/T210/B5/B5-FIX/B6는 기존 ID/커밋 수신기록과 구분, 미수신 완료로 추정하지 않음.
 - 판정/후속: 운영규칙 문서검증 완료(diff --check). Front T213 및 Backend B9 기존배정 계속, 새 제품수정 배정없음. Front/Backend/Design/Tester에 규칙 실제전송 4건(msg_02668fbad71b/msg_87076a257344/msg_bd74d2dd55a9/msg_2c058af6c8bb); terminal mailbox 전달이며 상대 규칙숙지·수락은 아직미확인.
 - 턴 밖 자동 점검: 미설정. 스케줄러/상주실행기/주기wake 설치없음. 실행중5분기준 및 수신이벤트 즉시확인은 Orca wake/polling금지/턴종료절차와함께적용. 다음 확인은 활성턴의5분도래 또는 수신이벤트 처리시점이며, 턴종료후5분자동실행을예약한 것이 아님.
+
+### 운영 점검 / B9 제출 및 독립 검수·B10 배정
+- 마지막 확인 시각: 2026-11-17 20:17:35 +09:00 (Asia/Seoul). 계기: 사용자 Orca 메시지 이벤트. 메시지 원문·B9 인수인계·최근handoffs 파일목록·git status 확인. 현재미추적T122/T137만기존보존,새미등록완료보고추가발견없음. 작업자유휴/실행상태전체조회는미실행.
+- B9 0d85186 ready_review. 작성자 신규35/focused121/실PG33는겹침구분,lint/roottsc PASS. 실제managed는TLS+readonly role/ref/db/port boolean확인만,runner/DDL/lock미실행. live/staging실환경분류와내부transport수용미완료.
+- B9-R 기존독립검수자에게고정0d85186재검수요청. target/hash/role/environment/CA/immutableownedpool 및기존불변경계검증,고유 B9-R-SESSION-MIGRATION-REVIEW.md. Backend는B10 SSL enforcement/환경·권한 표시와운영영향을읽기전용확인하도록배정. 실제설정변경/재시작/적용미허용.
+- Backend는운영1.1수신·읽음확인보고. Front T213우선배정유지,읽기UI/B5수용과실운영개통은분리. 이번두요청은실전송완료,수락/결과는후속이벤트확인.
+- 턴 밖 자동 점검: 미설정. 별도주기실행기/스케줄러설치없음. 다음이벤트또는실행중5분기준확인,턴종료후주기감시예약아님.
