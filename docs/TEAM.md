@@ -1282,3 +1282,8 @@
 
 - msg_c84f4f9054e2 /48380174ba9ad0e4cd2a635c7cf11be2993e2bc7 report/stat read. Successful writer/orphan path fresh audio digest before commit added; author6 regressions,703/19skip includes UI WIP, isolated product build separate. No independent PASS yet.
 - T167 ctx_0c3361e5779b /task_b800375592cd original reviewer dispatched bounded original mutation/orphan/noreplace/rollback recheck. UI DTO unchanged, T164 work protected. Local trust/ABA limits explicit.
+### T167 writer fix accepted; T164 UI returned and T168 integration review
+
+- msg_022fbff58f8a: report read/imported. Independent48+3/lint/type confirms late same-size/mtime mutation rejected, orphan/foreign preservation, DB retry and normal restore. Master accepts T166 bounded correction with T163 inherited writer evidence; trust/ABA limits retained.
+- msg_053094ef576f /3dadf45: T164 UI ready_review. Author22 actual viewport/state combinations, real requests/download/retry/409; tested older writer snapshot, so no current integrated UI PASS claimed.
+- T168 requested current UI+4838017 snapshot actual app/worker/file/error/keyboard/390 validation, report only. Existing untracked user reports preserved. No user DB/deployment changes.
