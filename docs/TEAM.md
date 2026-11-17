@@ -1635,3 +1635,9 @@
 - B13 7a73d74 문서범위수용. 최소후보confirmBrief는기존stage-only완료에서revision/updatedAt/approvedAt임의추가하지않음,같은revision중복은1성공/1 INVALID_TRANSITION·감사1개,content승자뒤stale CONFLICT. 발행SQLtrigger만으로CAS자동보장하지않음. 구현은backlog,Storage선행결정유지.
 - B14 Backend배정: 신규private object reader/key/config 및서버asset availability검증함수·전용tests만. 검증actor/owner/immutablekey/network0거부·실download stream크기/hash/MIME·상한/timeout/abort/sanitize·fakeStorage 실SDK/HTTP검증. 아직B12/API에연결안함,실bucket/RLS/DB등록/업로드/운영준비수용아님. 기존SQL/DB/Auth/서비스/패키지/실managed/3013/.next보호.
 - Front T220보호본문수정·T219checkpoint/T216 FAIL유지,운영SSL DEC미수신. 턴 밖 자동 점검 미설정.
+
+### 점검 / T219 준비안내 수용·T220 우선 계속
+- 마지막 확인 시각: 2026-11-17 20:53:03 +09:00 (Asia/Seoul). Orca상태이벤트·T219원문/새page코드/최근handoffs/Git확인. 새보고수신,기존미추적T122/T137보존,새미기록완료보고없음.
+- 고정84cf507 생성준비안내범위수용. Master직접t207 실행34/34PASS(exit0),폼/저장/서비스import없이서버auth→준비/local안내. 작성자관련189/실HTTP18/양폭키보드는작성자근거로구분. 실제생성/Storage업로드/API쓰기개통아님.
+- Front는T220배정전T219커밋/검증이완료되어checkpoint취소가아닌완료보고로반영. 수용전달및추가안내UI배정없이보호본문/조작차단T220우선계속지시. Backend B14파일읽기무결성기반개발기존배정유지.
+- DEC-SSL-01미수신·운영설정변경보류. 턴 밖 자동 점검 미설정,별도주기실행기없음.
