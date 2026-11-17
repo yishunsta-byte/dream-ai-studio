@@ -2126,3 +2126,9 @@
 - 실제 점검 완료 시각: 2026-11-18 03:13:57 +09:00 (Asia/Seoul). 지정wake msg_87f37a0119be·Git/최근handoffs 확인. Front B26-R 고정8d53575/고유보고1파일 범위수락·경로충돌없음·검토착수확인. nativeprobe는본인소유temp PG만, 미실행은미확인표시·제품SQL5구현미배정경계유지.
 - Front T236 전용mainPC서비스기동/Tester단독인계 msg_5ebe648e62c3 보고: port57134/base85108b6/BUILD noWccfF-On6i8n5k59z10. 본인은ego/DB미조작, 브라우저Tester배타소유. Master gitdiff로 ebe84ea↔85108b6 app/components/lib/proxy/config/package/public 제품차이없음 확인. 실제Tester source/artifact/overlay대조·native실행결과는그후독립보고로판정, 인계만으로검수완료아님.
 - B25수용완료·T236기존배정·B26권한설계독립검토병행 유지. 새결함/새고정완료보고없어중복할당/서버상태변경안함. 기존T122/T137 보존·새Codex창agentworktree/운영배포없음, 공식기록갱신.
+### 점검 / B26-R native 설계 검토 반환·G1/G2 계약 수정
+- 실제 점검 완료 시각: 2026-11-18 03:20:40 +09:00 (Asia/Seoul). 지정wake msg_ac79fea41713/msg_ad063c7bbace·B26-R3f0a44a 전문/원B26대조·최근handoffs/Git 확인. product/SQL/role변경없음·기존T122/T137보호.
+- 검토자는별도저자Front, 실제본인소유PG18.7縮小표/roles/RLS/native latch프로브. G1비superuser함수owner이전 SETmembership+schemaCREATE 임시부여/회수절차·최종멤버십없음정의누락, G2 RLS SELECT/UPDATE USING밖FORSHARE가오류아닌0행이므로FOUND확인필수. lock-only UPDATEcol/checkfalse 실제잠금성공·실UPDATE거부/권한회수실패와native eventrole/reserver COMMIT trigger/래치경쟁근거확인. fullSQL4+5/다른major/B3unknown/payload문법미검증과확정gap구분.
+- Backend B26-FIX msg_2ea7a015e254 실제배정: 기존계약1문서 G1/G2·C2 RC/VOLATILE·C3양음성락행렬·C1정확deferred실증게이트보완. 기존row기대lock0실패와freshID명시부재→uniqueINSERT경로구분. 원SQL1~4/v1/runtime불변·새SQL5/role/SECDEF/API실구현승인아님, 수신은아직미확인. Front msg_733b25dbf291 판정수신/후속좁은재대조예정통지.
+- 증거보존정정: Master직전통지에서probe scratch원문삭제로오해했으나 Front msg_ad063c7bbace로 mig.sql/latch.sql 일부는세션scratch에잔존, cluster데이터만정지삭제했다고확인. P3이전/P1-e/경쟁shell명령은보고결과만, scratch는영구repo산출아님. 미래실SQL4+5고정회귀/소유정리증거필수는유지. 이관권한임시부여의실제운영실행을한것아님.
+- T236누적UI재검수는기존Tester/Front단독서비스지원 경계유지·새최종결과미수신. B25수용/정적메인3안수용과별개. 새창agentworktree/실env/managed/운영배포없음, 공식플랜현재상태갱신.
