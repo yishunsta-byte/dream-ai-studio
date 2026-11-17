@@ -2,6 +2,8 @@
 
 Status: design ready for independent review. **No publication, source generation, registry change, fuse removal, implementation, SQL parser, database/cluster, browser or deployment was executed.** Only this document is assigned. Every proposed path/API below is future work requiring its own allocation. Runtime remains OFF.
 
+B36-FIX addresses final review3154e7b83479453776bf921b9f3510c1ce81aabc, F36-1 (P2), against original0a890f4b494c76a313e8c4d6474bbee70d9ac00a. The original closed shape had13 arrays despite requiring non-domain/internal inventory. The corrected14-array shape and explicit native-link normalization below supersede that rejected form; original commit/review evidence is preserved. This correction is not independently accepted yet.
+
 ## 1. Decision and inspected implementation
 
 Recommend a separate **runner/manifest/CLI v3 selecting schema5 only**, initially enabled solely for explicitly owned synthetic PostgreSQL18 targets. Preserve v1 and v2 code, source bytes, manifests, descriptors, target profiles, CLI syntax and provisioning template. Do not add `5` to a v2 union or loosen a complete3/4 comparison. Production-capable PG18 publication/attestation is a later explicit profile authorization; the design below defines its necessary binding, not current permission to use it.
@@ -53,6 +55,8 @@ The owned DDL contract covers three namespaces: dream, dream_reservation, dream_
 
 Sanity totals from the fixed source: policies43+14=57; noninternal triggers18 guard_row +12 storage_guard +6 deferred storage constraint triggers +2 immutable_history =38. There are9 functions in dream and9 new functions in dream_reservation; exactly2 new SECURITY DEFINER entries and zero other definers. Counts supplement exact rows; they never replace definitions or allow extra objects.
 
+The38 figure counts only named `tgisinternal=false` triggers, including the six declared constraint triggers. Engine-created internal triggers are a separate exact inventory within the triggers array; no internal count is inferred from38. All native pg_constraint records are also read, including `contype='t'` backing declared constraint triggers and `conparentid`/FK/index links. The exact internal-trigger/type counts must be materialized by the later authorized reference; no guessed count or ignored subordinate row is a completion criterion.
+
 The nine new signatures are canonical_json_v1(json,integer), parse_wire_v1(text), client_v1(text), policy_v1(text), epoch_ms_v1(bigint), immutable_guard_v1(), replay_v1(uuid,uuid,text), read_upload_seed_v1(uuid,text), reserve_upload_v1(uuid,text,text), all in dream_reservation. Seven are invoker; only the two public entries are definer, VOLATILE, owner issuer, exact `search_path=pg_catalog, pg_temp` / `row_security=on`. Six invoker helpers receive issuer EXECUTE; immutable_guard_v1 does not get that extra grant. The unchanged SQL1–4 functions/domains/definitions are included in the full reference, with SQL5's explicit existing-object ACL/constraint deltas applied.
 
 Build the expected artifact later on a **different owned PG18.7 UTF8/C reference cluster**, from checksum-verified P and fixed SQL1–4 plus the exact journal/provisioning recipe. Record commands/source/environment/hashes/role creation order, inventory and teardown. Independently inspect it and freeze explicit expected rows + descriptor schema/normalization version + renderer/server build + source manifest hash. The runtime target cannot generate, update, repair or choose its expected descriptor. A matching count or SQL5's bounded `$inventory$` block is not complete5. No expected5 artifact was materialized in B36; absence of its approved hash is a hard implementation/execute gate.
@@ -60,6 +64,8 @@ Build the expected artifact later on a **different owned PG18.7 UTF8/C reference
 Use explicit known no-login and provisioned-pair principal profiles, not an arbitrary list of allowed logins. Full expected catalog content is fixed; per-deployment native OIDs are separate facts bound to known slots after trusted creation/validation. Learning those validated OID bindings does not permit learning expected function bodies, ACLs, constraints or policy expressions from the target.
 
 The reference artifact's closed envelope is `{referenceVersion:1, serverMajor:18, publicationSha256:P, normalizerSha256, profiles:{none:Catalog5, pair:Catalog5}}`, with exactly those two profiles. Hash the complete artifact and each chosen profile canonically; action/attestation binds the chosen profile hash as well as the artifact hash. A pair may not downgrade to none during verification to avoid checking unexpected login edges. Native reference generation must record both separately authorized setup stages; profile variants are explicit source artifacts, not target-generated exceptions.
+
+Each profile must contain all14 required row arrays, including non-domain types and both trigger variants. The original13-array shape cannot be upgraded by supplying an empty default types list, dropping internal rows or retaining its old schema/normalizer/reference hash. No reference artifact currently exists; only the later independently frozen corrected strict decoder, normalizer and full artifact hashes may authorize implementation use.
 
 ## 4. Fully typed descriptor/decoder contract
 
@@ -76,18 +82,40 @@ type Acl = { grantor: Principal; grantee: Principal;
   grantable: boolean };
 type ObjectRef = { schema: "dream" | "dream_reservation" | "dream_migrations";
   name: string }; // compared with the exact frozen named inventory, never a wildcard
+type QualifiedRef = { schema: string; name: string }; // exact frozen owned/external allowlist
+type TypeRef = QualifiedRef;
+type FunctionRef = QualifiedRef & { argumentTypes: readonly TypeRef[] };
+type OperatorRef = QualifiedRef & { leftType: TypeRef | null; rightType: TypeRef | null };
+type IndexRef = { relation: QualifiedRef; name: string };
+type ConstraintRef = { objectKind: "relation" | "domain"; object: ObjectRef; name: string };
+type TriggerRef =
+  | { kind: "named"; relation: ObjectRef; name: string }
+  | { kind: "internal-constraint"; constraint: ConstraintRef; relation: QualifiedRef;
+      function: FunctionRef; typeBits: number; constraintRelation: QualifiedRef | null;
+      constraintIndex: IndexRef | null };
 type SchemaRow = { name: ObjectRef["schema"]; owner: Principal; acl: readonly Acl[] };
 type RelationRow = ObjectRef & { kind: "r"; owner: Principal; rls: boolean;
   forceRls: boolean; persistence: "p"; replicaIdentity: string;
-  isPartition: false; options: readonly string[] | null; acl: readonly Acl[] };
+  isPartition: false; rowType: TypeRef; ofType: TypeRef | null;
+  options: readonly string[] | null; acl: readonly Acl[] };
 type ColumnRow = { relation: ObjectRef; ordinal: number; name: string; type: string;
   notNull: boolean; identity: string; generated: string; dropped: boolean;
   defaultExpression: string | null; collation: string | null; acl: readonly Acl[] };
-type ConstraintRow = { relationOrDomain: ObjectRef; name: string;
-  kind: "p" | "u" | "f" | "c" | "n"; deferrable: boolean; initiallyDeferred: boolean;
-  validated: boolean; local: boolean; inheritedCount: number; noInherit: boolean;
-  parent: ObjectRef | null; definition: string };
-type IndexRow = { relation: ObjectRef; name: string; unique: boolean; primary: boolean;
+type ConstraintRow = { identity: ConstraintRef;
+  kind: "p" | "u" | "f" | "c" | "n" | "t";
+  deferrable: boolean; initiallyDeferred: boolean; enforced: boolean; validated: boolean;
+  local: boolean; inheritedCount: number; noInherit: boolean; period: boolean;
+  parentConstraint: ConstraintRef | null; supportingIndex: IndexRef | null;
+  referencedRelation: QualifiedRef | null; keyColumns: readonly number[] | null;
+  referencedColumns: readonly number[] | null; updateAction: string; deleteAction: string;
+  matchType: string; deleteSetColumns: readonly number[] | null;
+  fkPrimaryForeignOperators: readonly OperatorRef[] | null;
+  fkPrimaryPrimaryOperators: readonly OperatorRef[] | null;
+  fkForeignForeignOperators: readonly OperatorRef[] | null;
+  exclusionOperators: readonly OperatorRef[] | null; expression: string | null;
+  definition: string };
+type IndexRow = { relation: QualifiedRef; scope: "owned" | "external-prerequisite";
+  name: string; unique: boolean; primary: boolean;
   valid: boolean; ready: boolean; live: boolean; immediate: boolean;
   nullsNotDistinct: boolean; accessMethod: string; keyColumns: readonly number[];
   includeColumns: readonly number[]; opclasses: readonly string[];
@@ -96,10 +124,19 @@ type IndexRow = { relation: ObjectRef; name: string; unique: boolean; primary: b
 type PolicyRow = { relation: ObjectRef; name: string; permissive: boolean;
   command: "*" | "r" | "a" | "w" | "d"; roles: readonly Principal[];
   usingExpression: string | null; checkExpression: string | null };
-type TriggerRow = { relation: ObjectRef; name: string; enabled: string; typeBits: number;
-  deferrable: boolean; initiallyDeferred: boolean; functionSignature: string;
-  columns: readonly number[]; argsHex: string; whenExpression: string | null;
-  oldTransitionTable: string | null; newTransitionTable: string | null; definition: string };
+type TriggerProperties = { relation: QualifiedRef; enabled: string; typeBits: number;
+  deferrable: boolean; initiallyDeferred: boolean; function: FunctionRef;
+  constraint: ConstraintRef | null; constraintRelation: QualifiedRef | null;
+  constraintIndex: IndexRef | null; parentTrigger: TriggerRef | null;
+  argumentCount: number; columns: readonly number[]; argsHex: string;
+  whenExpression: string | null; oldTransitionTable: string | null;
+  newTransitionTable: string | null };
+type TriggerRow =
+  | (TriggerProperties & { identity: Extract<TriggerRef,{kind:"named"}>;
+      internal: false; definition: string })
+  | (TriggerProperties & { identity: Extract<TriggerRef,{kind:"internal-constraint"}>;
+      internal: true; constraint: ConstraintRef; structuralVersion: 1;
+      structuralSha256: string });
 type FunctionRow = ObjectRef & { identityArgs: string; declaredArgs: string; result: string;
   language: "sql" | "plpgsql"; owner: Principal; kind: "f"; securityDefiner: boolean;
   leakproof: boolean; strict: boolean; returnsSet: boolean; volatility: string;
@@ -107,8 +144,21 @@ type FunctionRow = ObjectRef & { identityArgs: string; declaredArgs: string; res
   argumentModes: readonly string[] | null; argumentNames: readonly string[] | null;
   config: readonly string[] | null; sourceSha256: string; definitionSha256: string;
   acl: readonly Acl[] };
-type DomainRow = ObjectRef & { kind: "d"; baseType: string; owner: Principal;
-  notNull: boolean; defaultExpression: string | null; acl: readonly Acl[] };
+type TypeProperties = { owner: Principal; defined: boolean; preferred: boolean;
+  length: number; byValue: boolean; delimiter: string; alignment: string; storage: string;
+  typeModifier: number; dimensions: number; collation: QualifiedRef | null;
+  arrayType: TypeRef | null; aclIsNull: boolean; acl: readonly Acl[];
+  input: FunctionRef; output: FunctionRef; receive: FunctionRef | null;
+  send: FunctionRef | null; modifierInput: FunctionRef | null;
+  modifierOutput: FunctionRef | null; analyze: FunctionRef | null;
+  subscript: FunctionRef | null };
+type DomainRow = ObjectRef & TypeProperties & { kind: "d"; category: string;
+  baseType: TypeRef; notNull: boolean; defaultExpression: string | null };
+type NonDomainTypeRow = ObjectRef & TypeProperties &
+  ({ form: "table-composite"; kind: "c"; category: "C"; relation: ObjectRef;
+      element: null; baseType: null; notNull: false; defaultExpression: null }
+   | { form: "generated-array"; kind: "b"; category: "A"; relation: null;
+      element: TypeRef; baseType: null; notNull: false; defaultExpression: null });
 type DefaultAclRow = { owner: Principal; schema: ObjectRef["schema"] | null;
   objectKind: string; acl: readonly Acl[] };
 type DependencyRow = { dependent: string; referenced: string;
@@ -123,11 +173,36 @@ type Catalog5 = { descriptorVersion: 1; serverMajor: 18; roleProfile: "none" | "
   columns: readonly ColumnRow[]; constraints: readonly ConstraintRow[];
   indexes: readonly IndexRow[]; policies: readonly PolicyRow[]; triggers: readonly TriggerRow[];
   functions: readonly FunctionRow[]; domains: readonly DomainRow[];
+  types: readonly NonDomainTypeRow[];
   defaultAcls: readonly DefaultAclRow[]; dependencies: readonly DependencyRow[];
   roles: readonly RoleRow[]; memberships: readonly MembershipRow[] };
 ```
 
-Implement every decoder with strict shapes/enums/ranges and immutable detached values; type aliases alone are not validation. Expected sets/enums for string fields are the frozen reference's exact values, not arbitrary identifier acceptance. Include table-owned composite type/array dependencies and automatically generated NOT NULL/FK/index/internal-constraint metadata through explicit subordinate inventory; unexpected relations/types/sequences/views/functions fail. Definition/body hashes are exact UTF8/native-rendered reference values; no trimming, whitespace regex, current-target function reserialization or “same signature” substitute. For functions bind owner, language/security/volatility/config/argument identity **and actual prosrc SHA256**, including the two definer bodies. Dependencies may leave the owned schemas only through a reviewed explicit pg_catalog/language/Auth prerequisite allowlist; no new issuer dependency on another user's function/schema is accepted.
+Implement every decoder with strict shapes/enums/ranges and immutable detached values; type aliases alone are not validation. Catalog5 now has exactly14 row arrays: schemas, relations, columns, constraints, indexes, policies, triggers, functions, domains, types, defaultAcls, dependencies, roles, memberships. Expected sets/enums for string fields are the frozen reference's exact values, not arbitrary identifier acceptance. Non-domain types include only reviewed table row composites and generated arrays (including arrays of owned domains); a standalone composite/base/enum/range/pseudo type is not silently added to that union. Unexpected relations/types/sequences/views/functions or internal constraint/trigger rows fail before history data is read. Definition/body hashes are exact UTF8/native-rendered reference values for named objects; the one structural internal-trigger exception is defined below, not a general SQL normalization. For functions bind owner, language/security/volatility/config/argument identity **and actual prosrc SHA256**, including the two definer bodies. Dependencies may leave the owned schemas only through a reviewed explicit pg_catalog/language/Auth prerequisite allowlist; no new issuer dependency on another user's function/schema is accepted.
+
+### 4.1 Native field/query basis and complete subordinate collection
+
+Read-only static evidence for this correction: installed `.tools/b3-postgres-18.7/pgsql/share/postgres.bki:3434` declares pg_type's typowner/typtype/typcategory/typisdefined/typrelid/typelem/typarray/typacl plus I/O/subscript/layout/default fields; `:3837` declares pg_class.reltype/reloftype; `:3888` declares pg_constraint's conrelid/contypid/conindid/conparentid/confrelid, enforcement/deferral/key/operator/action fields; `:7117` declares pg_trigger's tgisinternal/tgparentid/tgconstraint/tgconstrrelid/tgconstrindid and other TriggerProperties fields. This was a text read, not a catalog query or SQL parse. Existing state-v2.ts:47–50 filters `typrelid=0 AND typelem=0`, and its trigger reader filters NOT tgisinternal; neither filter is suitable for the new full inventory. Its frozen constraint rows around1103–1104/1190/1248 already show `contype='t'` with definition `TRIGGER DEFERRABLE INITIALLY DEFERRED`; the corrected union must represent those six declared constraint-trigger records. PG has no conisinternal boolean here; do not invent one for ConstraintRow.
+
+Static field evidence LF SHA256: installed postgres.bki `360718603dc060a1bfefe67c4e898d16eff18580a48b8fa3b6680e8b21de2e05`; unchanged state-v2 `c51745a4c482732a428374831690ebd1eb5ee310487221cf9a95858465c77f70`. These freeze the inspected text, not a new engine/reference acceptance.
+
+The future fixed reader collects **all** pg_type rows in the three owned namespaces, partitions kind d into domains and strictly decodes the remaining rows into types; no element/relation/internal filter may hide an unexpected row. Join type owners/ACLs, typrelid/typelem/typarray, collation and I/O function OIDs through native catalogs into the typed qualified references. pg_class.reltype must point back to the row composite's identity and that type's relation must point back to the exact class. Each generated array's typelem must point to its exact composite/domain element and the element's typarray must point back to that array. A zero native reference maps to explicit null, never an omitted link. Exact owner/category/defined/layout/I/O/default/ACL states must match reference rows, not merely a matching pair of names. Preserve NULL-vs-explicit typacl through aclIsNull plus the effective grantor-bearing ACL; arbitrary domain-array grants cannot disappear during default expansion.
+
+Collect all pg_constraint rows owned by the scoped relation/domain set and all pg_trigger rows attached to scoped relations, **including tgisinternal=true**. Also include triggers outside that set whose tgconstraint resolves to an owned FK, such as its action-side trigger on external auth.users; only that exact external subordinate may be included, not every unrelated Auth trigger. Resolve constraint owner and related relation/domain/index/parent links first, including NOT NULL, FK/index metadata and the six contype t records. Named declared constraint triggers have internal=false but a nonnull link to their exact contype t ConstraintRow; engine-created FK triggers have internal=true and the exact contype f parent. Conkey/confkey/operator arrays preserve order and nullness; OperatorRef includes operand types so overloads cannot collapse. The indexes array also includes only the explicitly approved external prerequisite indexes reached through these exact links (scope=external-prerequisite), with their full IndexRow properties; owned index rows remain scope=owned. No additional unrelated Auth table/index inventory is adopted. A missing/broken/ambiguous link, out-of-allowlist external object, extra internal row or cycle rejects. Existing nonpartitioned sources expect no inherited partition parent; an unexpected parent is drift, not an invitation to synthesize a new parent identity.
+
+### 4.2 Stable keys across different native OIDs and generated trigger names
+
+ConstraintRef is `(objectKind, qualified owning relation/domain, exact constraint name)`, not conparentid/conrelid's numeric value or only its schema. IndexRef is `(qualified owning relation, exact index name)`. Source-generated constraint/index names that are stable for the frozen DDL remain exact strings, including digits. Qualified external index/type/function/operator references must be the exact reviewed prerequisite/dependency identities; matching Auth UUID uniqueness alone does not authorize a different subordinate link. The initial owned reference recipe fixes those prerequisites; another provider layout needs its own review.
+
+Named noninternal triggers use their literal `(relation,name)` identity and exact native definition. For an engine-created internal FK trigger, resolve **native tgconstraint** to the fully identified parent ConstraintRow, then form the internal TriggerRef from that parent key, actual attached relation, actual qualified RI function signature, typeBits and native constraint-relation/index links. These distinguish check-insert/check-update and referenced-side update/delete actions without an OID suffix. Require tgisinternal=true, a nonnull matching parent, and the reference's exact enabled/deferral/function/columns/argument/WHEN/transition/link fields. Resolve tgparentid through the same map and verify it matches the frozen expected parent (null for the current nonpartitioned schema). Duplicate structural keys reject even if their native names/OIDs differ; no deduplication or row-count-only comparison.
+
+Do **not** strip digits/`RI_ConstraintTrigger_*` suffixes with a regex, turn arbitrary observed names into expected names, drop internal rows, or compare raw pg_get_triggerdef output after replacing numeric text. Internal generated tgname/native OID are diagnostic facts only, not golden identifiers. InternalTriggerRow deliberately has no raw definition field: structuralSha256 is a domain-separated hash of `internal-trigger:v1` plus the canonical encoding of its complete typed identity/properties/parent links. Both reference and observation use the same independently frozen serializer; the observed hash is compared with the reference hash, never promoted to an expectation. Named triggers retain their raw exact definition; owned function body checks remain exact. All dependency endpoints that mention a trigger/constraint/type use these same canonical object keys and column sub-identities, not a second numeric/name-erasing scheme.
+
+Precisely, internal structuralSha256 is `SHA256(UTF8("internal-trigger:v1\n" + canonicalJSON({identity, internal:true, structuralVersion:1, ...all TriggerProperties})))`, excluding structuralSha256 itself. canonicalJSON uses the frozen key/set/order rules and contains resolved typed parent keys, never native OIDs or the generated name. A DependencyRow endpoint string is the canonical serialized tagged object key plus its explicit column sub-identity when nonzero; its tag/fields are strictly validated, not an arbitrary description string or a role-name parser. The same serialization is used for reference and observed links, with duplicate/unknown keys rejected.
+
+This keeps14 top-level arrays: constraint metadata and both trigger variants live in existing constraints/triggers, while types is the added fourteenth array. The38 named-trigger sanity count and the internal structural-key set are validated separately. Query projections, strict discriminated decoders, cross-link checks, canonical set keys, internal structural serializer, reference envelope/profiles and all publication/action/attestation hash checks must be versioned/frozen together. Missing new fields or the old13-array form rejects rather than supplying defaults. No actual reference/hash/row count is generated by this correction.
+
+Required future tests for this correction: (a) strict shape rejects missing/unknown/empty-substitute type fields, wrong composite/array kind/owner/ACL/I/O/relation/element/array/default and a missing/extra type; (b) native graph mutations of conparentid, tgconstraint/tgparentid/tgconstrrelid/tgconstrindid, referenced-side action trigger, operator operands and declared contype t links fail before journal rows are read; (c) missing/extra/duplicate internal trigger, wrong function/typeBits/internal marker/deferral/enabled/args/WHEN or swapped same-schema parent/index fails; (d) two separately owned reference/target fixtures with deliberately different native object OIDs and generated internal trigger names normalize identically only when all typed structural facts match; (e) named objects containing digits remain exact and never collide with an internal structural identity; (f) every profile/normalizer/reference/action/attestation hash changes or rejects when any newly represented property changes. These are gates for the proposed schema5-state tests and separate reference-native harness, **not executed B36-FIX tests**.
 
 Canonicalization: sort row sets by explicit composite keys and ACL sets by complete grantor/grantee/privilege/grantable tuple; reject duplicates rather than deduplicate. Preserve column ordinal, index key/include order, function argument/config order and expression bytes. Resolve principals using native OID equality to independently approved slots, PUBLIC only OID0; unknown owner/grantor/grantee/role is rejected. Never interpret names `owner`, `$owner`, `PUBLIC` or JSON-looking text as tags. When bootstrap performs inspection, migration-owner still means the approved M OID, not current/session_user=root. No unapproved object may define its own owner slot.
 
@@ -205,7 +280,7 @@ These are proposed allocations, **not files created/authorized in B36**. Keep st
 | Stage | Exact proposed files / minimum changes | Completion and independent gate |
 | --- | --- | --- |
 | Publication/source contract | new lib/db/postgres/0005_upload_reservation.sql; migration-manifest-v3.ts; tests/postgres/schema5-source.test.ts | Freeze actual P/body hashes and exact D/E/P mapping; retain old1–4 and v1/v2 rejection tests. Independent SQL/source diff first; no target apply. |
-| Reference/typed state | new lib/db/postgres/migration-catalog-v3.ts; catalog/schema5-pg18.json; migration-state-v3.ts; tests/postgres/schema5-state.test.ts; tests/schema5-reference-native-owned.ts | Separate owned reference creation then freeze/review strict typed expected rows/normalizer/P binding; native mutations for every row category, tag collision, grantor/default/transitive/definer body/RLS/trigger/index/FK fail before journal read. Preserve old3/4 descriptor artifacts. |
+| Reference/typed state | new lib/db/postgres/migration-catalog-v3.ts; catalog/schema5-pg18.json; migration-state-v3.ts; tests/postgres/schema5-state.test.ts; tests/schema5-reference-native-owned.ts | Separate owned reference creation then freeze/review all14 strict arrays/normalizer/P binding; type/I/O/ACL/reciprocal links, internal/declared constraint-trigger keys, external FK action/index links and distinct-native-OID equivalence/mutation gates in4.1–4.2 are mandatory. Other tag/grantor/default/transitive/definer/RLS/index/FK drift also fails before journal data. Preserve old3/4 artifacts. |
 | Explicit migration | new lib/db/postgres/migration-runner-v3.ts; scripts/postgres/migrate-v3.ts; tests/postgres/schema5-migrations.test.ts; tests/postgres/schema5-cli.test.ts; tests/schema5-migrations-native-owned.ts | Closed schema5/transition/actions, lock/RC/atomicity/history/unknown/late rollback/lease tests, concurrent real winner/waiter evidence and actual migration COMMIT-response-loss test. Existing target/connection/lock exports reused without editing behavior. |
 | Bootstrap pair/attestation | new lib/db/postgres/provision-v3.ts; reservation-provenance.ts; tests/postgres/schema5-provenance.test.ts; tests/schema5-provision-native-owned.ts | Separate approved bootstrap action/password-null pair; full graph/provenance signature/target/action/expiry/revocation/forgery tests; no token on ambiguous commit/drift. Existing provision-template.ts remains3-only. |
 | Published adapter compatibility | separately scoped edit lib/services/postgres/upload-reservations.ts and tests/postgres/reservation-attempt.test.ts; new tests/reservation-published-native-owned.ts | Change published pin to P via fixed manifest, genuine internal-handle path while activation OFF; strict wrong-D/E/P/source/OID rejection and new actual P adapter tests. Attempt/client/reply/codec/model modules need no change for header/fuse-only publication unless an independently reviewed mismatch proves otherwise. Historical B34/35 sources and proof identities remain frozen. |
@@ -216,4 +291,6 @@ Future migration-native matrix must include fresh→5, eligible4→5 with real e
 
 B36 read the named local sources/reviews and computed the listed LF hashes; wrote only this document. No reference generator, SQL parser, tests, PG process, new cluster, packet interception, browser/managed/provider request, config/key/package change, build or deploy was run. Document diff/whitespace and one-path commit checks are the validation for this design. Implementation/native matrices above are **not performed results**.
 
-Copyable return: B36 recommends isolated v3/schema5-only publication/typed full PG18 reference and signed target/action/provenance boundaries, preserving v1/v2 closed3/4. D9d347/E16e5/P-unset identities and current adapter D→futureP compatibility are explicit; 32 business tables plus journal, exact role/grantor/ADMIN/temp privilege graph and bootstrap-only login provisioning are defined. Fresh/eligible4→5/exact5/no-adoption/unknown semantics and exact later paths/test order are specified. No SQL/code/DB/publication/activation performed; request independent one-document design review before any implementation assignment.
+B36-FIX closure: F36-1 now has a concrete fourteenth non-domain types array, reciprocal class/type/array and owner/ACL/I/O fields, complete constraint metadata including contype t, explicit named/internal trigger variants and stable parent/related-object references. Internal generated names/OIDs are not stripped or learned as expectations; one frozen structural serializer covers all typed properties and dependency keys across distinct native assignments. Query/decoder/reference/profile/hash and later test/file requirements are synchronized above. Static installed BKI and unchanged state-v2 text are the field evidence; no new SQL/code/reference, native/parser run or claim of observed cross-cluster normalization was made. Final review3154e7b was read in full; it identifies this one mandatory gap and no additional mandatory contradiction. New fixed-document independent re-review remains necessary.
+
+Copyable return: B36-FIX closes the representation of review3154e7b F36-1 in the single contract:14 strict arrays, non-domain composite/array type properties/reciprocal links, native constraint/declared-trigger/internal-trigger metadata and stable structural parent/function/relation/index identities without numeric-name rewriting. Decoder/query/normalizer/reference/hashes and distinct-native-OID/mutation tests are synchronized,38 named triggers stay separate from internal inventory. Existing isolatedv3/closed3/4/D-E-P/provision/provenance/runtimeOFF gates remain. No SQL/code/reference/native generation or execution; request independent fixed-document re-review before implementation.
