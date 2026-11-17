@@ -1568,3 +1568,10 @@
 - B9-R 기존독립검수자에게고정0d85186재검수요청. target/hash/role/environment/CA/immutableownedpool 및기존불변경계검증,고유 B9-R-SESSION-MIGRATION-REVIEW.md. Backend는B10 SSL enforcement/환경·권한 표시와운영영향을읽기전용확인하도록배정. 실제설정변경/재시작/적용미허용.
 - Backend는운영1.1수신·읽음확인보고. Front T213우선배정유지,읽기UI/B5수용과실운영개통은분리. 이번두요청은실전송완료,수락/결과는후속이벤트확인.
 - 턴 밖 자동 점검: 미설정. 별도주기실행기/스케줄러설치없음. 다음이벤트또는실행중5분기준확인,턴종료후주기감시예약아님.
+
+### 점검 / B10 수용 / DEC-SSL-01 및 B11 준비
+- 마지막 확인 시각: 2026-11-17 20:22:45 +09:00 (Asia/Seoul). 계기: Orca 메시지이벤트. B10원문·Git상태·최근handoffs대조확인. 신규B10보고수신,미추적T122/T137기존보존. 전체worker liveness조회는미실행.
+- B10 17da1bb: exactref main/PRODUCTION,SSL enforcement OFF관찰수용. Owner/Admin실권한미확인,기존DB권한으로platform권한추정금지. 변경은DBrestart/실Auth의존요청일시실패가능,disable원복도다시restart이며이미끊긴세션복구아님.
+- DEC-SSL-01 사용자에게구체질문등록: production SSL강제적용을지금실행(수초~수분중단허용추천)vs현재유지. 기존개발승인에중단영향이명확치않아필요한운영결정으로취합. 답변전실행보류,침묵승인금지. 상태waiting_human은이변경에만적용,다른작업계속.
+- Backend B11 준비전용배정: 최소platform권한표시확인·health/TLSreadonly baseline·변경후내부ssl검증/재연결/복구및원복순서구체화. toggle/save/restart/실DDL/apply미허용. 고유 B11-SSL-CHANGE-READINESS.md. B9-R와Front T213계속.
+- 턴 밖 자동 점검: 미설정. 기존Orca이벤트wake와실행중5분기준만,별도스케줄러/상주실행기없음.
