@@ -1775,3 +1775,10 @@
 - msg_95a7c4fbbee9 B19-FIX우선수락확인. B20소유PG PID45528/65086은보고전이미종료,postmaster/listener없음안전checkpoint보고. SQL3후draft실격리적용/중간rollback실험은합성DB에만,실managed없음.
 - B20초기10PASS/2FAIL은작성자보고상test식별자validator가sha256숫자필드명을거부해fixture누락·후속空SELECT발생. 아직원인독립검증/수정완료아님,스키마완료수용금지. draft 미발행·현runner의schema4거부기대유지.
 - Backend는원B19-R전문/27harness읽고F1관계/이력권한·시간/F2원snapshotfingerprint/F3getter전처리정제우선진행,현재새범위추가없음. 기존배정반복전송없이수락상태만갱신. 배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
+
+### 점검 / B19-FIX 제출·B19-R2 / B20 조건부 조정 재개
+- 마지막 확인 시각: 2026-11-17 22:44:19 +09:00 (Asia/Seoul). Orca상태·B19-FIX원문/최근handoffs/Git확인,新7bfd139수신。B20미추적draft/runner/test3경로와T122/T137보존,새미기록완료보고없음.
+- B19-FIX ready_review: F1기록claim/commit권한·시간/historysequence/revocation相互検証,F2creation fingerprintV2 재구성가능binding/retirementhistory,F3descriptor前처리/getter0/foreignINPUT. 작성자41/원독립27byte동일기대PASS·tsc/lint,독립수용아님.
+- B19-R2동일reviewer재개,고정7bfd139 원8拒否·27원harness/정상policy변경과새이력/부분損傷追加반례검증. 제품/DB/실IO실행미배정.
+- BackendB20기존미발행draft3파일+고유보고조건부조정재개. 新필드↔SQL/guard/executor맵핑·fixtureidentifier數字문제안전수정·원자rollback/RLS/FK/receiptN/최소권한검증. B19-R2수용전schema완료수용안함,기존SQL3/history/runner변경금지·實managed미적용。
+- 배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
