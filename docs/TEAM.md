@@ -1322,3 +1322,6 @@
 ### T173/T174 bounded acceptance
 
 - Reports read; T173 stored16:9/1:1 actual save/render/layout checks pass, native-hidden remains unverified. T174 independent4E2Es/lint/type pass; sample peak discrepancy retained. T175 display fix requested, no completion claim.
+### T175 accepted
+
+- msg_785a8583cec0 report received; Master3 tests pass. Display accepted. Device evidence pending.
