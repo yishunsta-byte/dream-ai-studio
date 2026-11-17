@@ -1513,3 +1513,8 @@
 - T207 cd0823d 보고 확인. 신규 읽기전용 목록/상세, RSC adapter/auth cache·lazy params·표시DTO. 작성자26/관련443 및 격리전체1216 PASS/65 skip, build/verify/type/lint, 실제TLS PG+SDK fakeAuth 운영start HTTP12 관찰, 양폭 브라우저 확인 보고. 독립 수용 전.
 - 목록 loading 경계로 proxy통과후RSC 인증거절이200 streaming redirect인 점 확인. Master는 목록 loading경계 제거로 목록/단건 실제307 일관성 선택. T210 Front에 좁은 수정과 HTTP 307/Location/no-store/query0 강화 배정. 데이터503 UI200 기존결정은 유지.
 - 루트 공용설정 읽기는 module cache가 있으므로 매요청 물리파일read로 표현하지 않도록 정정 지시. 정상/404/owner격리·legacy차단 유지, 수정후고정SHA 독립 검수 예정. 실제managed연결/배포는 아직 미완료.
+
+### B5-FIX 진행 확인: 타입검사 범위 구분
+- Backend msg_08b70602af15: 공통 role graph 검사/검증target 내부pool/JS pool입력 명시거부 구현중, 실제부정대조 실행중. 아직 ready_review 아님. B7 추가조회 없음.
+- root tsc가 ignored tmp의 T207 고정사본 구API 호출까지 포함한 오류를 보고했다는 작업자 설명 수신. Master는 원검사실패와 임시범위검사를 구분하고, 원strict/실제소스/Next타입 누락 없이 검증·정확명령/제외경로 기록 및 가능하면 깨끗한 고정사본 원tsconfig 최종검증을 지시. 제품오류가 없다고 아직 확정하지 않음.
+- Front staged loading삭제 등 타작업 변경 보호, Backend는 고유경로만 선택커밋. 실제DB적용·배포 금지 유지.
