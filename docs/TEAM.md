@@ -2067,3 +2067,9 @@
 - T234 기존Tester msg_376c2aebdad8 실제배정→msg_143525a851eb 수신·충돌없음·착수. fixedarchive/관련원회귀·auth우선·ownertenant/privacy·empty/error/복구·목록수/시각정직성·양폭/키보드·세션계정잔상검수. 공유고유T234보고서만, production빌드/배포/실환경/공유3013.next변경없음. 목록뒤관리링크배치는배정범위내허용대안, 그자체blockingFAIL아님명시.
 - Front msg_cf2d428b7af1 실제협조요청: 같은SHA기존source/build/proof·소유testserver/하네스·합성empty/error제어를Tester에직접제공. artifact없음을Tester임의build로해소하지않고mainPC지원. Tester본인도직접요청예정이라고회신, 중복프로덕션build안함. 새Codex창agentworktree없음.
 - 현재수용전·push/운영배포미실행. B25예약codec·T232공개메인3안 병행계속, T231부분source대조는후순위보존. 공식표T229ready_review/T234검수상태갱신.
+### 점검 / T234 실측 F234-1·Front 최소 수정 반환
+- 실제 점검 완료 시각: 2026-11-18 02:43:53 +09:00 (Asia/Seoul). 지정 wake msg_ccb9e6bfbd5e·Git/최근handoffs/미기록B25 ready_review 문서상태확인. Backend지정4파일현재stage·고정SHA완료메시지아직미수신이므로침범/stage/완료수용안함. T232디자인신규폴더/기존T122/T137 보존.
+- Tester actualmainPCproduction59665(buildjCnXpAs-wt9bY2U-Cj3X_) source동일3c6c5eee/원fixed3b32ad0 근거: 프로젝트목록관리링크 양폭1280/390 rect102.78125×18px·inline/minheight0, 관리본문새링크44정상. 기준T230/T23444 유지, F234-1 필수FAIL 판정. 위치본문뒤/공통sm32와분리. 원86PASS/추가SSR13PASS는시각결함을상쇄하지 않음.
+- Front T229-FIX msg_6d05d51c7f3b 실제전송: 목록link/CSS·전용회귀/고유FIX인계만 최소수정·44px실측/keyboard/overflow·같은SHA sourcebuild근거·새고정후보반환. 원서비스종료/변경은Tester와조정, Auth/globals/원기대완화/운영/새창금지. 수신은아직미확인. Tester msg_69b7743a950a 원fixed남은empty/error/Auth/session검수마무리·새후보혼입금지 통지.
+- 미기록 B25문서는ready_review표시로작성단계발견, 고정commit/실검증최종반환뒤전체검토/검수배정예정. currentTester는T234원fixed정리중으로중복검수안배정. DesignT232최우선계속.
+- 관찰범위정정: 이전Master manage390 PNG확인은정상목록1개/조회시각/미연결배치에한정하며 empty실제화면을본것아님. empty/자료오류browser확인은당시미검증이었고현재Tester추가검수범위다. 실제점검/문서/작성자시험/독립실측구분유지.
