@@ -18,7 +18,7 @@
 | 버전별 이관 실행기 | B23 ea5a477·R 수용 | 원66·독립29 통과. 운영 대상 실행은 별도 정확한 범위 필요 |
 | 버전별 CLI | B24 eccac35·R3b683d4 수용 | 원59·독립43, actual children22+20 검사. fingerprint는 사용자 승인 증명 아님 |
 | 업로드 예약 DB 변환 | **B25 Backend 구현 배정·수락** | reserved-only codec·SQL parameter/row 변환·실PG roundtrip/rollback→고정본 독립검수 |
-| 클라우드 개인 관리 | **T229 Front 구현 착수 / T230 Design 명세 수락** | 실제 project 조회 기반 읽기 전용 상태·미연결 정직 표시·세션 경계·양폭 검수 |
+| 클라우드 개인 관리 | **T229 Front 구현·Master 문구 보완 / T230 명세 수용·T231 대조 배정** | 실제 project 조회 기반 읽기 전용 상태·미연결 정직 표시·세션 경계·양폭 검수 |
 | 메인 UI 시안 | T208 멀티미디어3안 제출, Master PC/390 시각 확인 | 사용자 선택·제품 적용 미완료. 개인 관리 구현과 별개 |
 | 운영·비용 | 실제 Supabase Free50MB, 앱 요구2GiB 미충족. SSL DEC-SSL-01 미결정 | 무료 synthetic 개발 계속. 유료 전환·운영 SSL 변경은 승인 전 미실행 |
 | 운영 정리 | kzxq 사용자 승인 삭제 보고·Master404 확인, 주운영 보존 | Vercel2FA는 사용자 보류. 같은 질문 반복 없음 |
@@ -41,7 +41,7 @@
 - Master: 플랜 갱신·우선순위·범위/점유 조정·결과 판정·다음 배정·공식 기록. AI_TEAM_RULES v1.4 적용.
 - Backend: B25 신규 codec/test/owned runner/고유 인계 4파일 단독 작성. 기존 SQL/모델/서비스 변경 불가.
 - Front(메인 PC): T229 cloud/manage 신규 화면/CSS/test/고유 인계 및 project list의 관리 링크만. 필요한 production build는 이 담당의 격리 환경, 배포는 검수 수용 후 묶음 처리.
-- Design: T230 고유 UX 명세1파일. Front에 실제 전달·Master 공유, 제품 파일 수정 없음.
+- Design: T230 명세8507612 수용. T231 고정6308791 명세-구현 대조·Front 동일SHA 화면 증거 검토, 고유 보고서만. 제품 파일 수정 없음.
 - Tester: B24 검수 완료. B25/T229 고정 후보가 반환되면 Master가 순서·범위로 독립 검수 배정. 동작 테스트/검수/디버깅, production build·배포 없음.
 - 현재 연결된 Tester는 Windows이며 Mac mini 연결은 미확인이다. 맥미니 Tester 배정 원칙을 장비 연결 확인 없이 기존 handle에 덮어쓰지 않는다.
 - 새 Codex 창·agent·worktree 없음. 기존 세션만 사용한다. 예약은 30분마다 기존 Master 대화에 메시지만 전달한다.
@@ -52,7 +52,7 @@
 |---|---|---|---|
 | B25 / P2 | Backend · 수신·수락 | 예약전용 pure DB codec/parameter/decoder·test/ownedPG runner/인계. 원문/ID/정책/시간/owner 일치·음성 입력·실PG roundtrip/rollback | 작성자 검사 후 고정 SHA 제출→기존 Tester 독립검수→Master 판정 |
 | T229 / P2 | Front · 수신·착수 | /cloud/manage 읽기 전용 UI·목록 표시건수/상태·조회오류·미연결 안내·목록 링크. Auth/layout/backend 불변 | Front 합성 동작·메인 PC 격리 build, 기존 Tester 독립검수·Design 시각 대조 |
-| T230 / P2 | Design · 수신·수락 | T180·현 cloud tokens 기반 390/1280·정상/빈/오류/local/auth/session·키보드 명세1파일 | Front에 실제 전달. 사양 충돌만 Master 조정, 독립 구현 중단시키지 않음 |
+| T230→T231 / P2 | Design · 명세 수용, 구현 대조 요청 전송 | 고정6308791 source와 T230 V1~V10 대조, 새후보/화면 증거는 SHA별 분리 | 필수 차이 Front 직접 전달·Master 공유. 실제 화면 미확인 시 미검증 유지 |
 
 차단이나 추가 권한이 보고되지 않은 실행 가능한 구현은 위 담당이 계속한다. 대기 시간을 채우는 중복 과제는 만들지 않는다. 고정본 수신 뒤 검수·결함 수정·후속 범위를 배정하며 문서/단위 검사 완료마다 운영 배포하지 않는다.
 ## 4. 클라우드 전환 순서

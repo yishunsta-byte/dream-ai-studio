@@ -2040,3 +2040,9 @@
 - Front T229 msg_babb5e656d41→msg_4b25918debfa 수신·착수/점유충돌없음. /cloud/manage 읽기UI/명시관찰목록건수·미연결정직표시/Auth·SessionBoundary기존계약·양폭/키보드/실SDK합성검증·메인PC격리build. Layout/API/backend변경금지, 수용후묶음배포별도. Design T230 msg_814638460f4c→msg_f1ec64b52997 수신·명세1파일수락. Front에직접전달·실사양충돌만조정, 구현중단안함.
 - Front범위요청 msg_75c93de7ff1c 처리: 원T207:171 exacthref 배열과새명시관리링크추가diff확인, 요구변경대로 /cloud/manage 하나추가하는기대1줄변경을 msg_f6ffa6996e9a로허용. 다른실패/인증/원자료/skip단언불변·T207전체+T229회귀로검증·인계에승인기록. 사용자결정아닌일반구현범위조정 Master자율처리.
 - Tester msg_71cd1fc4eabf 수용/다음준비통지→msg_1e2acc71ef57 B24수용·MASTERv1.3전체읽음/점유없음 확인. 반환순서/위험에따라고정본단일검수배정예정, 입력없는중복검수미배정. 새Codex창/agent/worktree없이기존세션병행. 운영SSL·2GiB/과금/홈시안선택은별도조건이며현재무료구현을막지 않음.
+### 점검 / T230 명세 수용·T229 코드 의미 보완·T231 배정
+- 실제 점검 완료 시각: 2026-11-18 02:25:27 +09:00 (Asia/Seoul). 지정 wake msg_ecf4cb63a07d·T2308507612 원문/기준SHA·Git/최근handoffs·새제품commit6308791 통계와T229page source확인. 기록되지않은완료인계로추정하지않고 Front 최종T229보고는아직미수신. 기존T122/T137보존, Front제품WIP소유존중.
+- T230은source읽기기반명세 ready_review이며実UI검수아님을확인. returnedlist수·5status분포합·성공조회시각·worker/Storage/backup미연결정직성·Auth/SessionBoundary·390/1280/키보드/오류회복 V1~V10 및필수/추천구분 명세범위수용. Front초기/최종실제전달보고를수신했으나UI적용PASS로확대안함.
+- Master T229 source발견: empty성공시이관미실시/작품PC보관단정은조회DTO로입증안됨, empty0/조회시각누락과latestinvalidDate fallback확인요청을 Front msg_06cda0f76484 실제전송. 허용page/test범위안보완·dataerror가짜0/성공시각금지·원Authgate기대유지. 단순작업자완료를기다리는것아닌source대조후구체수정반환.
+- Design T231 msg_1b0002d87d4f 실제배정: fixed6308791 명세-구현source차이/필수추천/실제Front동일SHA 캡처증거대조·고유보고만. baseline차이를후속수정SHA에몰래재사용금지, 새build/공유Auth수정없음. 수락아직미확인. Tester기능보안독립범위와DesignUX범위분리.
+- B25 현재배정계속·고정codec결과아직미수신, Front구현·명세협조병행. 운영개통/Storage/쓰기/배포/새창agentworktree미실행. 공식표T230수용/T231대조/Front보완상태갱신, 문서diff검증만수행·제품시험실행안함.
