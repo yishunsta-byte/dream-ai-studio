@@ -26,7 +26,7 @@ const password = randomBytes(24).toString("hex"); // This new cluster's syntheti
 for (const key of Object.keys(process.env)) if (key.startsWith("PG")) delete process.env[key];
 const systemRoot = process.env.SystemRoot ?? "C:\\Windows";
 const powershell = join(systemRoot, "System32/WindowsPowerShell/v1.0/powershell.exe");
-const childEnv = { SystemRoot: systemRoot, WINDIR: systemRoot, TEMP: process.env.TEMP, TMP: process.env.TMP,
+const childEnv = { NODE_ENV: "test" as const, SystemRoot: systemRoot, WINDIR: systemRoot, TEMP: process.env.TEMP, TMP: process.env.TMP,
   DREAM_B29_BIN: bin }; // No inherited PG defaults, DSNs, app credentials or PATH change.
 const exec = promisify(execFile);
 const facts: unknown[] = [];
