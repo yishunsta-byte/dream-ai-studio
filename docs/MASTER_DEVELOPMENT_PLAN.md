@@ -18,7 +18,7 @@
 | 버전별 이관 실행기 | B23 ea5a477·R 수용 | 원66·독립29 통과. 운영 대상 실행은 별도 정확한 범위 필요 |
 | 버전별 CLI | B24 eccac35·R3b683d4 수용 | 원59·독립43, actual children22+20 검사. fingerprint는 사용자 승인 증명 아님 |
 | 업로드 예약 DB 변환 | **B25 da0f740 기존Tester 독립검수 착수 / B26 권한·transaction 계약 준비** | reserved-only codec·SQL parameter/row 변환·실PG roundtrip/rollback→고정본 독립검수 |
-| 클라우드 개인 관리 | **T234 링크18px FAIL·공통focus 복귀 추가결함 → 목록FIX ec1609e 제출 / Front T235 focus 수정 수락** | 실제 project 조회 기반 읽기 전용 상태·미연결 정직 표시·세션 경계·양폭 검수 |
+| 클라우드 개인 관리 | **T234 링크18px FAIL·공통focus 복귀 추가결함 → 목록FIX ec1609e 제출 / Front T235 ebe84ea 제출·T236 독립 재검수 후속 배정** | 실제 project 조회 기반 읽기 전용 상태·미연결 정직 표시·세션 경계·양폭 검수 |
 | 공개 멀티미디어 메인 | 사용자 신규 요구: 방문자가 완성 콘텐츠를 보는 화려한 쇼케이스. **T232 b918e42 새3안·정적시안 범위 수용, Master PC/390 정상6캡처 확인** | 새3안 비교index 제공·구조/화려함/탐색성 방향결정 후 제품범위 배정. 실제재생/API/실콘텐츠 공개는 미구현, 기존T208/private초안 보존 |
 | 운영·비용 | 실제 Supabase Free50MB, 앱 요구2GiB 미충족. SSL DEC-SSL-01 미결정 | 무료 synthetic 개발 계속. 유료 전환·운영 SSL 변경은 승인 전 미실행 |
 | 운영 정리 | kzxq 사용자 승인 삭제 보고·Master404 확인, 주운영 보존 | Vercel2FA는 사용자 보류. 같은 질문 반복 없음 |
@@ -40,9 +40,9 @@
 
 - Master: 플랜 갱신·우선순위·범위/점유 조정·결과 판정·다음 배정·공식 기록. AI_TEAM_RULES v1.4 적용.
 - Backend: B25 고정da0f740 제출·독립수용전. B26 실제예약 transaction/최소권한 계약 문서1개 준비 수락, SQL/role/코드 변경 없음. 검수 필수수정 우선.
-- Front(메인 PC): T229 cloud/manage 신규 화면/CSS/test/고유 인계 및 project list의 관리 링크만. 필요한 production build는 이 담당의 격리 환경, 배포는 검수 수용 후 묶음 처리.
+- Front(메인 PC): T235 누적ebe84ea 수정본 제출. T236 동일SHA artifact/소유서비스만 지원, 브라우저는 Tester 단독 소유. 배포는 독립검수 수용 후 묶음 처리.
 - Design: T230 명세8507612 수용. 사용자 신규 T232 공개 멀티미디어 메인3안 우선. T231은 현재 증거 보존 후 후순위; 기존 관리자 구현을 막지 않는다. 시안/고유보고만, 제품 파일 수정 없음.
-- Tester: T234 원고정 최종보고 후 B25-R 고정da0f740 순차 검수 배정. Front T235 수정 후보 도착 시 안전 경계에서 우선 조정. 단일 활성 검수·브라우저 소유, production build·배포는 Front 지원.
+- Tester: T234 원고정 최종보고 후 B25-R 고정da0f740 순차 검수 배정. B25 최종반환 후 T236 누적ebe84ea UI 재검수로 전환. 단일 활성 검수·브라우저 소유, production build·배포는 Front 지원.
 - 현재 연결된 Tester는 Windows이며 Mac mini 연결은 미확인이다. 맥미니 Tester 배정 원칙을 장비 연결 확인 없이 기존 handle에 덮어쓰지 않는다.
 - 새 Codex 창·agent·worktree 없음. 기존 세션만 사용한다. 예약은 30분마다 기존 Master 대화에 메시지만 전달한다.
 
@@ -51,7 +51,7 @@
 | ID / 우선순위 | 단일 책임자 / 상태 | 허용 범위·완료 조건 | 검증 담당 / 다음 행동 |
 |---|---|---|---|
 | B25→B26 / P2 | B25-R 기존Tester 착수, Backend B26 문서 준비 | 예약전용 pure DB codec/parameter/decoder·test/ownedPG runner/인계. 원문/ID/정책/시간/owner 일치·음성 입력·실PG roundtrip/rollback | 작성자 검사 후 고정 SHA 제출→기존 Tester 독립검수→Master 판정 |
-| T229-FIX / T235 / P2 | 목록ec1609e 제출·Front 공통focus수정 수락, T234 최종FAIL2 수신·B25-R 순차 착수 | /cloud/manage 읽기 전용 UI·목록 표시건수/상태·조회오류·미연결 안내·목록 링크. Auth/layout/backend 불변 | Front 합성 동작·메인 PC 격리 build, 기존 Tester 독립검수·Design 시각 대조 |
+| T229-FIX / T235 / P2 | 목록FIX+focus 누적ebe84ea 제출, T236 기존Tester 후속 배정 | /cloud/manage 읽기 전용 UI·목록 표시건수/상태·조회오류·미연결 안내·목록 링크. Auth/layout/backend 불변 | Front 합성 동작·메인 PC 격리 build, 기존 Tester 독립검수·Design 시각 대조 |
 | T232 / P2·사용자 우선 | Design 제출·새3안 정적시안 범위 수용 | 공개 방문자 중심 영상·음악·이미지 쇼케이스 새3안/비교index/1280·390캡처·상태/출처·추천안 | Master3안비교→선택/구현범위결정→Front구현·Tester검수. T231은 기존 증거 보존 후 후순위 |
 
 차단이나 추가 권한이 보고되지 않은 실행 가능한 구현은 위 담당이 계속한다. 대기 시간을 채우는 중복 과제는 만들지 않는다. 고정본 수신 뒤 검수·결함 수정·후속 범위를 배정하며 문서/단위 검사 완료마다 운영 배포하지 않는다.

@@ -2110,3 +2110,9 @@
 - Master msg_9d2dbe6b156d로정확SQL5 role/function/RLS/grantdelta·actor위조/고정search_path·idempotentledger/원snapshot/evolvedrow/unknownCOMMIT관찰계획·실PGmatrix를근거와함께문서화지시. definerowner가FORCERLS우회가능하다고가정금지·관리clientruntime우회금지. 추천을실role/SECDEF새SQL구현승인으로취급안함, 독립설계검토후구현범위별도.
 - T235 ebe84ea는원focusactualelement를hidden진입시보존하고동일복귀시viewport밖target최소scroll이동 추가source확인. 실제원인/성공은아직Front최종browser근거미수신으로미확인. 기존Auth판정/usewatch/권한/API불변범위유지, source를정적검토한것과nativebrowser실행구분.
 - 현재Tester B25-R 단일활성검수·Frontfocus고정최종대기·Backend B26문서·Design3안반환완료. 새창agentworktree/운영변경없음, 원T234FAIL2/기존정적시안수용경계유지.
+### 점검 / T235 고정 수정본 반환·T236 후속 재검수 배정
+- 실제 점검 완료 시각: 2026-11-18 03:09:32 +09:00 (Asia/Seoul). 지정wake msg_f8865efef173/msg_762033bd77fc·T235abda07d 원문/3파일범위·조건고정test/최근handoffs/Git확인. 고정ebe84eae6611f5e11eedbe6e678c4a05506e0e7a 누적T229/ec1609e/T235 ready_review. 기존T122/T137보존·새미기록완료인계없음.
+- Front실browser근거보고: hasFocusfalse일때focus이벤트없어lastFocus가비는baseline, foregroundTab은기존도복귀됨. same2회1280/390 BODY→A수정, body/selection·다른control미탈취/대상삭제/500retry/stalelateSame차단·목록44/scrollvisibility검증·related91/전체1618·319skip/type/lint0·소유2service종료. unit은정적조건만이고disabled실화면/다중실경계미검증이라는한계원문확인. actualhasFocus인과와scriptinstrumentation은작성자근거이며Master재실행/독립수용아님.
+- B25-R원86/추가49(37pure12PG) 중간PASS/원1036blob·source/protected20·정확시간3timezone/MAXSAFE/raw·권한한계/type/lint0/2cluster정리보고 수신. 최종고유report/commit은아직미수신으로수용전. 재해시일관성은actor/livepolicy증명아님명시유지.
+- T236 기존Tester 실제후속배정 msg_2d6227f4ff17: B25최종반환후단일다음검수로누적ebe84ea 원F2341/2·foreground/background/samefocus2회/입력선택/removeddisabled/다른control·세션irreversible/44px·양폭검수. 공유고유T236보고만·productionbuild는Front/mainPCartifact출처대조만. 수락아직미확인, B25완료전동시착수안함.
+- Front msg_014f9bd6a4cc 실제artifact/source/BUILD_ID·서비스지원요청, 브라우저는Tester배타소유·동시쿠키/fixture변경금지. 정적UI3안반환·B26권한문서준비병행, 현재수정본수용/배포아님. 새Codex창agentworktree/운영변경없음.
