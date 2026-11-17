@@ -1575,3 +1575,9 @@
 - DEC-SSL-01 사용자에게구체질문등록: production SSL강제적용을지금실행(수초~수분중단허용추천)vs현재유지. 기존개발승인에중단영향이명확치않아필요한운영결정으로취합. 답변전실행보류,침묵승인금지. 상태waiting_human은이변경에만적용,다른작업계속.
 - Backend B11 준비전용배정: 최소platform권한표시확인·health/TLSreadonly baseline·변경후내부ssl검증/재연결/복구및원복순서구체화. toggle/save/restart/실DDL/apply미허용. 고유 B11-SSL-CHANGE-READINESS.md. B9-R와Front T213계속.
 - 턴 밖 자동 점검: 미설정. 기존Orca이벤트wake와실행중5분기준만,별도스케줄러/상주실행기없음.
+
+### 점검 / B9-R 지정 로컬 계약 수용
+- 마지막 확인 시각: 2026-11-17 20:23:59 +09:00 (Asia/Seoul). 계기: Orca worker_done. B9-R원문·최근handoffs·git status확인,미추적T122/T137기존보존,새미기록완료파일없음. 다른worker실행상태는메시지회신대기이며유휴로단정하지않음.
+- c3108249 고정0d851865 로컬Session migration계약독립PASS수용. focused121(내부Session35mock)/실PG33/독립B5경계16/Session음성15 모두통과,중복35/unit13합산금지. typegen/원tsc/lint0. 실제managed DDL/lock/roleprovision·실transport전체수용아님.
+- Backend에수용및B11준비계속전달,DEC-SSL-01답변전설정변경/restart/실적용금지유지. Front T213현재단계·차단/수락여부를다음작업경계에서회신요청; 진행중작업중단이나추가전체시험미배정. 두메시지실전송,회신전진행완료추정금지.
+- 턴 밖 자동 점검: 미설정. 사용자SSL결정대기는해당운영변경에만적용,독립개발/검증계속.
