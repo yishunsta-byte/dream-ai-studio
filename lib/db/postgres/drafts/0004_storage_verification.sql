@@ -469,9 +469,15 @@ BEGIN
   IF ((c->>'revision')::numeric::bigint BETWEEN 1 AND obj.revision AND c->'authorizers' @> jsonb_build_array(c->>'principalId')) IS NOT TRUE THEN
    RAISE EXCEPTION 'closure authorization/revision differs' USING ERRCODE='23514'; END IF;
   IF c->>'reason'='cancel' THEN
-   IF c->>'principalId'<>tenant::text OR c->'authorizers'<>jsonb_build_array(tenant::text) THEN RAISE EXCEPTION 'owner cancel authority differs' USING ERRCODE='23514'; END IF;
-  ELSIF c->>'reason' NOT IN ('verification_failure','cleanup') THEN RAISE EXCEPTION 'invalid closure cause' USING ERRCODE='23514'; END IF;
+   IF ((c->>'principalId'=tenant::text AND c->'authorizers'=jsonb_build_array(tenant::text) AND c->'operationId'='null'::jsonb) IS NOT TRUE) THEN
+    RAISE EXCEPTION 'owner cancel authority/operation differs' USING ERRCODE='23514'; END IF;
+  ELSIF c->>'reason'='cleanup' THEN
+   IF ((c->'operationId'='null'::jsonb AND obj.cleanup_id IS NOT NULL) IS NOT TRUE) THEN
+    RAISE EXCEPTION 'cleanup closure operation/claim differs' USING ERRCODE='23514'; END IF;
+  ELSIF c->>'reason'<>'verification_failure' THEN RAISE EXCEPTION 'invalid closure cause' USING ERRCODE='23514'; END IF;
   SELECT * INTO op FROM dream.storage_verification_operations WHERE owner_id=tenant AND object_id=object_uuid AND kind='initial';
+  IF c->>'reason'='verification_failure' AND (NOT FOUND OR (c->>'operationId'=op.id::text) IS NOT TRUE) THEN
+   RAISE EXCEPTION 'failure closure must identify same-owner object initial operation' USING ERRCODE='23514'; END IF;
   IF FOUND AND (c->>'reason') IN ('cancel','verification_failure') AND
     (((c->>'at')::numeric::bigint=floor(extract(epoch FROM op.completed_at)*1000)::bigint AND (c->>'revision')::numeric::bigint=op.completed_aggregate_revision
       AND ((c->>'reason'='cancel' AND op.status='canceled') OR (c->>'reason'='verification_failure' AND op.status='failed' AND c->>'principalId'=op.worker_id::text AND c->'authorizers'=to_jsonb(op.claim_verifiers)))) IS NOT TRUE) THEN

@@ -435,4 +435,99 @@ describe.skipIf(process.env.DREAM_PG_STORAGE_SCHEMA_TEST !== "1")("B20 actual of
     const raw = canonical(observationBase).replace(`"at":${observationBase.at}`, `"at":${observationBase.at}.0`);
     await expect(observationBoundary(observationBase, raw)).rejects.toThrow(accepted);
   });
+  it("R2 failure closure must identify its actual initial operation, not another valid UUID", async () => {
+    const exercise=(wrong:boolean)=>tx(async c=>{
+      const obj=uid(3000),asset=uid(3001),intentId=uid(3002),opId=uid(3003);await insert(c,"storage_objects",object(A,obj,asset));await insert(c,"upload_intents",{...intent(A,intentId,obj),request_id:uid(3004)});await insert(c,"storage_verification_operations",{...operation(opId),object_id:obj,intent_id:intentId});await c.query("UPDATE dream.storage_objects SET active_generation=1,revision=1 WHERE id=$1",[obj]);await claim(c,opId);await c.query("UPDATE dream.storage_objects SET revision=2 WHERE id=$1",[obj]);
+      const result=canonical({status:"failed",code:"INVALID_BYTES"});await c.query("UPDATE dream.storage_verification_operations SET status='failed',failure_code='INVALID_BYTES',terminal_json=$2,terminal_digest=$3,completed_at=$4,completed_state_revision=0,completed_aggregate_revision=3,revision=revision+1 WHERE id=$1",[opId,result,dh("verification-terminal",result),time(1)]);
+      const closure=canonical({revision:3,at:Date.parse(time(1)),principalId:WORKER,authorizers:[WORKER],reason:"verification_failure",operationId:wrong?uid(3999):opId});await c.query("UPDATE dream.storage_objects SET initial_closed=true,closure_json=$2,revision=3 WHERE id=$1",[obj,closure]);await c.query("SET CONSTRAINTS ALL IMMEDIATE");throw Error(accepted);
+    });await expect(exercise(false)).rejects.toThrow(accepted);await expect(exercise(true)).rejects.toMatchObject({code:"23514"});
+  });
+  it("R2 whole JSON null roots and SQL NULL removal reject without weakening nullable unobserved claim", async () => {
+    await expect(observationBoundary(observationBase,"null")).rejects.toMatchObject({code:"23514"});
+    await expect(tx(async c=>{await c.query("UPDATE dream.storage_cleanup_claims SET observation_json=NULL,revision=revision+1 WHERE id=$1",[uid(90)]);await c.query("SET CONSTRAINTS ALL IMMEDIATE");throw Error(accepted);})).rejects.toMatchObject({code:"23514"});
+    await expect(closureBoundary(null)).rejects.toMatchObject({code:"23514"});
+  });
+  it("R2 SQL NULL observation is valid before first observation and explicit null operation remains valid", async () => {
+    await expect(tx(async c=>{const obj=uid(3010),claimId=uid(3011);await insert(c,"storage_objects",object(A,obj,uid(3012)));await insert(c,"storage_cleanup_claims",{owner_id:A,id:claimId,object_id:obj,barrier_fence:1,claimed_at:time(),claimed_aggregate_revision:1,observation_json:null});await c.query("UPDATE dream.storage_objects SET initial_closed=true,closure_json=$2,lifecycle='cleanup_claimed',cleanup_id=$3,barrier_fence=1,revision=1 WHERE id=$1",[obj,canonical({revision:1,at:Date.parse(time()),principalId:WORKER,authorizers:[WORKER],reason:"cleanup",operationId:null}),claimId]);await c.query("SET CONSTRAINTS ALL IMMEDIATE");throw Error(accepted);})).rejects.toThrow(accepted);
+    await expect(closureBoundary(closureBase)).rejects.toThrow(accepted);
+  });
+  it("R2 exact numeric decimal and exponent integers retain raw text, safe maximum time survives", async () => {
+    for(const representation of ["1893456000002.000","1.893456000002e12","9007199254740991"]){const raw=canonical(observationBase).replace(`"at":${observationBase.at}`,`"at":${representation}`);await expect(tx(async c=>{await c.query("UPDATE dream.storage_cleanup_claims SET observation_json=$2,revision=revision+1 WHERE id=$1",[uid(90),raw]);await c.query("SET CONSTRAINTS ALL IMMEDIATE");expect((await c.query("SELECT observation_json FROM dream.storage_cleanup_claims WHERE id=$1",[uid(90)])).rows[0].observation_json).toBe(raw);throw Error(accepted);})).rejects.toThrow(accepted);}
+  });
+  it("R2 fractions too small for JS number and unsafe exact JSON numbers reject", async () => {
+    for(const representation of ["1893456000002.0000000000000000000001","9007199254740991.1","9007199254740992","-0.00000000000000001"]){const raw=canonical(observationBase).replace(`"at":${observationBase.at}`,`"at":${representation}`);await expect(observationBoundary(observationBase,raw)).rejects.toMatchObject({code:"23514"});}
+  });
+  it("R2 genuine false is preserved and additional PostgreSQL boolean spellings cannot coerce", async () => {
+    for(const spelling of ["on","t","1","off","f","0"]){await expect(observationBoundary({...observationBase,absent:spelling})).rejects.toMatchObject({code:"23514"});}
+    await expect(observationBoundary({...observationBase,absent:false,writerQuiescent:false})).rejects.toThrow(accepted);
+  });
+  it("R2 correctly shaped observation still needs deferred matching lifecycle target and claim time", async () => {
+    await expect(tx(async c=>{await c.query("UPDATE dream.storage_cleanup_claims SET observation_json=$2,revision=revision+1 WHERE id=$1",[uid(90),canonical({...observationBase,absent:false})]);await c.query("SET CONSTRAINTS ALL IMMEDIATE");throw Error(accepted);})).rejects.toMatchObject({code:"23514"});
+    await expect(observationBoundary({...observationBase,identityDigest:H})).rejects.toMatchObject({code:"23514"});
+    await expect(observationBoundary({...observationBase,at:0})).rejects.toMatchObject({code:"23514"});
+  });
+  it("R2 valid closure shapes still enforce immutable owner and current aggregate revision", async () => {
+    await expect(closureBoundary({...closureBase,principalId:B,authorizers:[B]})).rejects.toMatchObject({code:"23514"});
+    await expect(closureBoundary({...closureBase,revision:2})).rejects.toMatchObject({code:"23514"});
+    await expect(closureBoundary({...closureBase,operationId:null})).rejects.toThrow(accepted);
+  });
+  // R2 eight tests above retain the reviewer's original expectations.
+  async function failureClosureBoundary(link: string) {
+    return tx(async c => {
+      const obj = uid(4000), asset = uid(4001), intentId = uid(4002), opId = uid(4003);
+      await insert(c, "storage_objects", object(A, obj, asset));
+      await insert(c, "upload_intents", { ...intent(A, intentId, obj), request_id: uid(4004) });
+      await insert(c, "storage_verification_operations", { ...operation(opId), object_id: obj, intent_id: intentId });
+      await c.query("UPDATE dream.storage_objects SET active_generation=1,revision=1 WHERE id=$1", [obj]);
+      await claim(c, opId); await c.query("UPDATE dream.storage_objects SET revision=2 WHERE id=$1", [obj]);
+      const result = canonical({ status: "failed", code: "INVALID_BYTES" });
+      await c.query("UPDATE dream.storage_verification_operations SET status='failed',failure_code='INVALID_BYTES',terminal_json=$2,terminal_digest=$3,completed_at=$4,completed_state_revision=0,completed_aggregate_revision=3,revision=revision+1 WHERE id=$1", [opId, result, dh("verification-terminal", result), time(1)]);
+      if (link === "other-owner") {
+        await insert(c, "storage_objects", object(B, uid(4010), uid(4011)));
+        await insert(c, "upload_intents", { ...intent(B, uid(4012), uid(4010)), request_id: uid(4014) });
+        await insert(c, "storage_verification_operations", { ...operation(uid(4013)), owner_id: B, object_id: uid(4010), intent_id: uid(4012) });
+        await c.query("UPDATE dream.storage_objects SET active_generation=1,revision=1 WHERE id=$1", [uid(4010)]);
+      }
+      const closure: Record<string, unknown> = { revision: 3, at: Date.parse(time(1)), principalId: WORKER, authorizers: [WORKER], reason: "verification_failure",
+        operationId: link === "correct" ? opId : link === "null" ? null : link === "other-owner" ? uid(4013) : link === "other-object" ? OP1 : link === "reverify" ? OP2 : uid(4999) };
+      if (link === "omitted") delete closure.operationId;
+      await c.query("UPDATE dream.storage_objects SET initial_closed=true,closure_json=$2,revision=3 WHERE id=$1", [obj, canonical(closure)]);
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE"); throw Error(accepted);
+    });
+  }
+  it.each(["omitted", "null", "nonexistent", "other-object", "other-owner", "reverify"])("FIX2 failure operationId rejects %s reference", async link => {
+    await expect(failureClosureBoundary(link)).rejects.toMatchObject({ code: "23514" });
+  });
+  it("FIX2 correct initial failure operation survives deferred validation", async () => {
+    await expect(failureClosureBoundary("correct")).rejects.toThrow(accepted);
+  });
+  it("FIX2 failure closure cannot exist without a same-object initial operation", async () => {
+    await expect(closureBoundary({ ...closureBase, principalId: WORKER, authorizers: [WORKER], reason: "verification_failure", operationId: uid(4999) })).rejects.toMatchObject({ code: "23514" });
+  });
+  it.each([OP1, uid(4999)])("FIX2 cancellation rejects non-null operation %s", async operationId => {
+    await expect(closureBoundary({ ...closureBase, operationId })).rejects.toMatchObject({ code: "23514" });
+  });
+  it("FIX2 cancellation without an initial operation retains explicit null", async () => {
+    await expect(closureBoundary(closureBase)).rejects.toThrow(accepted);
+  });
+  async function cleanupClosureBoundary(link: string) {
+    return tx(async c => {
+      const obj = uid(4020), claimId = uid(4021);
+      await insert(c, "storage_objects", object(A, obj, uid(4022)));
+      await insert(c, "storage_cleanup_claims", { owner_id: A, id: claimId, object_id: obj, barrier_fence: 1, claimed_at: time(), claimed_aggregate_revision: 1 });
+      const closure: Record<string, unknown> = { revision: 1, at: Date.parse(time()), principalId: WORKER, authorizers: [WORKER], reason: "cleanup", operationId: link === "null" ? null : link === "existing" ? OP1 : uid(4999) };
+      if (link === "omitted") delete closure.operationId;
+      await c.query("UPDATE dream.storage_objects SET initial_closed=true,closure_json=$2,lifecycle='cleanup_claimed',cleanup_id=$3,barrier_fence=1,revision=1 WHERE id=$1", [obj, canonical(closure), claimId]);
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE"); throw Error(accepted);
+    });
+  }
+  it.each(["omitted", "existing", "nonexistent"])("FIX2 cleanup operationId rejects %s reference", async link => {
+    await expect(cleanupClosureBoundary(link)).rejects.toMatchObject({ code: "23514" });
+  });
+  it("FIX2 cleanup with actual claim and explicit null operation survives", async () => {
+    await expect(cleanupClosureBoundary("null")).rejects.toThrow(accepted);
+  });
+  it("FIX2 cleanup cause without a cleanup claim rejects", async () => {
+    await expect(closureBoundary({ ...closureBase, principalId: WORKER, authorizers: [WORKER], reason: "cleanup" })).rejects.toMatchObject({ code: "23514" });
+  });
 });
