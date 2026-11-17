@@ -11,6 +11,8 @@ if (process.platform !== "win32" || process.argv[2] !== "--bin" || !process.argv
   throw new Error("Usage on Windows: node tests/postgres/run-local.mjs --bin <signed-portable-pg-bin>");
 }
 const bin = await realpath(process.argv[3]);
+const suite = process.argv[4];
+if (suite !== undefined && suite !== "b4") throw new Error("Only the fixed b4 suite selector is supported");
 const root = join(repo, "tmp", `b3-postgres-${randomUUID()}`);
 await mkdir(root, { recursive: true });
 const cluster = join(root, "cluster");
@@ -58,7 +60,8 @@ try {
   checked(await run("powershell.exe", ["-NoProfile", "-Command", ownListener], "listener.log"), "Listener ownership mismatch");
   await writeFile(join(root, "run.json"), JSON.stringify({ root, pid, port, address: "127.0.0.1", database: "dream_test_b3" }, null, 2));
   checked(await run(join(bin, "createdb.exe"), ["-h", "127.0.0.1", "-p", String(port), "-U", "dream_test_admin", "dream_test_b3"], "createdb.log", { ...env, PGPASSWORD: "b3-synthetic-admin-only" }), "Synthetic database creation failed");
-  exitCode = await run(process.execPath, [join(repo, "node_modules/vitest/vitest.mjs"), "run", "tests/postgres/connection.test.ts", "tests/postgres/projects.test.ts"], "tests.log", {
+  const tests = suite === "b4" ? ["tests/postgres/connection.test.ts", "tests/postgres/project-read-backend.test.ts", "tests/postgres/project-reads.test.ts"] : ["tests/postgres/connection.test.ts", "tests/postgres/projects.test.ts"];
+  exitCode = await run(process.execPath, [join(repo, "node_modules/vitest/vitest.mjs"), "run", ...tests], "tests.log", {
     ...env, DREAM_PG_INTEGRATION: "1", DREAM_PG_TEST_ADMIN_URL: `postgresql://dream_test_admin:b3-synthetic-admin-only@127.0.0.1:${port}/dream_test_b3`,
   });
   console.log(await readFile(join(root, "tests.log"), "utf8"));
