@@ -1386,3 +1386,8 @@
 - msg_22557a8e319b /be59435: verified UUID/local/denied resolver + render-pass cache ready_review. Author20/157/full925 evidence remains self-test; no independent acceptance/push.
 - Actual module/DTO passed to Backend B4-S without authorizing production API wiring. Tester T193 queued after original T190 report, focused on verified identity, one-call/request isolation and existing auth semantics.
 - T190 clarified desktop root offset56+16px vs dynamic113.78px header; old-shell control passes, new-wrap control fails. T192 owns fix; no original finding overwritten.
+### B4-S returned; B4-R independent and B4-I adapter
+
+- msg_5b87f352d3ea /e260310 report read. Author actualPG B4 9+unit42 and existingB3 33,259 impact tests/lint/type; snapshot/domain-error ownership checks reported. No independent acceptance yet.
+- B4-R ctx_ecd578ed0577 /task_522380e7132e dispatched original real-PG reviewer, report only.
+- B4-I backend assigned new isolated auth-to-read request adapter/config/tests only; no live HTTP/RSC/legacy routes, no concurrent B3/B4-S/Auth edits. Both independent reviews precede actual API opening. Design global/header WIP protected.
