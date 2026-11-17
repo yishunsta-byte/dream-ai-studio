@@ -1678,3 +1678,9 @@
 - T223 고정234806b 시험한파일Date-only fake/set/첫cleanup복원변경확인,제품/기대값/fixture불변. Master직접t164실행7/7PASS(exit0)로좁은시험수정수용. 작성자깨끗한be0e304+수정사본실제/과거/미래7·관련42·전체1356PASS/84skip/lint/type는작성자근거로구분,현재WIP HEAD전체검사아님.
 - be0e304는커밋T220을포함하므로보고의T220소스미혼입표현은추가미커밋WIP배제의미인지정확히정정하도록전달. 이문서정정때문에T224우선작업중단요청안함. 유사시계10파일두날짜121PASS/1skip은해당대조범위이며모든날짜보장아님.
 - Front T224입력보존/사이드바보호우선계속,Tester T221최종보고및Backend B15진행유지. 운영SSL DEC미수신·변경보류,턴 밖 자동 점검 미설정.
+
+### 추가 이벤트 점검 / B15 제출·독립검수 / B16 업로드 worker 계약
+- 마지막 확인 시각: 2026-11-17 21:24:49 +09:00 (Asia/Seoul). 추가사용자wake→B15메시지·고유인계확인. B15 1d561c1 ready_review,실DBowner/MIME와reader결합·요청별취소/IOtimeout/scopedclientguard·커밋확정후성공보존. 작성자19/B12 20/focused97는중복구분,아직독립수용아님.
+- B15-R 기존검수자재개요청,고정1d561c1 실합성PG+fakeHTTP/취소·COMMIT·rollback/metadata권한·바이트경계재검수. B14소스신뢰한계/실Storage未接続/네이티브Vercel미수용분리. 고유 B15-R-CREATE-STORAGE-ADAPTER-REVIEW.md.
+- Backend B16설계만배정: upload intent/private nooverwrite/worker실byte-native검증/receipt·DB등록/가벼운Vercel생성readiness·권한/불변성·동시멱등/lease/RLS·새appendSQL필요성 구체화. ffprobe/대용량검증·장시간행lock을VercelHTTP로직결하지않음. 현재검증을단순boolean으로완화하지않음,실bucket/worker/upload/API/SQL적용미배정.
+- Front T224우선·T221최종검수진행,DEC-SSL-01미수신·운영변경보류. 턴 밖 자동 점검 미설정.
