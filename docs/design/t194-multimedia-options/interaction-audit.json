@@ -1,0 +1,363 @@
+[
+  {
+    "theme": "neon",
+    "name": "genre filter",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "search combines with filter",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "no results",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "reset restores 6 images and focus",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "static image preview",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "dialog tab contained",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "dialog reverse tab contained",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "escape restores trigger",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "project name escaped; no actual creation",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "project anchor focus",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "loading disables all new actions with reason",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "error retry recovers example list",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "empty project guidance",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "offline requires connection",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "guest guidance without credential collection",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "cloud guidance without creation",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "3 scene carousel wraps",
+    "pass": true
+  },
+  {
+    "theme": "neon",
+    "name": "core color text contrast >=4.5",
+    "pass": true,
+    "details": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 18.407366987804185
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 10.10289389968007
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 9.10949010132966
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 8.032078326619528
+      },
+      {
+        "fg": "on",
+        "bg": "button",
+        "ratio": 4.650150680135826
+      },
+      {
+        "fg": "warning",
+        "bg": "warning-bg",
+        "ratio": 10.07724767066493
+      }
+    ]
+  },
+  {
+    "theme": "wave",
+    "name": "genre filter",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "search combines with filter",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "no results",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "reset restores 6 images and focus",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "static image preview",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "dialog tab contained",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "dialog reverse tab contained",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "escape restores trigger",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "project name escaped; no actual creation",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "project anchor focus",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "loading disables all new actions with reason",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "error retry recovers example list",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "empty project guidance",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "offline requires connection",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "guest guidance without credential collection",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "cloud guidance without creation",
+    "pass": true
+  },
+  {
+    "theme": "wave",
+    "name": "core color text contrast >=4.5",
+    "pass": true,
+    "details": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 16.009156017334853
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 6.008047321608931
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 6.460217912634587
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 7.233507703228676
+      },
+      {
+        "fg": "on",
+        "bg": "button",
+        "ratio": 7.507012963644898
+      },
+      {
+        "fg": "warning",
+        "bg": "warning-bg",
+        "ratio": 6.061193429996793
+      }
+    ]
+  },
+  {
+    "theme": "cinema",
+    "name": "genre filter",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "search combines with filter",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "no results",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "reset restores 6 images and focus",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "static image preview",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "dialog tab contained",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "dialog reverse tab contained",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "escape restores trigger",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "project name escaped; no actual creation",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "project anchor focus",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "loading disables all new actions with reason",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "error retry recovers example list",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "empty project guidance",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "offline requires connection",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "guest guidance without credential collection",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "cloud guidance without creation",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "3 scene carousel wraps",
+    "pass": true
+  },
+  {
+    "theme": "cinema",
+    "name": "core color text contrast >=4.5",
+    "pass": true,
+    "details": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 16.99022636053546
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 10.60694521069746
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 8.836233468830265
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 12.3961309225738
+      },
+      {
+        "fg": "on",
+        "bg": "button",
+        "ratio": 10.956185573944149
+      },
+      {
+        "fg": "warning",
+        "bg": "warning-bg",
+        "ratio": 10.07724767066493
+      }
+    ]
+  }
+]
