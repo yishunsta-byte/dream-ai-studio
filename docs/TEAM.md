@@ -1364,3 +1364,9 @@
 
 - T187 report b29bcf2 read:150 actual related+15 independent tests/lint/type/build,79 HTTP observations and actual SDK/normal controls PASS. Original154 claim not reused. Fixed authentication scope accepted; original T185 FAIL remains historical.
 - T189 Front requested committed-snapshot secret scan/build/auth regression/push/Vercel SHA/readback, excluding Design WIP and leaving local3013 intact. Postgres code remains unwired and SQL not applied. No full-cloud completion claim.
+### T188 review and T189 push race
+
+- T1884458283 returned mobile-header fix; T190 Tester requested actual width/keyboard/current-auth integration check. Author-only evidence not yet independent acceptance.
+- T189 Front reports push included unreviewed4458283 after testing2d997e6, failed to recheck HEAD. Master chose retain history and exact4458283 isolated revalidation plus deployment SHA/readback, no force push. T190 notified; unresolved independent result blocks full acceptance.
+- Future push requires verified SHA/local HEAD/remote identity match immediately before push. No user data/account changes permitted during production checks.
+- Backend B4-C report returned; review pending while B3-R independently verifies connection layer.
