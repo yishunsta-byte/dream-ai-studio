@@ -2174,4 +2174,7 @@
 - 현재 draft WIP 및 보호 미추적 T122/T137 보존. Master 변경은 TEAM 기록만. Front T238 준비 정정/rollback 읽기확인 계속, 새 완료 미수신. 새 창/agent/worktree·SQL 실행·role 생성·push·배포 없음.### 점검 / T238 정정본 준비 수용·실제 배포와 구분
 - 실제 점검 완료 시각: 2026-11-18 03:53:35 +09:00 (Asia/Seoul). 지정 msg_1acf172e39e7·bd1c7a T238 1문서 diff/Git/status 대조. kzxq 삭제완료·일반FF와정확remote대조·기존복구승인과도구gate구분 정정 수용. 준비 범위 수용이며 push/배포 완료 아님.
 - Front 기존 로그인 읽기 보고에서 현재3QDy Ready/Latest/Production Current/master8ffe 및 삭제기록없음 확인. retention enabled이나 실제기간/Promote 활성·플랜 제한 미확인으로 기록 유지. 메뉴를 읽기만 해 활성/제한을 확인하는 범위 추가 전달 msg_a16d9df268c0, 실제 실행·설정변경 금지. Master 독립 운영 재조회는 이번에 없음.
-- 제품 후보 ebe84ea 유지. Front 자동 push 거절은 Destructive or Unwanted Actions 사유의 기존 gate라 우회하지 않으며 사용자 직접 실행 전 단계. Backend B27-FIX 미커밋 draft/Tester 최종2필수gap 판정 보존, 새 고정 수정본 미반환. 보호 T122/T137 유지·새 창/agent/worktree/SQL 실행/배포 없음.
+- 제품 후보 ebe84ea 유지. Front 자동 push 거절은 Destructive or Unwanted Actions 사유의 기존 gate라 우회하지 않으며 사용자 직접 실행 전 단계. Backend B27-FIX 미커밋 draft/Tester 최종2필수gap 판정 보존, 새 고정 수정본 미반환. 보호 T122/T137 유지·새 창/agent/worktree/SQL 실행/배포 없음.### 점검 / T238 메뉴 읽기 완료·원격 미반영 재확인
+- 실제 점검 완료 시각: 2026-11-18 03:54:51 +09:00 (Asia/Seoul). 지정 msg_e4c38dce91ce·2dea6bb T238 문서diff·Git/status/신규 FIX 인계 확인. Master actual ls-remote origin/master=8ffe3c75b5eaa908ee000f574cf688dd65125378, 후보ebe 미push 확정.
+- Front 메뉴 읽기: 현재3QDy Instant Rollback/Promote aria-disabled=true, Redeploy 등 활성·플랜 제한 안내 없음. 현재배포라 비활성이라는 해석은 추정이며, 후속 배포 후 실제복구가능 여부는 미확인 유지. 메뉴 항목 선택/운영변경 없었다는 보고와 구분. 추가 같은메뉴 반복검증·중복build 배정 없음.
+- T238 준비는 수용·실배포는 기존 자동push 거절로 사용자 직접 실행 필요. Backend B27-FIX draft/신규고유인계 작성 중, 고정본 최종 반환 전이며 실제 DB실행 금지 유지. 보호 T122/T137·새 창/agent/worktree 없음. Master 변경 범위 TEAM 기록만.
