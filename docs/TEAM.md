@@ -1714,3 +1714,9 @@
 - B17 a7cb6d3 실제Supabase FREE/Global50MB고정·bucket없음관측수용,exact2GiB충족불가. VercelHobby/Fluid표시와durationplaceholder300은실invocation보장아님. 장비여유disk/RAM snapshot만으로상시worker운영용량보장안함,전용workRoot/deployment미지정.
 - B18 Backend에공식dashboard안전한read-only upgrade견적/조직전체vs프로젝트영향·기존project수/compute/base/표시월비용/proration/최종확정경계확인배정. 결제정보·주소/송장읽기·Upgrade확정/Pay/Save/실구독변경금지. 시작가25달러를총액으로확정하지않고견적먼저준비한뒤Master가실비용결정취합.
 - Master는현재PC를worker개발/검증후보로만지정,상시가동/스케줄러/서비스설치/실worker未設定。2GiB요구축소·유료자원구매미승인. Front T226준비완료/T225독립검수와B16-R기존배정유지,SSL DEC미수신. 턴 밖 자동 점검 미설정.
+
+### 점검 / B16-R 설계 FAIL·B16-FIX 우선 배정
+- 마지막 확인 시각: 2026-11-17 21:47:45 +09:00 (Asia/Seoul). worker_done·B16-R원문전체/최근handoffs/Git확인,새검수보고수신,기존T122/T137보존. 신규미기록완료없음.
+- 90c46f7 고정79787f9 설계완료수용FAIL. F1/P1 재검증/만료갱신과receipt finalidentity uniqueness·append-only충돌,별도reverification generation권한필요. F2/P1 promoted-orphanGC와finalize共通행lock/CAS·externalpublish전durableidentity기록없어삭제된K ready경합배제불가. 실행공격재현아닌논리counterexample로구분.
+- Backend B16-FIX문서2개만우선배정. object1:receiptN/history·currentstate·별도generation·terminal再조회우선/lease권한分離,publication先durable記錄/GC tombstone/fence/정확락·멱등·응답유실복구trace·capability예약/creationfingerprint 정책정리. SQL/코드/실설정변경미배정. B18안전preview진행중이면증거checkpoint후수정,결제확정금지.
+- T225세션독립검수·Front T226배포준비완료기존상태유지,실배포는T225수용뒤. DEC-SSL-01미수신·운영변경보류,턴 밖 자동 점검 미설정.
