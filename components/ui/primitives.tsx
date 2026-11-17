@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+import { useId, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from "react";
 import { statusDisplay, type Status } from "@/lib/ui/status";
 import { Icon, type IconName } from "./Icon";
 import styles from "./ui.module.css";
@@ -7,10 +7,14 @@ export function Button({ variant = "primary", size = "md", loading = false, load
   variant?: "primary" | "secondary" | "ghost" | "danger"; size?: "sm" | "md" | "lg";
   loading?: boolean; loadingLabel?: string; disabledReason?: string;
 }) {
-  const button = <button {...props} type={props.type ?? "button"} disabled={props.disabled || loading || !!disabledReason} aria-busy={loading || undefined} className={`${styles.button} ${styles[variant]} ${styles[size]} ${className}`}>
+  // T-177: the shown reason is the button's description (aria-describedby), added to any description the caller gave.
+  // useId is also available in Server Components (React 19 react-server build), where this file is used too.
+  const reasonId = `${useId()}-reason`;
+  const describedBy = [props["aria-describedby"], disabledReason && reasonId].filter(Boolean).join(" ") || undefined;
+  const button = <button {...props} type={props.type ?? "button"} disabled={props.disabled || loading || !!disabledReason} aria-busy={loading || undefined} aria-describedby={describedBy} className={`${styles.button} ${styles[variant]} ${styles[size]} ${className}`}>
     {loading && <Icon name="spinner" className={styles.spin} />}{loading ? loadingLabel : children}
   </button>;
-  return disabledReason ? <span className={styles.disabledGroup}>{button}<span className={styles.reason}>{disabledReason}</span></span> : button;
+  return disabledReason ? <span className={styles.disabledGroup}>{button}<span id={reasonId} className={styles.reason}>{disabledReason}</span></span> : button;
 }
 export function IconButton({ label, icon, className = "", ...props }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & { label: string; icon: IconName }) {
   return <button {...props} type={props.type ?? "button"} aria-label={label} className={`${styles.iconButton} ${className}`}><Icon name={icon} /></button>;
