@@ -145,26 +145,30 @@ export async function runClaimedExport(handle:DatabaseHandle,job:{id:string;atte
   if(service.job(job.id)?.cancelRequestedAt){canceled=true;throw new MediaError("EXPORT_CANCELED","내보내기를 취소했어요.");}
   // A sound source problem keeps its own sentence (T-162); every other change keeps the existing one. Both are EXPORT_INVALID (not retryable).
   let data;try{data=exportService(handle).context(input.projectId,input.revision);if(data.plan.id!==input.planId)throw new Error("plan changed");}catch(error){if(error instanceof ExportSourceError)throw new MediaError("EXPORT_INVALID",error.message,409);throw new MediaError("EXPORT_INVALID","내용이 바뀌었거나 검수가 유효하지 않아요. 현재 내용을 다시 검수해 주세요.",409);}
-  const sources:BundleSource[]=[],files:BundleManifest["files"]=[],recorded:{filename:string;sha256:string|null;sizeBytes:number|null;message:string}[]=[];
+  const sources:BundleSource[]=[],files:BundleManifest["files"]=[],recorded:{filename:string;sha256:string|null;sizeBytes:number|null;message:string;missing:string;audio:boolean}[]=[];
   for(const entry of bundleLayout(handle,{...data,revision:input.revision})){
    if(entry.source==="text"){const bytes=Buffer.from(entry.text,"utf8");sources.push({path:entry.path,bytes});files.push({path:entry.path,mime:entry.mime,sizeBytes:bytes.length,sha256:createHash("sha256").update(bytes).digest("hex")});continue;}
    const filename=entry.source==="scene"?entry.item.filename!:entry.source==="audio"?entry.item.filename!:entry.filename,digest=await fileDigest(filename,controller.signal);sources.push({path:entry.path,filename});
    if(entry.source==="file"){files.push({path:entry.path,mime:entry.mime,...digest});continue;}
    // T-162: the sound source bytes measured now (fresh) must be the registered ones; the ZIP keeps them as they are.
-   if(entry.source==="audio"){const item=entry.item,message=audioIssueMessage(item,"file_changed");recorded.push({filename,sha256:item.sha256,sizeBytes:item.sizeBytes,message});
+   if(entry.source==="audio"){const item=entry.item,message=audioIssueMessage(item,"file_changed");recorded.push({filename,sha256:item.sha256,sizeBytes:item.sizeBytes,message,missing:audioIssueMessage(item,"file_missing"),audio:true});
     files.push({path:entry.path,mime:entry.mime,...digest,durationMs:item.durationMs,audio:{assetId:item.assetId,roles:item.roles,isMock:item.isMock}});
     if(digest.sha256!==item.sha256||digest.sizeBytes!==item.sizeBytes)throw new MediaError("EXPORT_INVALID",message,409);continue;}
-   const item=data.selected[entry.index];recorded.push({filename,sha256:item.asset.sha256,sizeBytes:item.asset.sizeBytes,message:"결과 파일의 해시가 등록 기록과 달라요. 파일을 확인해 주세요."});files.push({sceneId:item.scene.id,versionId:item.version.id,width:item.asset.width,height:item.asset.height,durationMs:item.asset.durationMs,rights:item.asset.rightsNote,path:entry.path,mime:entry.mime,...digest});
+   const item=data.selected[entry.index];recorded.push({filename,sha256:item.asset.sha256,sizeBytes:item.asset.sizeBytes,message:"결과 파일의 해시가 등록 기록과 달라요. 파일을 확인해 주세요.",missing:"결과 파일의 해시가 등록 기록과 달라요. 파일을 확인해 주세요.",audio:false});files.push({sceneId:item.scene.id,versionId:item.version.id,width:item.asset.width,height:item.asset.height,durationMs:item.asset.durationMs,rights:item.asset.rightsNote,path:entry.path,mime:entry.mime,...digest});
    if(digest.sha256!==item.asset.sha256||digest.sizeBytes!==item.asset.sizeBytes)throw new MediaError("EXPORT_INVALID","결과 파일의 해시가 등록 기록과 달라요. 파일을 확인해 주세요.",409);
   }
   // manifest 2 only when the bundle carries sound sources (T-154 D-2); otherwise manifest 1 exactly as before.
   const sampled=data.selected.some(item=>item.asset.isMock)||data.audio.some(item=>item.isMock);
   const manifest=manifestSchema.parse({manifestVersion:data.audio.length?2:1,project:{id:data.project.id,title:data.project.title,aspect:data.project.aspect,lengthSec:data.project.lengthSec},menu:{id:data.snapshot.menu.id,label:data.snapshot.menu.label},templateVersion:data.project.templateVersion,contentRevision:input.revision,planId:data.plan.id,exportedAt:record.createdAt,isMock:sampled,kind:"editing-bundle",files,...(data.audio.length?{timeline:{revisionId:data.edit.id,schemaVersion:2,audioMixProfile:EXPORT_AUDIO_PROFILE}}:{})});
   // A source that changes while the ZIP is written makes the written copy differ: say so (not retryable) instead of a storage error.
-  const changedSource=async()=>{for(const source of recorded){let now;try{now=await fileDigest(source.filename);}catch{return source.message;}if(now.sha256!==source.sha256||now.sizeBytes!==source.sizeBytes)return source.message;}return null;};
+  const changedSource=async(onlyAudio=false,signal?:AbortSignal)=>{for(const source of recorded){if(onlyAudio&&!source.audio)continue;let now;try{now=await fileDigest(source.filename,signal);}catch{if(signal?.aborted)throw new Error("aborted");return source.missing;}if(now.sha256!==source.sha256||now.sizeBytes!==source.sizeBytes)return source.message;}return null;};
   const relative=`projects/${input.projectId}/exports/${input.exportId}.zip`,existing=resolveStoredFile(relative);const destination=await storageDirectory(`projects/${input.projectId}/exports`);final=join(/*turbopackIgnore: true*/destination,`${input.exportId}.zip`);
   if(existing)await verifyZip(existing,manifest,controller.signal);else{const tempDir=await storageDirectory("tmp");temp=join(/*turbopackIgnore: true*/tempDir,`${input.exportId}-${v7()}.zip.part`);try{await writeZip(temp,sources,manifest,controller.signal);tempCreated=true;await verifyZip(temp,manifest,controller.signal);}catch(error){tempCreated=true;if(!controller.signal.aborted){const changed=await changedSource();if(changed)throw new MediaError("EXPORT_INVALID",changed,409);}throw error;}}
   const digest=await fileDigest(existing??temp!,controller.signal);
+  // T-166 (F163-1): a sound source must still be the registered bytes when the written (or resumed) ZIP is about to be
+  // published, even though the ZIP itself holds the bytes read earlier. Measured fresh (full sha256, no size/mtime
+  // cache) on the success path. A change after this point and before the link is not caught (no OS-level lock).
+  {const late=await changedSource(true,controller.signal);if(late)throw new MediaError("EXPORT_INVALID",late,409);}
   handle.sqlite.transaction(()=>{
    const claimed=service.assertClaim(job.id,job.attempts);if(claimed.cancelRequestedAt)throw new MediaError("EXPORT_CANCELED","내보내기를 취소했어요.");let current;try{current=exportService(handle).context(input.projectId,input.revision);}catch(error){if(error instanceof ExportSourceError)throw new MediaError("EXPORT_INVALID",error.message,409);throw error;}if(current.plan.id!==input.planId)throw new MediaError("EXPORT_INVALID","승인 기획이 바뀌었어요.");let linked=false;
    try{if(!existing){linkSync(temp!,final!);linked=true;}else if(!resolveStoredFile(relative))throw new MediaError("STORAGE_FAILED","내보낸 파일이 없어졌어요.",503);
