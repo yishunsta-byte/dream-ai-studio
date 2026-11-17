@@ -1975,3 +1975,8 @@
 - 작성자 baseline71PASS/5FAIL→ACL추가71PASS/6FAIL 원기대유지 재현후 fixed88PASS=원71+6+추가11 보고. pure35/66skip중복구분, tsc/lint/4run정리 보고. Master 실제state canonical LF SHA c51745a4c482732a428374831690ebd1eb5ee310487221cf9a95858465c77f70 일치와 finalcleanup-safe 두flagtrue 확인; 전체PG88은Master재실행아님.
 - 수정은 sessionOID/OID0 기반 disjoint JSON principal 표현을 owners/ACL grantor·grantee/policyroles에적용. descriptor는별도knownreference만 offline변환·target학습없음 주장, 기존SQL1~4/manifest/v1/B19/runtime불변. 실제정상owner의marker/PUBLIC/JSON형이름 허용과 foreign거부·historyReadfalse 회귀보고. 독립수용은아직아님.
 - 기존Tester B22-R2 실제전송 msg_a7791c60b99f. 고정새archive/소유PG 원88+원독립20·추가부정/양성/metadata-before-history/provenance/원소스불변·정리 검수, 고유R2보고만허용. 후속 msg_6fd6d673e4aa로 기존Tester 수신·착수 확인, 새Codex창/agent생성없음. apply/CLI/운영은수용전보류 유지.
+### 점검 / B22-R2 실행 통과 중간보고·최종 인계 전
+- 마지막 확인 시각: 2026-11-18 01:19:33 +09:00 (Asia/Seoul). 지정 wake msg_77832dffbd9e·Git/최근 handoffs 확인. 고정f5d009e 검수중간결과 수신, 최종 R2보고/선택commit 아직미제출. 기존 T122/T137 미추적 보존·새미기록완료인계없음.
+- Tester 보고: 자기물리archive/서명PG18.7 원88PASS, 원독립20 byte동일기대20PASS, 추가25PASS. 원6변형 actualwrongowner/ACL 유지하면서 STATE거절·historyReadfalse 확인. 이3집합은 의미경계가겹칠수있어 전체상태공간/고유133시나리오 보장으로확대하지 않음.
+- 추가 최초1FAIL은 PUBLIC혼합policy가native polroles[0]로저장되는 동작을 검수fixture가잘못가정한것, native대조에맞춰 fixture보정후25PASS 보고. 제품거절기대변경과구분. provenance/source/declaredargs감사·원1015blob불변·type/lint0·소유4cluster종료·3013보존 보고도 최종원문에서대조예정.
+- 판정/후속: 실행검증 긍정적이지만 완료/수용은 최종보고 근거검토 전미확정. Tester 현재보고마무리배정 유지, 중복검수/새수정작업없음. 고정최종인계 수신후 수용판정과 v2 apply 다음범위 배정. 별도Codex창없이 기존Master/Tester 유지·메시지전용30분예약 유지.
