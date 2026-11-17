@@ -175,15 +175,28 @@ try {
     ["render-forbidden-403", ["A", "outside"], "/login?error=forbidden"],
     ["render-provider-503", ["A", ...Array(30).fill("server500")], "/login?error=unavailable"],
   ]) {
-    for (const path of [`/cloud/projects/${PA}`, "/cloud/projects"]) {
+    // T-219: 새 프로젝트 준비 안내도 같은 거절 정책(401은 자기 경로로 돌아오는 next).
+    for (const path of [`/cloud/projects/${PA}`, "/cloud/projects", "/cloud/projects/new"]) {
       sequence = [...choices]; const before = await activity(), reply = await request(path, jars.A); sequence = [];
       assert.equal(reply.status, 307, `${name} ${path}`);
-      assert.equal(reply.location, target, `${name} ${path} location`);
+      assert.equal(reply.location, path === "/cloud/projects/new" && name === "render-expired-401" ? "/login?next=%2Fcloud%2Fprojects%2Fnew" : target, `${name} ${path} location`);
       assert.match(reply.cache ?? "", /no-store/, `${name} ${path} no-store`);
       assert(!reply.text.includes(titles[PA]));
       assert.deepEqual(await activity(), before, "denied render must not query Postgres");
       observations.push({ name: `${name}${path}`, ...summary(reply), postgresQueries: 0 });
     }
+  }
+  // T-219: 로그인한 준비 안내는 200·no-store·h1 하나·폼 없음, Postgres 쿼리 0. 목록에는 안내 링크 하나.
+  {
+    const before = await activity(), pending = await request("/cloud/projects/new", jars.A);
+    assert.equal(pending.status, 200); assert.match(pending.cache ?? "", /no-store/);
+    assert.equal((pending.text.match(/<h1[\s>]/g) ?? []).length, 1);
+    assert(pending.text.includes("아직 클라우드에서는 새 프로젝트를 만들 수 없어요"));
+    assert(!/<form|<input|<textarea|<select/i.test(pending.text));
+    assert.deepEqual(await activity(), before, "create-pending page must not query Postgres");
+    const list = await request("/cloud/projects", jars.A);
+    assert.equal((list.text.match(/href="\/cloud\/projects\/new"/g) ?? []).length, 1);
+    observations.push({ name: "create-pending", ...summary(pending), postgresQueries: 0, listLinks: 1 });
   }
   await admin.query("UPDATE dream.projects SET template_snapshot_json='{}' WHERE id=$1", [PB]);
   const corruptList = await request("/cloud/projects", jars.B), corruptDetail = await request(`/cloud/projects/${PB}`, jars.B);

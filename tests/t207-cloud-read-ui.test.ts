@@ -79,7 +79,7 @@ function legacyUntouched() {
 describe("정적: (cloud) 화면은 legacy 서비스·저장소를 import하지 않는다", () => {
   const files = ["lib/cloud/project-read-page.ts", "components/cloud/project-list-readonly.tsx", "components/cloud/project-detail-readonly.tsx",
     "app/(cloud)/layout.tsx", "app/(cloud)/cloud/projects/(list)/page.tsx",
-    "app/(cloud)/cloud/projects/[id]/page.tsx", "app/(cloud)/cloud/projects/[id]/not-found.tsx"];
+    "app/(cloud)/cloud/projects/[id]/page.tsx", "app/(cloud)/cloud/projects/[id]/not-found.tsx", "app/(cloud)/cloud/projects/new/page.tsx"];
   it.each(files)("%s", (file) => {
     const source = readFileSync(file, "utf8");
     const imports = [...source.matchAll(/from "([^"]+)"/g)].map((match) => match[1]);
@@ -157,7 +157,7 @@ describe("확인된 계정: adapter(요청마다 새로, resolveAuth=getRenderAu
     expect(markup).toContain("아직 클라우드에 옮긴 프로젝트가 없어요");
     expect(markup).toContain("보기만");
   });
-  it("목록: 표시값만, 상세 링크만(legacy 단계·만들기 링크 없음), owner·원본 미노출", async () => {
+  it("목록: 표시값만, 상세 링크 + 만들기 준비 안내 링크만(legacy 단계·실제 만들기 링크 없음), owner·원본 미노출", async () => {
     signedIn(); state.list.mockResolvedValue(ok([row]));
     const { readCloudProjects } = await import("@/lib/cloud/project-read-page");
     const result = await readCloudProjects();
@@ -167,7 +167,8 @@ describe("확인된 계정: adapter(요청마다 새로, resolveAuth=getRenderAu
     expect(markup).toContain("다음 단계: 요구 확인");
     expect(markup).toContain(`href="/cloud/projects/${PA}"`);
     expect(markup).not.toContain(A);
-    expect([...markup.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual([`/cloud/projects/${PA}`]);
+    // T-219: 만들기 화면 링크는 없고, 준비 안내로 가는 이차 링크 하나만 더해졌다.
+    expect([...markup.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/cloud/projects/new", `/cloud/projects/${PA}`]);
   });
   it("단건: 인증 뒤 params, 개요·단계 상태, 입력 원문·owner 미노출, 단계 화면 링크 없음", async () => {
     signedIn(); state.get.mockResolvedValue(ok(detail));
@@ -226,5 +227,52 @@ describe("레이아웃", () => {
     expect(markup).toContain("로그아웃");
     expect(markup).toContain("내용");
     legacyUntouched();
+  });
+});
+
+describe("새 프로젝트 준비 안내 /cloud/projects/new(T-219): 만들기 미개통, 인증 판정만", () => {
+  async function pendingPage() { return (await import("@/app/(cloud)/cloud/projects/new/page")).default(); }
+  it.each([
+    ["no session", "/login?next=%2Fcloud%2Fprojects%2Fnew"],
+    ["forbidden", "/login?error=forbidden"],
+    ["provider error", "/login?error=unavailable"],
+    ["missing config", "/login?error=unavailable"],
+  ])("%s → %s, adapter·legacy 0", async (scenario, to) => {
+    signedIn();
+    if (scenario === "no session") state.user = null;
+    if (scenario === "forbidden") state.user = { id: A, email: "other@example.invalid" };
+    if (scenario === "provider error") state.fail = true;
+    if (scenario === "missing config") delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    expect((await settle(pendingPage)).error?.to).toBe(to);
+    expect(state.created).toHaveLength(0);
+    legacyUntouched();
+  });
+  it("이 PC(로그인 꺼짐): 로컬 안내와 h1 '새 프로젝트', getUser·adapter 0", async () => {
+    const markup = html(await pendingPage());
+    expect(markup).toContain("이 PC에서는 기존 작업실을 써요");
+    expect([...markup.matchAll(/<h1[^>]*>(.*?)<\/h1>/g)].map((match) => match[1])).toEqual(["새 프로젝트"]);
+    expect(state.getUser).not.toHaveBeenCalled();
+    expect(state.created).toHaveLength(0);
+    legacyUntouched();
+  });
+  it("로그인: h1 하나, 준비 중·자료 필요·기존 프로젝트 조회 안내, 목록 복귀 링크만. 폼·버튼·입력·제출 없음, adapter 0", async () => {
+    signedIn();
+    const markup = html(await pendingPage());
+    expect([...markup.matchAll(/<h1[^>]*>(.*?)<\/h1>/g)].map((match) => match[1])).toEqual(["새 프로젝트"]);
+    expect(markup).toContain("아직 클라우드에서는 새 프로젝트를 만들 수 없어요");
+    expect(markup).toContain("자료를 올릴 수 있게 되면");
+    expect(markup).toContain("이미 옮긴 프로젝트는");
+    expect([...markup.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/cloud/projects", "/cloud/projects"]);
+    expect(markup).not.toMatch(/<form|<button|<input|<select|<textarea|method="post"/i);
+    // 기술 상세(DB·Storage·API·opt-in)는 제품 문구에 쓰지 않는다
+    expect(markup).not.toMatch(/postgres|storage|database|DB|API|opt-in|DREAM_|assetAvailable/i);
+    expect(state.created).toHaveLength(0);
+    expect(state.list).not.toHaveBeenCalled();
+    legacyUntouched();
+  });
+  it("정적: 서버 저장 요청·클라이언트 코드·read adapter를 쓰지 않는다", () => {
+    const source = readFileSync("app/(cloud)/cloud/projects/new/page.tsx", "utf8");
+    expect(source).not.toMatch(/"use client"|fetch\(|method:|project-read-request|lib\/services|lib\/db|postgres/i);
+    expect(source).toMatch(/getRenderAuth\(\)/);
   });
 });

@@ -11,7 +11,7 @@ export function CloudReadOnlyNote() {
 
 export function ProjectListReadonly({ projects }: { projects: readonly CloudProjectCard[] }) {
   return <>
-    <PageHeader title="내 프로젝트" description={<CloudReadOnlyNote />} />
+    <PageHeader title="내 프로젝트" description={<CloudReadOnlyNote />} actions={<Link href="/cloud/projects/new">새 프로젝트 만들기 안내 →</Link>} />
     {!projects.length
       ? <Card><EmptyState title="아직 클라우드에 옮긴 프로젝트가 없어요" description="지금까지 만든 작품은 내 PC 작업실에 있어요. 클라우드로 옮기는 작업이 끝나면 여기에 보여요." /></Card>
       : <ul className="stack" style={{ listStyle: "none", margin: 0, padding: 0 }} aria-label="프로젝트 목록">{projects.map((project) => <li key={project.id}>
