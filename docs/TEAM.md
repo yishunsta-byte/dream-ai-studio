@@ -1425,3 +1425,8 @@
 
 - msg_830dca47c4c2 /c4a9aee report and UI diff reviewed. Master new5 tests PASS; author actual fake-auth1280/390 preserves email/focus, resets password field, no reset request merely on mode switch, generic account-safe message.
 - Narrow UI guidance accepted locally, no production deployment claimed. Front continues T198 legacy gate; B4-G and B4-I-R proceed independently. Actual user password setup still required by user.
+### B4-I accepted; T198/T199/T200 and T196
+
+- B4-I-R report read: actual49 + regression33/51 +13 boundary controls/lint/type pass. Master accepts request-adapter scope only; API/RSC/managed still distinct. Report imported for exact details.
+- T198acfbd0b ready_review; T199 ctx_e494e81b26ea /task_c645942800f1 assigned independent actual API gate controls. T200 Front assigned per-page legacy-loader gating, no business opening until review.
+- T196 msg_5ee7546170b3 report read: fd334a6 actual-Next original header failure reproduced then fixed,32 state/resize observations,52/lint/type/build pass. Header correction accepted within scope, no production deploy yet.
