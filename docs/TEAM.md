@@ -1508,3 +1508,8 @@
 - Backend msg_b6ce22b4df1b 수락 확인. B5-FIX 기준 db77e07. 계획: F1 runner/template 공통 reserved role 허용 그래프 검사, F2 공개 runner API의 독립pool 제거·검증target으로 내부pool 생성/종료. Master는 JS실행시 기존pool 입력도 명시거부하고 테스트factory로 신뢰경계 재개방하지 않도록 보완 지시.
 - B7은 managed SQL/transaction 시작 전 중단. 기존 gh인증/repo metadata 및 Supabase 로그인 프로젝트명/ref 일치 확인까지만 완료 보고. Supabase/Vercel CLI 없음, 선택env 확인은 DB URL류 없음·DBpassword 존재 여부만(값 비출력). Connect endpoint는 미확인. 실제 DB 접속·권한·TLS·빈스키마 확인은 아직 미완료.
 - Backend는 B5-FIX 우선 계속, B7 추가조회 재개는 후속배정. 사용자가 결정할 새 사안 없음.
+
+### T207 제출 검토 / T210 인증 이동 응답 보완
+- T207 cd0823d 보고 확인. 신규 읽기전용 목록/상세, RSC adapter/auth cache·lazy params·표시DTO. 작성자26/관련443 및 격리전체1216 PASS/65 skip, build/verify/type/lint, 실제TLS PG+SDK fakeAuth 운영start HTTP12 관찰, 양폭 브라우저 확인 보고. 독립 수용 전.
+- 목록 loading 경계로 proxy통과후RSC 인증거절이200 streaming redirect인 점 확인. Master는 목록 loading경계 제거로 목록/단건 실제307 일관성 선택. T210 Front에 좁은 수정과 HTTP 307/Location/no-store/query0 강화 배정. 데이터503 UI200 기존결정은 유지.
+- 루트 공용설정 읽기는 module cache가 있으므로 매요청 물리파일read로 표현하지 않도록 정정 지시. 정상/404/owner격리·legacy차단 유지, 수정후고정SHA 독립 검수 예정. 실제managed연결/배포는 아직 미완료.
