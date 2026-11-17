@@ -2085,3 +2085,8 @@
 - 작성자42/42 layout·106/106 interaction/keyboard/reducedmotion/corecontrast 및비교양폭·26captures/JSsyntax·stageddiff PASS보고, 초기selector/scroll검증기오류와핑크대비수정후재실행구분. YouTube/SunoDiscover/Vimeo실참고URL·시각/기존로그인컨텍스트한계·자체Imagegen3+기존자체3자산/폰트출처명시. 실제조회수/좋아요/재생/비공개자료/업로드/게시없음.
 - Design에 현재T232수용통지를 실제전송(이번 도구 영수증 근거). 새로운4안/임의product작업추가없음, 정적비교파일을사용자에게제공. 방향선택/제품범위전 실제공개home/Auth·media권한/API·운영배포는미구현으로유지. 화려함1/음악2/발견성3의추천의견구분.
 - 미기록제품 ec1609e 목록44px수정commit 발견·허용3파일stat확인, Front최종FIX인계/실측반환아직없어독립PASS로승격안함. T234원fixed최종보고도아직대기, B25검수순서조정유지. B26문서수락준비·T122/T137보존, 새Codex창agentworktree없음.
+### 점검 / T229-FIX 고정반환·브라우저 fixture 경합 통제
+- 실제 점검 완료 시각: 2026-11-18 02:51:50 +09:00 (Asia/Seoul). 지정wake msg_72984c1bf97e·FIX e143d10 원문/고정ec1609ee7aead18b2bbf4bd1e09c314520d0094d 3파일범위확인. 목록전용CSS/class/test최소수정·위치/Auth/globals불변. 작성자양폭110.78×44/관리본문4링크44·Tab/Enter·overflow0·related86·전체1613/319skip·type/lint·실관찰14 보고. 원18pxFAIL은보존, 아직독립재수용아님.
+- mainPC FIX artifact tmp/t213-http-1af70615-4de8-4f2f-be60-d0255dfdce26/BUILD_ID VSsfQaXlc6pc4hCIF_RHY는작성자측정뒤종료보고. 다음독립검수에같은source/artifact/서비스기동방법을Front가제공하도록 msg_3d665a72a462 실제전송. Front브라우저조작중단유지·Tester명시요청시서비스만지원·제품/DB상태변경없음.
+- 신규시험조건정보: Front17:47~48Z 별도포트로그인이same127.0.0.1 cookie를덮었을가능성. 앞선17:39~45Z PG/emptydata상태개입과함께작성자보조증거/독립관찰을분리. Tester msg_33258c497faf 실제통지: 영향시각/정상Auth확인후단일브라우저소유로필요범위만재검증, user전체cookie/storage삭제금지·samehost다른port를cookie격리로가정금지. 원native18px기하근거는이와별개유효.
+- 후속순서 원T234고정최종보고→새FIX고정좁은재검수→B25독립codec유지. 원후보/새후보/빌드출처혼합안함. B26문서·메인3안제품전환준비는기존범위대로, 본점검에서공개콘텐츠/운영배포/새창agentworktree변경없음. 기존T122/T137보존.
