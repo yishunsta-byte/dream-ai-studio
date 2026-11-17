@@ -1611,3 +1611,9 @@
 - T217로컬안내h1및두page호출보완수용. Master직접t207실행26/26 PASS(exit0),작성자관련157/실HTTP14/양폭주장은작성자근거로구분. local adapter/auth/params 계약불변.
 - T218 Front에클라우드생성UI/입력/오류/API연결계약 준비배정. 고유문서만,Backend B12독립검수/assetAvailable미구현/운영DB준비의존성명시. API/writeoptin/첨부성공우회/디자인선택/managed변경미허용. 다음세션필수수정나오면우선재조정.
 - Backend B13저장CAS설계·B12-R독립검수·T216세션검수기존배정유지,DEC-SSL-01미수신. 턴 밖 자동 점검 미설정,스케줄러없음.
+
+### 점검 / T218 계약 수용·Storage 선행 결정 / T219 준비 안내
+- 마지막 확인 시각: 2026-11-17 20:46:15 +09:00 (Asia/Seoul). Orca이벤트·T218원문/최근handoffs/Git확인. 새명세수신,기존T122/T137미추적보존,새미기록완료없음.
+- T218 87f12dd: active shopping-shorts 필수productAssets image/video min1이므로실Storage없이정상생성불가. Master기술결정: 필수검증/assetAvailable유지,Storage구현·독립검수후생성개통. 사용자추가결정불필요. HTTPsnapshot/owner불신·strictbody/writeoptin·응답유실재시도금지/멱등성후속범위는명세로수용,실API구현아님.
+- T219 Front에보호된/cloud/projects/new 준비안내와목록의이차안내링크만구현배정. 실제form/submit/POST/writeoptin미배정,제품문구는자료첨부사용가능시점기준,기술미구현상세노출금지. auth/local/no-store/privateIO0·양폭/키보드확인후고정SHA반환.
+- Backend에B13 CAS설계반환뒤Storage선행다음범위조정예정전달. B12-R/T216독립검수유지,실bucket/DDL/managed쓰기·운영SSL변경미허용. DEC-SSL-01미수신,턴 밖 자동 점검 미설정.
