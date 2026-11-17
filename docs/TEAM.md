@@ -1818,3 +1818,8 @@
 - BackendB19-FIX3우선수락확인,동일closure원인事件/당시claim window 최소binding수정계획. B20이전종료45528/65086이후새PG실행/tx없음보고,원미추적3파일draft불완전보존. 현재wake코드수정전임을구분.
 - MASTER_DEVELOPMENT_PLAN현재행을FIX3로갱신. 이미배정된작업반복전송/새범위추가없음. 原47/27/17및新2拒否기대/정상expiredcancel·reclaimhistory보존,정식R3회수후byteharness전달예정.
 - 배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
+
+### 추가 이벤트 / R3 ecfb2f05 정식 회수
+- 마지막 확인 시각: 2026-11-17 23:14:28 +09:00 (Asia/Seoul). 추가사용자wake check에서R3 worker_done ecfb2f05수신,직전발견미추적보고가정식반환됨확인. 原8+4해소/새12중10PASS2FAIL 최종FAIL유지,새다른결함아님. 원검수상주PID/port없음보고,실IO/DB/provider미수용。
+- Backend에정식보고/원12harness보존위치전달,B19-FIX3기존배정계속·정상expiredcancel과예약당시leasebinding구분. 사용자새승인질문/반복배정/실행범위확대없음。
+- 배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
