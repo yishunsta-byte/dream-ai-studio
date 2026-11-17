@@ -116,10 +116,10 @@ P0/P1과 P2 타임라인·편집·영상/오디오 렌더·SRT/VTT·원본 재�
 | B21 버전 이관 계약 | 수용 SQL4 참조 갱신, B22/B23 로컬 구현 검수 수용 | v1 SQL3 계약 보존, 실제 managed 이관은 미배정 |
 | B22 source/catalog | f5d009e 독립 R2 PASS 수용 | SELECT-only·PG18.7 synthetic 한정, principal 충돌 수정 수용 |
 | B23 v2 runner | ea5a477 독립 PASS 수용 | 원자 이관·경쟁·unknown outcome synthetic 검증, 운영 적용 미승인 |
-| B24 v2 CLI | Backend running, 첫56PASS 보고(순수42+실제child14) | 출력 projection·env snapshot 추가검증→고정본 제출→기존 Tester 독립검수 |
+| B24 v2 CLI | 고정eccac35 ready_review, 작성자59PASS·actualchild22 보고 | 기존 Tester B24-R 수신·착수, 독립검수 후 수용 판정 |
 | 운영/비용 | SSL DEC-SSL-01 미답변, Supabase Free50MB·2GiB 미충족, 구매 없음 | 실제 운영 변경·비용은 별도 결정. 무료 격리 개발 계속 |
 | 디자인 T208 | 새 멀티미디어3안 제출·PC/모바일 시각 확인 | 사용자 선택·제품 적용 미완료 |
 
 턴 밖 30분 예약은 현재 Master 기존 대화에 메시지만 전송한다. 별도 Codex 자동화는 중지했으며 새 Codex 창을 만들지 않는다. 실행 중5분/수신이벤트 점검과 마지막확인 기록은 AI_TEAM_RULES v1.4 및 TEAM.md를 따른다. 배포 후보/구현 수용을 실제 클라우드 전체 개통으로 표시하지 않는다.
 
-현재 B22: 고정f5d009e source/catalog SELECT-only 기반 독립R2 PASS 수용(8b5237d). 원88·기존독립20·추가25 통과, 원표식충돌6변형 해소; 운영/apply 수용 아님. B23 고정ea5a477은 독립192f0a6 PASS 수용(원66·추가29, synthetic 한정). 후속 B24 별도 v2 CLI 신규4파일을 Backend가 수신·수락, 명시schema/target/action 승인값·비밀출력차단·실제childprocess 첫56PASS 보고, 출력projection/env snapshot 추가검증 중. 기존v1/SQL/target/state/runtime/CLI 불변, managed·운영 적용은 미배정.
+현재 B22: 고정f5d009e source/catalog SELECT-only 기반 독립R2 PASS 수용(8b5237d). 원88·기존독립20·추가25 통과, 원표식충돌6변형 해소; 운영/apply 수용 아님. B23 고정ea5a477은 독립192f0a6 PASS 수용(원66·추가29, synthetic 한정). 후속 B24 별도 v2 CLI 신규4파일을 Backend가 수신·수락, 명시schema/target/action 승인값·비밀출력차단·실제childprocess 최종59PASS/22child 보고, 기존 Tester B24-R 독립검수 중. 기존v1/SQL/target/state/runtime/CLI 불변, managed·운영 적용은 미배정.
