@@ -2132,3 +2132,8 @@
 - Backend B26-FIX msg_2ea7a015e254 실제배정: 기존계약1문서 G1/G2·C2 RC/VOLATILE·C3양음성락행렬·C1정확deferred실증게이트보완. 기존row기대lock0실패와freshID명시부재→uniqueINSERT경로구분. 원SQL1~4/v1/runtime불변·새SQL5/role/SECDEF/API실구현승인아님, 수신은아직미확인. Front msg_733b25dbf291 판정수신/후속좁은재대조예정통지.
 - 증거보존정정: Master직전통지에서probe scratch원문삭제로오해했으나 Front msg_ad063c7bbace로 mig.sql/latch.sql 일부는세션scratch에잔존, cluster데이터만정지삭제했다고확인. P3이전/P1-e/경쟁shell명령은보고결과만, scratch는영구repo산출아님. 미래실SQL4+5고정회귀/소유정리증거필수는유지. 이관권한임시부여의실제운영실행을한것아님.
 - T236누적UI재검수는기존Tester/Front단독서비스지원 경계유지·새최종결과미수신. B25수용/정적메인3안수용과별개. 새창agentworktree/실env/managed/운영배포없음, 공식플랜현재상태갱신.
+### 점검 / B26-FIX 고정 계약 반환·B26-R2 재대조 착수
+- 실제 점검 완료 시각: 2026-11-18 03:24:09 +09:00 (Asia/Seoul). 지정wake msg_99969d45d157/msg_ffabd5ca696c·1858550 기존문서diff/G1직접본문/G2락절·Git/최근handoffs확인. Master actual LF c6fd2820fe1fd25bb57bc60b62910d5b9db07a4fe5cebefb09d86b1f79178fbe 일치. 원B26-R불변·수정1문서범위. 단순문서반환을실SQL/권한PASS로표현안함.
+- G1한migrationtx내defaultACLglobalPUBLIC임시차단/schema추가grant제거·생성시private·exact2OWNER전환용membership/CREATE임시부여·자동membership포함회수·최종nativeinventory/기존defaultACL복원·실패원자rollback 명시. G2양entryFOUND/expectedrow/tuple와기존object0행vsfreshuniqueINSERT구분, RC/VOLATILE강제·락양음성행렬·C1queuedrole18.7縮小실증/fullSQL4+5·실targetmajor게이트확인. 새로운defaultACL순서가실현됐다는주장아님.
+- Front B26-R2 msg_bb174abfd54c 실제배정→msg_ffabd5ca696c 수신·좁은diff재대조/고유보고1파일범위 수락·착수. 원G1/G2/C1~3·새defaultACL계약이상충없는지·증거/미검증분리, T236서비스/Tester브라우저불간섭. 필요ownedprobe는명령보존/정리, 제품/SQL5/role/권한/API미구현·새창agentworktree없음.
+- 현재B25수용/UI누적T236실행결과미수신/메인3안정적수용과별개. Backend는원계약고정유지·반환질문/결함대응, 원SQL1~4/운영변경없음. 기존T122/T137보호·플랜상태갱신.
