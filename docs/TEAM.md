@@ -1757,3 +1757,9 @@
 - 고정9302419 수정설계지정범위PASS수용. object1:receiptN/별도reverify generation/terminal-first,externalpublish前durablebarrier·공통락순서·GCtombstone/fence·키비재사용/writerquiescence미확인cleanup보류trace일관성확인. 원FAIL90c46f7보존. 코드/SQL/실provider/운영ready수용아님.
 - B19 Backend순수schema/state/receipt/operation4파일+trace test/고유보고구현배정. 명시시간/actor/fence/승인관측주입·결정적전이/정규fingerprint/digest와실패/중복/정리경합·receipt갱신trace검증,IO/DB/SQL/worker/API/runtime wiring미허용. puremodel이영속/락/실검증attestation아님을명시.
 - T227배포도구권한조치및DEC-SSL-01운영결정기존대기,우회/유료전환없음. 턴 밖 자동 점검 미설정.
+
+### 점검 / B19 제출·독립 검수 / B20 offline SQL4 초안 배정
+- 마지막 확인 시각: 2026-11-17 22:18:34 +09:00 (Asia/Seoul). Orca이벤트·B19고유인계/최근handoffs/Git확인,새91c6dfc수신·기존T122/T137보존,새미기록보고없음.
+- B19순수protocol4파일/원32PASS·1536bounded시도·roottsc/scopedlint작성자검증반환,DB/provider/락영속보장아님. B19-R동일독립검수자재개요청,terminal/reverify/GC/creation/strictschema·相互一貫性/immutable·fingerprint反例검증. 아직수용아님.
+- B20 Backendoffline draftSQL4 구조/不変guard/RLS/최소권한·owner複合FK·receiptN/operation/永久tombstone/creationledger schema와새합성PG전용검증배정. draft미발행·현manifest미등록,SQL3/history/기존runner/18표불변. 전이함수·upgrade runner/runtime/APIs/worker/실managed미배정,SQL제약만으로서비스락/CAS보장주장금지.
+- B19검수결함시영향draft보류·조정. T227push도구권한과DEC-SSL-01답변未수신·운영변경보류. 턴 밖 자동 점검 미설정.
