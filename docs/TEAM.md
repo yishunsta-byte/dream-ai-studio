@@ -1854,3 +1854,9 @@
 - 고정d9d438a 지정pureprotocol독립PASS수용. 원56/byte27·17·12·9/독립8·原typegen/tsc/lint·995archive不変확인. 原16拒否기대해소,1536직렬시도는660/876의내부반복이며고유coverage합산금지. 원FAIL보고모두보존.
 - 보수causalprefix projection은정확fullhistory reachable증명/권한자facts認証/실DBlocking·durability/provider運営readiness아님. Backend수용전달·B20원미발행3파일과고유보고의mapping/SQLalias최소수정·隔離PG검증마무리→고정SHA ready_review제출지시. protocol대기게이트만해소,스키마자체독립수용전未受容。
 - MASTER_DEVELOPMENT_PLAN현재표B19수용/B20검증상태로갱신,현manifest/운영/SQL3 불변. 배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
+
+### 사용자 작업 점검 / B20 실제 활동·대기 구분
+- 마지막 확인 시각: 2026-11-17 23:50:52 +09:00 (Asia/Seoul). 사용자직접작업체크요청. Orca check새메시지없음·최근handoffs/Git/최근5 supervised workers 조회. B19-R5 task succeeded/liveness exited·released 확인,과거FAIL worker는역사상태이며새현재실패로중복계수안함. Backend장기세션은해당supervised목록으로생사추정안함.
+- B20신규격리폴더23:41/23:44/23:49활동흔적확인,완료인계아직없음. 선택b20 commandline소유native/node조회는출력없음(전체실행종료/장기세션유휴증거아님). 안전cleanup artifact와파일목록만확인,credential/log원문노출안함. Backend에다음작업경계실진행/검증/차단/남은행동회신요청,중단·중복cluster요청없음.
+- 지정수용완료: T225세션/입력/nav경계·B19-R5순수프로토콜,미연결B12/B14/B15로컬계약. B20미발행draft는진행/검수전,실서비스개통/운영SQL미적용. 작업리스트/원SQL/기존T122/T137미추적보존.
+- Front T227자동push권한거절로도구조치대기·SSL DEC미수신·Supabase실Free50MB/2GiB未충족/유료未구매·T208디자인미선택상태구분. 무작정일괄승인/우회/배포완료선언없음. 턴 밖 자동 점검 미설정.
