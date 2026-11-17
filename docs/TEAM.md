@@ -1468,3 +1468,9 @@
 - T204 1c36974 diff와 보고서 확인. 테스트2파일의 Date fake/복원만 변경, 제품·기대값·fixture 변경 없음. 작성자 결과: 대상14 PASS, 프로세스시계 앞뒤 대조 PASS, 격리 전체1177 PASS/53 skip/0 FAIL. 아직 독립 수용 전.
 - T205 Tester에 고정1c36974 독립 검수 전달. 대상14건·미래시계·cleanup 확인과 원본 대조 일시적 실패 구분. 보고 T-205-ZIP-CLOCK-REVIEW.md. 공유 .next/3013 및 B5 WIP 보호.
 - T206 Front에 C2 클라우드 읽기 UI 연결 명세 배정. 고유문서만 수정, 정확한 파일/상태/서비스경계/검증 계획 제출. T202/B5 검수 전 legacy gate 해제·실제 DB 연결·배포 금지. 두 요청은 terminal mailbox 전송 완료, 수락은 후속 보고로 확인.
+
+### T206 명세 수용 / T207 클라우드 읽기 UI 구현 배정
+- Master가 T206 5f70306 명세와 adapter/render/root/proxy 코드 직접 확인. 결정: /cloud/projects 별도 경로, RSC 직접 요청별 adapter+getRenderAuth cache, 데이터503 공통 안내(페이지 HTTP200 가능/API503 유지), 설정과 DB 일시오류 구분은 현 계약대로 하지 않음.
+- T207 Front 구현 범위: lib/cloud/project-read-page.ts, app/(cloud)/**, components/cloud/project-*-readonly.tsx, tests/t207-* 및 고유 보고서. 기존 디자인 primitives 사용. auth/proxy/API/Backend/root layout/legacy gate/CloudPending 변경 미허용. T202 수용 전 준비화면 링크 추가 금지.
+- RootLayout은 docs/spec/menus.json 정적 설정 읽기를 수행하므로 새 route group이 이를 우회한다고 주장하지 않는다. SQLite/startup/업무파일 부작용 차단과 구분한다. streaming notFound의 실제 HTTP 상태도 검증하도록 지시.
+- 실제 managed DB 적용/연결/배포 미배정. T204 원본 대조 일시적1실패는 시험명/원로그 미보존으로 원인 미확인, 재실행 통과를 원인 확정으로 확대하지 않는다.
