@@ -1872,3 +1872,11 @@
 - B20 draftLFhash0385c666...edeе8,작성자17PASS/0skip·tsc/lint/diff통과. 12companionFORCERLS/7ownerSELECT/0SECDEF/신규role없음·SQL3/history/18표/FK/rolegraph보존. 기존v1runner4拒否期待유지,fullprotocol/clock/락/CAS/worker/runtime未実装명시. 아직독립수용아님.
 - B20-R 동일독립worker재개배정:고정ef38db7 원17/추가실SQL부정·선택DDL보장/권한/원자성검사,미래executor미구현과DDLclaim누락구분. 실managed/발행/운영배포미배정.
 - BackendB21문서1개versionedSQL3→4manifest/history/counts/原子upgrade/idempotency/unknownstate/동시lock/target/lifecycle·최소파일/실PGmatrix설계배정,검수중B20수정보류. 原v1완화/새코드SQL発行미허용. 배포도구권한/SSL DEC미수신,턴 밖 자동 점검 미설정.
+
+### 점검 / B20 독립 FAIL 수정 배정·수락 / B21 설계 수신
+- 마지막 확인 시각: 2026-11-18 00:06:49 +09:00 (Asia/Seoul). Orca 지정 wake와 추가 wake 처리, Git master/HEAD796cc50/status/최근 handoffs·B21 원문 확인. 기존 미추적 T122/T137 보존. B20-R 최종 보고 파일은 아직 미제출이며 escalation 근거와 최종 검수 완료를 구분한다.
+- 독립 검수자 msg_92dd9a49cbe9: 고정 ef38db7의 원17 PASS 재현, 추가 독립8 포함22PASS/3FAIL. 정상 fixture 변조만으로 closure_json reason/at 누락, cleanup observation at 누락, absent/writerQuiescent 문자열 yes가 SET CONSTRAINTS ALL IMMEDIATE 통과. Master 필수수정 판정, B20 미수용·발행 차단 유지.
+- Backend B20-FIX 실제 전송 msg_1da04374bdaf → msg_735a04e61eff 수신·범위 수락·running 회신 확인. 허용 draft SQL/test/runner·고유 FIX 인계만 수정, 원 기대값 유지 재현/필드·형·SQL NULL 검증/양음성경계/원17·독립재현/새 canonical hash 제출. 완료·통합 아님.
+- B20-R dispatch ctx_a75929128d41에 msg_144639798822 실제 전송: 고유 최종 FAIL 보고·최소 재현 경로·실행근거·정리 상태 마무리, 제품변경 금지. 수정본 재검수는 새 고정SHA 제출 후 배정한다.
+- B21 796cc50 문서 ready_review 수신. Master 원문에서 v1 불변/폐쇄된 schema3·4/전체 원자성/공유락 후 재확인/unknown 거부/target·TLS·pool·비밀 경계와 미실행 행렬 확인. SQL4 hash는 결함 후보값이므로 B20 수정본 기준 갱신 후 검토; runner 구현/SQL4 발행 보류. Backend의 필수 수정 우선, 중복 구현 배정하지 않음.
+- T227 push 도구 자동승인 거절·DEC-SSL-01 사용자 결정 미해소. 본 점검에서 운영 대상 재검사/배포/실DB 변경하지 않음. 턴 밖 자동 점검 미설정.
