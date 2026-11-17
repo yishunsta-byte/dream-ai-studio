@@ -2090,3 +2090,8 @@
 - mainPC FIX artifact tmp/t213-http-1af70615-4de8-4f2f-be60-d0255dfdce26/BUILD_ID VSsfQaXlc6pc4hCIF_RHY는작성자측정뒤종료보고. 다음독립검수에같은source/artifact/서비스기동방법을Front가제공하도록 msg_3d665a72a462 실제전송. Front브라우저조작중단유지·Tester명시요청시서비스만지원·제품/DB상태변경없음.
 - 신규시험조건정보: Front17:47~48Z 별도포트로그인이same127.0.0.1 cookie를덮었을가능성. 앞선17:39~45Z PG/emptydata상태개입과함께작성자보조증거/독립관찰을분리. Tester msg_33258c497faf 실제통지: 영향시각/정상Auth확인후단일브라우저소유로필요범위만재검증, user전체cookie/storage삭제금지·samehost다른port를cookie격리로가정금지. 원native18px기하근거는이와별개유효.
 - 후속순서 원T234고정최종보고→새FIX고정좁은재검수→B25독립codec유지. 원후보/새후보/빌드출처혼합안함. B26문서·메인3안제품전환준비는기존범위대로, 본점검에서공개콘텐츠/운영배포/새창agentworktree변경없음. 기존T122/T137보존.
+### 점검 / F234-2 공통 focus 복귀 수정·B25 순차 검수 배정
+- 실제 점검 완료 시각: 2026-11-18 02:55:44 +09:00 (Asia/Seoul). 지정wake msg_682a5579d8d0/msg_03d6ce63d1aa·공통ProtectedContent source·실focusJSON/최근handoffs/Git확인. 단독원서비스합성A재인증후 same복원2회 nativeactiveBODY/hrefnull, hidden/inert·noticefocus/같은DOM·시각복원은정상. 기존T229변경파일이아닌공통focus계약결함으로분리. 현재Authchanged/cleared/lateSame차단PASS보고와cookie간섭구간구분.
+- Master필수T235 Front실배정 msg_c4d4da8546f2→msg_03d6ce63d1aa 수신/좁은범위수락. session-boundary ProtectedContent focus보존/복귀만+실행test/필요testharness/고유보고. use-watch/서버권한/AuthAPI/layout/CSS/문구불변, 사용자가다른컨트롤로옮긴focus탈취금지·targetremoved/disabled·입력selection/다중경계·cleared불가역회귀를실browser로검증. 원ec1609e목록수정은별개보존. 원인아직분석중, 특정타이밍원인단정안함.
+- Tester msg_71c4cdbd2377로범위판정/원고정최종보고마무리 통지. 후속B25-R 실배정(이번도구영수증), T234최종반환뒤Front수정대기시간을사용해고정da0f740 원86/추가codec·raw/ID/시간·SQL왕복/rollback/신뢰한계검수. 수락/착수아직미확인·T234마무리전running표시안함. 새T235후보도착하면검사안전경계에서우선조정·동시브라우저/DB경합없음.
+- 최신공식표T235수정수락/B25순차검수갱신, Design3안은정적산출수용/제품전환전. BackendB26권한계약준비계속·기존T122/T137보호, 새창agentworktree/운영변경없음.
