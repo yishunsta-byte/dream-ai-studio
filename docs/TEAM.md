@@ -1866,3 +1866,9 @@
 - 작성자최종실PG17PASS/0skip(exit0) at23:49:35KST,소유runner정상종료·PGstop. 직전Master가같은latestroot cleanup-safe의postmaster/listener없음실확인한근거와대조. 16→17은unboundcleanup nullidentitydigest追加대조이며반복합산안함.
 - 남은행동: 최종stop/hash/정적검사·고유mapping/한계보고·허용4파일선택commit·고정SHA ready_review반환. 新권한/범위결정필요없으므로현재작업계속,중복재배정/중단요청안함. schema独立수용/운영적용선언안함.
 - 원SQL3/history/18표/rolegraph기대유지·registrar/SECDEF전이fn/runtime未実装報告。배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
+
+### 점검 / B20 제출·독립 검수 / B21 versioned migration 설계
+- 마지막 확인 시각: 2026-11-17 23:58:02 +09:00 (Asia/Seoul). Orca완료보고·B20원문/최근handoffs/Git확인. 新ef38db7지정4파일ready_review수신,기존미추적T122/T137만남음·새미기록보고없음.
+- B20 draftLFhash0385c666...edeе8,작성자17PASS/0skip·tsc/lint/diff통과. 12companionFORCERLS/7ownerSELECT/0SECDEF/신규role없음·SQL3/history/18표/FK/rolegraph보존. 기존v1runner4拒否期待유지,fullprotocol/clock/락/CAS/worker/runtime未実装명시. 아직독립수용아님.
+- B20-R 동일독립worker재개배정:고정ef38db7 원17/추가실SQL부정·선택DDL보장/권한/원자성검사,미래executor미구현과DDLclaim누락구분. 실managed/발행/운영배포미배정.
+- BackendB21문서1개versionedSQL3→4manifest/history/counts/原子upgrade/idempotency/unknownstate/동시lock/target/lifecycle·최소파일/실PGmatrix설계배정,검수중B20수정보류. 原v1완화/새코드SQL発行미허용. 배포도구권한/SSL DEC미수신,턴 밖 자동 점검 미설정.
