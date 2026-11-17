@@ -62,6 +62,12 @@ export function audioResultCopy(render:RenderView):{badge:string;track:string;su
 }
 
 // Progress card: pill and body (T-102 5장). attempt is the number of starts so far (0 before the first).
+// T-175: the attempt line follows the server count (jobs.attempts = attempts already started). A queued render that
+// never started is not "시도 1/3"; a queued retry names the attempt that comes next, like its pill.
+export function attemptLine(render:Pick<RenderView,"status"|"attempt"|"maxAttempts">){
+  if(render.status==="queued")return render.attempt>0?`다음 시도 ${render.attempt+1}/${render.maxAttempts}`:`아직 시작 전 · 최대 ${render.maxAttempts}번 시도`;
+  return `시도 ${Math.max(render.attempt,1)}/${render.maxAttempts}`;
+}
 export function progressCopy(render:RenderView):{pill:string;body:string}{
   if(render.cancelRequested)return {pill:"취소하는 중",body:"지금 단계가 끝나는 대로 멈춰요."};
   if(render.status==="queued"){

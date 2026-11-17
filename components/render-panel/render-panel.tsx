@@ -8,7 +8,7 @@ import type { RenderBlocker } from "@/lib/render/input";
 import type { RenderView } from "@/lib/services/renders";
 import { Badge, Button, Card, EmptyState, SampleBadge, StatusPill } from "../ui/primitives";
 import { ConfirmPanel, useToast } from "../ui/interactive";
-import { stagesFor, announceStage, audioResultCopy, aspectLabel, blockerLines, canceledCopy, duration, failureCopy, linkHref, linkLabel, mb, progressCopy } from "./copy";
+import { stagesFor, announceStage, attemptLine, audioResultCopy, aspectLabel, blockerLines, canceledCopy, duration, failureCopy, linkHref, linkLabel, mb, progressCopy } from "./copy";
 import styles from "./render-panel.module.css";
 
 export type RendersData={workerOnline:boolean;contentRevision:number;timelineId:string|null;check:{ready:boolean;blockers:RenderBlocker[]}|null;renders:RenderView[]};
@@ -112,7 +112,7 @@ function ProgressBody({render,title,onCancel}:{render:RenderView;title:RefObject
     {running&&<ol className={styles.stages} aria-label="진행 단계">{stages.map((stage,index)=>{const state=index<current?"done":index===current?"now":"todo";return <li key={stage.key} className={styles[state]} aria-current={state==="now"?"step":undefined}><span aria-hidden="true">{state==="done"?"✓":state==="now"?"●":"○"}</span> <span className="sr-only">{state==="done"?"끝남":state==="now"?"지금":"남음"}: </span>{index+1}. {stage.label}</li>;})}</ol>}
     {percent!==null&&<div className={styles.bar}><span id={barId}>장면과 글자 합치기</span><progress aria-labelledby={barId} max={100} value={percent} aria-valuetext={`${percent}%${render.elapsedSec!==null?` · ${duration(render.elapsedSec)} 지남`:""}`}/></div>}
     {render.stage==="verify"&&running&&<p className={styles.checking}>확인 중</p>}
-    <p className="muted">{render.elapsedSec!==null&&<>지난 시간 <time dateTime={`PT${render.elapsedSec}S`}>{duration(render.elapsedSec)}</time> · </>}{render.audioMode==="none"&&render.etaSec!==null&&<>이 PC의 이전 기록으로 남은 시간 약 {duration(render.etaSec)} · </>}시도 {Math.max(render.attempt,1)}/{render.maxAttempts}</p>
+    <p className="muted">{render.elapsedSec!==null&&<>지난 시간 <time dateTime={`PT${render.elapsedSec}S`}>{duration(render.elapsedSec)}</time> · </>}{render.audioMode==="none"&&render.etaSec!==null&&<>이 PC의 이전 기록으로 남은 시간 약 {duration(render.etaSec)} · </>}{attemptLine(render)}</p>
     <p className="muted">PC에서 만들어요. 창을 닫아도 작업 처리기가 켜져 있으면 계속돼요.</p>
     {!render.cancelRequested&&<div className={styles.actions}><Button variant="secondary" onClick={onCancel}>취소</Button></div>}
   </>;
