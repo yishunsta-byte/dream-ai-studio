@@ -1325,3 +1325,5 @@
 ### T175 accepted
 
 - msg_785a8583cec0 report received; Master3 tests pass. Display accepted. Device evidence pending.
+## Codex(Tester)
+역할: 테스트·디버깅·UI 점검·기능 제안. 실제 세션 term_410f8ff2-8498-4f5c-a984-2f7152153727, T185 수락 msg_83863502938a.
