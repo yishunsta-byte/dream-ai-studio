@@ -218,6 +218,8 @@ describe("화면 연결(정적 계약)", () => {
     // 확인 안내는 좁은 화면에서도 숨기지 않는 별도 스타일(이메일 .email은 600px 이하에서 숨김)
     expect(menu).toMatch(/className=\{styles\.accountNotice\} role="status"/);
     expect(readFileSync("components/auth/login.module.css", "utf8")).not.toMatch(/\.accountNotice[^{]*\{[^}]*display:\s*none/);
+    // 좁은 화면에서 화면 밖(top:100% 절대 위치)으로 밀려나지 않게: 안내는 절대 위치를 쓰지 않는다
+    expect(readFileSync("components/auth/login.module.css", "utf8")).not.toMatch(/\.accountNotice[^{]*\{[^}]*position:\s*absolute/);
     expect(menu.match(/announceSessionChange\(\)/g)).toHaveLength(2);
     expect(menu).toMatch(/state === "ended"\) \{ announceSessionChange\(\)/);
     expect(menu).toMatch(/state === "partial"\) \{ announceSessionChange\(\)/);
