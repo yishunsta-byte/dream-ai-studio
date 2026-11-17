@@ -3,8 +3,6 @@ import { appConfig } from "@/lib/config/app";
 import { getMenuConfigState } from "@/lib/menus/server";
 import localFont from "next/font/local";
 import { ToastProvider } from "@/components/ui/interactive";
-import { checkStartup } from "@/lib/services/startup";
-import { SetupReport } from "@/components/setup-report";
 import "./globals.css";
 
 const pretendard = localFont({ src: "../public/fonts/PretendardVariable.woff2", weight: "45 920", display: "swap", variable: "--font-pretendard" });
@@ -29,6 +27,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </main></body></html>
     );
   }
-  const health = checkStartup();
-  return <html lang="ko" className={pretendard.variable}><body><ToastProvider>{health.canStart ? children : <main className="content"><SetupReport {...health} /></main>}</ToastProvider></body></html>;
+  // 저장 폴더 시작 점검은 작업실 화면(StudioLayout)에서 한다. 로그인 화면은 저장소가 필요 없어서 점검하지 않는다(T-183).
+  return <html lang="ko" className={pretendard.variable}><body><ToastProvider>{children}</ToastProvider></body></html>;
 }

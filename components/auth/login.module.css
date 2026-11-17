@@ -13,3 +13,5 @@
 .account { display:flex; align-items:center; gap:var(--sp-2); margin-left:auto; min-width:0; }
 .email { min-width:0; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--fg-muted); font-size:var(--text-sm); }
 @media(max-width:600px) { .panel { padding:var(--sp-6) var(--sp-4); } .email { display:none; } }
+.pendingAccount { display:flex; justify-content:flex-end; }
+.pendingAccount .email { display:inline; }
