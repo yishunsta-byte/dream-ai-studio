@@ -1421,3 +1421,7 @@
 - B4-G Backend assigned new list/detail GET adapters and explicit auth inventory/real HTTP tests, preserving POST and forbidding fallback. No managed DB activation.
 - T198 Front queued after T197: default legacy-data API gate, explicit auth-only logout, no unauth DB access or cloud SQLite fallback. Front must not edit Backend-owned api-auth inventory. RSC legacy blocking remains separate before cloud activation.
 - Deployment/PG opt-in prohibited until route/legacy/RSC/staging evidence is verified. Current shared work protected.
+### T197 reset guidance accepted locally
+
+- msg_830dca47c4c2 /c4a9aee report and UI diff reviewed. Master new5 tests PASS; author actual fake-auth1280/390 preserves email/focus, resets password field, no reset request merely on mode switch, generic account-safe message.
+- Narrow UI guidance accepted locally, no production deployment claimed. Front continues T198 legacy gate; B4-G and B4-I-R proceed independently. Actual user password setup still required by user.
