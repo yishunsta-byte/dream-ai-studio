@@ -111,8 +111,8 @@ P0/P1과 P2 타임라인·편집·영상/오디오 렌더·SRT/VTT·원본 재�
 | T227 Vercel 배포 | blocked: Front 자동 권한 검토가 push 실행 전 거절 | 사용자 터미널 권한 조치 후 원격 상태 재확인·Ready/Current·HTTPS 확인. 우회하지 않음 |
 | B12/B14/B15 | 미연결 생성·파일검증·메타데이터 adapter의 지정 로컬 계약 독립 수용 | 실제 Storage/업로드/RLS/등록/API 개통과 별개 |
 | B16-FIX/B16-R2 | 수정 설계 독립 수용 | 구현 단계별 검수 필요 |
-| B19-FIX | Backend running: protocol 내부 모순/fingerprint/getter 검증 수정 | 원8개 독립 거부 기대 포함 고정 SHA 재검수 |
-| B20 SQL4 draft | 미발행 checkpoint, protocol 수정 의존 | protocol 수용 뒤 필드 영향 조정·격리 PG 검수. 현manifest/운영 미적용 |
+| B19-FIX2 | Backend running: 추가 4건 상태 모순과 전체 lifecycle/claim/time/revision 행렬 보완 | 기존41/독립27 및 새4건 거부 기대 유지, 고정 SHA 독립 재검수. B19-R2 최종 보고 대기 |
+| B20 SQL4 draft | 미발행·미커밋 checkpoint, 추가 합성 PG 실행 보류 | protocol 수용 뒤 필드 영향 조정·격리 PG 검수. 현manifest/운영 미적용 |
 | 운영/비용 | SSL DEC-SSL-01 미답변, Supabase Free50MB·2GiB 미충족, 구매 없음 | 실제 운영 변경·비용은 별도 결정. 무료 격리 개발 계속 |
 | 디자인 T208 | 새 멀티미디어3안 제출·PC/모바일 시각 확인 | 사용자 선택·제품 적용 미완료 |
 
