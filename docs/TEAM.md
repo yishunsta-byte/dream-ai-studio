@@ -1593,3 +1593,9 @@
 - T213 고정14e3425 ready_review. 계정변경신호→서버판정/전체문서갱신과API/auth-only경계구현,원F209수정자체검증반환. 이메일만숨기고offline/확인불가/15초guard의기존본문잔류는남은한계,아직수용아님.
 - T216 Tester에실브라우저원시나리오·신API인증/CSRF/no-store/민감값·경합·guard/오프라인본문잔류위험독립판정배정. 고유 T-216-CROSS-TAB-SESSION-REVIEW.md. Front는session검수중추가수정보류하고기존T214 cloud오류h1좁은보완진행지시. 두요청실전송,수락은후속확인.
 - Backend B12합성PG생성기능독립개발,DEC-SSL-01 운영변경대기유지. 턴 밖 자동 점검 미설정/스케줄러없음.
+
+### 점검 / T214 직접 검증 수용 / T217 로컬 안내 후속
+- 마지막 확인 시각: 2026-11-17 20:37:00 +09:00 (Asia/Seoul). 계기Orca상태/정정이벤트. T214 diff/고유보고및444b659정정(26건)·Git/최근handoffs확인. Backend B12미추적5파일은진행중배정영역으로보호,기존T122/T137보존. 새미기록완료보고없음.
+- T214 고정8e131ae 오류화면h1일관성작은UI변경수용. Master가 node node_modules/vitest/vitest.mjs run tests/t207-cloud-read-ui.test.ts 직접실행26/26PASS(exit0). 작성자관련275/실HTTP14/양폭회귀는작성자근거로구분,Master재실행으로확대안함.
+- T217 Front에CloudReadLocal목록/단건h1정확히1개좁은보완배정. component/호출두page/기존상태검증/고유보고만,Auth/DB계약불변. 시험수는실CLI출력으로보고지시. T216세션독립검수·B12독립개발계속,SSL운영변경DEC답변미수신.
+- 턴 밖 자동 점검: 미설정. 이번확인은이벤트처리이며주기감시스케줄러설치없음.
