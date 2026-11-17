@@ -1,0 +1,9 @@
+/* T-229 클라우드 개인 관리(읽기 전용). 기존 토큰만 쓴다. 390px에서도 한 칸씩, 가로 넘침 없음. */
+.grid { display:grid; gap:var(--sp-4); grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); min-width:0; }
+.counts { list-style:none; margin:0; padding:0; display:grid; gap:var(--sp-2); }
+.counts li { display:flex; justify-content:space-between; gap:var(--sp-3); align-items:center; min-width:0; }
+.number { font-variant-numeric:tabular-nums; font-weight:600; }
+.ready { list-style:none; margin:0; padding:0; display:grid; gap:var(--sp-3); }
+.ready li { display:grid; gap:var(--sp-1); min-width:0; }
+.readyHead { display:flex; flex-wrap:wrap; justify-content:space-between; gap:var(--sp-2); align-items:center; }
+.meta { color:var(--fg-muted); font-size:var(--text-xs); overflow-wrap:anywhere; }

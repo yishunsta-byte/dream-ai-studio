@@ -168,7 +168,7 @@ describe("확인된 계정: adapter(요청마다 새로, resolveAuth=getRenderAu
     expect(markup).toContain(`href="/cloud/projects/${PA}"`);
     expect(markup).not.toContain(A);
     // T-219: 만들기 화면 링크는 없고, 준비 안내로 가는 이차 링크 하나만 더해졌다.
-    expect([...markup.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/cloud/projects/new", `/cloud/projects/${PA}`]);
+    expect([...markup.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/cloud/projects/new", `/cloud/projects/${PA}`, "/cloud/manage"]);
   });
   it("단건: 인증 뒤 params, 개요·단계 상태, 입력 원문·owner 미노출, 단계 화면 링크 없음", async () => {
     signedIn(); state.get.mockResolvedValue(ok(detail));

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CloudReadLocal, CloudReadUnavailable, ProjectListReadonly } from "@/components/cloud/project-list-readonly";
 import { readCloudProjects } from "@/lib/cloud/project-read-page";
 
@@ -7,6 +8,8 @@ export const metadata: Metadata = { title: "내 프로젝트 · Dream AI Studio"
 export default async function CloudProjectsPage() {
   const result = await readCloudProjects();
   if (result.kind === "local") return <CloudReadLocal title="내 프로젝트" />;
-  if (result.kind !== "ok") return <CloudReadUnavailable retryHref="/cloud/projects" title="내 프로젝트" />;
-  return <ProjectListReadonly projects={result.data} />;
+  // T-229: 개인 관리(읽기 전용)로 가는 링크. 목록 본문 다음에 둔다(제목 h1은 목록 컴포넌트의 하나뿐).
+  const manage = <p><Link href="/cloud/manage">개인 관리 보기 →</Link></p>;
+  if (result.kind !== "ok") return <><CloudReadUnavailable retryHref="/cloud/projects" title="내 프로젝트" />{manage}</>;
+  return <><ProjectListReadonly projects={result.data} />{manage}</>;
 }
