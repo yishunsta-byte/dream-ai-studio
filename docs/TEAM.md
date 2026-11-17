@@ -1391,3 +1391,8 @@
 - msg_5b87f352d3ea /e260310 report read. Author actualPG B4 9+unit42 and existingB3 33,259 impact tests/lint/type; snapshot/domain-error ownership checks reported. No independent acceptance yet.
 - B4-R ctx_ecd578ed0577 /task_522380e7132e dispatched original real-PG reviewer, report only.
 - B4-I backend assigned new isolated auth-to-read request adapter/config/tests only; no live HTTP/RSC/legacy routes, no concurrent B3/B4-S/Auth edits. Both independent reviews precede actual API opening. Design global/header WIP protected.
+### T194 main-page options and T195 login diagnosis
+
+- User reports login failure and asks credentials/main UI. Master selectively read local DREAM_ALLOWED_EMAILS only: yishunsta@gmail.com; production equality not yet verified. App password is not available from Auth, DB/service credentials must never be given as login password.
+- T194 Design requested three main-only alternatives/comparison/desktop-mobile captures after T192 report finalization, new artifact paths only, no product/deployment changes.
+- T195 Front requested safe production login/config/account diagnosis and user reset instructions, no actual password/mail/account mutations without further scope. CloudPending versus failed login must be distinguished.
