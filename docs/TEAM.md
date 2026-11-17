@@ -1549,3 +1549,8 @@
 - B7 13e6c7a 보고확인. 기존GitHub/Supabase ref/Vercel프로젝트메타데이터확인. UI실제제공Direct는DNS ENOENT,Session pooler는SELF_SIGNED_CERT_IN_CHAIN, rejectUnauthorized true유지. 둘다connected=false,BEGIN/SELECT미도달. 권한/AuthFK/schema/history/실managed검증미완료.
 - B8 Backend에DNS/Node-OS resolve 및TLS신뢰체인 진단배정. 제공endpoint만, DB자격없는handshake조사와검증된공식CA출처확인 허용. 검증신뢰CA확인시자기probe프로세스에만적용하고hostname/rejectUnauthorized true유지해순수readonly SELECT재시도가능.
 - 임의selfsigned신뢰·인증서검증우회·전역CA설치·새endpoint추측·실Auth row/DDL/권한/리소스/배포변경금지. 고유 B8-MANAGED-CONNECTION-DIAGNOSIS.md에안전코드/근거/미확인기록. 현재liveAuth대상을staging으로간주하지않음. B5수용코드와T213WIP보호.
+
+### B8 readonly 연결 성공 / B9 Session migration 지원 조사·최소 구현
+- B8 dfce2ae 보고확인. Direct는DNS AAAA존재/A없음·실IPv6 TCP ENETUNREACH로장비경로미지원. Session pooler는공식로그인dashboard 다운로드CA와관찰root SHA일치,자기probe CA설정/rejectUnauthorized true/hostname검증유지후TLS1.3 authorized 및readonly BEGIN/catalog SELECT/ROLLBACK 성공.
+- PG170012, CREATE/CREATEROLE/Auth UUID FK REFERENCES prerequisites true, dream/history없음/reservedroles0. client→pooler 검증TLS와 pg_stat_ssl ssl=false인 pooler→DB관찰은구분,내부전송암호화입증안됨. liveAuth프로젝트를staging으로재분류하지않음. 실제DDL/migration/runtime권한/배포미실행.
+- B9 Backend배정: 공식primary문서와실제제공Session계약을확인후명시별도Session profile 최소지원검토/구현. immutable제공target/role매핑/hash/CA와현재가드엄격유지,transaction pooler포괄허용·direct위장·endpoint추측금지. 발행SQL·제품DB/Auth/B3B4/package불변,실제managed는readonly범위만. 지원근거없으면대안반환,고정SHA독립검수전적용금지.
