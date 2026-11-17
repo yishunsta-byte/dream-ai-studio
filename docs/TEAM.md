@@ -1410,3 +1410,8 @@
 - msg_15ed2974f412 /fd334a6: actual Next author correction and52/lint/type/build ready_review; no independent acceptance yet. T196 Tester requested original F190-1 actual-Next anchor/resize recheck.
 - Design finished T192 product edits and started T194 three main-page alternatives in new static paths, no further overlap with shell product files. B4-I implementation continues separately.
 - Master git index briefly locked by concurrent operation; did not remove lock. Observed lock absent, retried selective own docs stage/commit successfully fc41d18. Other Backend WIP protected.
+### T195 login diagnosis; T197 safe guidance
+
+- msg_82c4991d88ee report read: registered email identity/confirmation exists but no password setup record; user must set password through reset. No user password can be retrieved and no DB/service credentials provided.
+- Recent production400 did not reach provider; exact cause remains unconfirmed (input/allowed-address mismatch possible). Production secret allowlist not independently visible. No automatic account/mail/env changes authorized by this diagnosis.
+- T197 Front assigned generic reset guidance on login failure, preserve input/accessibility and avoid account enumeration. Route/backend/env changes excluded, no push before review.
