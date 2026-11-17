@@ -1405,3 +1405,8 @@
 - msg_2cb9186894b1 /8fc19e2 report read/imported. Independent real B4 9+42 and priorB3 33,259 impact tests/10 controls/lint/type confirm snapshot/owner404/missing-stage503/safe-domain/DB-failure priority/no fallback.
 - Master accepts e260310 local-service scope. Backend notified; B4-I request adapter remains running. Production API/RSC/managed pooler/TLS/Auth FK still not connected or verified.
 - Owned clusters stopped; automatic approval denied temp deletion, approximately909MB retained without bypass. No user DB/3013 changes.
+### T192 header-height correction returned; T196 and T194
+
+- msg_15ed2974f412 /fd334a6: actual Next author correction and52/lint/type/build ready_review; no independent acceptance yet. T196 Tester requested original F190-1 actual-Next anchor/resize recheck.
+- Design finished T192 product edits and started T194 three main-page alternatives in new static paths, no further overlap with shell product files. B4-I implementation continues separately.
+- Master git index briefly locked by concurrent operation; did not remove lock. Observed lock absent, retried selective own docs stage/commit successfully fc41d18. Other Backend WIP protected.
