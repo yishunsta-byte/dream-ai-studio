@@ -7,7 +7,7 @@ const reply = (body: Record<string, unknown>, status = 200) => Response.json(bod
 // 로그아웃(T-186, F184-2). Supabase가 실패를 알리면 성공으로 숨기지 않는다.
 // 서버 쪽 로그아웃이 실패하면 이 브라우저의 로그인만이라도 지우고(scope local), 끝나지 않았다는 사실을 그대로 돌려준다.
 export async function POST(request: Request) {
-  const denied = await requireApiAuth(); if (denied) return denied;
+  const denied = await requireApiAuth({ scope: "auth-only" }); if (denied) return denied;
   const blocked = rejectCrossSite(request, { json: false });
   if (blocked) return blocked;
   const supabase = await createSupabaseServer();
