@@ -1605,3 +1605,9 @@
 - B12 83affcf ready_review: 신규create repo/service·신뢰서버snapshot/필수assetAvailable callback·verifiedactor·단일tx초기종속행. 작성자실PG20/B4실PG51/focused68는중복구분. 실제Storage/요청어댑터/API쓰기·managed미구현/미검증. 독립수용아님.
 - B12-R 기존독립검수자재개요청:고정83affcf,실합성PG·입력/owner/rawhash/동등규칙/FORSHARE경합/종속allrollback/조회호환. 고유 B12-R-PROJECT-CREATE-REVIEW.md. Backend는B13후속저장CAS·승인무효화/불변이력계약설계만별도배정,검수중create수정보류.
 - Front T217제목보완·Tester T216세션독립검수기존배정유지. DEC-SSL-01 답변미수신·운영변경금지,턴 밖 자동 점검 미설정.
+
+### 점검 / T217 직접 수용 / T218 생성 UI 계약 준비
+- 마지막 확인 시각: 2026-11-17 20:42:30 +09:00 (Asia/Seoul). Orca상태이벤트·T217요약/82846a1 diff/최근handoffs/Git확인. 기존미추적T122/T137보존,새미기록보고없음. T216/B12-R현재결과미수신을유휴나실패로추정안함.
+- T217로컬안내h1및두page호출보완수용. Master직접t207실행26/26 PASS(exit0),작성자관련157/실HTTP14/양폭주장은작성자근거로구분. local adapter/auth/params 계약불변.
+- T218 Front에클라우드생성UI/입력/오류/API연결계약 준비배정. 고유문서만,Backend B12독립검수/assetAvailable미구현/운영DB준비의존성명시. API/writeoptin/첨부성공우회/디자인선택/managed변경미허용. 다음세션필수수정나오면우선재조정.
+- Backend B13저장CAS설계·B12-R독립검수·T216세션검수기존배정유지,DEC-SSL-01미수신. 턴 밖 자동 점검 미설정,스케줄러없음.
