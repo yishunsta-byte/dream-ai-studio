@@ -1629,3 +1629,9 @@
 - 18451cf7 고정14e3425 독립검수: 일반F209세션흐름/API/경합검증PASS지만F216-1/P2로전체수용FAIL. guard/offline/session조회endpoint실패시이전owner본문카드·링크·키보드접근잔류. 새요청인증우회아님. 417/원HTTP14/API순서12 등은실패상태관측과구분,관측24를기능24PASS로표현하지않음.
 - Front T220우선수정배정: T219안전checkpoint뒤공통protectedboundary/context와cloud/legacy보호본문/조작차단,동일epoch서버same확인후복원·changed/guard불가복원금지·안내접근성유지. auth서버/DB계약불변,실두탭세실패경로및회귀검증. 고유 T-220-PROTECTED-CONTENT-SESSION-FIX.md.
 - Tester에FAIL수신/수정배정전달,고정SHA반환후같은원재현독립재검수예정. Backend B13유지,SSL DEC미수신·운영변경보류. 턴 밖 자동 점검 미설정.
+
+### 점검 / B13 계약 수용 / B14 Storage 읽기 검증 기반 배정
+- 마지막 확인 시각: 2026-11-17 20:51:17 +09:00 (Asia/Seoul). Orca상태이벤트·B13원문/최근handoffs/Git확인. 신규B13수신,기존T122/T137미추적보존,새미기록보고없음.
+- B13 7a73d74 문서범위수용. 최소후보confirmBrief는기존stage-only완료에서revision/updatedAt/approvedAt임의추가하지않음,같은revision중복은1성공/1 INVALID_TRANSITION·감사1개,content승자뒤stale CONFLICT. 발행SQLtrigger만으로CAS자동보장하지않음. 구현은backlog,Storage선행결정유지.
+- B14 Backend배정: 신규private object reader/key/config 및서버asset availability검증함수·전용tests만. 검증actor/owner/immutablekey/network0거부·실download stream크기/hash/MIME·상한/timeout/abort/sanitize·fakeStorage 실SDK/HTTP검증. 아직B12/API에연결안함,실bucket/RLS/DB등록/업로드/운영준비수용아님. 기존SQL/DB/Auth/서비스/패키지/실managed/3013/.next보호.
+- Front T220보호본문수정·T219checkpoint/T216 FAIL유지,운영SSL DEC미수신. 턴 밖 자동 점검 미설정.
