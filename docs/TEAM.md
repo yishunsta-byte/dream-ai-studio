@@ -1708,3 +1708,9 @@
 - T226 eb7f878 준비산출물수용. 후보8ffe3c75 고정,운영/origin4458283/E5kSuVaEr6Jkw9rLwoopFVA9aHh5. 작성자격리build/verify/type/lint/관련434·운영유사인증거절/DB미생성검증. 정확SHA fastforward push계획,공유HEADpush금지·운영readbackend미설정유지·migration secret Vercel설정금지·rollback경로준비.
 - P3미사용Storage원본trace관찰은명시·후속보완대상,컴파일함수/정적secret미포함근거와구분. 현재nextconfig/package추가변경미배정. preparation≠배포,실행은T225독립수용뒤Master지시.
 - Front에준비수용/현재배포보류전달. SSL DEC는DB운영변경에만적용,인증/안내UI배포의재승인조건으로확대안함. T225/B16-R/Backend B17유지,운영DB변경금지. 턴 밖 자동 점검 미설정.
+
+### 점검 / B17 실제 한도 수용·B18 비용 preview 준비
+- 마지막 확인 시각: 2026-11-17 21:46:05 +09:00 (Asia/Seoul). Orca이벤트·B17원문/최근handoffs/Git확인. 新B17수신,기존T122/T137保護、新未記録報告없음.
+- B17 a7cb6d3 실제Supabase FREE/Global50MB고정·bucket없음관측수용,exact2GiB충족불가. VercelHobby/Fluid표시와durationplaceholder300은실invocation보장아님. 장비여유disk/RAM snapshot만으로상시worker운영용량보장안함,전용workRoot/deployment미지정.
+- B18 Backend에공식dashboard안전한read-only upgrade견적/조직전체vs프로젝트영향·기존project수/compute/base/표시월비용/proration/최종확정경계확인배정. 결제정보·주소/송장읽기·Upgrade확정/Pay/Save/실구독변경금지. 시작가25달러를총액으로확정하지않고견적먼저준비한뒤Master가실비용결정취합.
+- Master는현재PC를worker개발/검증후보로만지정,상시가동/스케줄러/서비스설치/실worker未設定。2GiB요구축소·유료자원구매미승인. Front T226준비완료/T225독립검수와B16-R기존배정유지,SSL DEC미수신. 턴 밖 자동 점검 미설정.
