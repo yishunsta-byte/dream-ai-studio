@@ -1581,3 +1581,9 @@
 - c3108249 고정0d851865 로컬Session migration계약독립PASS수용. focused121(내부Session35mock)/실PG33/독립B5경계16/Session음성15 모두통과,중복35/unit13합산금지. typegen/원tsc/lint0. 실제managed DDL/lock/roleprovision·실transport전체수용아님.
 - Backend에수용및B11준비계속전달,DEC-SSL-01답변전설정변경/restart/실적용금지유지. Front T213현재단계·차단/수락여부를다음작업경계에서회신요청; 진행중작업중단이나추가전체시험미배정. 두메시지실전송,회신전진행완료추정금지.
 - 턴 밖 자동 점검: 미설정. 사용자SSL결정대기는해당운영변경에만적용,독립개발/검증계속.
+
+### 점검 / B11 준비 수용 / B12 C3 독립 구현 배정
+- 마지막 확인 시각: 2026-11-17 20:28:44 +09:00 (Asia/Seoul). 계기: Orca 상태이벤트. B11인계원문·최근handoffs·git status확인. 새B11수신,미추적T122/T137보존,새미기록산출물없음. Front상태회신은아직미수신,실행종료/유휴추정안함.
+- B11 77a1d2a Owner자기행/프로젝트org일치 및20:25:43KST baseline수용. SSL OFF,login200/Auth health200(public anonheader),검증CA/clientTLS 및readonly backendssl=false확인. 실제login/모든client호환성·변경후transport미검증. DEC-SSL-01답변전변경금지유지,완료준비와실행분리.
+- B12 Backend C3첫부분프로젝트생성Postgres서비스/repo 독립구현배정. 새동일이름repo/service/helper/tests/고유보고만,기존SQLite생성계약/PGschema보존·verifiedactor·원자tx·초기종속행/rawhash/감사호환·실합성PG읽기호환/owner/rollback검증. 기존Auth/API/UI/B3-B9/SQL/package불변,운영API쓰기/managed적용미배정. SSL대기중독립개발계속.
+- 턴 밖 자동 점검: 미설정. 실제SSL결정은아직미수신이며침묵승인아님. 사용자재질문중복하지않음.
