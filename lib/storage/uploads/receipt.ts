@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
-import { frozen, parse, receiptBodySchema, receiptSchema, ProtocolError, type Receipt } from "./schema";
+import { assertPlainData, frozen, parse, receiptBodySchema, receiptSchema, ProtocolError, type Receipt } from "./schema";
 
 // Same sorted-key JSON convention as edit/timeline; bounded, strict JSON here avoids
 // importing a product timeline module and rejects lossy undefined/Date/NaN inputs.
 export function canonicalJson(value: unknown): string {
+  assertPlainData(value);
   let nodes = 0;
   const ancestors = new Set<object>();
   function visit(v: unknown, depth: number): string {
@@ -29,11 +30,11 @@ export function canonicalJson(value: unknown): string {
     if (text.length > 65536) throw new ProtocolError("INPUT");
     return text;
   }
-  return visit(value, 0);
+  try { return visit(value, 0); } catch { throw new ProtocolError("INPUT"); }
 }
 // Domain separated content digest, NOT a signature or evidence that media was inspected.
 export function protocolDigest(domain: string, value: unknown): string {
-  if (!/^[a-z][a-z0-9-]{0,63}$/.test(domain)) throw new ProtocolError("INPUT");
+  if (typeof domain !== "string" || !/^[a-z][a-z0-9-]{0,63}$/.test(domain)) throw new ProtocolError("INPUT");
   return createHash("sha256").update(`${domain}:v1\n${canonicalJson(value)}`, "utf8").digest("hex");
 }
 export function makeReceipt(input: unknown): Receipt {

@@ -272,3 +272,95 @@ describe("B19 separate creation ledger / original snapshot / retired ID", () => 
     fails("EXPIRED", () => settleCreation(initial, { requestId: request.requestId, fingerprint: initial.entries[0].fingerprint, result }, ctx(initial, worker, 10)));
   });
 });
+
+describe("B19-FIX internally consistent snapshot boundaries", () => {
+  it("rejects revocation-boolean damage against failed and manual revocation history", () => {
+    let s = apply(registered(), complete(op2, "reverify", 90), owner, 2);
+    s = apply(s, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 80 }, worker, 2);
+    s = apply(s, { type: "rejectVerification", operationId: op2, fingerprint: fp, expectedFence: 1, failureCode: "MEDIA_INVALID" }, worker, 3);
+    const bad = structuredClone(s); bad.revoked = false;
+    fails("INPUT", () => admission(bad, ctx(bad, owner, 4)));
+    const manual = structuredClone(apply(registered(), { type: "revoke" }, owner, 2)); manual.revoked = false;
+    fails("INPUT", () => checkedModel(manual));
+  });
+  it("binds historical issuer to committed claimant, not today's verifier allowlist", () => {
+    const s = structuredClone(registered()); s.verifiers = [stranger];
+    expect(admission(s, ctx(s, owner, 2)).receipt.body.verifierId).toBe(worker);
+    const bad = structuredClone(s); bad.receipts[0] = makeReceipt({ ...bad.receipts[0].body, verifierId: stranger });
+    fails("INPUT", () => checkedModel(bad));
+    const lostClaim = structuredClone(s); lostClaim.operations[0].claimVerifiers = [stranger];
+    fails("INPUT", () => checkedModel(lostClaim));
+  });
+  it("binds verifiedAt/completedAt to the recorded claim time and authority/lease", () => {
+    const bad = structuredClone(registered());
+    bad.receipts[0] = makeReceipt({ ...bad.receipts[0].body, verifiedAt: 19 });
+    bad.operations[0].completedAt = 19; bad.operations[0].authorizationUntil = 10; bad.operations[0].leaseUntil = 9;
+    fails("INPUT", () => admission(bad, ctx(bad, owner, 19)));
+    const early = structuredClone(registered()); early.operations[0].claimedAt = 2;
+    fails("INPUT", () => checkedModel(early));
+    const pending = prepared(); fails("EXPIRED", () => publicationInstruction(pending, ctx(pending, worker, 0), "confirmed"));
+  });
+  it("rejects absent reservation, overlong lease, registered+closed and revision-history holes", () => {
+    const missing = structuredClone(prepared()); missing.publication = null; fails("INPUT", () => checkedModel(missing));
+    const lease = structuredClone(prepared()); lease.operations[0].leaseUntil = 999; fails("INPUT", () => checkedModel(lease));
+    const closed = structuredClone(registered()); closed.closed = true; fails("INPUT", () => checkedModel(closed));
+    const hole = structuredClone(registered()); hole.stateRevision = 2; fails("INPUT", () => checkedModel(hole));
+  });
+  it("successful R2 clears earlier revocation using a new committed state revision and keeps history", () => {
+    let s = apply(registered(), { type: "revoke" }, owner, 2);
+    s = apply(s, complete(op2, "reverify", 90), owner, 3);
+    s = apply(s, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 80 }, worker, 3);
+    s = apply(s, finalize(op2, r2, 99), worker, 4);
+    expect(s.revocations).toHaveLength(1); expect(s.receipts).toHaveLength(2); expect(s.revoked).toBe(false);
+    expect(admission(s, ctx(s, owner, 5)).receipt.body.id).toBe(r2);
+  });
+  const payload = { menuId: "sample", title: "title", inputs: { a: 1 }, referenceIds: [assetId] };
+  const request = { requestId: uid(140), payload, snapshot: { menu: { version: 1 }, config: {}, policyEpoch: 1 }, authorizationUntil: 10 };
+  const begin = () => beginCreation(reserveCreationLedger(owner, [worker]), request, { principalId: owner, now: 1, expectedRevision: 0 });
+  it("revalidates original snapshot/composed fingerprints in pending, terminal and retired ledgers", () => {
+    const pending = begin(), result = { status: "succeeded" as const, projectId: uid(141) };
+    const done = settleCreation(pending, { requestId: request.requestId, fingerprint: pending.entries[0].fingerprint, result }, ctx(pending, worker, 2));
+    for (const original of [pending, done]) {
+      const bad = structuredClone(original); bad.entries[0].snapshot!.policyEpoch = 2;
+      fails("INPUT", () => creationResult(bad, request.requestId, payload, ctx(bad, owner, 3)));
+      const digest = structuredClone(original); digest.entries[0].snapshotDigest = "f".repeat(64);
+      fails("INPUT", () => creationResult(digest, request.requestId, payload, ctx(digest, owner, 3)));
+    }
+    const retired = retireCreation(done, request.requestId, ctx(done, worker, 20));
+    expect(creationResult(retired, request.requestId, payload, ctx(retired, owner, 99)).result?.status).toBe("retired");
+    const noProof = structuredClone(retired); noProof.entries[0].terminal = null;
+    fails("INPUT", () => creationResult(noProof, request.requestId, payload, ctx(noProof, owner, 99)));
+    const changedClientDigest = structuredClone(retired); changedClientDigest.entries[0].clientDigest = "f".repeat(64);
+    fails("INPUT", () => beginCreation(changedClientDigest, request, ctx(changedClientDigest, owner, 99)));
+  });
+  it("rejects terminal result damage and version downgrade, retaining original snapshots on exact retry", () => {
+    const pending = begin(), result = { status: "succeeded" as const, projectId: uid(141) };
+    const done = settleCreation(pending, { requestId: request.requestId, fingerprint: pending.entries[0].fingerprint, result }, ctx(pending, worker, 2));
+    const bad = structuredClone(done); bad.entries[0].result = { ...result, projectId: uid(142) };
+    fails("INPUT", () => creationResult(bad, request.requestId, payload, ctx(bad, owner)));
+    const version = { ...done, entries: done.entries.map(e => ({ ...e, fingerprintVersion: 1 })) };
+    fails("INPUT", () => creationResult(version, request.requestId, payload, ctx(done, owner)));
+    expect(beginCreation(done, { ...request, snapshot: { ...request.snapshot, policyEpoch: 99 } }, ctx(done, owner, 99))).toEqual(done);
+  });
+  it("preflights descriptors on model, nested receipt, context and creation input before any getter read", () => {
+    let reads = 0;
+    const getter = { get() { reads++; throw new Error("private-getter-detail"); }, enumerable: true };
+    const bad = structuredClone(fresh()); Object.defineProperty(bad, "ownerId", getter);
+    fails("INPUT", () => checkedModel(bad));
+    const receipt = structuredClone(registered().receipts[0]); Object.defineProperty(receipt.body.identity, "key", getter);
+    fails("INPUT", () => checkedReceipt(receipt));
+    const context = { ...ctx(fresh(), owner) }; Object.defineProperty(context, "principalId", getter);
+    fails("INPUT", () => transition(fresh(), complete(), context));
+    const badRequest = structuredClone(request); Object.defineProperty(badRequest.snapshot.menu, "version", getter);
+    fails("INPUT", () => beginCreation(reserveCreationLedger(owner, [worker]), badRequest, ctx({ revision: 0 }, owner)));
+    expect(reads).toBe(0);
+  });
+  it("sanitizes foreign inspection errors; does not claim Proxy traps cannot run", () => {
+    let traps = 0;
+    const proxy = new Proxy({}, { getPrototypeOf() { traps++; throw new Error("private-proxy-detail"); } });
+    for (const read of [() => checkedModel(proxy), () => canonicalJson(proxy)]) {
+      try { read(); throw new Error("Expected INPUT"); } catch (e) { expect(e).toBeInstanceOf(ProtocolError); expect((e as Error).message).toBe("INPUT"); }
+    }
+    expect(traps).toBe(2);
+  });
+});

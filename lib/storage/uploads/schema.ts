@@ -13,9 +13,46 @@ export function requireProtocol(condition: unknown, code: ProtocolError["code"])
   if (!condition) throw new ProtocolError(code);
 }
 export function parse<T>(schema: z.ZodType<T>, input: unknown): T {
-  const result = schema.safeParse(input);
-  if (!result.success) throw new ProtocolError("INPUT");
-  return result.data;
+  try {
+    assertPlainData(input);
+    const result = schema.safeParse(input);
+    if (!result.success) throw new ProtocolError("INPUT");
+    return result.data;
+  } catch { throw new ProtocolError("INPUT"); }
+}
+// Descriptor inspection precedes every Zod read. Ordinary getters execute zero
+// times. Proxy traps may run while inspecting; this is not a JavaScript sandbox.
+export function assertPlainData(input: unknown): void {
+  let count = 0, characters = 0;
+  const path = new Set<object>();
+  function visit(value: unknown, depth: number) {
+    if (++count > 100000 || depth > 32) throw new ProtocolError("INPUT");
+    if (value === null || typeof value === "boolean") return;
+    if (typeof value === "number" && Number.isFinite(value)) return;
+    if (typeof value === "string") {
+      characters += value.length;
+      if (value.length > 65536 || characters > 4 * 1024 * 1024) throw new ProtocolError("INPUT");
+      return;
+    }
+    if (typeof value !== "object" || !value || path.has(value)) throw new ProtocolError("INPUT");
+    const array = Array.isArray(value), prototype = Object.getPrototypeOf(value);
+    if (array ? prototype !== Array.prototype : prototype !== Object.prototype && prototype !== null) throw new ProtocolError("INPUT");
+    const descriptors = Object.getOwnPropertyDescriptors(value), keys = Reflect.ownKeys(descriptors);
+    if (keys.some(key => typeof key !== "string")) throw new ProtocolError("INPUT");
+    path.add(value);
+    for (const key of keys as string[]) {
+      const descriptor = descriptors[key];
+      if (!Object.hasOwn(descriptor, "value") || (!descriptor.enumerable && !(array && key === "length"))) throw new ProtocolError("INPUT");
+      if (array && key === "length") continue;
+      visit(descriptor.value, depth + 1);
+    }
+    if (array) {
+      const indices = (keys as string[]).filter(k => k !== "length");
+      if (indices.length !== descriptors.length.value || indices.some((k, i) => k !== String(i))) throw new ProtocolError("INPUT");
+    }
+    path.delete(value);
+  }
+  try { visit(input, 0); } catch { throw new ProtocolError("INPUT"); }
 }
 // Return detached immutable snapshots. No caller-owned object is frozen or mutated.
 export function frozen<T>(value: T): T {
@@ -56,6 +93,7 @@ export const verificationFailureSchema = z.enum(["INVALID_BYTES", "MIME_MISMATCH
 export const verificationSchema = z.strictObject({
   id: recordId, kind: z.enum(["initial", "reverify"]), generation: counter.min(1), fingerprint: digestSchema,
   policyEpoch: counter, policyDigest: digestSchema, authorizationUntil: counter, fence: counter, leaseUntil: counter.nullable(), workerId: id.nullable(),
+  claimedAt: counter.nullable(), claimVerifiers: z.array(id).max(100), completedAt: counter.nullable(), completedStateRevision: counter.nullable(),
   expectedStateRevision: counter, status: z.enum(["pending", "succeeded", "failed", "canceled"]),
   receiptId: recordId.nullable(), terminalPayloadDigest: digestSchema.nullable(), failureCode: verificationFailureSchema.nullable(),
 });
@@ -66,10 +104,12 @@ export const uploadModelSchema = z.strictObject({
   intentExpiresAt: counter, issueEnvelopeUntil: counter, maxIssues: counter.min(1).max(1000), closed: z.boolean(),
   verifiers: z.array(id).min(1).max(100), collectors: z.array(id).min(1).max(100), policyManagers: z.array(id).min(1).max(100),
   identity: identitySchema.nullable(), incoming: sourceSchema, media: mediaSchema.nullable(), currentReceiptId: recordId.nullable(), revoked: z.boolean(),
+  revocations: z.array(z.strictObject({ revision: counter.min(1), at: counter, principalId: id, authorizers: z.array(id).min(1).max(101),
+    operationId: recordId.nullable(), kind: z.enum(["manual", "verification_failure"]) })).max(1000),
   operations: z.array(verificationSchema).max(1000), receipts: z.array(receiptSchema).max(1000),
   issues: z.array(z.strictObject({ id: recordId, issueUntil: counter, horizon: counter.nullable(), boundEvidence: digestSchema.nullable(), dispatched: z.boolean() })).max(1000),
   publication: z.strictObject({ operationId: recordId, fence: counter.min(1), barrierFence: counter, identityDigest: digestSchema }).nullable(),
-  cleanup: z.strictObject({ id: recordId, barrierFence: counter.min(1) }).nullable(),
+  cleanup: z.strictObject({ id: recordId, barrierFence: counter.min(1), claimedAt: counter }).nullable(),
 });
 export type UploadModel = z.infer<typeof uploadModelSchema>;
 export const commandSchema = z.discriminatedUnion("type", [
