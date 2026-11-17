@@ -57,3 +57,6 @@
 }
 .accountError { color:var(--st-danger-fg); font-size:var(--text-sm); max-width:260px; }
 @media(max-width:600px) { .accountError { position:absolute; right:var(--sp-4); top:100%; max-width:calc(100vw - 32px); padding:var(--sp-2) var(--sp-3); background:var(--bg-surface); border:1px solid var(--st-danger-line); border-radius:var(--radius-sm); box-shadow:var(--shadow-2); z-index:20; } }
+/* 탭 사이 로그인 변경 확인 안내(T-213). 이메일과 달리 좁은 화면에서도 숨기지 않고, 말줄임 없이 보여 준다. */
+.accountNotice { color:var(--fg-muted); font-size:var(--text-sm); max-width:280px; line-height:1.4; }
+@media(max-width:600px) { .accountNotice { position:absolute; right:var(--sp-4); top:100%; max-width:calc(100vw - 32px); padding:var(--sp-2) var(--sp-3); background:var(--bg-surface); border:1px solid var(--line); border-radius:var(--radius-sm); box-shadow:var(--shadow-2); z-index:20; } }

@@ -215,6 +215,9 @@ describe("화면 연결(정적 계약)", () => {
     const menu = read("components/auth/account-menu.tsx");
     expect(menu).toMatch(/useSessionWatch\(email, busy\)/);
     expect(menu).toMatch(/confirmed\s*\?\s*<span[^>]*title=\{email\}/);
+    // 확인 안내는 좁은 화면에서도 숨기지 않는 별도 스타일(이메일 .email은 600px 이하에서 숨김)
+    expect(menu).toMatch(/className=\{styles\.accountNotice\} role="status"/);
+    expect(readFileSync("components/auth/login.module.css", "utf8")).not.toMatch(/\.accountNotice[^{]*\{[^}]*display:\s*none/);
     expect(menu.match(/announceSessionChange\(\)/g)).toHaveLength(2);
     expect(menu).toMatch(/state === "ended"\) \{ announceSessionChange\(\)/);
     expect(menu).toMatch(/state === "partial"\) \{ announceSessionChange\(\)/);

@@ -31,7 +31,7 @@ export function AccountMenu({ email }: { email: string }) {
   return <div className={styles.account}>
     {confirmed
       ? <span className={styles.email} title={email}><span className="sr-only">로그인한 계정 </span>{email}</span>
-      : <span className={styles.email} role="status">{NOT_CONFIRMED[view]}</span>}
+      : <span className={styles.accountNotice} role="status">{NOT_CONFIRMED[view]}</span>}
     {(view === "offline" || view === "unavailable") && <Button variant="ghost" size="sm" onClick={retry}>다시 확인</Button>}
     {view === "stale" && <Button variant="ghost" size="sm" onClick={() => window.location.reload()}>새로 고침</Button>}
     <Button variant="ghost" size="sm" loading={busy} loadingLabel="나가는 중" onClick={logout} aria-label={confirmed ? `로그아웃 (${email})` : "로그아웃"}>{problem ? "로그아웃 다시 시도" : "로그아웃"}</Button>
