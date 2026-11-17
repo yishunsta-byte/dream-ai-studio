@@ -120,6 +120,12 @@
   - 보존 기간의 실제 값: 읽은 화면에 숫자가 보이지 않았어요. 다른 설정 화면은 더 열지 않았어요.
   - Promote·Instant Rollback 메뉴가 실제로 활성인지: 메뉴를 열거나 누르지 않았어요.
   - Hobby 요금제의 되돌리기 범위 제한: 공식 문서 기준 확인이 필요해요. 이번에 따로 검증하지 않았어요.
+- **메뉴 읽기 추가(Master `msg_a16d9df268c0` 허용 범위)**
+  - 배포 상세 `3QDy…`의 "Deployment Actions" 메뉴를 열어 항목만 읽고 Esc로 닫았어요. 아무 항목도 선택하지 않았어요.
+  - 비활성(`aria-disabled=true`): **Instant Rollback**, **Promote**, Skew Protection Threshold
+  - 활성: Redeploy, Copy URL, View All Branch Deployments, Delete
+  - 해석: 3QDy가 지금 운영(Current)이라서 자기 자신으로 되돌리거나 올릴 대상이 아니므로 비활성인 것으로 보여요. 화면에 요금제 제한 안내 문구는 보이지 않았어요.
+  - ebe84ea가 운영이 된 뒤 3QDy 메뉴에서 Instant Rollback이 활성이 되는지는 **그때 다시 읽어야 확인**돼요.
   - 따라서 "지금 3QDy로 실제 되돌리기가 된다"는 직접 확인하지 않았어요. 확인된 것은 **배포가 남아 있고 Ready이며 삭제 기록이 없다**는 것까지예요.
 - DB·Storage·env 변경이 없어서 되돌릴 데이터 변경도 없어요.
 
