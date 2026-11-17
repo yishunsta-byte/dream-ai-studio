@@ -1458,3 +1458,8 @@
 - T203 d8be9c7 보고서 확인. ZIP 13건 실패는 고정 claim 시각(2026-11-17T10:00Z)과 실제 request 시각 혼용으로 발생. 원본 2d44be0 및 작성 시점 4838017에서도 재현, Date 시계 일치 시 각각 14건 통과했다는 작업자 대조 근거를 수용. 제품 회귀라는 근거 없음.
 - Front에 T204 배정: tests/t162-audio-bundle.test.ts, tests/t166-late-source-change.test.ts의 Date 시계만 통일하고 종료 시 실제 시계 복구. 기대값·fixture·제품 코드는 변경 금지. 두 파일 및 격리 전체 시험/lint/type 결과를 고정 SHA와 반환. 전달 상태는 terminal mailbox 전송 완료이며 수락/완료는 후속 보고 확인 필요.
 - T202 독립 RSC 검수, T201 GET API 검수, B5 migration runner 기존 배정 유지. 실 데이터 개통·배포 상태 변경 없음.
+
+### T201 독립 조회 API 검수 수용
+- 보고31be66b 원문과 기준74e3be7 확인. 신규 GET2 지정 범위 수용: 실제 Next dev/SDK+fakeAuth/새 TLS PostgreSQL, 원본7관찰 및 결합1관찰 PASS. 관련236/lint/type/build PASS, unknown route 음성 대조 후 복구109 PASS.
+- 소유권 격리·타인404·handler 인증거부 DB activity0·no-store·TLS1.3 확인. managed Supabase/운영 DB/production HTTP/전체 RSC 개통은 이 수용 범위에 포함되지 않는다.
+- Backend에 수용과 B5 계속 지시 전달. Tester에 수용 및 후속 고정 SHA 검수 예정 전달. MASTER_DEVELOPMENT_PLAN 1.2로 오래된 실행표를 현재 검증 상태에 맞춤. 다른 작업자의 미커밋 변경 보호.
