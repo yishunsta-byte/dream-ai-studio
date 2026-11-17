@@ -34,6 +34,10 @@ export function CloudReadUnavailable({ retryHref, title, back = false }: { retry
   </>;
 }
 
-export function CloudReadLocal() {
-  return <Callout tone="info" title="이 PC에서는 기존 작업실을 써요">클라우드 보기 화면은 로그인한 클라우드 주소에서만 열려요. <Link href="/">작업실로 가기 →</Link></Callout>;
+// 이 PC(로그인 꺼짐) 안내도 화면 맥락에 맞는 페이지 제목(h1) 하나를 둔다(T-217). 안내 문구·작업실 링크는 그대로다.
+export function CloudReadLocal({ title }: { title: string }) {
+  return <>
+    <PageHeader title={title} />
+    <Callout tone="info" title="이 PC에서는 기존 작업실을 써요">클라우드 보기 화면은 로그인한 클라우드 주소에서만 열려요. <Link href="/">작업실로 가기 →</Link></Callout>
+  </>;
 }

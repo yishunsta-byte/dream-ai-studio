@@ -125,9 +125,16 @@ describe("인증 거절: 로그인 화면으로, adapter·params 0", () => {
 
 describe("이 PC(로그인 꺼짐): 안내만, adapter 0", () => {
   it("목록·단건", async () => {
-    expect(html((await settle(listPage)).value)).toContain("이 PC에서는 기존 작업실을 써요");
+    const h1 = (markup: string) => [...markup.matchAll(/<h1[^>]*>(.*?)<\/h1>/g)].map((match) => match[1]);
+    const list = html((await settle(listPage)).value);
+    expect(list).toContain("이 PC에서는 기존 작업실을 써요");
     const { read, params } = trap();
-    expect(html((await settle(() => detailPage(params))).value)).toContain("이 PC에서는 기존 작업실을 써요");
+    const detail = html((await settle(() => detailPage(params))).value);
+    expect(detail).toContain("이 PC에서는 기존 작업실을 써요");
+    // T-217: 로컬 안내도 페이지 제목(h1) 정확히 하나, 기존 작업실 링크 하나만
+    expect(h1(list)).toEqual(["내 프로젝트"]);
+    expect(h1(detail)).toEqual(["프로젝트 보기"]);
+    for (const markup of [list, detail]) expect([...markup.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/"]);
     expect(read).not.toHaveBeenCalled();
     expect(state.created).toHaveLength(0);
     expect(state.getUser).not.toHaveBeenCalled();

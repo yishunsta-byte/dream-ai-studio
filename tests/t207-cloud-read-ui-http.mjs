@@ -209,7 +209,13 @@ try {
   await stopNext();
   await startNext({ ...env, NEXT_TELEMETRY_DISABLED: "1", DREAM_DATA_ROOT: runtime });
   const localCloud = await request("/cloud/projects"), localDetail = await request(`/cloud/projects/${PA}`);
-  for (const reply of [localCloud, localDetail]) { assert.equal(reply.status, 200); assert(reply.text.includes("이 PC에서는 기존 작업실을 써요")); assert(!reply.text.includes(titles[PA])); }
+  for (const reply of [localCloud, localDetail]) { assert.equal(reply.status, 200); assert(reply.text.includes("이 PC에서는 기존 작업실을 써요")); assert(!reply.text.includes(titles[PA])); assert.equal((reply.text.match(/<h1[\s>]/g) ?? []).length, 1, "T-217: 로컬 안내도 h1 하나"); }
+  if (hold) {
+    // T-217: 로컬(로그인 꺼짐) 안내 화면 브라우저 확인용. 공용 화면 "/"는 열지 않는다.
+    await writeFile(join(root, "hold-local.json"), JSON.stringify({ baseUrl, stop: join(root, "stop-local") }, null, 2));
+    console.log(`T207 holding local server for browser checks: ${baseUrl}`);
+    while (!existsSync(join(root, "stop-local"))) await delay(1000);
+  }
   const localHome = await request("/"); assert(!localHome.text.includes("클라우드 작업실을 준비하고 있어요"));
   observations.push({ name: "local-control", cloudList: summary(localCloud), cloudDetail: summary(localDetail), legacyHome: summary(localHome), legacyHomePending: false });
   await writeFile(join(root, "http-results.json"), JSON.stringify(observations, null, 2));

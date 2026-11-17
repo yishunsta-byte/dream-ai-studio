@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "내 프로젝트 · Dream AI Studio"
 
 export default async function CloudProjectsPage() {
   const result = await readCloudProjects();
-  if (result.kind === "local") return <CloudReadLocal />;
+  if (result.kind === "local") return <CloudReadLocal title="내 프로젝트" />;
   if (result.kind !== "ok") return <CloudReadUnavailable retryHref="/cloud/projects" title="내 프로젝트" />;
   return <ProjectListReadonly projects={result.data} />;
 }
