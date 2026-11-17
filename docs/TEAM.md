@@ -1381,3 +1381,8 @@
 - B4-S Backend assigned new async read service/backend selector/safe errors and explicit repeatable snapshot tests, no production API/RSC/Auth coupling until T191 contract returns.
 - Tester T190 actual-Next interim FAIL F190-1: dynamic113.78px header obscures anchor heading with60px offset. T192 Design priority correction requested, independent original report retained. No silent full UI acceptance.
 - B3-R stopped clusters; auto-review denied temp deletion,906857421bytes retained without bypass. User3013/managed data unchanged.
+### T191 resolver returned; T193 independent review and backend DTO handoff
+
+- msg_22557a8e319b /be59435: verified UUID/local/denied resolver + render-pass cache ready_review. Author20/157/full925 evidence remains self-test; no independent acceptance/push.
+- Actual module/DTO passed to Backend B4-S without authorizing production API wiring. Tester T193 queued after original T190 report, focused on verified identity, one-call/request isolation and existing auth semantics.
+- T190 clarified desktop root offset56+16px vs dynamic113.78px header; old-shell control passes, new-wrap control fails. T192 owns fix; no original finding overwritten.
