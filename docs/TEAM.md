@@ -1533,3 +1533,8 @@
 - 52ea968 보고/8파일 diff범위 확인. 작성자 실제PG33 PASS(기존25+신규8)/관련218/lint PASS. 원workspace tsc FAIL과 고정사본 원tsconfig typegen/tsc PASS를 구분. 아직독립수용전.
 - 원FAIL독립검수자에게 B5-R2 재배정: 고정52ea968, rolegraph F1/targetbinding F2 실부정대조와ownedpool disposal·원자성·기존권한 재검수. 고유 B5-R2-MIGRATION-RUNNER-REVIEW.md. 원B5-R FAIL 기록유지,실managed적용금지.
 - Backend는 검수중migration파일수정보류, 기존 B7 읽기환경확인만재개 지시. 제공endpoint확인/순수SELECT범위,새runner사용·DDL·권한/계정변경·유료/배포금지. 실제연결수단부족은고유B7보고로반환.
+
+### T209 FAIL 수신 / T213 탭 간 세션 표시 보완 우선배정
+- 독립57843f7 원문 확인. F209-1/P2: 원본제품두탭에서 다른탭 A로그아웃→B로그인뒤이전A계정/로그인정상표시잔류. 새API401 및 B인증·legacy503은정상, 저장소우회로판정하지않음. TEST ONLY nav도구재현과원본재현구분. BFCache복원·자연JWT만료·실Auth는미검증.
+- Front T213우선수정배정. T212진행증거와소유환경은안전정리후보고, 그다음클라이언트세션알림/서버재확인/캐시표시갱신·복귀/오프라인동작보완. 토큰·이메일·UUID브로드캐스트금지·메시지를권한근거로사용금지. resolver/DB/Backend/기존guard변경미허용,필요시최소auth-only/no-store session조회API와명시inventory검증만허용.
+- Tester에게FAIL수신과수정배정전달,고정수정SHA반환후실브라우저독립재검수예정. T211은고정679e703 기존조회UI검수계속,실클라우드개통·배포전이결함수용필요.
