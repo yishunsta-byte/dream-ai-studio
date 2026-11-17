@@ -1690,3 +1690,9 @@
 - 고정371d5cc 전체FAIL유지: F221-1P1 실제합성local StudioShell폼동일문서입력소실/원inputdisconnect, F221-2P2 의심/확정때sidebar job/failedcounts와Tab잔류. 기존cloud본문차단/계정변경·partial/nativehistory·준비안내는범위PASS. 423/원HTTP14와실패관측20assertion구분,모든기능PASS로표현안함.
 - lateSame대기timeout은실문서교체를도구가놓친관측과일치하여제품결함분류안함,작성자의별도원인미정1회이동은계속미확인. 실hidden/BFCache/자연exp미검증유지.
 - Front에최종보고와원증거위치전달,T224기존범위우선계속. Tester는T224고정SHA반환뒤T225재검수예정임을전달(현재착수미배정). B15-R/BackendB16기존배정유지,SSL DEC미수신·운영변경보류. 턴 밖 자동 점검 미설정.
+
+### 점검 / T224 제출·T225 검수 / B15-R 수용 / T226 배포준비
+- 마지막 확인 시각: 2026-11-17 21:35:50 +09:00 (Asia/Seoul). 두wake의Orca메시지·T224/B15-R원문·최근handoffs/Git확인,메시지전B15-R신규파일발견후정식수신대조. 기존T122/T137미추적보호,새미기록완료없음.
+- T224 고정8ffe3c7 ready_review,작성자18/관련427/HTTP14·실DOM입력selection/초점/aside/drawer/epoch 검증반환. T225원Tester에실원두재현및cloud원경계회귀독립배정. T221FAIL은보존,아직세션수용아님.
+- B15-R 075eec8b 고정1d561c12 미연결trustedserver계약PASS수용. 원19/B12 20/focused97/독립18·typegen/tsc/lint확인,중복합산금지. COMMIT응답유실503에도durable행존재가능/비신뢰pool sandbox아님/inflightSQL hardabort아님. 실Storage/업로드/RLS/DB등록/API/Vercelreadiness미수용. Backend수용전달/B16설계계속.
+- Front T226 exact8ffe3c7 배포후보·격리검증/환경키·예상동작/rollback계획준비만배정. T225수용전push/deploy/환경변경미허용,HEADrace금지. DB연결·쓰기optin아직닫힘. DEC-SSL-01미수신/운영변경보류,턴 밖 자동 점검 미설정.
