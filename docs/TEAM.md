@@ -1964,3 +1964,9 @@
 - Tester Backend fullterminal 직접인계 성공보고와 첫shortterminal실패를구분. Master도 기존B22-FIX 범위내 ACL-only 재현·원거부기대유지·owner만보완해누락하지않을것을 Backend에 실제통지. 신규별도수정task/추가수정자 중복배정없음.
 - 현재 state-v2/test WIP는Backend 허용수정으로보존, T122/T137 미추적보존. SQL1~4/v1/runtime/운영불변 게이트·기존Tester최종독립보고계속. 새창/점검agent생성없음. 완료SHA/수정본검수 아직미수신.
 - 마지막 확인 시각: 2026-11-18 01:04:11 +09:00 (Asia/Seoul).
+
+### 점검 / B22-R 최종 FAIL 보고 수신
+- 마지막 확인 시각: 2026-11-18 01:10:43 +09:00 (Asia/Seoul). 지정 wake msg_a353e09ee3e9·고유 B22-R b4d9d4f 원문/최소SQL·B22-FIX running인계/최근 handoffs/Git 확인. 검수원본 고정853e861과 Backend state/test/FIX인계 WIP 구분·보존, 기존T122/T137 보존.
+- B22-R 공식 FAIL 반환 수용: owner/ACL principal표식충돌 필수1건·실제6변형. 원71PASS/0skip, 독립20=14PASS6FAIL 기대유지, source/reference/literal/declaredargs감사 및tsc/lint PASS, 원1013blob불변/4ownedcluster종료 보고. 초기검수fixture오류는최종제품결함과구분. 현재runtime/apply권한우회 실증아님.
+- Backend에 최종보고 정확한commit/path와 기존FIX지속 msg_a6da2fbf33b0 실제전송. 기존근본수정범위·6변형 baseline/정상대조/소유정리·고정수정SHA 제출 유지. 원FAIL수신은새결함/새수정작업으로중복계수하지 않음. Tester는현재배정완료 후 수정본반환 전대기, 새수정본/추가독립검수 미수신·미배정.
+- B22-FIX 현재태그/OID분리계획은문서에서확인했으나 실행성공/최종통과는아직미확인. 운영·SQL1~4/v1/B19/API/applyCLI 불변, 새Codex창없음·기존Master 메시지전용예약 유지.
