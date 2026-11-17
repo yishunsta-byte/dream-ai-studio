@@ -1886,3 +1886,7 @@
 - 후보 eeca88d0fa71639f3fd99bce184f2f727f62523a / draft LF hash7568cf313b3fb203bda8a8d810b62d8345c0d158931902bef06dffa6703566d4. SQL guard 필수키/JSON형·안전정수 사전검사, deferred positive predicates IS NOT TRUE, boolean coercion 제거를 diff에서 확인. 지정3파일 변경·발행SQL/v1 불변 경계 확인.
 - B20-R2 실제 재배정: dispatch ctx_3e03ef64ee4e / task task_b0ba79569521, receipt ready. 고정후보 새archive/소유실PG에서 원80 및 추가 독립 경계·원3FAIL 해소/회귀/정리 검증, 고유 B20-R2 보고만 제출하도록 지시. 재검수 통과 전 미발행/manifest 제외 유지.
 - Backend B21 문서1개 후보 SHA/hash·거절된 원후보 역사 구분 갱신을 msg_f3c63e4b89c3 전송. 이 전달에 대한 수락은 아직 미확인. 실제 실행기 구현/운영 이관/SSL/Storage/API/배포 미배정. 턴 밖 자동 점검 미설정.
+### 점검 / B21 후보 참조 갱신 검토
+- 마지막 확인 시각: 2026-11-18 00:13:42 +09:00 (Asia/Seoul). 지정 wake msg_6205bb0b72cc·Git status/log/최근 handoffs 확인. B21 1da5a5984889c9c15846536bfa9a70bccb6cbb06 단일문서 diff 검토, 기존 T122/T137 보존. 새 미기록 보고 없음.
+- Master가 실제 draft canonical LF SHA256 7568cf313b3fb203bda8a8d810b62d8345c0d158931902bef06dffa6703566d4 계산하여 B21 표의 현후보와 일치 확인. 현후보 eeca88d 및 거절된 ef38db7/0385c666 역사 구분, 변경 guard 정의 동시고정 필요와 불변 counts, B20-R2 미수용/미발행 경계를 확인. 이번 문서 참조 갱신 범위는 검토 통과; schema/runner 구현이나 운영 수용은 아님.
+- B20-R2 dispatch ctx_3e03ef64ee4e는 이전 배정 유지, 새 결과 아직 없음. Backend 추가 제품 구현/중복 검수는 배정하지 않고 필수수정 반환 시 우선 대응; SQL4 발행 및 v2 구현은 독립 재검수 판정 후 다음 범위로 배정한다. 사용자 새 결정 필요 없음. 턴 밖 자동 점검 미설정.
