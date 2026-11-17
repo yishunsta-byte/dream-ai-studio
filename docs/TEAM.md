@@ -1303,3 +1303,9 @@
 - msg_5d27afd7c916 report read/imported. Independent6 builds/verify, original40 tool traces reproduced then removed with no additions,18 tests/lint/type and compiled-app upload201 PASS. Master accepts bounded build fix, combining T168 actual ZIP UI evidence. No standalone/deployment or opaque-binary detection claim.
 - T171 implementation owner assigned report-only P2 plan/code/evidence gap audit and concrete synthetic review artifacts; no product/gate/user DB/deployment changes. Physical-device/listening gaps remain explicit until direct evidence.
 - Reviewer3170 stopped, shared3013 now PID55956 observed unchanged in that review. Auto-review denied temp app deletion; retained copies/evidence documented without bypass.
+### T171 audit returned; T172/T173 remaining technical evidence
+
+- msg_a4c5537c04f7 /2e01626 audit read. Three explicit P2 exit criteria have scoped inherited evidence except physical-phone playback; this does not mean all technical/human-quality gaps are closed. Actual listening/native-hidden/aspect matrix and final-package documentation differences remain explicit.
+- T172 CC-DATA-01 requested audio-v2 text-only rerender actual E2E and subtitle+AAC phone-review sample with exact artifact hashes/probe. No user/device/upload action yet; original s9 preserved.
+- T173 CX-DESIGN-01 requested read-only stored16:9/1:1 layout and possible actual native-hidden validation. No fabricated hidden evidence or new device access assumed.
+- Master will align obsolete PLAN status/final-package scope after evidence review. User DB/server redeployment still unperformed.
