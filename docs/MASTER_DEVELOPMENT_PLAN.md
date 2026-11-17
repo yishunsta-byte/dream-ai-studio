@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 07:02 KST): B33 code/unit/fault수용후B34 3749241 실제service/createPool/pg normalnative는독립862e2fb PASS수용. Backend B35 실제COMMIT응답유실·primarydurable관측/동일key명시reconcile의한scenario를소유PG18.7/TCPproxy로검증하도록2파일배정(수신미확인). 원코드/SQL/fuse·환경/registry/runtime/managed불변·scratch파생한정. 운영activation/AuthB3/evolved/descriptor/provenance/budgets는후속gate. FrontT238준비수용·사용자직접push전. 이최신판정이아래과거상태보다우선한다.
+최신 판정(2026-11-18 07:20 KST): B34 normalnative/B35 bc9c107 actualCOMMITACKloss·明示samekeyprimaryreconcile는독립10ff95c PASS수용. Backend B36이schema5정식발행/완전catalogdescriptor/이관검증·fused-실행-발행hash와adapterpin mapping·trustedprovision계약1문서설계를수락했다. 기존v1/v2닫힌3·4/원SQL·fuse/registry/runtime불변·이번DB/code구현금지. actualmajor/provenance/budgets/Auth/evolved/운영activation는후속gate. FrontT238준비수용·사용자직접push전. 이최신판정이아래과거상태보다우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
