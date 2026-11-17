@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 04:00 KST): B27-FIX fbfc48c는 B27-R2 b229f78로 F27-1/2 소스 수정 PASS 수용. Backend B28 격리 PG18.7 full SQL1~5 구문·권한·원자성 검증을 수락했다. 원본 SQL5/fuse는 유지하고, hash 검증한 소유 scratch 파생본의 fuse 1문장 제거만 이번 로컬 검증에 허용한다. 실제 managed/registry/runtime/API 개통은 미승인·미실행이다. Front T238 배포 준비·정정은 수용됐고 사용자 직접 push 전이며 운영은 8ffe다. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 04:21 KST): B27-FIX 소스 수용에 이어 B28 ac7272f는 독립 fccd226로 localPG18.7 지정9그룹 PASS 수용. Backend B29가 두 연결의 동일요청 commit-replay/다른내용 conflict/rollback waiter-new 3종 native 검증을 수락했다. 원SQL/fuse·B28runner·registry/runtime/managed는 불변, B29 소유scratch 파생본 실행만 한정 허용한다. Front T238 준비는 수용됐고 사용자 직접 push 전이다. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
