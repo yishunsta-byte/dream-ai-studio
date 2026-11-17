@@ -11,7 +11,7 @@ const body = h("section", null, h("h2", null, "이전 계정 프로젝트"), h("
 const guard = (children: ReactNode) => h(ProtectedContent, null, children);
 function render(view: SessionView | null, cleared = false) {
   const tree = guard(body);
-  return renderToStaticMarkup(view === null ? tree : h(SessionBoundaryContext.Provider, { value: { view, cleared, retry: () => {}, setPaused: () => {} } }, tree));
+  return renderToStaticMarkup(view === null ? tree : h(SessionBoundaryContext.Provider, { value: { view, cleared, epoch: 1, retry: () => {}, setPaused: () => {} } }, tree));
 }
 const protectedPart = (markup: string) => markup.match(/<div data-protected-content=""[^>]*>[\s\S]*<\/div>$/)?.[0] ?? "";
 
@@ -67,7 +67,6 @@ describe("연결 inventory(정적)", () => {
     }
     expect(read("app/(cloud)/layout.tsx")).toMatch(/<main id="main-content" className="content"><ProtectedContent>\{children\}<\/ProtectedContent><\/main>/);
     expect(read("components/studio-shell.tsx")).toMatch(/<main id="main-content"[^>]*><ProtectedContent>\{children\}<\/ProtectedContent><\/main>/);
-    expect(read("components/studio-shell.tsx")).toMatch(/\{confirmed&&counts&&/);
     expect(read("components/studio-layout.tsx")).toMatch(/<SessionBoundary account=\{account\}><StudioShell /);
   });
   it("AccountMenu는 경계 상태를 우선 쓰고 경계 밖에서만 자체 감시(중복 감시 없음), 로그아웃 중에는 경계 감시를 멈춘다", () => {
@@ -84,6 +83,40 @@ describe("연결 inventory(정적)", () => {
     expect(hook).not.toMatch(/setInterval|setTimeout|requestAnimationFrame/);
     const boundary = read("components/auth/session-boundary.tsx");
     expect(boundary).not.toMatch(/setInterval|setTimeout|opacity|aria-hidden/);
-    expect(boundary).toMatch(/hidden inert>\{children\}/);
+    expect(boundary).toMatch(/hidden=\{!shown \|\| undefined\} inert=\{!shown \|\| undefined\}/);
+  });
+});
+
+describe("T-224 상태 보존·사이드바 경계(F221-1·F221-2)", () => {
+  const read = (path: string) => readFileSync(path, "utf8");
+  it("확인됨과 의심에서 본문은 같은 자리의 같은 div(마지막 자식)이고 안내만 앞자리에 더해진다 → 다시 만들지 않음", () => {
+    const current = render("current"), checking = render("checking");
+    expect(current).toMatch(/^<div data-protected-content="">/);
+    const tail = checking.slice(checking.indexOf("<div data-protected-content"));
+    expect(tail.replace(' hidden="" inert=""', "")).toBe(current);
+    const boundary = read("components/auth/session-boundary.tsx");
+    // 상태마다 다른 감싸개를 돌려주는 분기(이전 T-220 구조)가 없다
+    expect(boundary).not.toMatch(/if \(view === "current"\) return/);
+    expect(boundary).toMatch(/\{!boundary\.cleared && <div ref=\{body\} data-protected-content=""/);
+  });
+  it("포커스: 가릴 때 안내로 옮기고, 같은 계정 확인 뒤 옮겼던 경우에만 원래 요소로 돌려준다", () => {
+    const boundary = read("components/auth/session-boundary.tsx");
+    expect(boundary).toMatch(/notice\.current\?\.focus\(\)/);
+    expect(boundary).toMatch(/if \(moved\.current && target && target\.isConnected && body\.current\?\.contains\(target\)/);
+  });
+  it("감시 훅: 다른 탭 신호마다 epoch를 올린다", () => {
+    expect(read("components/auth/use-session-watch.ts")).toMatch(/setView\("checking"\); setEpoch\(\(value\) => value \+ 1\);/);
+  });
+  it("작업실 셸: 사이드바 숨김+inert, 메뉴 버튼 잠금·서랍 닫기, 작업 수는 확인됨+같은 epoch만, 확인 전 갱신 중지, 제목 일반화", () => {
+    const shell = read("components/studio-shell.tsx");
+    expect(shell).toMatch(/<aside className=\{styles\.desktop\} inert=\{!confirmed \|\| undefined\} style=\{confirmed \? undefined : \{ visibility: "hidden" \}\}>/);
+    expect(shell).toMatch(/aria-expanded=\{open\} disabled=\{!confirmed\}/);
+    expect(shell).toMatch(/useEffect\(\(\)=>\{if\(!confirmed\)drawer\.current\?\.close\(\);\},\[confirmed\]\);/);
+    expect(shell).toMatch(/const counts=confirmed&&received&&received\.epoch===epoch\?received:null;/);
+    expect(shell).toMatch(/useEffect\(\(\)=>\{if\(!confirmed\)return;let disposed=false/);
+    expect(shell).toMatch(/\},\[pathname,confirmed,epoch\]\);/);
+    expect(shell).toMatch(/const title = !confirmed \? "작업실" :/);
+    // 작업 수를 쓰는 곳은 모두 걸러진 counts만 본다
+    expect(shell.match(/received/g)?.length).toBe(4);
   });
 });

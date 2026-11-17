@@ -16,13 +16,14 @@ export type SessionView = "current" | "checking" | "offline" | "unavailable" | "
 export function useSessionWatch(account: string, paused = false, enabled = true) {
   const [view, setView] = useState<SessionView>("current");
   const [cleared, setCleared] = useState(false);
+  const [epoch, setEpoch] = useState(0);
   const suspect = useRef(false), running = useRef(false), again = useRef(false), last = useRef(0), pausedRef = useRef(paused);
   const clearedRef = useRef(false);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
   const verify = useCallback(async (reason: "signal" | "return") => {
     if (pausedRef.current) return;
-    if (reason === "signal") { suspect.current = true; setView("checking"); }
+    if (reason === "signal") { suspect.current = true; setView("checking"); setEpoch((value) => value + 1); }
     else if (!suspect.current && Date.now() - last.current < 3_000) return;
     // 확인 중에 알림이 또 오면 끝난 뒤 한 번 더 묻는다(알림 전에 보낸 요청의 "같음"으로 이전 계정을 되살리지 않게).
     if (running.current) { if (reason === "signal") again.current = true; return; }
@@ -65,5 +66,5 @@ export function useSessionWatch(account: string, paused = false, enabled = true)
     };
   }, [verify, enabled]);
 
-  return { view, cleared, retry: () => { void verify("signal"); } };
+  return { view, cleared, epoch, retry: useCallback(() => { void verify("signal"); }, [verify]) };
 }
