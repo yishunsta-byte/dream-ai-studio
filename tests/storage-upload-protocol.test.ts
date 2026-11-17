@@ -535,3 +535,76 @@ describe("B19-FIX3 same-event and historical publication time binding", () => {
     fails("INPUT", () => checkedModel(sameCommit));
   });
 });
+
+describe("B19-FIX4 retained causal prefixes and reclaim ordering", () => {
+  it("derives completion lower bounds from actual reserve/claim/publish/terminal events, including shared supersession", () => {
+    const initial = registered(), bad = structuredClone(initial); bad.operations[0].completedRevision = 1;
+    fails("INPUT", () => checkedModel(bad));
+    const larger = structuredClone(initial); larger.revision = Number.MAX_SAFE_INTEGER; checkedModel(larger);
+    for (const withClaim of [false, true]) {
+      let s = apply(initial, complete(op2, "reverify", 90), owner, 2);
+      if (withClaim) s = apply(s, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 80 }, worker, 2);
+      s = apply(s, complete(uid(310), "reverify", 90), owner, 3);
+      const predecessor = s.operations.find(o => o.id === op2)!;
+      s = apply(s, { type: "claim", operationId: uid(310), fingerprint: fp, expectedFence: 0, leaseUntil: 80 }, worker, 3);
+      s = apply(s, { ...finalize(uid(310), uid(311), 90) }, worker, 4);
+      expect(s.operations[2].completedRevision).toBe(predecessor.completedRevision! + 2); // reservation shared with predecessor cancel
+      checkedModel(s);
+      const early = structuredClone(s); early.operations[2].completedRevision!--;
+      fails("INPUT", () => checkedModel(early));
+    }
+  });
+  function oldPublication() {
+    let s = apply(fresh(), complete(), owner, 1);
+    s = apply(s, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 0, leaseUntil: 5 }, worker, 1);
+    return apply(s, { type: "reservePublication", operationId: op1, fingerprint: fp, expectedFence: 1, identity }, worker, 2);
+  }
+  it("requires older lease end before later retained current or canceled claim while allowing equality/different workers", () => {
+    const before = structuredClone(oldPublication()); before.verifiers = [stranger];
+    const newer = apply(before, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 1, leaseUntil: 20 }, stranger, 6);
+    for (const s of [newer, apply(newer, { type: "cancel" }, owner, 21)]) {
+      checkedModel(s);
+      const overlap = structuredClone(s); overlap.publication!.claim.leaseUntil = 7;
+      fails("INPUT", () => checkedModel(overlap));
+      const boundary = structuredClone(s); boundary.publication!.claim.leaseUntil = 6;
+      expect(checkedModel(boundary).publication!.claim.workerId).toBe(worker); // expiry==reclaim is allowed
+    }
+    let renewed = apply(oldPublication(), { type: "renew", operationId: op1, fingerprint: fp, expectedFence: 1, leaseUntil: 8 }, worker, 3);
+    renewed = apply(renewed, { type: "cancel" }, owner, 9);
+    expect(checkedModel(renewed).publication!.claim.leaseUntil).toBe(5); // same fence renewal is not a new claim
+  });
+  it("counts repeated claims before completion but excludes later policy and reconciliation from past completion prefixes", () => {
+    let s = apply(oldPublication(), { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 1, leaseUntil: 20 }, worker, 6);
+    s = apply(s, { type: "reservePublication", operationId: op1, fingerprint: fp, expectedFence: 2, identity }, worker, 7);
+    s = apply(s, { ...finalize(), expectedFence: 2 }, worker, 8);
+    const early = structuredClone(s); early.operations[0].completedRevision = 4;
+    fails("INPUT", () => checkedModel(early));
+    const retainedMinimum = structuredClone(s); retainedMinimum.operations[0].completedRevision = 5;
+    checkedModel(retainedMinimum); // old replaced publication is not a retained extra event; no exact full-log count claim
+    const completion = s.operations[0].completedRevision;
+    s = apply(s, { type: "advancePolicy", epoch: 2, policyDigest: pd }, policy, 9);
+    s = apply(s, { type: "advancePolicy", epoch: 3, policyDigest: pd }, policy, 10);
+    expect(checkedModel(s).operations[0].completedRevision).toBe(completion);
+    let unknown = apply(fresh(), { type: "reserveCapability", issueId: uid(320), issueUntil: 5, horizon: null }, owner, 1);
+    unknown = apply(unknown, complete(), owner, 1);
+    unknown = apply(unknown, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 0, leaseUntil: 80 }, worker, 1);
+    unknown = apply(unknown, { type: "reservePublication", operationId: op1, fingerprint: fp, expectedFence: 1, identity }, worker, 1);
+    unknown = apply(unknown, { type: "rejectVerification", operationId: op1, fingerprint: fp, expectedFence: 1, failureCode: "INVALID_BYTES" }, worker, 2);
+    const failureRevision = unknown.operations[0].completedRevision;
+    unknown = apply(unknown, { type: "reconcileCapability", issueId: uid(320), horizon: 100, boundEvidence: identity.sha256 }, owner, 3);
+    expect(checkedModel(unknown).operations[0].completedRevision).toBe(failureRevision); // reconciliation occurred after this failure
+  });
+  it("bounds cleanup claim by pre-GC facts, excluding post-claim observations and keeping old closure", () => {
+    let s = apply(fresh(), { type: "reserveCapability", issueId: uid(321), issueUntil: 5, horizon: null }, owner, 1);
+    s = apply(s, { type: "cancel" }, owner, 2);
+    const first = s.closure;
+    s = apply(s, { type: "reconcileCapability", issueId: uid(321), horizon: 100, boundEvidence: identity.sha256 }, owner, 3);
+    s = apply(s, { type: "claimCleanup", cleanupId }, gc, 100);
+    expect(s.cleanup!.claimedRevision).toBe(4);
+    const tooEarly = structuredClone(s); tooEarly.cleanup!.claimedRevision = 3;
+    fails("INPUT", () => checkedModel(tooEarly));
+    const action = { type: "observeCleanup" as const, cleanupId, expectedBarrierFence: 1, absent: true, writerQuiescent: true, identityDigest: protocolDigest("object-identity", null) };
+    s = apply(s, action, gc, 101); s = apply(s, action, gc, 102);
+    expect(checkedModel(s).cleanup!.claimedRevision).toBe(4); expect(s.closure).toEqual(first);
+  });
+});

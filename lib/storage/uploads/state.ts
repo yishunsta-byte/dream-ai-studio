@@ -112,6 +112,10 @@ export function checkedModel(input: unknown): UploadModel {
     need(p.reservedAt >= h.claimedAt && p.reservedAt < h.leaseUntil && p.reservedAt < s.intentExpiresAt, "INPUT");
     const matching = p.fence === initial.fence ? claimSnapshot(initial) : p.fence === initial.canceledClaim?.fence ? initial.canceledClaim : null;
     if (matching) need(h.workerId === matching.workerId && h.claimedAt === matching.claimedAt && h.leaseUntil <= matching.leaseUntil && same(h.claimVerifiers, matching.claimVerifiers), "INPUT");
+    const newer = initial.canceledClaim ?? (initial.workerId !== null ? claimSnapshot(initial) : null);
+    // Reclaim cannot precede expiry; an omitted intermediate fence only makes
+    // the latest retained claim later, so this remains a necessary lower bound.
+    if (newer && newer.fence > h.fence) need(h.leaseUntil <= newer.claimedAt, "INPUT");
     if (p.fence === initial.fence) need(initial.claimedAt !== null && p.reservedAt >= initial.claimedAt && p.reservedAt < initial.leaseUntil!, "INPUT");
     if (initial.completedAt !== null) need(p.reservedAt <= initial.completedAt, "INPUT");
     if (!closed(s)) need(p.barrierFence === s.barrierFence, "INPUT");
@@ -133,6 +137,31 @@ export function checkedModel(input: unknown): UploadModel {
   for (const o of s.operations) need(s.operations.filter(previous => previous.generation < o.generation)
     .every(previous => previous.completedStateRevision !== null && previous.completedStateRevision <= o.expectedStateRevision && previous.completedAt! <= o.createdAt &&
       (o.completedRevision === null || o.completedRevision > previous.completedRevision!)), "INPUT");
+  const issueReservationEvents = s.issues.length + s.issues.filter(i => i.dispatched).length;
+  for (const o of s.operations) {
+    const previous = s.operations.find(p => p.generation === o.generation - 1);
+    // A canceled predecessor shares its completion event with this operation's
+    // reservation (supersession). Other reservations consume a distinct event.
+    const reservation = previous?.status === "canceled" ? 0 : 1;
+    const claims = o.status === "canceled" ? o.fence - 1 : o.fence;
+    const publication = s.publication?.operationId === o.id ? 1 : 0;
+    const terminal = o.status === "pending" ? 0 : 1;
+    const issuance = o.kind === "initial" ? issueReservationEvents : 0;
+    const minimum = (previous?.completedRevision ?? 0) + reservation + claims + publication + terminal + issuance;
+    need((o.completedRevision ?? s.revision) >= minimum, "INPUT");
+  }
+  // All issue/dispatch facts predate initial closure. Reconciliation can happen
+  // later, so it is excluded from past completion/closure prefix minima.
+  if (s.closure && s.operations.length === 0) need(s.closure.revision >= issueReservationEvents + 1, "INPUT");
+  if (s.cleanup) {
+    const claimEvents = s.operations.reduce((n, o) => n + (o.status === "canceled" ? o.fence - 1 : o.fence), 0);
+    const completionEvents = s.operations.filter(o => o.status !== "pending").length;
+    const sharedGcCancel = s.closure!.reason === "cleanup" && s.operations.some(o => o.status === "canceled");
+    const earlierEmptyCancel = s.closure!.reason !== "cleanup" && s.operations.length === 0 ? 1 : 0;
+    const minimum = issueReservationEvents + s.issues.filter(i => i.boundEvidence !== null).length + s.operations.length + claimEvents +
+      (s.publication ? 1 : 0) + completionEvents + earlierEmptyCancel + (sharedGcCancel ? 0 : 1);
+    need(s.cleanup.claimedRevision >= minimum, "INPUT");
+  }
   points.sort((a, b) => a - b);
   need(points.length === s.stateRevision && points.every((p, index) => p === index + 1), "INPUT");
   const chronology = [...s.operations.filter(o => o.status === "succeeded").map(o => ({ revision: o.completedStateRevision!, at: o.completedAt! })),
