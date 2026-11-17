@@ -1,3 +1,5 @@
+> 최신 실행 기준(사용자 후속 지시, 2026-11-18): GitHub + Vercel + Supabase 전환의 현재 상태·역할·배정은 [MASTER_DEVELOPMENT_PLAN.md](MASTER_DEVELOPMENT_PLAN.md)를 따른다. 아래 원래 로컬 마일스톤/역할/이전 시점 상태는 현재 running 배정이 아니다. 제품 불변 원칙과 세부 완료 기준은 계속 적용하며 최신 사용자 지시가 우선한다.
+
 # Dream AI Studio — 개발 기준 문서 (v2.4)
 
 | 항목 | 내용 |
