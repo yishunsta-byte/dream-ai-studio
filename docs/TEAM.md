@@ -1544,3 +1544,8 @@
 - T211 fca732d 원문요약/보고 가져옴. 고정679e703 관련442/원TLS PG HTTP14/build/verify/type/lint 및1280·390 정상/빈목록/오류/복구/키보드 독립PASS수용. T202정적menus예외만적용,원FAIL보존. 실제managed/배포미검증.
 - T212 25d3a99 고유보고확인,빈목록과오류구분/재시도복구·양폭검증보완수용. 오류h1부재는T214접근성일관성후속으로Front배정, T213세션보완뒤순차수행. T213우선순위유지.
 - T211 소유임시사본약2.11GB 삭제는자동승인검토거절로잔존,우회없음. 보고서에소유경로/종료증거보존,3013보호.
+
+### B7 DB 연결 미성립 / B8 DNS·신뢰 CA 진단 배정
+- B7 13e6c7a 보고확인. 기존GitHub/Supabase ref/Vercel프로젝트메타데이터확인. UI실제제공Direct는DNS ENOENT,Session pooler는SELF_SIGNED_CERT_IN_CHAIN, rejectUnauthorized true유지. 둘다connected=false,BEGIN/SELECT미도달. 권한/AuthFK/schema/history/실managed검증미완료.
+- B8 Backend에DNS/Node-OS resolve 및TLS신뢰체인 진단배정. 제공endpoint만, DB자격없는handshake조사와검증된공식CA출처확인 허용. 검증신뢰CA확인시자기probe프로세스에만적용하고hostname/rejectUnauthorized true유지해순수readonly SELECT재시도가능.
+- 임의selfsigned신뢰·인증서검증우회·전역CA설치·새endpoint추측·실Auth row/DDL/권한/리소스/배포변경금지. 고유 B8-MANAGED-CONNECTION-DIAGNOSIS.md에안전코드/근거/미확인기록. 현재liveAuth대상을staging으로간주하지않음. B5수용코드와T213WIP보호.
