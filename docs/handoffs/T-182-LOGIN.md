@@ -54,3 +54,28 @@
 2. 실제 메일 수신 확인(주인님), Supabase 기본 메일 문구를 한글로 바꾸기.
 3. Vercel 주소가 정해지면 Site URL·Redirect URL 교체, Vercel 환경변수 등록.
 4. 세션 만료 때 작성 중 내용 유지는 아직 없어요. 화면들이 API 401 한글 안내를 그대로 보여 주는 수준이에요.
+
+## 독립 검수 FAIL 반영 (검수 21d98fa `T-182-LOGIN-REVIEW.md`, Master msg_7faa4fc1b31b)
+
+| 항목 | 원인 | 수정 |
+|---|---|---|
+| F182-1 제어문자 next | 접두사만 보고, URL 해석이 탭·LF·CR을 지우며 `/<탭>/evil.test`가 `//evil.test`가 됨 | `safeNextPath`: 제어문자(U+0000~001F, 007F)·역슬래시가 있으면 먼저 `/`. 그다음 URL로 해석해 같은 사이트·`//` 아님·`/login`·`/auth/` 아님을 다시 확인하고 해석 결과를 돌려줌 |
+| F182-2 forwarded host | `requestOrigin`이 `x-forwarded-host`를 무조건 믿음 | 함수 삭제. **link callback의 이동은 모두 같은 사이트 상대 경로**(`Location: /…`)로 바꿔 머리글을 쓰지 않음. 메일 링크 주소는 `callbackOrigin`: 정해 둔 목록(`DREAM_SITE_URL`, Vercel이 주는 `VERCEL_PROJECT_PRODUCTION_URL`·`VERCEL_URL`)과 Host가 맞을 때만, 이 PC 실행이면 127.0.0.1·localhost만 허용, 그 밖은 목록 첫 주소 또는 400 `AUTH_ORIGIN_UNTRUSTED`. `x-forwarded-*`는 읽지 않음 |
+| O182-1 JSON null | 객체 확인 없이 `body.email` 읽음 | null·배열·문자열·숫자는 400 `BAD_REQUEST` |
+| 추가 | callback `type`을 아무 값이나 받음 | 알려진 메일 확인 종류만 허용, 나머지는 `/login?error=link` |
+
+- proxy 화면 보호의 이동: 처음에 상대 경로로 바꿨더니 **Next proxy가 절대 주소만 받아 500**이 났어요(실제 서버에서 발견, 단위 시험은 통과했던 경우). `request.nextUrl`에 경로만 바꿔 붙이는 방식으로 고쳤고, 실제 서버에서 Next가 같은 사이트 이동을 상대 경로로 내보내는 것을 확인했어요.
+
+### 수정 확인
+| 확인 | 결과 |
+|---|---|
+| `t182-auth` | 26/26 통과(새 11개: 제어문자 7가지·퍼센트 3가지·정상 경로 유지·로그인 주소·사이트 주소 목록 8가지·callback 4묶음·링크 요청 4묶음) |
+| 전체 시험 | 743 통과·23 skip |
+| `tsc`, `eslint`(바꾼 파일) | 둘 다 exit 0. 정규식 안 제어문자 규칙 때문에 글자 하나씩 검사로 바꿈 |
+| 운영 빌드 + `verify-build`(OS 임시 사본) | 둘 다 exit 0 |
+| 검수 요청 그대로(실제 서버 43182) | `GET /auth/callback` + `x-forwarded-host: evil.test` → 307 `/login?error=link`. `/settings` + `x-forwarded-host`·`host: evil.test` → 307 `/login?next=%2Fsettings%3Fa%3D1`(상대 경로). JSON `null` → 400 |
+| 실제 Supabase 1회용 링크 + `next`=탭·LF·CR + `x-forwarded-host: evil.test` | 셋 다 307 `Location: /`, 세션 쿠키 생김, 그 쿠키로 API 200. 정상 `next=/projects/new?x=1` → 그대로 |
+| ego lite 390·1280 | 로그인 전 `/library` → `/login?next=%2Flibrary`(넘침 0/0), 링크 → `/jobs`·로그아웃 버튼·API 200, 로그아웃 → `/login`·API 401 |
+
+- 3013(PID 51032)은 그대로예요. 사본·시험 서버는 지웠고 43182 리슨 없음.
+- 남은 것은 위 "남은 것" 1~4와 같아요. **API별 2차 확인은 여전히 없어요.** 재검수 부탁드려요.

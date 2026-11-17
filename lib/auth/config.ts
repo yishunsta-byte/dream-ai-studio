@@ -33,19 +33,67 @@ export function isPublicPath(pathname: string) {
   return pathname === "/login" || pathname === "/auth/callback" || pathname === "/api/auth/login";
 }
 
+// 제어문자(U+0000~U+001F, U+007F)와 역슬래시. URL 해석이 탭·줄바꿈을 지우고 역슬래시를 /로 바꾸면서
+// "/<탭>/evil.test"가 "//evil.test"(외부 주소)로 바뀌는 것을 막는다(T-182 검수 F182-1).
+function hasUnsafePathChar(value: string) {
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x1f || code === 0x7f || code === 0x5c) return true;
+  }
+  return false;
+}
+const PROBE_ORIGIN = "http://same-site.invalid";
+
 // 로그인 뒤 돌아갈 주소는 같은 사이트 안의 경로만 허용한다.
+// 위험한 글자를 먼저 거절하고, URL로 해석한 뒤에도 같은 사이트인지 다시 확인한다.
 export function safeNextPath(next: string | null | undefined) {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\") || next.startsWith("/login") || next.startsWith("/auth/")) return "/";
-  return next;
+  if (!next || next.length > 2048 || !next.startsWith("/") || hasUnsafePathChar(next)) return "/";
+  let parsed: URL;
+  try { parsed = new URL(next, PROBE_ORIGIN); } catch { return "/"; }
+  if (parsed.origin !== PROBE_ORIGIN || parsed.pathname.startsWith("//")) return "/";
+  if (parsed.pathname === "/login" || parsed.pathname.startsWith("/login/") || parsed.pathname.startsWith("/auth/")) return "/";
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
 }
 
-// 브라우저가 실제로 접속한 주소. 라우트의 request.url은 localhost로 바뀔 수 있어서
-// 쿠키가 맞지 않는 주소로 보내지 않도록 Host 머리글을 따른다(Vercel은 x-forwarded-*).
-export function requestOrigin(request: Request) {
-  const url = new URL(request.url);
-  const host = request.headers.get("x-forwarded-host")?.split(",")[0].trim() || request.headers.get("host") || url.host;
-  const proto = request.headers.get("x-forwarded-proto")?.split(",")[0].trim() || url.protocol.replace(":", "");
-  return `${proto === "https" ? "https" : "http"}://${host}`;
+// 로그인 화면 주소. 서버 코드가 만든 값만 넣는다.
+export function loginPath(params: { next?: string; error?: "link" | "forbidden" | "unavailable" } = {}) {
+  const query = new URLSearchParams();
+  if (params.next) query.set("next", safeNextPath(params.next));
+  if (params.error) query.set("error", params.error);
+  const text = query.toString();
+  return text ? `/login?${text}` : "/login";
+}
+
+// 같은 사이트 안에서만 이동하는 응답. Location을 상대 경로로 두면 브라우저가 자기가 접속한 주소를
+// 기준으로 이동하므로 Host·x-forwarded-host 머리글을 믿지 않아도 된다(F182-2).
+export function sameSiteRedirect(path: string) {
+  const location = path === "/login" || path.startsWith("/login?") ? path : safeNextPath(path);
+  if (hasUnsafePathChar(location) || location.startsWith("//")) throw new Error("같은 사이트 경로가 아니에요.");
+  return new Response(null, { status: 307, headers: { location, "cache-control": "no-store" } });
+}
+
+// 로그인 메일 링크에 넣을 사이트 주소. 요청 머리글만으로 주소를 만들지 않고(F182-2),
+// 미리 정한 목록과 맞을 때만 쓴다. 목록: DREAM_SITE_URL(쉼표로 여러 개) +
+// Vercel이 넣어 주는 VERCEL_PROJECT_PRODUCTION_URL·VERCEL_URL.
+// 이 PC 실행(Vercel 아님)에서는 127.0.0.1·localhost 접속도 허용한다.
+export function trustedOrigins(env: Env = process.env) {
+  const list = (env.DREAM_SITE_URL ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+  for (const host of [env.VERCEL_PROJECT_PRODUCTION_URL, env.VERCEL_URL]) if (host?.trim()) list.push(`https://${host.trim()}`);
+  const origins: string[] = [];
+  for (const item of list) {
+    try { const url = new URL(item); if (url.protocol === "https:" || url.protocol === "http:") origins.push(url.origin); } catch { /* 잘못된 값은 건너뛴다 */ }
+  }
+  return [...new Set(origins)];
+}
+
+const LOOPBACK_HOST = /^(127\.0\.0\.1|localhost|\[::1\])(:\d{1,5})?$/;
+
+export function callbackOrigin(request: Request, env: Env = process.env) {
+  const trusted = trustedOrigins(env);
+  const host = (request.headers.get("host") ?? "").trim().toLowerCase();
+  for (const origin of trusted) if (new URL(origin).host === host) return origin;
+  if (!env.VERCEL && LOOPBACK_HOST.test(host)) return `http://${host}`;
+  return trusted[0] ?? null;
 }
 
 export const AUTH_MESSAGES = {
