@@ -2304,3 +2304,6 @@
 - Backend B33-FIX2 msg_fc201e42672c 실제배정(수신아직미확인): attempt모듈/기존attempttest/신규B33-FIX2-ROLLBACK-OUTCOME.md3경로만. soleROLLBACK originalACK의반환전확정상태보존·COMMITdispatch/confirmed우선/lateimmutable·ACK없는unknown/once/pendingcleanup유지, 실제ACK-end-return순서·wrongtag/reject상호작용회귀. Tester최종근거대조뒤고정선언, 원0e04ecb/기타5모듈2test보존.
 - Tester msg_2195c546c415 원고정최종조건/새finding분리확인요청, movingFIX미수용. nativeparser/cluster/제품runtime/SQL/B3/config/package/env/builddeploy·새창agentworktree변경없음. 최종독립반환후FIX대조→수정고정→재검토.
 - 후속 수신확인 2026-11-18 06:32:24 +09:00: msg_49eb056576a3 Backend B33-FIX2 3경로범위수락, soleROLLBACK 원ACK와awaitwrapper분리·COMMIT우선/반환후immutable·wrongtag/reject회귀 및최종R2대조후고정예정. native/타경로변경없음.
+### 점검 / B33-R2 lateROLLBACK ACK-before-end 재현 확정
+- 실제 점검 완료 시각: 2026-11-18 06:33:20 +09:00 (Asia/Seoul). 지정 msg_a266c40b1d5b·Git/status 확인. Tester원0e04ecb 통제순서: reserve INPUT/soleROLLBACK/COMMIT0→10ms wrapper기한→15ms 정확원ROLLBACK ACK/handlersflush(public미반환·clientend전)→positiveend→unknown/cleanupok반환, 기대notapplied/ok. ACK-after-end모호성제외한P2정보손실근거접수·최종보고고정전, 실native사건아님. 원F33-1/2독립6/6PASS와분리.
+- Backend msg_5322961440e3 실제정확순서/독립artifact경로/최종보고예정전달·기존FIX2회귀대조요청. 허용attempt/test2경로만WIP확인·T122/T137보존, Master변경TEAM기록만. 최종원고정보고→FIX2고정→Tester재검수원칙유지·새native/운영/창agentworktree없음.
