@@ -1375,3 +1375,9 @@
 - T189 actual report identifies exact4458283 production E5kSuVaEr6Jkw9rLwoopFVA9aHh5 Ready/Current. Master read report and independently HTTP GET confirmed login200/root307/jobs401.
 - Front exact-SHA isolated173/13skip/lint/type/build and safe production Origin/JSON checks pass. Authenticated production session/password remains untested; T187 fake-Auth evidence distinct. No data/file Supabase connection yet, CloudPending stays.
 - T190 UI review pending. B3-R connection review and B4-C contract next; local3013 unmodified.
+### B3-R accepted; B4-S implementation and T192 header correction
+
+- msg_9a52d8db9891 /0199fa7 report read/imported: independent actual13+20+pool1 concurrency control,15 boundary controls/159 regression/lint/type pass. B3 local driver scope accepted; managed/pooler/Auth FK/TLS and production connection remain unverified.
+- B4-S Backend assigned new async read service/backend selector/safe errors and explicit repeatable snapshot tests, no production API/RSC/Auth coupling until T191 contract returns.
+- Tester T190 actual-Next interim FAIL F190-1: dynamic113.78px header obscures anchor heading with60px offset. T192 Design priority correction requested, independent original report retained. No silent full UI acceptance.
+- B3-R stopped clusters; auto-review denied temp deletion,906857421bytes retained without bypass. User3013/managed data unchanged.
