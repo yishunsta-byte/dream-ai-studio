@@ -319,4 +319,120 @@ describe.skipIf(process.env.DREAM_PG_STORAGE_SCHEMA_TEST !== "1")("B20 actual of
     });
     expect((await admin.query("SELECT lifecycle,identity_json FROM dream.storage_objects WHERE id=$1", [obj])).rows[0]).toEqual({ lifecycle: "tombstoned", identity_json: null });
   });
+  // Independent B20-R eight cases below are copied with their expectations intact.
+  const accepted = "INDEPENDENT_CONSTRAINTS_ACCEPTED_ROLLED_BACK";
+  it("R independent missing closure reason/time must reject at deferred validation", async () => {
+    await expect(tx(async c => {
+      const obj=uid(2000); await insert(c,"storage_objects",object(A,obj,uid(2001)));
+      const bad=canonical({revision:1,principalId:A,authorizers:[A],operationId:null});
+      await c.query("UPDATE dream.storage_objects SET initial_closed=true,closure_json=$2,revision=1 WHERE id=$1",[obj,bad]);
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE"); throw Error(accepted);
+    })).rejects.toMatchObject({code:"23514"});
+  });
+  it("R independent cleanup observation without at must fail closed", async () => {
+    await expect(tx(async c => {
+      const bad=canonical({absent:true,writerQuiescent:true,identityDigest:dh("object-identity","null")});
+      await c.query("UPDATE dream.storage_cleanup_claims SET observation_json=$2,revision=revision+1 WHERE id=$1",[uid(90),bad]);
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE"); throw Error(accepted);
+    })).rejects.toMatchObject({code:"23514"});
+  });
+  it("R independent cleanup absence/quiescence must be JSON booleans", async () => {
+    await expect(tx(async c => {
+      const bad=canonical({at:Date.parse(time(2)),absent:"yes",writerQuiescent:"yes",identityDigest:dh("object-identity","null")});
+      await c.query("UPDATE dream.storage_cleanup_claims SET observation_json=$2,revision=revision+1 WHERE id=$1",[uid(90),bad]);
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE"); throw Error(accepted);
+    })).rejects.toMatchObject({code:"23514"});
+  });
+  it("R independent semantic revocation prefix may reserialize while exact new raw text is retained", async () => {
+    await expect(tx(async c => {
+      const prior=JSON.parse((await c.query("SELECT revocation_history_json FROM dream.asset_receipt_state WHERE object_id=$1",[O])).rows[0].revocation_history_json);
+      const event={revision:5,at:Date.parse(time(34)),principalId:A,authorizers:[A],operationId:null,kind:"manual"};
+      const raw=` \n${JSON.stringify([...prior,event],null,2)}\n `;
+      await c.query("UPDATE dream.asset_receipt_state SET status='revoked',revision=5,revocation_history_json=$2 WHERE object_id=$1",[O,raw]);
+      await c.query("UPDATE dream.storage_objects SET revision=revision+1 WHERE id=$1",[O]);
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE");
+      expect((await c.query("SELECT revocation_history_json FROM dream.asset_receipt_state WHERE object_id=$1",[O])).rows[0].revocation_history_json).toBe(raw);
+      throw Error(accepted);
+    })).rejects.toThrow(accepted);
+  });
+  it("R independent creation raw hash binding rejects NULL groups and semantic-equivalent changed raw bytes", async () => {
+    const req=uid(2010),client=' {"title":"unit","menuId":"unit","referenceIds":[],"inputs":{}} ',snap=' {"policyEpoch":1,"config":{},"menu":{}} ',raw=canonical({client:JSON.parse(client),snapshot:JSON.parse(snap)});
+    await tx(async c=>{await insert(c,"creation_operations",{owner_id:A,request_id:req,client_digest:dh("creation-client",client),snapshot_digest:dh("creation-snapshot",snap),fingerprint_version:2,request_fingerprint:dh("creation-request-v2",canonical({fingerprintVersion:2,clientDigest:dh("creation-client",client),snapshotDigest:dh("creation-snapshot",snap)})),client_json:client,original_snapshot_json:snap,request_json:raw,authorization_until:time(100),status:"pending",revision:0,created_at:time()});});
+    await reject("UPDATE dream.creation_operations SET client_json=$2,revision=revision+1 WHERE request_id=$1",[req,canonical(JSON.parse(client))]);
+    await reject("UPDATE dream.creation_operations SET status='canceled',settled_at=$2,settled_by=NULL,settled_registrars='{}',result_json='{}',result_digest=$3,revision=revision+1 WHERE request_id=$1",[req,time(1),dh("creation-result","{}")]);
+    expect((await admin.query("SELECT client_json FROM dream.creation_operations WHERE request_id=$1",[req])).rows[0].client_json).toBe(client);
+  });
+  it("R independent outbox final NULL and cross-owner or wrong-key targets reject", async () => {
+    const record={owner_id:A,id:uid(2020),object_id:O,kind:"reconcile",target_kind:"final",operation_id:null,generation:null,fence:0,barrier_fence:0,bucket:identity.bucket,object_key:identity.key,identity_digest:identityDigest,payload_json:"{}",payload_sha:sha("{}"),status:"pending",attempts:0,revision:0,created_at:time()};
+    for(const change of [{identity_digest:null},{owner_id:B},{object_key:`${A}/wrong/key`}])await expect(insert(admin,"storage_outbox",{...record,...change})).rejects.toMatchObject({code:change.identity_digest===null?"23514":"23503"});
+    await insert(admin,"storage_outbox",record);
+    await reject("UPDATE dream.storage_outbox SET bucket='retargeted',revision=revision+1 WHERE id=$1",[record.id]);
+  });
+  it("R independent all12 grants and7 owner SELECT policies keep API writes and worker tables denied", async () => {
+    const rows=(await admin.query("SELECT c.relname,has_table_privilege('dream_api',c.oid,'SELECT') AS aselect,has_table_privilege('dream_api',c.oid,'INSERT,UPDATE,DELETE,TRUNCATE') AS awrite,has_table_privilege('dream_worker',c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE') AS wany,c.relrowsecurity,c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='dream' AND c.relname=ANY($1) AND c.relkind='r'",[tables])).rows;
+    expect(rows).toHaveLength(12);expect(rows.filter(r=>r.aselect)).toHaveLength(7);expect(rows.every(r=>!r.awrite&&!r.wany&&r.relrowsecurity&&r.relforcerowsecurity)).toBe(true);
+    const catalog=(await admin.query("SELECT (SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='dream' AND c.relkind='r') AS tables,(SELECT count(*)::int FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='dream') AS policies,(SELECT count(*)::int FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='dream' AND t.tgname='guard_row') AS original_guards,(SELECT count(*)::int FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='dream' AND t.tgname='storage_guard') AS new_guards,(SELECT count(*)::int FROM pg_constraint k JOIN pg_class c ON c.oid=k.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='dream' AND c.relname<>ALL($1) AND k.contype='f' AND k.confrelid='auth.users'::regclass) AS original_auth_fks",[tables])).rows[0];
+    expect(catalog).toEqual({tables:30,policies:43,original_guards:18,new_guards:12,original_auth_fks:18});
+    expect((await admin.query("SELECT count(*)::int n FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relname=ANY($1) AND p.polcmd='r'",[tables])).rows[0].n).toBe(7);
+    expect((await admin.query("SELECT count(*)::int n FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='dream' AND p.proname LIKE 'storage_%' AND p.prosecdef")).rows[0].n).toBe(0);
+  });
+  it("R independent canceled prior claim validates exact old worker while normal cancellation survives", async () => {
+    const exercise=(worker:string)=>tx(async c=>{
+      const obj=uid(2030),asset=uid(2031),intentId=uid(2032),opId=uid(2033);await insert(c,"storage_objects",object(A,obj,asset));await insert(c,"upload_intents",{...intent(A,intentId,obj),request_id:uid(2034)});await insert(c,"storage_verification_operations",{...operation(opId),object_id:obj,intent_id:intentId});await c.query("UPDATE dream.storage_objects SET active_generation=1,revision=1 WHERE id=$1",[obj]);await claim(c,opId);await c.query("UPDATE dream.storage_objects SET revision=2 WHERE id=$1",[obj]);
+      const prior=canonical({workerId:worker,fence:1,claimedAt:Date.parse(time()),leaseUntil:Date.parse(time(90)),authorizationUntil:Date.parse(time(90)),policyEpoch:1,policyDigest:PD,claimVerifiers:[WORKER]}),terminal='{"status":"canceled"}';
+      await c.query("UPDATE dream.storage_verification_operations SET status='canceled',fence=2,worker_id=NULL,lease_until=NULL,claimed_at=NULL,claim_verifiers='{}',canceled_claim_json=$2,completed_at=$3,completed_state_revision=0,completed_aggregate_revision=3,terminal_json=$4,terminal_digest=$5,revision=revision+1 WHERE id=$1",[opId,prior,time(1),terminal,dh("verification-terminal",terminal)]);
+      await c.query("UPDATE dream.storage_objects SET initial_closed=true,closure_json=$2,revision=3 WHERE id=$1",[obj,canonical({revision:3,at:Date.parse(time(1)),principalId:A,authorizers:[A],reason:"cancel",operationId:null})]);await c.query("SET CONSTRAINTS ALL IMMEDIATE");throw Error(accepted);
+    });await expect(exercise(B)).rejects.toMatchObject({code:"23514"});await expect(exercise(WORKER)).rejects.toThrow(accepted);
+  });
+  const closureBase = { revision: 1, at: Date.parse(time()), principalId: A, authorizers: [A], reason: "cancel", operationId: null };
+  async function closureBoundary(value: unknown) {
+    return tx(async c => {
+      const obj = uid(2100); await insert(c, "storage_objects", object(A, obj, uid(2101)));
+      await c.query("UPDATE dream.storage_objects SET initial_closed=true,closure_json=$2,revision=1 WHERE id=$1", [obj, canonical(value)]);
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE"); throw Error(accepted);
+    });
+  }
+  const missingNullWrong = (base: Record<string, unknown>, wrong: Record<string, unknown>) => Object.keys(base).flatMap(key => {
+    const omitted = { ...base }; delete omitted[key];
+    return [[`${key} omitted`, omitted], ...(base[key] === null ? [] : [[`${key} null`, { ...base, [key]: null }]]), [`${key} wrong kind`, { ...base, [key]: wrong[key] }]] as [string, Record<string, unknown>][];
+  });
+  it.each(missingNullWrong(closureBase, { revision: "1", at: `${Date.parse(time())}`, principalId: 1, authorizers: A, reason: true, operationId: 1 }))("FIX closure rejects %s", async (_name, value) => {
+    await expect(closureBoundary(value)).rejects.toMatchObject({ code: "23514" });
+  });
+  it.each([
+    ["unknown reason", { reason: "other" }], ["zero revision", { revision: 0 }], ["fractional revision", { revision: 1.5 }],
+    ["negative time", { at: -1 }], ["fractional time", { at: 1.5 }], ["unsafe time", { at: 9007199254740992 }],
+    ["empty authority", { authorizers: [] }], ["nonstring authority", { authorizers: [1] }], ["null authority member", { authorizers: [null] }],
+    ["malformed principal", { principalId: "invalid" }], ["malformed operation", { operationId: "invalid" }], ["unknown field", { extra: true }],
+  ])("FIX closure rejects %s value", async (_name, change) => {
+    await expect(closureBoundary({ ...closureBase, ...(change as object) })).rejects.toMatchObject({ code: "23514" });
+  });
+  it("FIX valid owner closure, including nullable operation, reaches deferred validation", async () => {
+    await expect(closureBoundary(closureBase)).rejects.toThrow(accepted);
+  });
+  const observationBase = { at: Date.parse(time(2)), absent: true, writerQuiescent: true, identityDigest: dh("object-identity", "null") };
+  async function observationBoundary(value: Record<string, unknown>, raw = canonical(value)) {
+    return tx(async c => {
+      await c.query("UPDATE dream.storage_cleanup_claims SET observation_json=$2,revision=revision+1 WHERE id=$1", [uid(90), raw]);
+      await c.query("UPDATE dream.storage_objects SET lifecycle=$2,revision=revision+1 WHERE id=$1", [uid(20), value.absent === true && value.writerQuiescent === true ? "tombstoned" : "cleanup_claimed"]);
+      await c.query("SET CONSTRAINTS ALL IMMEDIATE"); throw Error(accepted);
+    });
+  }
+  it.each(missingNullWrong(observationBase, { at: `${Date.parse(time(2))}`, absent: "yes", writerQuiescent: "true", identityDigest: 1 }))("FIX observation rejects %s", async (_name, value) => {
+    await expect(observationBoundary(value)).rejects.toMatchObject({ code: "23514" });
+  });
+  it.each([
+    ["fractional time", { at: 1.5 }], ["negative time", { at: -1 }], ["unsafe time", { at: 9007199254740992 }],
+    ["false string", { absent: "false" }], ["numeric boolean", { writerQuiescent: 1 }], ["wrong digest", { identityDigest: H }],
+    ["malformed digest", { identityDigest: "invalid" }], ["unknown field", { extra: true }],
+  ])("FIX observation rejects %s value", async (_name, change) => {
+    await expect(observationBoundary({ ...observationBase, ...(change as object) })).rejects.toMatchObject({ code: "23514" });
+  });
+  it.each([[true, true], [true, false], [false, true], [false, false]])("FIX genuine JSON booleans absent=%s quiescent=%s survive", async (absent, writerQuiescent) => {
+    await expect(observationBoundary({ ...observationBase, absent, writerQuiescent })).rejects.toThrow(accepted);
+  });
+  it("FIX JSON integer-valued decimal time survives without text-to-bigint cast failure", async () => {
+    const raw = canonical(observationBase).replace(`"at":${observationBase.at}`, `"at":${observationBase.at}.0`);
+    await expect(observationBoundary(observationBase, raw)).rejects.toThrow(accepted);
+  });
 });

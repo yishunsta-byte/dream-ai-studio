@@ -260,10 +260,43 @@ CREATE TABLE dream.creation_operations (
 -- Invoker-only constraints, NOT SECURITY DEFINER transition/executor functions.
 CREATE FUNCTION dream.storage_guard() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog,dream AS $$
 DECLARE o jsonb; n jsonb; obj dream.storage_objects%ROWTYPE; op dream.storage_verification_operations%ROWTYPE;
- old_generation bigint; new_generation bigint; expected jsonb; i integer;
+ old_generation bigint; new_generation bigint; expected jsonb; i integer; evidence jsonb;
 BEGIN
  IF TG_OP='DELETE' THEN RAISE EXCEPTION 'storage identity/history cannot be deleted' USING ERRCODE='23514'; END IF;
  n:=to_jsonb(NEW);
+ -- Validate JSON kinds and required keys before any text extraction/cast. SQL
+ -- NULL is not false, and PostgreSQL accepts non-JSON boolean spellings like yes.
+ IF TG_TABLE_NAME='storage_objects' AND n->>'closure_json' IS NOT NULL THEN
+  evidence:=(n->>'closure_json')::jsonb;
+  IF ((jsonb_typeof(evidence)='object' AND evidence ?& ARRAY['revision','at','principalId','authorizers','reason','operationId']
+    AND evidence-ARRAY['revision','at','principalId','authorizers','reason','operationId']='{}'::jsonb
+    AND jsonb_typeof(evidence->'revision')='number' AND jsonb_typeof(evidence->'at')='number'
+    AND jsonb_typeof(evidence->'principalId')='string' AND jsonb_typeof(evidence->'authorizers')='array'
+    AND jsonb_typeof(evidence->'reason')='string' AND evidence->>'reason' IN ('cancel','verification_failure','cleanup')
+    AND (evidence->'operationId'='null'::jsonb OR (jsonb_typeof(evidence->'operationId')='string'
+      AND evidence->>'operationId' ~ '^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'))) IS NOT TRUE) THEN
+   RAISE EXCEPTION 'invalid closure JSON fields/types' USING ERRCODE='23514'; END IF;
+  IF (((evidence->>'revision')::numeric BETWEEN 1 AND 9007199254740991
+    AND trunc((evidence->>'revision')::numeric)=(evidence->>'revision')::numeric
+    AND (evidence->>'at')::numeric BETWEEN 0 AND 9007199254740991 AND trunc((evidence->>'at')::numeric)=(evidence->>'at')::numeric
+    AND evidence->>'principalId' ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+    AND jsonb_array_length(evidence->'authorizers') BETWEEN 1 AND 100
+    AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(evidence->'authorizers') a WHERE
+      (jsonb_typeof(a)='string' AND a#>>'{}' ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$') IS NOT TRUE)) IS NOT TRUE) THEN
+   RAISE EXCEPTION 'invalid closure JSON values' USING ERRCODE='23514'; END IF;
+ END IF;
+ IF TG_TABLE_NAME='storage_cleanup_claims' AND n->>'observation_json' IS NOT NULL THEN
+  evidence:=(n->>'observation_json')::jsonb;
+  IF ((jsonb_typeof(evidence)='object' AND evidence ?& ARRAY['at','absent','writerQuiescent','identityDigest']
+    AND evidence-ARRAY['at','absent','writerQuiescent','identityDigest']='{}'::jsonb
+    AND jsonb_typeof(evidence->'at')='number' AND jsonb_typeof(evidence->'absent')='boolean'
+    AND jsonb_typeof(evidence->'writerQuiescent')='boolean' AND jsonb_typeof(evidence->'identityDigest')='string'
+    AND evidence->>'identityDigest' ~ '^[0-9a-f]{64}$') IS NOT TRUE) THEN
+   RAISE EXCEPTION 'invalid cleanup observation JSON fields/types' USING ERRCODE='23514'; END IF;
+  IF (((evidence->>'at')::numeric BETWEEN 0 AND 9007199254740991
+    AND trunc((evidence->>'at')::numeric)=(evidence->>'at')::numeric) IS NOT TRUE) THEN
+   RAISE EXCEPTION 'invalid cleanup observation time' USING ERRCODE='23514'; END IF;
+ END IF;
  IF TG_OP='INSERT' THEN
   IF (TG_TABLE_NAME='storage_objects' AND (n->>'lifecycle'<>'reserved' OR n->>'revision'<>'0' OR n->>'barrier_fence'<>'0' OR n->>'active_generation'<>'0'))
    OR (TG_TABLE_NAME='storage_verification_operations' AND (n->>'status'<>'pending' OR n->>'revision'<>'0' OR n->>'fence'<>'0' OR n->>'lease_until' IS NOT NULL))
@@ -332,7 +365,7 @@ BEGIN
    ELSIF OLD.status<>'ready' AND NEW.status='ready' THEN RAISE EXCEPTION 'new receipt required for ready' USING ERRCODE='23514'; END IF;
   ELSIF TG_TABLE_NAME='storage_cleanup_claims' THEN
    IF (n-ARRAY['revision','observation_json']) IS DISTINCT FROM (o-ARRAY['revision','observation_json'])
-    OR (OLD.observation_json IS NOT NULL AND (NEW.observation_json IS NULL OR (NEW.observation_json::jsonb->>'at')::bigint<(OLD.observation_json::jsonb->>'at')::bigint)) THEN
+    OR (OLD.observation_json IS NOT NULL AND (NEW.observation_json IS NULL OR (NEW.observation_json::jsonb->>'at')::numeric::bigint<(OLD.observation_json::jsonb->>'at')::numeric::bigint)) THEN
     RAISE EXCEPTION 'cleanup claim identity/observation time is immutable' USING ERRCODE='23514'; END IF;
   ELSIF TG_TABLE_NAME='storage_outbox' THEN
    IF (n-ARRAY['revision','status','attempts','next_attempt_at']) IS DISTINCT FROM (o-ARRAY['revision','status','attempts','next_attempt_at']) OR NEW.attempts<OLD.attempts THEN
@@ -433,28 +466,28 @@ BEGIN
  END IF;
  IF obj.closure_json IS NOT NULL THEN
   c:=obj.closure_json::jsonb;
-  IF ((c->>'revision')::bigint BETWEEN 1 AND obj.revision AND c->'authorizers' @> jsonb_build_array(c->>'principalId')) IS NOT TRUE THEN
+  IF ((c->>'revision')::numeric::bigint BETWEEN 1 AND obj.revision AND c->'authorizers' @> jsonb_build_array(c->>'principalId')) IS NOT TRUE THEN
    RAISE EXCEPTION 'closure authorization/revision differs' USING ERRCODE='23514'; END IF;
   IF c->>'reason'='cancel' THEN
    IF c->>'principalId'<>tenant::text OR c->'authorizers'<>jsonb_build_array(tenant::text) THEN RAISE EXCEPTION 'owner cancel authority differs' USING ERRCODE='23514'; END IF;
   ELSIF c->>'reason' NOT IN ('verification_failure','cleanup') THEN RAISE EXCEPTION 'invalid closure cause' USING ERRCODE='23514'; END IF;
   SELECT * INTO op FROM dream.storage_verification_operations WHERE owner_id=tenant AND object_id=object_uuid AND kind='initial';
   IF FOUND AND (c->>'reason') IN ('cancel','verification_failure') AND
-    (((c->>'at')::bigint=floor(extract(epoch FROM op.completed_at)*1000)::bigint AND (c->>'revision')::bigint=op.completed_aggregate_revision
+    (((c->>'at')::numeric::bigint=floor(extract(epoch FROM op.completed_at)*1000)::bigint AND (c->>'revision')::numeric::bigint=op.completed_aggregate_revision
       AND ((c->>'reason'='cancel' AND op.status='canceled') OR (c->>'reason'='verification_failure' AND op.status='failed' AND c->>'principalId'=op.worker_id::text AND c->'authorizers'=to_jsonb(op.claim_verifiers)))) IS NOT TRUE) THEN
    RAISE EXCEPTION 'first closure and initial completion differ' USING ERRCODE='23514'; END IF;
  END IF;
  IF obj.cleanup_id IS NOT NULL THEN
   SELECT * INTO STRICT claim FROM dream.storage_cleanup_claims WHERE owner_id=tenant AND id=obj.cleanup_id AND object_id=object_uuid;
-  IF claim.claimed_aggregate_revision>obj.revision OR
-   ((obj.closure_json::jsonb->>'reason'='cleanup') AND ((obj.closure_json::jsonb->>'revision')::bigint<>claim.claimed_aggregate_revision
-    OR (obj.closure_json::jsonb->>'at')::bigint<>floor(extract(epoch FROM claim.claimed_at)*1000)::bigint))
-   OR ((obj.closure_json::jsonb->>'reason'<>'cleanup') AND (obj.closure_json::jsonb->>'revision')::bigint>=claim.claimed_aggregate_revision) THEN
+  IF ((claim.claimed_aggregate_revision<=obj.revision AND
+   ((obj.closure_json::jsonb->>'reason'='cleanup' AND (obj.closure_json::jsonb->>'revision')::numeric::bigint=claim.claimed_aggregate_revision
+      AND (obj.closure_json::jsonb->>'at')::numeric::bigint=floor(extract(epoch FROM claim.claimed_at)*1000)::bigint)
+    OR (obj.closure_json::jsonb->>'reason'<>'cleanup' AND (obj.closure_json::jsonb->>'revision')::numeric::bigint<claim.claimed_aggregate_revision))) IS NOT TRUE) THEN
    RAISE EXCEPTION 'first closure and GC claim revision differ' USING ERRCODE='23514'; END IF;
-  IF (obj.lifecycle='tombstoned') IS DISTINCT FROM coalesce((claim.observation_json::jsonb->>'absent')::boolean AND (claim.observation_json::jsonb->>'writerQuiescent')::boolean,false) THEN
+  IF (obj.lifecycle='tombstoned') IS DISTINCT FROM coalesce(claim.observation_json::jsonb->'absent'='true'::jsonb AND claim.observation_json::jsonb->'writerQuiescent'='true'::jsonb,false) THEN
    RAISE EXCEPTION 'cleanup completion observation differs' USING ERRCODE='23514'; END IF;
-  IF claim.observation_json IS NOT NULL AND ((claim.observation_json::jsonb->>'at')::bigint<floor(extract(epoch FROM claim.claimed_at)*1000)::bigint
-    OR claim.observation_json::jsonb->>'identityDigest' IS DISTINCT FROM coalesce(obj.identity_digest,dream.storage_raw_hash('object-identity','null'))) THEN RAISE EXCEPTION 'cleanup observation target/time differs' USING ERRCODE='23514'; END IF;
+  IF claim.observation_json IS NOT NULL AND (((claim.observation_json::jsonb->>'at')::numeric::bigint>=floor(extract(epoch FROM claim.claimed_at)*1000)::bigint
+    AND claim.observation_json::jsonb->>'identityDigest'=coalesce(obj.identity_digest,dream.storage_raw_hash('object-identity','null'))) IS NOT TRUE) THEN RAISE EXCEPTION 'cleanup observation target/time differs' USING ERRCODE='23514'; END IF;
  END IF;
  IF obj.active_generation<>(SELECT coalesce(max(generation),0) FROM dream.storage_verification_operations WHERE owner_id=tenant AND object_id=object_uuid) THEN
   RAISE EXCEPTION 'active generation differs from operation history' USING ERRCODE='23514'; END IF;
