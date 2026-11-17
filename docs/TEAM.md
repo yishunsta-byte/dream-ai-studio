@@ -1654,3 +1654,9 @@
 - B14 ba3ad44 ready_review원문확인. 작성자fakeHTTP실SDK46/focused97/lint/roottsc통과,실Storage/서비스Role RLS우회·DTO미연결한계명시. B14-R재개 ctx_045375862e3d/task_056b8e361bd5 ready,고정byte/owner/secret/redirect/stream/abort/temp경계독립검수. 실제managed/storage쓰기없음.
 - B15 Backend메타데이터연결이제배정:owner-filtered실DB owner_id/MIME반환·최소additiveDTO·새trustedadapter·실합성PG+fakeHTTP검증. B14검수대상변경금지,설정/Storage/업로드/API쓰기개통미배정. B14결함나오면통합수용보류·우선재조정.
 - DEC-SSL-01미수신·운영변경보류. 턴 밖 자동 점검 미설정. 이번진행은수신이벤트처리,독립worker시작후wake절차준수.
+
+### 점검 / T222 시계 원인 확인·T223 수정 배정
+- 마지막 확인 시각: 2026-11-17 21:13:47 +09:00 (Asia/Seoul). Orca이벤트·T222원문/최근handoffs/Git확인. 새진단수신,Backend B15 repo/adapter미커밋변경기존범위보호,기존T122/T137보존. 새미기록보고없음.
+- T222 fb7698b: t164 2FAIL은고정claim12:00Z와실request Date혼용. 고정371d5cc와이전661cfe1 모두실제/미래2FAIL5PASS,과거7PASS·단독재현. 이두실패에대한T220회귀근거없음판정수용,다른관측문서이동원인은여전히미확인.
+- T223 Front에t164한파일Date-only시간축/첫cleanup복원수정배정. 실제/과거/미래7PASS·기존관련ZIP/backup·깨끗한고정사본전체1회/lint/type,제품/기대값/fixture불변. 유사혼용읽기감사후후보만보고,타파일수정미허용.
+- T221세션재검수·B14-R독립검수·B15연결개발유지. DEC-SSL-01미수신·운영변경금지,턴 밖 자동 점검 미설정.
