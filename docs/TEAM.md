@@ -1485,3 +1485,8 @@
 - Master 결정: 배포 소스에 포함된 고정 docs/spec/menus.json 공용 메타데이터를 기존root가 읽는 것만 허용 예외. 사용자DB/업무파일/외부설정/동적메뉴/사용자제어경로로 확대하지 않는다. 공용설정 오류가 로그인 포함 전체root에 영향을 주는 현행 한계 기록.
 - 좁힌 수용 범위: 14페이지 및 StudioLayout의 인증 우선·private 저장소 부작용0·A/B 요청격리. 독립381 PASS/build/verify/type/lint/HTTP96 근거 수용. 원보고를 전체PASS로 고치지 않는다. T207 root정적읽기 한계 유지, CloudPending 링크는 별도 배정.
 - 검수 소유 임시 사본 약959.5MB 삭제는 자동 승인 검토가 정책상 거절하여 잔존, 우회하지 않음. 보고서에 경로 보존. 실사용3013 보호 및 소유서버 종료 보고 확인.
+
+### B6 명세 수용 / B7 실제 환경 읽기전용 확인 배정
+- B6 c7ca15a 문서 확인. CLI 네 mode/target pin/권한·AuthFK·기존schema-role-history/런타임pooler/TLS/중단기준 및 COMMIT후 down 없음 한계를 수용. 문서 수용은 managed 실행 완료가 아니다.
+- B7 Backend 배정: 설치된 CLI/기존연결 메타데이터와 필요한 secret의 선택적 프로그램 내부 읽기로 정확 대상·제공 endpoint 확인. 확인된 기존 대상에서 pure SELECT/read-only 메타데이터 검사만 허용. 고유 B7-MANAGED-ENVIRONMENT-CHECK.md 결과 제출.
+- 기존 Auth ref를 staging으로 재분류하지 않음. 사용자 row 조회·Auth 변경·DDL/GRANT/apply/provision·신규자원·배포환경 변경 미허용. secret/DSN 원문 출력금지, endpoint 추측금지. B5-R 수용 전 신규runner 실행 미배정. 부족한 접근수단은 사실로 반환하며 이미승인된 점검을 사용자에게 재승인 요구하지 않음.
