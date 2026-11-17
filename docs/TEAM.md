@@ -1953,3 +1953,9 @@
 - 기존Tester msg_f01c11615d74 실제통지: 고정원후보 검수 마무리·최소재현 Backend 직접인계허용·원기대유지/정상대조/소유정리·고유최종보고만. 새수정본 혼입하지 않음. 공유기존 T122/T137 보존·새미기록인계없음.
 - 예약 실제상태 01:00:01 실행 LastTaskResult0/다음01:30 KST, 현재Master 정기알림 수신과 대조. 별도agent/새창 생성없음. B22수용/v2apply 보류, 관련운영결정 대기와 로컬수정을 분리.
 - 마지막 확인 시각: 2026-11-18 01:01:24 +09:00 (Asia/Seoul).
+
+### 점검 / T228 중복 프로젝트 삭제 결과 검증
+- 마지막 확인 시각: 2026-11-18 01:03:27 +09:00 (Asia/Seoul). 지정 wake msg_4b1d8a249538·T228 추가보고 f8e8fc2 전문/commit범위·최근handoffs/Git 확인. Backend B22-FIX test WIP와 기존 T122/T137 보존, 검수최종보고 아직미수신.
+- Front 보고에 따르면 사용자가 해당Front 대화에서 직접 삭제승인('너가 하면 되잖아 승인할께')하여 kzxq exact확인창 검증 후 프로젝트삭제 실행. Master가 기존 읽기전용배정을 임의확대한 것이 아니라 별도대화 사용자승인에 따른 실행이라는 보고를 기록. Master가그대화원문을직접열람한것으로표현하지 않음.
+- Master 실제 HTTPS 재확인: kzxq/login404 + x-vercel-error DEPLOYMENT_NOT_FOUND, main orpin/login200 및api/projects401. Front 대시보드목록 main만잔존 보고와 일치. Git연결만해제할지 pending했던 DEC-VERCEL-02는 이 후속 사용자선택/삭제결과로 superseded·종결, 동일설정변경을 다시질문/실행하지 않음.
+- 현재주운영주소 유지, 실제계정로그인후/DB·Storage·write개통 검증아님. Backend B22-FIX 계속, 기존Tester원고정검수마무리 계속, 중복배정/새Codex창/배포실행없음. 현재Master 메시지전용예약 유지.
