@@ -2181,4 +2181,9 @@
 - 실제 점검 완료 시각: 2026-11-18 03:56:00 +09:00 (Asia/Seoul). 지정 msg_18725fb59bf3/msg_6f24ef5282b1·fbfc48c 두경로stat·FIX보고 전문/재현명령·Git/status/최근인계 대조. SQL543행 LF9d347523a99a808240d03498dad24401c2c22d9c92e2479b1f9313eebd418ccb 반환, 수정수용 확정 전이다.
 - Backend UUID shared/Zod/B25 whole-envelope 비교180(60×3배열, 양102/음78) 보고와 namespace owner/typed ACL4행 양방향 EXCEPT·개수검사·POLICY tag 보완 근거 확인. JS로 SQL regex 문자열을 평가한 근거이며 실제 SQL regex/권한/native PASS와 구분. 원B27/B27-R/SQL1~4/registry/runtime불변·실행금지 fuse 유지.
 - Tester B27-R2 msg_4207ca10358b 실제배정→msg_6f24ef5282b1 수신·고정fbfc48c/보고1파일/source-only 범위 수락. 소유scratch에서 JS근거 재현 허용, 모든 DB/parser/role실행 금지. F27-1/2·tag수정/회귀/남은native게이트 검토후 Master 판정, 원고정 FAIL 기록 보존.
-- Front T238 준비수용·실push미실행 경계 유지. 현재 새 완료검증 없는 반복 build/중복과제 없음. 보호 T122/T137 유지·Master 변경 TEAM기록1파일·새 창/agent/worktree/배포 없음.
+- Front T238 준비수용·실push미실행 경계 유지. 현재 새 완료검증 없는 반복 build/중복과제 없음. 보호 T122/T137 유지·Master 변경 TEAM기록1파일·새 창/agent/worktree/배포 없음.### 점검 / B27-R2 소스 PASS 수용·B28 격리 native 검증 착수
+- 실제 점검 완료 시각: 2026-11-18 04:00:05 +09:00 (Asia/Seoul). 지정 msg_5e857c6cd517·b229f78 독립보고 전문/고정fbfc48c preflight·최근 인계/Git, 수신 msg_5c26d4f13167/msg_2e06dadca96c 대조. Master 수정 범위 공식 TEAM/MASTER_DEVELOPMENT_PLAN 2문서. 보호 T122/T137 유지.
+- 판정: fbfc48c의 F27-1/2 및 POLICY 정정 SOURCE-ONLY PASS 수용. 독립180 비교(102양/78음)와 그 정상102개의 실제B25 decoder projection 일치 확인. SQL 실제구문/권한/이관/운영 PASS와 구분하며 원dfb521c 수정요구 기록 보존.
+- Backend B28 msg_3c7f8d9c333d 실제배정→msg_2e06dadca96c 수신·2파일 범위 수락: tests/b28-schema5-native-owned.ts+B28 고유보고만. 별도 소유 loopback synthetic PG18.7에서 full SQL1~4+고정SQL5 구문·non-superuser관리/ADMIN예외·정확ACL/원자rollback 우선검증. 원본fuse 실제선실패/role-schema0 확인 후 원본hash를검증한 소유scratch 파생본의 fuse1문장만 제거 실행을 이번과제 한정 허용. repo원본/fuse·registry/runtime/실managed 변경금지, 첫오류는 기대완화나원SQL변경 없이 보고.
+- 기존 tools만 사용·환경비밀/실DSN읽기/공유3013/.next/기존cluster/OS서비스/PATH설정/새window-agent-worktree 금지. 동시성/lostCOMMIT/provider/API는 이번한정범위 밖. 고정 harness/명령/결과/소유PID-port정리 반환 뒤 Tester독립검수 별도배정. Tester msg_5c26d4f13167 경계수락·중복cluster/검수없음 확인.
+- Front T238 준비수용·push차단으로사용자직접실행필요 상태 유지, 이번 신규배포없음. Master 독립운영 재조회는 직전03:54 원격8ffe 확인 이후 미실행. 점검/문서/소스검토/native실행승인을 각각 구분한다.
