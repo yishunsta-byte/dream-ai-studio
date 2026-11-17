@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createServer as httpServer } from "node:http";
 import { createServer as netServer } from "node:net";
-import { mkdir, readFile, writeFile, cp, open, appendFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile, cp, open, appendFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,14 +49,20 @@ try {
   await command("tar.exe", ["-xf", join(root, "source.tar"), "-C", app], "extract.log");
   const overlays = {};
   const t207 = ["lib/cloud/project-read-page.ts", "components/cloud/project-list-readonly.tsx", "components/cloud/project-detail-readonly.tsx",
-    "app/(cloud)/layout.tsx", "app/(cloud)/cloud.module.css", "app/(cloud)/cloud/projects/(list)/page.tsx", "app/(cloud)/cloud/projects/(list)/loading.tsx",
+    "app/(cloud)/layout.tsx", "app/(cloud)/cloud.module.css", "app/(cloud)/cloud/projects/(list)/page.tsx",
     "app/(cloud)/cloud/projects/[id]/page.tsx", "app/(cloud)/cloud/projects/[id]/not-found.tsx"];
   for (const path of t207) {
     const bytes = await readFile(join(repo, path));
     await mkdir(dirname(join(app, path)), { recursive: true }); await writeFile(join(app, path), bytes);
     overlays[path] = createHash("sha256").update(bytes).digest("hex");
   }
-  await writeFile(join(root, "source.json"), JSON.stringify({ base, overlays }, null, 2));
+  // T-210: 작업 폴더에서 지운 파일은 고정 사본에서도 지운다(HEAD에 남아 있어도 검증 대상 소스와 같게).
+  const removed = [];
+  for (const path of ["app/(cloud)/cloud/projects/(list)/loading.tsx"]) {
+    if (existsSync(join(repo, path))) continue;
+    if (existsSync(join(app, path))) { await rm(join(app, path)); removed.push(path); }
+  }
+  await writeFile(join(root, "source.json"), JSON.stringify({ base, overlays, removed }, null, 2));
   await cp(join(repo, "node_modules"), join(app, "node_modules"), { recursive: true });
   const signature = "$ErrorActionPreference='Stop';foreach($n in @('postgres.exe','initdb.exe','pg_ctl.exe','createdb.exe')){$s=Get-AuthenticodeSignature -LiteralPath (Join-Path $env:DREAM_T207_BIN $n);if($s.Status -ne 'Valid' -or $s.SignerCertificate.Subject -notmatch 'O=EnterpriseDB Corporation'){throw 'Invalid EDB signature'};Write-Output ($n+': Valid EnterpriseDB')}";
   await command("powershell.exe", ["-NoProfile", "-Command", signature], "signatures.log", { env: { ...env, DREAM_T207_BIN: bin } });
@@ -99,6 +105,7 @@ try {
     if (path === "/auth/v1/verify") data = session(users[body.token_hash] ?? users.A);
     else if (path === "/auth/v1/user") {
       if (choice === "server500") { status = 500; data = { code: "unexpected_failure", msg: "synthetic outage" }; }
+      else if (choice === "expired") { status = 401; data = { code: "bad_jwt", msg: "synthetic expired after proxy" }; }
       else if (!user) { status = 401; data = { code: "bad_jwt", msg: "synthetic expired" }; }
       else { if (choice) user = users[choice]; data = { ...user, aud: "authenticated", role: "authenticated", app_metadata: {}, user_metadata: {} }; }
     } else if (path === "/auth/v1/logout") { status = 204; data = null; }
@@ -162,15 +169,20 @@ try {
   const anonymous = await request(`/cloud/projects/${PA}`); assert.equal(anonymous.status, 307); assert.match(anonymous.location, /\/login\?next=/);
   const anonymousList = await request("/cloud/projects"); assert.equal(anonymousList.status, 307);
   observations.push({ name: "anonymous-proxy-redirect", detail: summary(anonymous), list: summary(anonymousList) });
-  for (const [name, choices, target] of [["render-forbidden", ["A", "outside"], "/login?error=forbidden"], ["render-provider-error", ["A", ...Array(30).fill("server500")], "/login?error=unavailable"]]) {
+  // T-210: proxy를 통과한 뒤 화면(RSC) 단계에서 거절되면 목록·단건 모두 실제 307·정확한 Location·no-store·Postgres 쿼리 0이어야 한다.
+  for (const [name, choices, target] of [
+    ["render-expired-401", ["A", "expired"], "/login?next=%2Fcloud%2Fprojects"],
+    ["render-forbidden-403", ["A", "outside"], "/login?error=forbidden"],
+    ["render-provider-503", ["A", ...Array(30).fill("server500")], "/login?error=unavailable"],
+  ]) {
     for (const path of [`/cloud/projects/${PA}`, "/cloud/projects"]) {
       sequence = [...choices]; const before = await activity(), reply = await request(path, jars.A); sequence = [];
-      const viaHeader = reply.status === 307 && Boolean(reply.location?.endsWith(target));
-      const viaStream = reply.status === 200 && reply.text.includes(target);
-      assert(viaHeader || viaStream, `${name} ${path} ${reply.status}`);
+      assert.equal(reply.status, 307, `${name} ${path}`);
+      assert.equal(reply.location, target, `${name} ${path} location`);
+      assert.match(reply.cache ?? "", /no-store/, `${name} ${path} no-store`);
       assert(!reply.text.includes(titles[PA]));
       assert.deepEqual(await activity(), before, "denied render must not query Postgres");
-      observations.push({ name: `${name}${path}`, ...summary(reply), redirect: viaHeader ? "http-307" : "streamed-200-with-redirect", postgresQueries: 0 });
+      observations.push({ name: `${name}${path}`, ...summary(reply), postgresQueries: 0 });
     }
   }
   await admin.query("UPDATE dream.projects SET template_snapshot_json='{}' WHERE id=$1", [PB]);

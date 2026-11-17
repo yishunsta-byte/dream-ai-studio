@@ -78,7 +78,7 @@ function legacyUntouched() {
 
 describe("정적: (cloud) 화면은 legacy 서비스·저장소를 import하지 않는다", () => {
   const files = ["lib/cloud/project-read-page.ts", "components/cloud/project-list-readonly.tsx", "components/cloud/project-detail-readonly.tsx",
-    "app/(cloud)/layout.tsx", "app/(cloud)/cloud/projects/(list)/page.tsx", "app/(cloud)/cloud/projects/(list)/loading.tsx",
+    "app/(cloud)/layout.tsx", "app/(cloud)/cloud/projects/(list)/page.tsx",
     "app/(cloud)/cloud/projects/[id]/page.tsx", "app/(cloud)/cloud/projects/[id]/not-found.tsx"];
   it.each(files)("%s", (file) => {
     const source = readFileSync(file, "utf8");
@@ -88,10 +88,12 @@ describe("정적: (cloud) 화면은 legacy 서비스·저장소를 import하지 
       expect(target, file).not.toMatch(/menus\/server|startup|better-sqlite3|legacy-page-gate|legacy-gate|lib\/db\/connection|studio-layout/);
     }
   });
-  it("단건 화면은 로딩 경계 밖(목록만 loading.tsx) — 404 상태가 스트리밍으로 200이 되지 않게", () => {
-    expect(() => readFileSync("app/(cloud)/cloud/projects/loading.tsx")).toThrow();
-    expect(() => readFileSync("app/(cloud)/cloud/projects/[id]/loading.tsx")).toThrow();
-    expect(() => readFileSync("app/(cloud)/loading.tsx")).toThrow();
+  it("(cloud) 어디에도 로딩 경계·Suspense가 없다 — 인증 거절 307·없는 프로젝트 404가 스트리밍 200으로 바뀌지 않게(T-210)", () => {
+    const all = Object.keys(import.meta.glob("../app/**/*.{ts,tsx}")).filter((path) => path.startsWith("../app/(cloud)/"));
+    expect(all.length).toBeGreaterThanOrEqual(4);
+    expect(all.filter((path) => /\/loading\.tsx$/.test(path))).toEqual([]);
+    expect(Object.keys(import.meta.glob("../app/loading.tsx"))).toEqual([]);
+    for (const file of [...files, ...all.map((path) => path.replace("../", ""))]) expect(readFileSync(file, "utf8"), file).not.toMatch(/Suspense|loading\.tsx/);
   });
   it("단계 이름이 고정 메뉴 설정과 같다", async () => {
     const { STAGE_LABELS } = await import("@/lib/cloud/project-read-page");
