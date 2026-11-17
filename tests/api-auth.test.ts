@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { requireApiAuth } from "@/lib/auth/api";
+import { isPublicPath } from "@/lib/auth/config";
 
 const state = vi.hoisted(() => ({
   user: null as null | { id: string; email?: string },
@@ -9,13 +10,19 @@ const state = vi.hoisted(() => ({
   missingClient: false,
   getUser: vi.fn(),
   create: vi.fn(),
+  updateUser: vi.fn(async () => ({ error: null })),
+  signInWithPassword: vi.fn(async () => ({ error: null })),
+  signUp: vi.fn(async () => ({ error: null })),
+  resetPasswordForEmail: vi.fn(async () => ({ error: null })),
   listJobs: vi.fn(() => ({ jobs: [], workerOnline: true })),
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/server", () => ({
   createSupabaseServer: async () => {
     state.create();
-    return state.missingClient ? null : { auth: { getUser: async () => {
+    return state.missingClient ? null : { auth: { updateUser: state.updateUser,
+      signInWithPassword: state.signInWithPassword, signUp: state.signUp,
+      resetPasswordForEmail: state.resetPasswordForEmail, getUser: async () => {
       state.getUser();
       if (state.fail) throw new Error("private provider/network detail");
       return { data: { user: state.user }, error: state.error };
@@ -111,12 +118,32 @@ describe("independent API authentication guard", () => {
 });
 
 const routeModules = import.meta.glob<Record<string, unknown>>("../app/api/**/route.ts");
-const protectedRoutes = Object.entries(routeModules).filter(([path]) => !path.endsWith("/auth/login/route.ts"));
+// Explicit inventory: a new route must receive a reviewed contract instead of silently
+// inheriting a public exemption or disappearing from the authentication tests.
+const publicAuthRoutes = ["auth/login", "auth/signup", "auth/reset"];
+const selfAuthenticatedRoutes = ["auth/password"];
+const guardedRoutes = [
+  "assets/[id]", "assets/link", "assets/upload", "auth/logout",
+  "backups/configuration", "backups", "characters", "exports/[id]", "jobs",
+  "library/archive", "projects/[id]/finishing", "projects/[id]/production",
+  "projects/[id]/renders", "projects/[id]/timeline", "projects/[id]/workflow",
+  "projects", "renders/[id]/cancel", "renders/[id]/file", "restore/finish", "restore/inspect",
+];
+const modulePath = (route: string) => `../app/api/${route}/route.ts`;
+const protectedRoutes = Object.entries(routeModules).filter(([path]) =>
+  !publicAuthRoutes.concat(selfAuthenticatedRoutes).map(modulePath).includes(path));
 const methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 type Handler = (request: Request, context: { params: Promise<{ id: string }> }) => Promise<Response>;
 
 describe("direct route calls without proxy", () => {
-  it("enumerates all 20 protected route files", () => expect(protectedRoutes).toHaveLength(20));
+  it("requires every route to have an explicit, non-overlapping authentication contract", () => {
+    const inventory = [...publicAuthRoutes, ...selfAuthenticatedRoutes, ...guardedRoutes].map(modulePath);
+    expect(new Set(inventory).size).toBe(inventory.length);
+    expect(Object.keys(routeModules).sort()).toEqual(inventory.sort());
+    expect(protectedRoutes.map(([path]) => path).sort()).toEqual(guardedRoutes.map(modulePath).sort());
+    for (const route of publicAuthRoutes) expect(isPublicPath(`/api/${route}`)).toBe(true);
+    for (const route of [...selfAuthenticatedRoutes, ...guardedRoutes]) expect(isPublicPath(`/api/${route}`)).toBe(false);
+  });
   for (const [path, load] of protectedRoutes) {
     it.each([
       { scenario: "no session", status: 401, code: "AUTH_REQUIRED" },
@@ -146,4 +173,77 @@ describe("direct route calls without proxy", () => {
       }
     });
   }
+});
+
+describe("public authentication routes called without proxy or session", () => {
+  it.each(publicAuthRoutes)("%s remains reachable without an existing login", async route => {
+    const loadedRoute = await routeModules[modulePath(route)]();
+    const request = new Request(`http://127.0.0.1/api/${route}`, {
+      method: "POST", headers: { "content-type": "application/json", host: "127.0.0.1" },
+      body: JSON.stringify({ email: "owner@example.invalid", password: "SyntheticPassword123!" }),
+    });
+    const response = await (loadedRoute.POST as Handler)(request, { params: Promise.resolve({ id: "unused" }) });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ ok: true });
+    expect(state.getUser).not.toHaveBeenCalled();
+    const provider = route === "auth/login" ? state.signInWithPassword : route === "auth/signup" ? state.signUp : state.resetPasswordForEmail;
+    expect(provider).toHaveBeenCalledOnce();
+    expect(state.updateUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("password change independently authenticates its session", () => {
+  async function changePassword(body: string) {
+    const { POST } = await import("@/app/api/auth/password/route");
+    return POST(new Request("https://example.invalid/api/auth/password", {
+      method: "POST", headers: { "content-type": "application/json" }, body,
+    }));
+  }
+  const validBody = JSON.stringify({ password: "SyntheticPassword123!" });
+
+  it.each([
+    { scenario: "missing session", user: null, status: 401, code: "AUTH_REQUIRED" },
+    { scenario: "expired session", user: null, status: 401, code: "AUTH_REQUIRED", error: { name: "AuthSessionMissingError", status: 400 } },
+    { scenario: "forbidden account", user: { id: "synthetic", email: "other@example.invalid" }, status: 403, code: "AUTH_FORBIDDEN" },
+    { scenario: "email-less account", user: { id: "synthetic" }, status: 403, code: "AUTH_FORBIDDEN" },
+  ])("$scenario cannot update a password", async ({ user, status, code, ...rest }) => {
+    state.user = user;
+    state.error = ("error" in rest ? rest.error : null) ?? null;
+    const response = await changePassword(validBody);
+    expect(response.status).toBe(status);
+    expect(await response.json()).toMatchObject({ code });
+    expect(state.getUser).toHaveBeenCalledOnce();
+    expect(state.updateUser).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { body: "{", code: "BAD_REQUEST" },
+    { body: "[]", code: "BAD_REQUEST" },
+    { body: JSON.stringify({ password: "weak" }), code: "WEAK_PASSWORD" },
+    { body: "{}", code: "WEAK_PASSWORD" },
+  ])("invalid input returns 400 before attempting Auth: $code", async ({ body, code }) => {
+    const response = await changePassword(body);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ code });
+    expect(state.create).not.toHaveBeenCalled();
+    expect(state.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("missing Auth client returns 503 without updating", async () => {
+    state.missingClient = true;
+    const response = await changePassword(validBody);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ code: "AUTH_UNAVAILABLE" });
+    expect(state.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("only a verified allowed account reaches updateUser", async () => {
+    state.user = { id: "synthetic", email: "OWNER@example.invalid" };
+    const response = await changePassword(validBody);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(state.getUser).toHaveBeenCalledOnce();
+    expect(state.updateUser).toHaveBeenCalledExactlyOnceWith({ password: "SyntheticPassword123!" });
+    expect(state.listJobs).not.toHaveBeenCalled();
+  });
 });
