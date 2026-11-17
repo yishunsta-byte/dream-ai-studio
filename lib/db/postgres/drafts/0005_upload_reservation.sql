@@ -144,9 +144,12 @@ BEGIN
  FOREACH field IN ARRAY ARRAY['verifiers','collectors','policyManagers'] LOOP
   a:=d->field;
   IF jsonb_typeof(a)<>'array' THEN RAISE EXCEPTION 'B27_POLICY' USING ERRCODE='22023'; END IF;
+  -- Exact installed Zod 4.6.7 z.uuid() + shared lowercase refinement,
+  -- with B25 request()'s additional exact 36-character authority-ID bound.
+  -- RFC versions 1..8 / variant 8,9,a,b OR the special nil/max UUIDs.
   IF jsonb_array_length(a) NOT BETWEEN 1 AND 100 OR EXISTS(SELECT 1 FROM jsonb_array_elements(a) e
-    WHERE jsonb_typeof(e)<>'string' OR e#>>'{}' !~
-      '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$') THEN
+    WHERE jsonb_typeof(e)<>'string' OR length(e#>>'{}')<>36 OR (e#>>'{}') COLLATE "C" !~
+      '^([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$') THEN
    RAISE EXCEPTION 'B27_POLICY' USING ERRCODE='22023';
   END IF;
  END LOOP;
@@ -417,6 +420,31 @@ DO $inventory$
 DECLARE r oid:='dream_upload_reserver'::regrole; m oid:=current_user::regrole; api oid:='dream_api'::regrole;
  root_oid oid:=current_setting('dream.b27_bootstrap_oid')::oid; f record; x record;
 BEGIN
+ -- Closed namespace owner/ACL inventory, including privileges inherited from
+ -- migration-role schema defaults for principals not named by the REVOKE above.
+ -- Owner's implicit grant capability is not an ACL WITH GRANT OPTION bit.
+ IF NOT EXISTS(SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname='dream_reservation' AND nspowner=m) THEN
+  RAISE EXCEPTION 'B27_SCHEMA_OWNER';
+ END IF;
+ IF (SELECT count(*) FROM pg_catalog.pg_namespace n,
+   LATERAL pg_catalog.aclexplode(coalesce(n.nspacl,pg_catalog.acldefault('n',n.nspowner))) a
+   WHERE n.nspname='dream_reservation')<>4 THEN RAISE EXCEPTION 'B27_SCHEMA_ACL'; END IF;
+ IF EXISTS(
+  WITH actual AS (
+   SELECT a.grantee,a.grantor,a.privilege_type,a.is_grantable
+    FROM pg_catalog.pg_namespace n,
+    LATERAL pg_catalog.aclexplode(coalesce(n.nspacl,pg_catalog.acldefault('n',n.nspowner))) a
+    WHERE n.nspname='dream_reservation'
+  ), expected(grantee,grantor,privilege_type,is_grantable) AS (
+   VALUES(m,m,'CREATE'::text,false),(m,m,'USAGE'::text,false),
+     (api,m,'USAGE'::text,false),(r,m,'USAGE'::text,false)
+  )
+  SELECT 1 FROM (
+   (SELECT * FROM actual EXCEPT SELECT * FROM expected)
+   UNION ALL
+   (SELECT * FROM expected EXCEPT SELECT * FROM actual)
+  ) AS schema_acl_delta
+ ) THEN RAISE EXCEPTION 'B27_SCHEMA_ACL'; END IF;
  IF (SELECT count(*) FROM pg_catalog.pg_auth_members WHERE roleid=r OR member=r)<>1 OR NOT EXISTS(
   SELECT 1 FROM pg_catalog.pg_auth_members WHERE roleid=r AND member=m AND grantor=root_oid
    AND admin_option AND NOT inherit_option AND NOT set_option) THEN RAISE EXCEPTION 'B27_MEMBERSHIP_DELTA'; END IF;
@@ -500,6 +528,10 @@ SELECT p.polrelid,p.polroles,p.polcmd,p.polpermissive,pg_get_expr(p.polqual,p.po
  WHERE p.polname LIKE 'upload_reservation_%';
 SELECT roleid,member,grantor,admin_option,inherit_option,set_option FROM pg_catalog.pg_auth_members
  WHERE roleid='dream_upload_reserver'::regrole OR member='dream_upload_reserver'::regrole;
+SELECT n.oid,n.nspowner,a.grantee,a.grantor,a.privilege_type,a.is_grantable
+ FROM pg_catalog.pg_namespace n,
+ LATERAL pg_catalog.aclexplode(coalesce(n.nspacl,pg_catalog.acldefault('n',n.nspowner))) a
+ WHERE n.nspname='dream_reservation';
 SELECT c.oid,c.relowner,c.relrowsecurity,c.relforcerowsecurity,a.grantee,a.grantor,a.privilege_type,a.is_grantable
  FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace,
  LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a
