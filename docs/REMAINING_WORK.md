@@ -426,3 +426,8 @@ T100 core ownership/recovery is PASS, not still waiting. Rendering preparation i
 - T167 bounded independent PASS accepted for T166 late-source correction, with earlier writer/restore evidence preserved.
 - T164 audio ZIP UI returned; T168 current-snapshot independent actual generation/download/error/retry/390 review requested.
 - After required findings close: delivery milestone review within verified scope. Real phone/listening/native hidden and full P2 completion remain unverified; no runtime app deployment claimed.
+## Current: integrated delivery UI/build accepted; P2 gap audit
+
+- T168 actual ZIP UI and T170 tracing correction independently verified; bounded acceptance recorded. Existing final/publication gates unchanged.
+- Active T171 maps original P2 requirements to actual code/evidence and prepares concrete synthetic review files for remaining human/device checks.
+- Whole P2/physical-phone/listening/native-hidden completion remains unclaimed. User DB unmigrated, real app not deployed; existing static design preview distinct.

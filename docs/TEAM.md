@@ -1298,3 +1298,8 @@
 - msg_a4cac267b2b3 /46664c7 report read. Author isolated physical-tool builds6 combinations pass; Next Windows exclude/path issue and static tool path tracing documented, verifier strengthened rather than disabled. Shared next-env.d.ts WIP protected.
 - T170 ctx_34cc506c81d0 /task_0c45305b0131 dispatched original F168-1 review, physical tools/private sentinels/resolver/negative controls and runtime file inclusion. No independent build acceptance yet.
 - T168 runtime UI evidence retained; no standalone/runtime deployment, user DB migration, physical-device or listening completion claimed.
+### T170 build correction accepted; T171 P2 requirement audit
+
+- msg_5d27afd7c916 report read/imported. Independent6 builds/verify, original40 tool traces reproduced then removed with no additions,18 tests/lint/type and compiled-app upload201 PASS. Master accepts bounded build fix, combining T168 actual ZIP UI evidence. No standalone/deployment or opaque-binary detection claim.
+- T171 implementation owner assigned report-only P2 plan/code/evidence gap audit and concrete synthetic review artifacts; no product/gate/user DB/deployment changes. Physical-device/listening gaps remain explicit until direct evidence.
+- Reviewer3170 stopped, shared3013 now PID55956 observed unchanged in that review. Auto-review denied temp app deletion; retained copies/evidence documented without bypass.
