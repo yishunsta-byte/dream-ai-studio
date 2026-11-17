@@ -1835,3 +1835,9 @@
 - 고정803bbab 原52/27/17/12와14거부기대해소,新9중7PASS2FAIL보고. 보존initial complete/claim/pub/finalize와모순되는completioncounter1/이전pubclaimlease7이새reclaim6을넘는두件. queried현재clock/정확fullhistory數요구가아닌既存guard의보수causal관계,새DB권한우회未証明。
 - BackendB19-FIX4기존최소module/test/고유인계우선배정,保有事件からderivedcompletion下限·oldlease<=보존reclaim시각·highercounter/renew/cancel正常control유지. magic定數나불필요field전역log폭증대신기존관계우선。B20안전checkpoint·스키마수용보류유지。
 - reviewer현fixed최종FAIL근거/고유9harness정리계속,새수정혼입금지。배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정。
+
+### 점검 / R4 최종 FAIL 회수·FIX4 수락 및 B20 안전 종료
+- 마지막 확인 시각: 2026-11-17 23:28:00 +09:00 (Asia/Seoul). 두사용자wake check처리·R4원문/최근handoffs/Git확인,신규f28e8e9a최종회수. B20기존draft/test/runner와T122/T137미추적보호,새미기록완료보고없음.
+- R4고정803bbab 原52/27/17/12통과·新9중7PASS2FAIL 확정. 완료causalprefix 하한/oldclaim lease vsnewreclaim순서2잔존,실DB/새권한우회미입증。BackendB19-FIX4우선수락확인·고유9harness/최종증거전달,현재스코프변경없음.
+- B20소유새run tmp/b20-postgres-1f6ee4cf-6415-4e9d-94d4-9d8aabba2636 종료·postmaster/listener없음Backend보고. 初10PASS2FAIL은PLpgSQL record r와SQLalias충돌→R1rollback/후속空fixture副실패보고,원identifier문제는수정되었다는작성자근거이며schema완료수용아님.
+- MASTER_DEVELOPMENT_PLAN현재행FIX4로갱신. SQL초안추가수정보다protocol우선,배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
