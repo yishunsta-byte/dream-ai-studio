@@ -51,3 +51,25 @@ node tests/postgres/schema-rls.mjs
 PGlite(PostgreSQL 18.6, WASM)에서 합성 Auth 두 사용자로 48개 검사 통과. managed Supabase의 Auth/RLS 통합·실제 login/풀러·동시 트랜잭션·네트워크·Storage·성능 검증은 별개다.
 
 정책 의미의 근거: [PostgreSQL RLS](https://www.postgresql.org/docs/current/ddl-rowsecurity.html), [CREATE POLICY](https://www.postgresql.org/docs/current/sql-createpolicy.html). FORCE RLS도 superuser/BYPASSRLS를 제한하지 않으며, TRUNCATE는 RLS 대상이 아니므로 해당 권한을 부여하지 않았다. 공식 문서 확인일: 2026-11-17.
+
+## B3 driver 연결 기반 (제품 경로 미전환)
+
+`createPostgresPool({connectionString})`은 명시 DSN만 받으며 환경변수·SQLite fallback이 없다. import/생성 시 접속이나 DDL을 실행하지 않는다. 호출자가 pool 하나를 유지하고 종료 시 `pool.end()`를 호출한다. 원격 TLS는 인증서를 확인하며, CA는 별도 `ca` 옵션으로 전달한다. URL의 query/hash는 SSL·startup 옵션 덮어쓰기를 피하려고 거부한다. TLS 비활성은 loopback의 명시 `dream_test_*` DB에만 허용된다. `DATABASE_URL`은 후속 호출자용 변수 이름일 뿐 현재 앱에 연결되지 않는다.
+
+`actorFromVerifiedUserId`는 UUID 형식 검사와 내부 타입 표시만 한다. 인증기가 아니며, 이후 Auth 담당이 검증한 `getUser().user.id`로만 생성해야 한다. HTTP owner 필드에서 생성하지 않는다. `withActorTransaction`은 단일 client의 BEGIN/local role/local actor/await callback/COMMIT를 관리한다. callback 중첩을 거부하고 미대기 query도 종료 전에 수집한다. callback 종료 후 tx 사용은 거부된다. SQL/driver 오류는 비밀·입력·쿼리를 담지 않는 코드로 변환한다. COMMIT/ROLLBACK/연결 오류 시 불확실한 client를 폐기한다. tx.query는 신뢰된 repository용 SQL 실행기이며 비신뢰 SQL이나 역할/트랜잭션 제어를 넘기는 인터페이스가 아니다.
+
+`postgresProjectsRepository`는 list/get/stages/jobStates 조회만 제공한다. owner 조건+RLS, 원문 JSON, 안전 정수와 UTC ISO 변환을 유지한다. 신규 쓰기 서비스·Storage·worker·기존 API/화면은 아직 연결하지 않았다.
+
+### 실제 driver 재현 (Windows, 설치·서비스 등록 없음)
+
+공식 [PostgreSQL Windows 다운로드](https://www.postgresql.org/download/windows/)가 연결하는 [EDB portable binaries](https://www.enterprisedb.com/download-postgresql-binaries)에서 지원 버전 압축을 별도 ignored `.tools`에 준비한다. 다운로드 출처·SHA256·압축 목록을 보관하고 실행 파일의 EnterpriseDB Authenticode 서명을 확인한다. runner는 바이너리를 다운로드하거나 시스템 PATH/서비스를 변경하지 않는다.
+
+```powershell
+node tests/postgres/run-local.mjs --bin D:/path/to/pgsql/bin
+```
+
+runner는 매번 새 `tmp/b3-postgres-<uuid>` 클러스터·미사용 loopback 포트·`dream_test_b3` DB·합성 Auth 사용자·제한 API login을 만든다. 실제 운영 환경변수나 DSN을 읽지 않는다. 시험 후 자기 cluster만 `pg_ctl stop`하고 증거/데이터를 보존한다. DB·schema·기존 역할을 덮어쓰지 않으며 재실행은 새 클러스터를 만든다. dummy 암호는 합성 시험 전용이다.
+
+실제 검증 서버가 이미 준비된 경우에는 `DREAM_PG_INTEGRATION=1`, 명시 `DREAM_PG_TEST_ADMIN_URL`을 설정하고 `npm.cmd test -- tests/postgres/connection.test.ts tests/postgres/projects.test.ts`를 실행한다. fixture는 127.0.0.1/명시 포트/dream_test_* DB/dream_test_admin/빈 schema만 허용하고, 일반 DATABASE_URL·실제 Supabase·기존 테스트 DB를 재사용하지 않는다. 환경변수 미설정 시 실제 integration은 기본 시험에서 명시 skip이다. unit PASS나 skip을 실제 DB PASS로 계산하지 않는다.
+
+driver 근거(2026-11-17): [동일 client transaction](https://node-postgres.com/features/transactions), [pool/release와 client 폐기](https://node-postgres.com/apis/pool), [TLS/DSN SSL 옵션 상호작용](https://node-postgres.com/features/ssl), [SET LOCAL ROLE 권한](https://www.postgresql.org/docs/current/sql-set-role.html). 실제 managed Supabase login/role membership·pooler·Auth FK 통합은 별도 staging 검증이 필요하다.
