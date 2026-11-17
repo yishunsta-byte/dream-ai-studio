@@ -1314,3 +1314,8 @@
 
 - msg_a4e32ac9b1d0: design owner accepted read-only stored-aspect/native visibility checks at44b036a; no implementation or completion claimed.
 - Master updated obsolete PLAN18 renderer implementation status and PLAN13 final/ package scope to verified milestone evidence/T154 decision. No exit criterion, product gate or user approval changed. Physical-phone/listening and current T172/T173 gaps remain explicit.
+### T172 sample ready; T174 independent and device evidence requested
+
+- msg_23cd64fb07bb /86e00fd report read. Author actual4 opt-in E2Es PASS, audio-v2 text-only preserves scene/audio/old MP4 and gain-change false. Independent T174 ctx_51d74467b249 /task_792bbd289161 dispatched; no independent acceptance yet.
+- Master confirmed review sample exists at tmp/p2-review/samples/s9-subtitle-audio_9x16.mp4,173416bytes. Synthetic subtitle+AAC4s local file, no external upload or user DB.
+- Actual phone check requested via asynchronous text input with concrete file and observations; response pending, silence is not PASS. Technical T173/T174 work continues independently. Listening/device/general P2 completion remain unclaimed.
