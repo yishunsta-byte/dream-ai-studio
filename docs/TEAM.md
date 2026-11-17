@@ -2171,4 +2171,7 @@
 - Front T238 문서 정정/rollback 가용성 읽기확인은 기존 배정 진행, 새 완료 보고 미수신. 실제 DB 실행·role 생성·push·배포·새 창/agent/worktree 없음. 직전 계획·검증을 반복하지 않고 변경 범위만 점검했다.### 점검 / B27-R 원고정 최종 수정요구 확정
 - 실제 점검 완료 시각: 2026-11-18 03:53:00 +09:00 (Asia/Seoul). 지정 msg_2ba7d4287fc3·독립9b8fb17 보고 전문/원 dfb521c 근거·Git/status/최근 인계 대조. 판정 SOURCE CHANGES REQUIRED: F27-1 UUID 문법·F27-2 namespace exact ACL 두 필수 gap, 추가 필수 없음. SQL5 native 검증 전체 미실행 유지, 원고정 수용 아님.
 - 기존 Backend FIX 배정을 유지하고 최종9b8fb17 실제 전달. 추가 minor POLICY tag 누락은 신규 FIX 보고에 정정, 원고정 B27 보고 보존. whole-envelope paired 검증과 후속 native 음성fixture 게이트·고정 SHA/LF hash/재현근거 구분 후 반환하도록 지시. 수정본 반환 뒤 Tester 고정 소스 재검토를 별도 배정한다.
-- 현재 draft WIP 및 보호 미추적 T122/T137 보존. Master 변경은 TEAM 기록만. Front T238 준비 정정/rollback 읽기확인 계속, 새 완료 미수신. 새 창/agent/worktree·SQL 실행·role 생성·push·배포 없음.
+- 현재 draft WIP 및 보호 미추적 T122/T137 보존. Master 변경은 TEAM 기록만. Front T238 준비 정정/rollback 읽기확인 계속, 새 완료 미수신. 새 창/agent/worktree·SQL 실행·role 생성·push·배포 없음.### 점검 / T238 정정본 준비 수용·실제 배포와 구분
+- 실제 점검 완료 시각: 2026-11-18 03:53:35 +09:00 (Asia/Seoul). 지정 msg_1acf172e39e7·bd1c7a T238 1문서 diff/Git/status 대조. kzxq 삭제완료·일반FF와정확remote대조·기존복구승인과도구gate구분 정정 수용. 준비 범위 수용이며 push/배포 완료 아님.
+- Front 기존 로그인 읽기 보고에서 현재3QDy Ready/Latest/Production Current/master8ffe 및 삭제기록없음 확인. retention enabled이나 실제기간/Promote 활성·플랜 제한 미확인으로 기록 유지. 메뉴를 읽기만 해 활성/제한을 확인하는 범위 추가 전달 msg_a16d9df268c0, 실제 실행·설정변경 금지. Master 독립 운영 재조회는 이번에 없음.
+- 제품 후보 ebe84ea 유지. Front 자동 push 거절은 Destructive or Unwanted Actions 사유의 기존 gate라 우회하지 않으며 사용자 직접 실행 전 단계. Backend B27-FIX 미커밋 draft/Tester 최종2필수gap 판정 보존, 새 고정 수정본 미반환. 보호 T122/T137 유지·새 창/agent/worktree/SQL 실행/배포 없음.
