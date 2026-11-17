@@ -1823,3 +1823,9 @@
 - 마지막 확인 시각: 2026-11-17 23:14:28 +09:00 (Asia/Seoul). 추가사용자wake check에서R3 worker_done ecfb2f05수신,직전발견미추적보고가정식반환됨확인. 原8+4해소/새12중10PASS2FAIL 최종FAIL유지,새다른결함아님. 원검수상주PID/port없음보고,실IO/DB/provider미수용。
 - Backend에정식보고/원12harness보존위치전달,B19-FIX3기존배정계속·정상expiredcancel과예약당시leasebinding구분. 사용자새승인질문/반복배정/실행범위확대없음。
 - 배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
+
+### 점검 / FIX3 제출·B19-R4 재검수
+- 마지막 확인 시각: 2026-11-17 23:20:58 +09:00 (Asia/Seoul). Orca상태·FIX3고유인계/최근handoffs/Git확인,新803bbab수신。B20기존3미추적경로/T122/T137보존,새미기록완료없음.
+- FIX3 ready_review: firstclosure initialcancel/fail/GC동일event at/revision/principal binding·publication당시claim snapshot/window와renew/reclaim별역사보존. 작성자52/byte원27·17·12PASS,독립수용아님·원기대완화없음보고.
+- B19-R4 동일검수자재개,고정803bbab 원8+4+2거부와validexpiredcancel/renew/reclaim/terminal·新부분손상대조. fixedsource와자기자료만,SQL/실IO/운영변경미배정.
+- Backend protocol검수소스보류/B20필드mapping·SQLguard vs executor책임정리우선,기존조건부합성검증범위유지하되R4수용전스키마완료수용금지. 原SQL3/runner/history보호. 배포권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
