@@ -465,3 +465,73 @@ describe("B19-FIX2 reachable-state and mutation matrix", () => {
     expect(beginCreation(s, request, ctx(s, owner, 999))).toEqual(s);
   });
 });
+
+describe("B19-FIX3 same-event and historical publication time binding", () => {
+  function shortLease() {
+    let s = apply(fresh(), complete(), owner, 1);
+    s = apply(s, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 0, leaseUntil: 5 }, worker, 1);
+    return apply(s, { type: "reservePublication", operationId: op1, fingerprint: fp, expectedFence: 1, identity }, worker, 2);
+  }
+  it("binds first initial cancel closure time/revision/principal; repeat cancel and later GC preserve it", () => {
+    const canceled = apply(prepared(), { type: "cancel" }, owner, 2);
+    for (const change of [(s: UploadModel) => { s.closure!.at = 9; }, (s: UploadModel) => { s.closure!.revision--; },
+      (s: UploadModel) => { s.closure!.principalId = stranger; }]) {
+      const bad = structuredClone(canceled); change(bad); fails("INPUT", () => checkedModel(bad));
+    }
+    const repeated = apply(canceled, { type: "cancel" }, owner, 10);
+    expect(repeated.closure).toEqual(canceled.closure); expect(repeated.operations[0].completedAt).toBe(2);
+    const collected = apply(repeated, { type: "claimCleanup", cleanupId }, gc, 11);
+    expect(collected.closure).toEqual(canceled.closure); expect(collected.cleanup!.claimedAt).toBe(11);
+    expect(collected.operations[0].completedRevision).toBe(canceled.closure!.revision);
+    expect(collected.cleanup!.claimedRevision).toBeGreaterThan(canceled.closure!.revision);
+    const early = apply(fresh(), { type: "cancel" }, owner, 9); expect(early.operations).toEqual([]); expect(checkedModel(early).closure!.at).toBe(9);
+  });
+  it("binds failure/direct-GC first closure to the same completion while preserving prior closures", () => {
+    const failed = apply(prepared(), { type: "rejectVerification", operationId: op1, fingerprint: fp, expectedFence: 1, failureCode: "INVALID_BYTES" }, worker, 2);
+    for (const field of ["at", "revision"] as const) {
+      const bad = structuredClone(failed); bad.closure![field]++; fails("INPUT", () => checkedModel(bad));
+    }
+    const gcFirst = apply(prepared(), { type: "claimCleanup", cleanupId }, gc, 100);
+    expect(gcFirst.closure!.reason).toBe("cleanup"); expect(gcFirst.operations[0].completedAt).toBe(100);
+    expect(gcFirst.operations[0].completedRevision).toBe(gcFirst.cleanup!.claimedRevision);
+    const bad = structuredClone(gcFirst); bad.closure!.at = 99; fails("INPUT", () => checkedModel(bad));
+    const old = apply(failed, { type: "claimCleanup", cleanupId }, gc, 3); expect(old.closure).toEqual(failed.closure);
+    const forged = structuredClone(old); forged.cleanup!.claimedRevision = old.closure!.revision; fails("INPUT", () => checkedModel(forged));
+  });
+  it("allows cancel after lease expiry9 but rejects same-fence publication reservation6 outside historical lease5", () => {
+    const canceled = apply(shortLease(), { type: "cancel" }, owner, 9);
+    expect(checkedModel(canceled).operations[0].completedAt).toBe(9);
+    expect(canceled.publication!.claim.leaseUntil).toBe(5);
+    const bad = structuredClone(canceled); bad.publication!.reservedAt = 6; fails("INPUT", () => checkedModel(bad));
+    expect(operationResult(canceled, op1, fp, ctx(canceled, owner, 999)).status).toBe("canceled");
+  });
+  it("preserves old-fence publication across different-worker reclaim and same-fence renewals", () => {
+    const original = shortLease(), changed = structuredClone(original); changed.verifiers = [stranger];
+    let reclaimed = apply(changed, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 1, leaseUntil: 20 }, stranger, 6);
+    reclaimed = apply(reclaimed, { type: "cancel" }, owner, 21);
+    expect(reclaimed.publication!.claim.workerId).toBe(worker); expect(reclaimed.operations[0].canceledClaim!.workerId).toBe(stranger);
+    expect(checkedModel(reclaimed).publication!.reservedAt).toBe(2);
+    const bad = structuredClone(reclaimed); bad.publication!.reservedAt = 6; fails("INPUT", () => checkedModel(bad));
+    let renewed = apply(original, { type: "renew", operationId: op1, fingerprint: fp, expectedFence: 1, leaseUntil: 8 }, worker, 3);
+    const oldReservation = apply(renewed, { type: "cancel" }, owner, 9);
+    expect(oldReservation.publication!.claim.leaseUntil).toBe(5); expect(oldReservation.operations[0].canceledClaim!.leaseUntil).toBe(8);
+    checkedModel(oldReservation);
+    renewed = apply(renewed, { type: "reservePublication", operationId: op1, fingerprint: fp, expectedFence: 1, identity }, worker, 6);
+    expect(checkedModel(apply(renewed, { type: "cancel" }, owner, 9)).publication!.reservedAt).toBe(6);
+  });
+  it("checks duplicated publication claim fence/worker/policy/window fields without today's allowlist", () => {
+    const original = apply(shortLease(), { type: "cancel" }, owner, 9);
+    const changes: Array<(s: UploadModel) => void> = [s => { s.publication!.claim.fence++; }, s => { s.publication!.claim.workerId = stranger; },
+      s => { s.publication!.claim.policyDigest = "f".repeat(64); }, s => { s.publication!.claim.authorizationUntil++; },
+      s => { s.publication!.claim.claimedAt = 3; }, s => { s.publication!.claim.leaseUntil = 6; }];
+    for (const change of changes) { const bad = structuredClone(original); change(bad); fails("INPUT", () => checkedModel(bad)); }
+    const removed = structuredClone(original); removed.verifiers = [stranger];
+    expect(checkedModel(removed).publication!.claim.claimVerifiers).toEqual([worker]);
+    expect(Object.isFrozen(original.publication!.claim.claimVerifiers)).toBe(true);
+    let r = apply(registered(), complete(op2, "reverify", 90), owner, 2);
+    r = apply(r, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 80 }, worker, 2);
+    r = apply(r, finalize(op2, r2, 90), worker, 3);
+    const sameCommit = structuredClone(r); sameCommit.operations[1].completedRevision = sameCommit.operations[0].completedRevision;
+    fails("INPUT", () => checkedModel(sameCommit));
+  });
+});

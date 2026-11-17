@@ -22,13 +22,17 @@ export function checkedModel(input: unknown): UploadModel {
   if (s.closure) {
     const e = s.closure;
     need(e.revision <= s.revision && e.at >= s.reservedAt && e.authorizers.includes(e.principalId), "INPUT");
-    if (e.reason === "cancel") need(e.principalId === s.ownerId && e.operationId === null, "INPUT");
-    else if (e.reason === "cleanup") need(s.cleanup && e.operationId === null && e.at === s.cleanup.claimedAt, "INPUT");
+    if (e.reason === "cancel") {
+      need(e.principalId === s.ownerId && same(e.authorizers, [s.ownerId]) && e.operationId === null, "INPUT");
+      const initial = s.operations.find(o => o.kind === "initial");
+      if (initial) need(initial.status === "canceled" && initial.completedAt === e.at && initial.completedRevision === e.revision, "INPUT");
+    }
+    else if (e.reason === "cleanup") need(s.cleanup && e.operationId === null && e.at === s.cleanup.claimedAt && e.revision === s.cleanup.claimedRevision, "INPUT");
     else {
       const o = s.operations.find(o => o.id === e.operationId);
-      need(o?.kind === "initial" && o.status === "failed" && o.completedAt === e.at && o.workerId === e.principalId && same(o.claimVerifiers, e.authorizers), "INPUT");
+      need(o?.kind === "initial" && o.status === "failed" && o.completedAt === e.at && o.completedRevision === e.revision && o.workerId === e.principalId && same(o.claimVerifiers, e.authorizers), "INPUT");
     }
-    if (s.cleanup) need(e.at <= s.cleanup.claimedAt, "INPUT");
+    if (s.cleanup) need(e.at <= s.cleanup.claimedAt && (e.reason === "cleanup" ? e.revision === s.cleanup.claimedRevision : e.revision < s.cleanup.claimedRevision), "INPUT");
   }
   need(!s.closed || s.operations.every(o => o.status !== "pending"), "INPUT");
   need(s.identity === null ? s.publication === null : s.publication !== null, "INPUT");
@@ -36,7 +40,7 @@ export function checkedModel(input: unknown): UploadModel {
   need(s.barrierFence === (s.cleanup ? 1 : 0), "INPUT");
   if (s.cleanup) {
     const q = s.cleanup, observation = q.observation;
-    need(s.closed && q.barrierFence === s.barrierFence && q.claimedAt >= s.reservedAt && !s.currentReceiptId && !s.receipts.length &&
+    need(s.closed && q.barrierFence === s.barrierFence && q.claimedRevision <= s.revision && q.claimedAt >= s.reservedAt && !s.currentReceiptId && !s.receipts.length &&
       s.issues.every(i => i.horizon !== null && i.horizon <= q.claimedAt), "INPUT");
     need((s.lifecycle === "tombstoned") === !!(observation?.absent && observation.writerQuiescent), "INPUT");
     if (observation) need(observation.at >= q.claimedAt && observation.identityDigest === protocolDigest("object-identity", s.identity), "INPUT");
@@ -61,9 +65,10 @@ export function checkedModel(input: unknown): UploadModel {
     if (o.status === "failed") need(o.terminalPayloadDigest === protocolDigest("verification-failure", {
       type: "rejectVerification", operationId: o.id, fingerprint: o.fingerprint, expectedFence: o.fence, failureCode: o.failureCode }), "INPUT");
     if (o.status === "pending" || o.status === "canceled") need(o.receiptId === null && o.terminalPayloadDigest === null, "INPUT");
-    if (o.status === "pending") need(o.completedAt === null && o.completedStateRevision === null, "INPUT");
+    if (o.status === "pending") need(o.completedAt === null && o.completedStateRevision === null && o.completedRevision === null, "INPUT");
     else need(o.completedAt !== null && o.completedAt >= o.createdAt && o.completedStateRevision !== null &&
-      o.completedStateRevision >= o.expectedStateRevision && o.completedStateRevision <= s.stateRevision && o.completedStateRevision <= s.revision, "INPUT");
+      o.completedRevision !== null && o.completedRevision <= s.revision && o.completedStateRevision <= o.completedRevision &&
+      o.completedStateRevision >= o.expectedStateRevision && o.completedStateRevision <= s.stateRevision, "INPUT");
     if (o.status === "pending" && o.workerId === null) need(o.fence === 0, "INPUT");
     if (o.status === "canceled") {
       need(o.workerId === null && o.leaseUntil === null && o.claimedAt === null && o.claimVerifiers.length === 0, "INPUT");
@@ -73,6 +78,8 @@ export function checkedModel(input: unknown): UploadModel {
         h.policyDigest === o.policyDigest && h.claimVerifiers.includes(h.workerId), "INPUT");
       else need(o.fence === 1, "INPUT");
       if (s.lifecycle === "registered") need(o.generation < s.activeGeneration, "INPUT");
+      if (o.kind === "initial" && s.closure?.reason === "cleanup") need(s.cleanup && o.completedAt === s.cleanup.claimedAt && o.completedRevision === s.cleanup.claimedRevision, "INPUT");
+      if (o.kind === "reverify") need(s.operations.some(next => next.generation === o.generation + 1 && next.createdAt === o.completedAt), "INPUT");
     } else need(o.canceledClaim === null, "INPUT");
     if (o.status === "succeeded" || o.status === "failed") need(o.workerId && o.claimedAt !== null && o.leaseUntil !== null &&
       o.completedAt! >= o.claimedAt && o.completedAt! < o.leaseUntil && o.completedAt! < o.authorizationUntil, "INPUT");
@@ -99,7 +106,12 @@ export function checkedModel(input: unknown): UploadModel {
   if (s.publication) {
     const p = s.publication, initial = s.operations.find(o => o.id === p.operationId && o.kind === "initial");
     need(s.identity && p.identityDigest === protocolDigest("object-identity", s.identity) && initial && p.fence <= initial.fence && p.barrierFence <= s.barrierFence, "INPUT");
-    need(p.reservedAt >= initial.createdAt && p.reservedAt < initial.authorizationUntil && p.reservedAt < s.intentExpiresAt, "INPUT");
+    const h = p.claim;
+    need(h.fence === p.fence && h.claimedAt >= initial.createdAt && h.claimedAt < h.leaseUntil && h.leaseUntil <= h.authorizationUntil &&
+      h.authorizationUntil === initial.authorizationUntil && h.policyEpoch === initial.policyEpoch && h.policyDigest === initial.policyDigest && h.claimVerifiers.includes(h.workerId), "INPUT");
+    need(p.reservedAt >= h.claimedAt && p.reservedAt < h.leaseUntil && p.reservedAt < s.intentExpiresAt, "INPUT");
+    const matching = p.fence === initial.fence ? claimSnapshot(initial) : p.fence === initial.canceledClaim?.fence ? initial.canceledClaim : null;
+    if (matching) need(h.workerId === matching.workerId && h.claimedAt === matching.claimedAt && h.leaseUntil <= matching.leaseUntil && same(h.claimVerifiers, matching.claimVerifiers), "INPUT");
     if (p.fence === initial.fence) need(initial.claimedAt !== null && p.reservedAt >= initial.claimedAt && p.reservedAt < initial.leaseUntil!, "INPUT");
     if (initial.completedAt !== null) need(p.reservedAt <= initial.completedAt, "INPUT");
     if (!closed(s)) need(p.barrierFence === s.barrierFence, "INPUT");
@@ -119,7 +131,8 @@ export function checkedModel(input: unknown): UploadModel {
   }
   for (const o of s.operations.filter(o => o.kind === "reverify" && o.status === "failed")) need(s.revocations.some(e => e.operationId === o.id), "INPUT");
   for (const o of s.operations) need(s.operations.filter(previous => previous.generation < o.generation)
-    .every(previous => previous.completedStateRevision !== null && previous.completedStateRevision <= o.expectedStateRevision && previous.completedAt! <= o.createdAt), "INPUT");
+    .every(previous => previous.completedStateRevision !== null && previous.completedStateRevision <= o.expectedStateRevision && previous.completedAt! <= o.createdAt &&
+      (o.completedRevision === null || o.completedRevision > previous.completedRevision!)), "INPUT");
   points.sort((a, b) => a - b);
   need(points.length === s.stateRevision && points.every((p, index) => p === index + 1), "INPUT");
   const chronology = [...s.operations.filter(o => o.status === "succeeded").map(o => ({ revision: o.completedStateRevision!, at: o.completedAt! })),
@@ -210,11 +223,11 @@ export function transition(input: unknown, command: unknown, context: unknown): 
         need(s.lifecycle === "reserved" && !s.closed && s.operations.length === 0, "STATE");
         need(c.now < s.intentExpiresAt && a.authorizationUntil <= s.intentExpiresAt, "EXPIRED");
       } else need(s.lifecycle === "registered", "STATE");
-      for (const o of s.operations) if (o.status === "pending") { cancel(o, c.now, s.stateRevision); }
+      for (const o of s.operations) if (o.status === "pending") { cancel(o, c.now, s.stateRevision, s.revision + 1); }
       s.activeGeneration++;
       s.operations.push({ id: a.operationId, kind: a.kind, generation: s.activeGeneration, fingerprint: a.fingerprint,
         createdAt: c.now, authorizationUntil: a.authorizationUntil, policyEpoch: s.policyEpoch, policyDigest: s.policyDigest, expectedStateRevision: s.stateRevision,
-        fence: 0, workerId: null, leaseUntil: null, claimedAt: null, claimVerifiers: [], completedAt: null, completedStateRevision: null,
+        fence: 0, workerId: null, leaseUntil: null, claimedAt: null, claimVerifiers: [], completedAt: null, completedStateRevision: null, completedRevision: null,
         canceledClaim: null, status: "pending", receiptId: null, terminalPayloadDigest: null, failureCode: null });
       break;
     }
@@ -234,7 +247,7 @@ export function transition(input: unknown, command: unknown, context: unknown): 
       need(a.identity.ownerId === s.ownerId && a.identity.assetId === s.assetId, "OWNER");
       need(!s.identity || same(a.identity, s.identity), "CONFLICT");
       s.identity = a.identity; s.lifecycle = "publication_reserved";
-      s.publication = { operationId: o.id, fence: o.fence, barrierFence: s.barrierFence, reservedAt: c.now, identityDigest: protocolDigest("object-identity", a.identity) }; break;
+      s.publication = { operationId: o.id, fence: o.fence, barrierFence: s.barrierFence, reservedAt: c.now, claim: claimSnapshot(o), identityDigest: protocolDigest("object-identity", a.identity) }; break;
     }
     case "finalize": {
       const o = leased(a.operationId, a.fingerprint, a.expectedFence);
@@ -251,12 +264,12 @@ export function transition(input: unknown, command: unknown, context: unknown): 
         generation: o.generation, fence: o.fence, policyEpoch: o.policyEpoch, policyDigest: o.policyDigest, source: a.source, media: a.media, verifiedAt: c.now, notAfter: a.notAfter,
         verifierId: c.principalId, verifierVersion: a.verifierVersion, toolVersion: a.toolVersion });
       s.receipts.push(r); s.media = a.media; s.currentReceiptId = r.body.id; s.lifecycle = "registered"; s.revoked = false; s.stateRevision++;
-      o.status = "succeeded"; o.receiptId = r.body.id; o.terminalPayloadDigest = finalizeDigest(a); o.completedAt = c.now; o.completedStateRevision = s.stateRevision; break;
+      o.status = "succeeded"; o.receiptId = r.body.id; o.terminalPayloadDigest = finalizeDigest(a); o.completedAt = c.now; o.completedStateRevision = s.stateRevision; o.completedRevision = s.revision + 1; break;
     }
     case "rejectVerification": {
       const o = leased(a.operationId, a.fingerprint, a.expectedFence);
       o.status = "failed"; o.failureCode = a.failureCode; o.terminalPayloadDigest = protocolDigest("verification-failure", a);
-      o.completedAt = c.now;
+      o.completedAt = c.now; o.completedRevision = s.revision + 1;
       if (o.kind === "initial") {
         s.closed = true; s.closure = { revision: s.revision + 1, at: c.now, principalId: c.principalId, authorizers: [...o.claimVerifiers], reason: "verification_failure", operationId: o.id };
       }
@@ -268,15 +281,15 @@ export function transition(input: unknown, command: unknown, context: unknown): 
     case "cancel":
       owner(); need(s.lifecycle !== "registered" && !closed(s), "STATE"); s.closed = true;
       s.closure ??= { revision: s.revision + 1, at: c.now, principalId: c.principalId, authorizers: [s.ownerId], reason: "cancel", operationId: null };
-      for (const o of s.operations) if (o.status === "pending") { cancel(o, c.now, s.stateRevision); }
+      for (const o of s.operations) if (o.status === "pending") { cancel(o, c.now, s.stateRevision, s.revision + 1); }
       break;
     case "claimCleanup":
       collector(); need(s.lifecycle !== "registered" && (s.closed || c.now >= s.intentExpiresAt), "STATE");
       need(s.issues.every(i => i.horizon !== null && c.now >= i.horizon), "RECONCILE");
       s.closed = true; s.barrierFence++;
       s.closure ??= { revision: s.revision + 1, at: c.now, principalId: c.principalId, authorizers: [...s.collectors], reason: "cleanup", operationId: null };
-      for (const o of s.operations) if (o.status === "pending") { cancel(o, c.now, s.stateRevision); }
-      s.cleanup = { id: a.cleanupId, barrierFence: s.barrierFence, claimedAt: c.now, observation: null }; s.lifecycle = "cleanup_claimed"; break;
+      for (const o of s.operations) if (o.status === "pending") { cancel(o, c.now, s.stateRevision, s.revision + 1); }
+      s.cleanup = { id: a.cleanupId, barrierFence: s.barrierFence, claimedAt: c.now, claimedRevision: s.revision + 1, observation: null }; s.lifecycle = "cleanup_claimed"; break;
     case "observeCleanup":
       collector(); need(s.cleanup?.id === a.cleanupId && s.barrierFence === a.expectedBarrierFence && closed(s), "FENCE");
       need(a.identityDigest === protocolDigest("object-identity", s.identity), "CONFLICT");
@@ -315,11 +328,15 @@ export function transition(input: unknown, command: unknown, context: unknown): 
   return frozen(checkedModel(s));
 }
 function finalizeDigest(a: Extract<UploadCommand, { type: "finalize" }>) { return protocolDigest("finalize-request", a); }
-function cancel(o: UploadModel["operations"][number], at: number, stateRevision: number) {
-  o.canceledClaim = o.workerId === null ? null : { workerId: o.workerId, fence: o.fence, claimedAt: o.claimedAt!, leaseUntil: o.leaseUntil!,
+function claimSnapshot(o: UploadModel["operations"][number]) {
+  need(o.workerId !== null && o.claimedAt !== null && o.leaseUntil !== null, "INPUT");
+  return { workerId: o.workerId, fence: o.fence, claimedAt: o.claimedAt, leaseUntil: o.leaseUntil,
     authorizationUntil: o.authorizationUntil, policyEpoch: o.policyEpoch, policyDigest: o.policyDigest, claimVerifiers: [...o.claimVerifiers] };
+}
+function cancel(o: UploadModel["operations"][number], at: number, stateRevision: number, revision: number) {
+  o.canceledClaim = o.workerId === null ? null : claimSnapshot(o);
   o.status = "canceled"; o.fence++; o.leaseUntil = null; o.workerId = null; o.claimedAt = null; o.claimVerifiers = [];
-  o.completedAt = at; o.completedStateRevision = stateRevision;
+  o.completedAt = at; o.completedStateRevision = stateRevision; o.completedRevision = revision;
 }
 
 // This knowledge MUST come from the future persistence executor, never a browser.
