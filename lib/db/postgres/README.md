@@ -1,12 +1,12 @@
 # Postgres 스키마·RLS v1
 
-이 SQL은 SQLite migration 0001~0010을 교체하지 않는 별도 클라우드 시작점이다. 현재 앱/worker에는 연결하지 않았고 자동 실행하지 않는다. 새 빈 **검증용 Postgres**에서 먼저 세 파일을 순서대로 적용한다.
+이 SQL은 SQLite migration 0001~0010을 교체하지 않는 별도 클라우드 시작점이다. 앱/worker 시작 시 자동 실행하지 않는다. B4-G 읽기 GET의 런타임 연결과 migration 적용은 별개다. 새 빈 **검증용 Postgres**에서 먼저 검증한다.
 
 1. `0001_schema.sql`: 18개 표, 소유자 FK, 같은 소유자끼리의 복합 FK, 안전 정수·SHA·상태 제약, owner 기반 object key.
 2. `0002_invariants.sql`: 이력 불변·같은 프로젝트 참조·타임라인/렌더 raw SHA·입력 봉투·export manifest의 DB 수준 보호.
 3. `0003_rls.sql`: 제한된 `dream_api`, 신뢰된 처리기 `dream_worker`, 18표 ENABLE/FORCE RLS 및 36개 정책.
 
-각 파일은 트랜잭션이며 한 번만 적용한다. 기존 schema/role이 있으면 실패한다. 사용자나 표를 덮는 IF EXISTS/DROP/UPSERT는 없다. 적용 이력·checksum runner와 실제 데이터 변환기는 아직 없으므로 현재 앱의 journal에 이 SQL을 등록하지 않는다.
+각 발행 파일은 자체 트랜잭션이며 기존 schema/role이 있으면 실패한다. 사용자나 표를 덮는 IF EXISTS/DROP/UPSERT는 없다. B5 runner는 아래 설명대로 원문 checksum 확인 후 외부 BEGIN/COMMIT만 분리하여 세 파일과 전용 적용 이력을 한 트랜잭션으로 실행한다. SQLite journal에 이 SQL을 등록하지 않는다. 실제 데이터 변환기는 아직 없다.
 
 ## 접속과 권한
 
@@ -73,3 +73,35 @@ runner는 매번 새 `tmp/b3-postgres-<uuid>` 클러스터·미사용 loopback �
 실제 검증 서버가 이미 준비된 경우에는 `DREAM_PG_INTEGRATION=1`, 명시 `DREAM_PG_TEST_ADMIN_URL`을 설정하고 `npm.cmd test -- tests/postgres/connection.test.ts tests/postgres/projects.test.ts`를 실행한다. fixture는 127.0.0.1/명시 포트/dream_test_* DB/dream_test_admin/빈 schema만 허용하고, 일반 DATABASE_URL·실제 Supabase·기존 테스트 DB를 재사용하지 않는다. 환경변수 미설정 시 실제 integration은 기본 시험에서 명시 skip이다. unit PASS나 skip을 실제 DB PASS로 계산하지 않는다.
 
 driver 근거(2026-11-17): [동일 client transaction](https://node-postgres.com/features/transactions), [pool/release와 client 폐기](https://node-postgres.com/apis/pool), [TLS/DSN SSL 옵션 상호작용](https://node-postgres.com/features/ssl), [SET LOCAL ROLE 권한](https://www.postgresql.org/docs/current/sql-set-role.html). 실제 managed Supabase login/role membership·pooler·Auth FK 통합은 별도 staging 검증이 필요하다.
+
+## B5 migration runner / managed 적용 준비
+
+`migration-manifest.ts`는 발행 SQL3개를 고정 SHA256으로 잠근다. Git checkout의 CRLF만 LF로 정규화한 checksum이며 공백/주석/BOM/SQL 변경은 거부한다. 원문 파일은 수정하지 않는다. `migration-runner.ts`는 같은 migration client에서 transaction advisory lock → target/권한/Auth FK/기존 상태 검사 → 전용 `dream_migrations.history`와 SQL3개 적용 →18표 owner/FORCE RLS·36정책·18guard 검사→COMMIT한다. 중간 오류는 schema/history/role 모두 rollback하며 COMMIT/연결 불확실 client는 폐기한다.
+
+지원 서버는 PostgreSQL16 이상이다. 새 빈 dream/history/role 상태만 초기화한다. 기존 schema/role인데 자기의 완전한3개 이력이 없거나 checksum/ordinal/id/owner/role flags가 다르면 거부한다. 전용 login2개가 있으면 제한 flags와 각 단일 membership의 ADMIN/INHERIT/SET도 검사한다. schema DROP, role ALTER/adopt, 이력 자동 보정은 하지 않는다. 정상 재실행은 적용0이다. advisory lock은 이 runner와 제공 template의 협조 실행을 직렬화하며 외부 관리자의 임의 SQL을 막는 장치는 아니다. 이력+catalog 검사이지 모든 권한/함수 정의의 외부 변조를 탐지하는 전체 schema diff는 아니다.
+
+CLI는 별도 migration 환경변수만 읽고 일반 DATABASE_URL·앱 자격으로 fallback하지 않는다. URL은 명령행 인자로 받지 않는다. `DREAM_PG_MIGRATION_PROFILE`은 명시 synthetic 또는 managed-staging, URL은 full user/password/port/db와 query 없는 형식이다. `fingerprint`는 비밀을 제외한 profile/host/port/db/operator의 SHA256만 출력한다. 승인된 target 정보를 별도로 대조한 뒤 그 hash를 `DREAM_PG_MIGRATION_TARGET_HASH`로 주입해야 dry-run/apply가 가능하다. `dry-run`은 READ ONLY이고 schema/role/history를 만들지 않는다. 출력은 target hash·mode·적용/대기 개수·고정 manifest id/checksum뿐이며 실제 host/db/user/DSN은 출력하지 않는다.
+
+```powershell
+node --conditions=react-server --import tsx scripts/postgres/migrate.ts fingerprint
+node --conditions=react-server --import tsx scripts/postgres/migrate.ts dry-run
+node --conditions=react-server --import tsx scripts/postgres/migrate.ts apply
+node --conditions=react-server --import tsx scripts/postgres/migrate.ts provision-template
+node tests/postgres/run-migrations-local.mjs --bin D:/path/to/signed/pgsql/bin
+```
+
+`provision-template`는 실행 없이 password-free SQL만 반환한다. 별도 migration owner가 알려진 이력·제한 role·login 미존재를 확인하고 API/worker 각각 LOGIN PASSWORD NULL, NOINHERIT/NOBYPASSRLS, ADMIN FALSE/INHERIT FALSE/SET TRUE 단일 membership을 만들도록 한다. 기존 login은 실패하며 변경하지 않는다. NULL password로는 password 로그인할 수 없다. 실제 secret operator가 승인된 보안 채널에서 비밀번호/rotation/환경 주입을 따로 수행해야 하고 실제 값을 파일/채팅/명령행/로그에 기록하면 안 된다. HTTP service_role key는 Postgres password가 아니다.
+
+### 정확한 기존 managed 식별 근거와 다음 적용 조건
+
+Master 수신 원메시지 `msg_377e681fe114`(Front T179 V0 생성 보고), `msg_eb75ca2fe4c9`(같은 region/ref 재확인)를 Master `msg_9da1ba1cca7c`로 전달받았다. 당시 공개 Auth URL은 **https://osvjfyjlbixmvnjkxdry.supabase.co**, 조직 star / dream-ai-studio / Seoul ap-northeast-2 / NANO, Data API on·auto-public off·auto-RLS on 보고였다. 이는 당시 보고의 공개 식별자이며 현재 project 소유/DB 빈 상태/접속 자격·권한/실제 region을 독립 확인한 증거가 아니다. 이 ref/URL을 runner default로 넣지 않았으며 기존 Auth 운영 프로젝트를 임의 staging 대상으로 삼지 않는다.
+
+다음 managed 적용은 runner 독립 수용 후 Master가 **정확한 비운영 target/project ref와 migration owner/범위**를 지정한 다음에만 수행한다. 이번 B5에서는 managed URL 접속, SQL/role 적용, 새 프로젝트/계정/paid 생성, 실 DSN 조회를 하지 않는다.
+
+1. 별도 staging인지, 기존 Auth/데이터가 있는 live 프로젝트인지 확인한다. 기존 dream/history/role 상태가 다르면 거부 결과를 Master에 반환하고 DROP/adopt하지 않는다.
+2. migration 실행자의 effective database CREATE·CREATEROLE/REFERENCES auth.users(id uuid unique not-null), 현재 session/operator와 이후 schema/table 소유권을 검사한다. managed 권한으로 안 되는 작업이 있으면 제한 사유를 먼저 반환한다. 슈퍼유저라고 가정하지 않는다.
+3. migration profile은 명시 `db.<project-ref>.supabase.co` **direct host**만 받는다. username/db/실제 backend port도 target과 대조한다. pooler 주소를 임의 유추하거나 direct migration이 성공했다고 runtime pooler SET LOCAL/reset까지 확인됐다고 하지 않는다.
+4. managed TLS는 인증서 검증을 유지하고 필요 CA는 `DREAM_PG_MIGRATION_CA`로 명시한다. 서비스용 API/worker login은 migration owner와 분리한다. 비밀 provision/rotation은 지정된 담당만 수행하고 application login에 DDL/history 권한을 주지 않는다.
+5. 실제 Auth A/B UUID FK, API RLS/no actor/교차 owner/DDL 차단, worker의 의도된 cross-owner 범위·claim fencing, runtime 선택 pooler의 역할 전환/동시 재사용/rollback/disconnect를 검증한다. 이 로컬 runner 시험은 실제 managed Auth/pooler/Storage를 대신하지 않는다.
+
+공식 근거(2026-11-17): [PostgreSQL transaction advisory lock](https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS), [GRANT membership options](https://www.postgresql.org/docs/current/sql-grant.html), [Supabase roles](https://supabase.com/docs/guides/database/postgres/roles). SQL3개 외부 source/history 무결성과 full schema drift 검사의 차이를 유지한다.
