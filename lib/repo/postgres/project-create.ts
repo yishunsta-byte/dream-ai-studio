@@ -1,7 +1,7 @@
 import "server-only";
 import { PostgresAccessError, type ActorTransaction } from "@/lib/db/postgres/types";
 
-export type ProjectCreateAsset = Readonly<{ id: string; kind: string; objectKey: string | null; sha256: string | null; sizeBytes: number | null }>;
+export type ProjectCreateAsset = Readonly<{ ownerId: string; id: string; kind: string; mime: string | null; objectKey: string | null; sha256: string | null; sizeBytes: number | null }>;
 export type NewPostgresProject = Readonly<{ id: string; menuId: string; templateVersion: string; templateSnapshotJson: string; inputsJson: string;
   title: string; goal: string; target: string; aspect: string; lengthSec: number; now: string }>;
 
@@ -10,13 +10,14 @@ export type NewPostgresProject = Readonly<{ id: string; menuId: string; template
 export function postgresProjectCreateRepository(tx: ActorTransaction) {
   return {
     async asset(id: string): Promise<ProjectCreateAsset | undefined> {
-      const row = (await tx.query("SELECT id,kind,file_path,sha256,size_bytes FROM dream.assets WHERE owner_id=$1 AND id=$2 AND archived_at IS NULL FOR SHARE", [tx.actorId, id])).rows[0];
+      const row = (await tx.query("SELECT owner_id,id,kind,mime,file_path,sha256,size_bytes FROM dream.assets WHERE owner_id=$1 AND id=$2 AND archived_at IS NULL FOR SHARE", [tx.actorId, id])).rows[0];
       if (!row) return undefined;
-      if (typeof row.id !== "string" || typeof row.kind !== "string" ||
+      if (typeof row.owner_id !== "string" || row.owner_id !== tx.actorId || typeof row.id !== "string" || typeof row.kind !== "string" ||
+        (row.mime !== null && typeof row.mime !== "string") ||
         (row.file_path !== null && typeof row.file_path !== "string") || (row.sha256 !== null && typeof row.sha256 !== "string")) throw new PostgresAccessError("PG_DATA");
       const size = row.size_bytes === null ? null : Number(row.size_bytes);
       if (size !== null && (!Number.isSafeInteger(size) || size < 0)) throw new PostgresAccessError("PG_DATA");
-      return Object.freeze({ id: row.id, kind: row.kind, objectKey: row.file_path, sha256: row.sha256, sizeBytes: size });
+      return Object.freeze({ ownerId: row.owner_id, id: row.id, kind: row.kind, mime: row.mime, objectKey: row.file_path, sha256: row.sha256, sizeBytes: size });
     },
     async character(id: string): Promise<boolean> {
       return (await tx.query("SELECT id FROM dream.characters WHERE owner_id=$1 AND id=$2 AND archived_at IS NULL FOR SHARE", [tx.actorId, id])).rowCount === 1;
