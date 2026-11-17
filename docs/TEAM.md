@@ -1906,3 +1906,8 @@
 - 정상 초기 실패 uid3003의 time/revision/worker를 유지한 채 closure.operationId만 uid3999로 변경해도 deferred 검사가 수용. 보고된 selected relational linkage 누락을 필수 수정 판정. 재현 D:/starwork/b20-r2-eeca88d/tests/postgres/b20-r2-independent.test.ts:439부근, 정상 exercise(false)/잘못된 exercise(true) 대조. 원SQL1..3/발행manifest 불변, 전체프로토콜 동등성 요구와 구분.
 - Backend B20-FIX2 실제 전송 msg_f808100f32a8: 최소 relational 수정·원80/독립8 기대유지 재현·ID/null/owner/유효취소·cleanup 경계·고정SHA/해시/정리 보고. 전송 후 msg_202f36105278로 Backend 수신·범위 수락·착수 확인. 검수자 ctx_3e03ef64ee4e에 msg_c4714ac46bf7 최종 FAIL 증거·정상대조·cleanup·재현 직접 인계 요청 전송. 고유보고 외 제품 수정 금지.
 - B21 현후보 참조는 수용대기이며 FIX2 고정 후 재갱신 필요. v2구현/SQL4발행/운영변경 보류 유지. 기존 T122/T137 미추적 보존, 새 미기록 handoff 없음. 30분 예약 활성·첫 실행 아직 미검증.
+### 점검 / B20-FIX2 반환·R3 독립 재검수 배정
+- 마지막 확인 시각: 2026-11-18 00:22:05 +09:00 (Asia/Seoul). 지정 두 wake msg_e093821b110a/msg_f46fccf8efd6, FIX2/R2 원문·SQL diff·Git/최근 handoffs 확인. 원R2 최종6595bfe FAIL(원80PASS·추가8 중7PASS1FAIL) 보존, 새 FIX2와 구분. 기존 T122/T137 미추적 보존·새 미기록 보고 없음.
+- FIX2 9d388993a480a9ec0881484dd14b45bba1de3c03 지정3파일 ready_review 수신. 작성자 원R2 기대 유지 baseline87/1 재현→원80+R2 8+추가16=104PASS/0skip, tsc/lint·PG정리 보고. Master actual LF해시 61ceb11566a9d4a601a9c351cddf13be464b0bb75dcd8d669cef1ee70ae6089c 일치와 final cleanup-safe 두flag true 파일 확인. Master가 전체 PG테스트를 재실행한 것 아님.
+- SQL diff는 failure가 same-owner/object initial op.id를 가리키게 강제, cancel/cleanup explicit null 및 cleanup 실제claim 필요 검증. B19 의미 유지·선택연결 최소수정으로 확인했으나 독립 수용 전. 원SQL1..3/v1/manifest 운영 적용은 없음.
+- B20-R3 실제 전송·배정 영수증 ready: dispatch ctx_ecde1737ac42 / task task_f20aaed523b1. 고정9d38899 새archive/소유PG에서 원104/추가 독립ID·owner/object/null/취소/cleanup/유효대조 및 원결함 해소·회귀·정적검증·정리 검수. 고유 B20-R3 보고만 제출. B21후보 재갱신은 R3판정 후로 미루고 v2구현/SQL4발행/운영변경 계속 보류. 30분 예약 활성, 실제첫실행 아직 미검증.
