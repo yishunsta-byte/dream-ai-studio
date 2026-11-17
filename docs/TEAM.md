@@ -1518,3 +1518,8 @@
 - Backend msg_08b70602af15: 공통 role graph 검사/검증target 내부pool/JS pool입력 명시거부 구현중, 실제부정대조 실행중. 아직 ready_review 아님. B7 추가조회 없음.
 - root tsc가 ignored tmp의 T207 고정사본 구API 호출까지 포함한 오류를 보고했다는 작업자 설명 수신. Master는 원검사실패와 임시범위검사를 구분하고, 원strict/실제소스/Next타입 누락 없이 검증·정확명령/제외경로 기록 및 가능하면 깨끗한 고정사본 원tsconfig 최종검증을 지시. 제품오류가 없다고 아직 확정하지 않음.
 - Front staged loading삭제 등 타작업 변경 보호, Backend는 고유경로만 선택커밋. 실제DB적용·배포 금지 유지.
+
+### T210 제출 / T211 전체 읽기 UI 독립 검수 / T212 상태 시각검증
+- Front 679e703 제출: 목록 loading 삭제, 401/403/503×목록/단건 실제307·정확Location·no-store·query0 강제. 작성자 고정사본HTTP14관찰 PASS/관련442/type/lint PASS, 아직 독립수용 전. 검증기 사본삭제누락 중간FAIL도 보고에 보존.
+- T211 독립 worker에 T207+T210 묶음 검수 재개 요청. 기준679e703, 실제원HTTP runner/운영start/TLS PG와auth/DTO/import/local/owner경계, 고유 T-211-CLOUD-READ-UI-REVIEW.md. 제품수정 미허용.
+- T212 Front에 이전 미확인 빈목록/공통오류 화면의 양폭·키보드·재시도 실제browser 검증만 배정. 고유 T-212-CLOUD-READ-STATE-UI-CHECK.md. 검수중제품추가수정보류, 실제managed·3013/.next·Backend보호.
