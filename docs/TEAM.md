@@ -1599,3 +1599,9 @@
 - T214 고정8e131ae 오류화면h1일관성작은UI변경수용. Master가 node node_modules/vitest/vitest.mjs run tests/t207-cloud-read-ui.test.ts 직접실행26/26PASS(exit0). 작성자관련275/실HTTP14/양폭회귀는작성자근거로구분,Master재실행으로확대안함.
 - T217 Front에CloudReadLocal목록/단건h1정확히1개좁은보완배정. component/호출두page/기존상태검증/고유보고만,Auth/DB계약불변. 시험수는실CLI출력으로보고지시. T216세션독립검수·B12독립개발계속,SSL운영변경DEC답변미수신.
 - 턴 밖 자동 점검: 미설정. 이번확인은이벤트처리이며주기감시스케줄러설치없음.
+
+### 점검 / B12 제출 및 B12-R 검수 / B13 CAS 계약 설계
+- 마지막 확인 시각: 2026-11-17 20:40:40 +09:00 (Asia/Seoul). 계기Orca상태이벤트. B12원문·최근handoffs·Git확인,새B12수신,미추적T122/T137기존보호,새미기록보고없음.
+- B12 83affcf ready_review: 신규create repo/service·신뢰서버snapshot/필수assetAvailable callback·verifiedactor·단일tx초기종속행. 작성자실PG20/B4실PG51/focused68는중복구분. 실제Storage/요청어댑터/API쓰기·managed미구현/미검증. 독립수용아님.
+- B12-R 기존독립검수자재개요청:고정83affcf,실합성PG·입력/owner/rawhash/동등규칙/FORSHARE경합/종속allrollback/조회호환. 고유 B12-R-PROJECT-CREATE-REVIEW.md. Backend는B13후속저장CAS·승인무효화/불변이력계약설계만별도배정,검수중create수정보류.
+- Front T217제목보완·Tester T216세션독립검수기존배정유지. DEC-SSL-01 답변미수신·운영변경금지,턴 밖 자동 점검 미설정.
