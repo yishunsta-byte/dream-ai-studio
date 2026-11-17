@@ -1370,3 +1370,8 @@
 - T189 Front reports push included unreviewed4458283 after testing2d997e6, failed to recheck HEAD. Master chose retain history and exact4458283 isolated revalidation plus deployment SHA/readback, no force push. T190 notified; unresolved independent result blocks full acceptance.
 - Future push requires verified SHA/local HEAD/remote identity match immediately before push. No user data/account changes permitted during production checks.
 - Backend B4-C report returned; review pending while B3-R independently verifies connection layer.
+### T189 exact deployment verified
+
+- T189 actual report identifies exact4458283 production E5kSuVaEr6Jkw9rLwoopFVA9aHh5 Ready/Current. Master read report and independently HTTP GET confirmed login200/root307/jobs401.
+- Front exact-SHA isolated173/13skip/lint/type/build and safe production Origin/JSON checks pass. Authenticated production session/password remains untested; T187 fake-Auth evidence distinct. No data/file Supabase connection yet, CloudPending stays.
+- T190 UI review pending. B3-R connection review and B4-C contract next; local3013 unmodified.
