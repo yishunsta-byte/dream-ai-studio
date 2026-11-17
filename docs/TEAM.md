@@ -1806,3 +1806,9 @@
 - B19-R3 동일독립검수자재개요청:고정00fe68a 原harness불변·전체행렬/정상counter·history/policy·新field 부분손상독립검증. 제품/IO/DB/운영변경미배정.
 - Backend B20기존미발행3파일·고유보고 조건부조정/합성PG검증재개허용. 新model→SQL검사/未실행executor分離맵·FK/RLS/權限/歷史/원자rollback/原SQL3不変증거,protocol R3수용전스키마완료수용금지. 기존runner미등록·실managed미적용。
 - 배포도구권한/SSL DEC미수신·운영변경보류. 턴 밖 자동 점검 미설정.
+
+### 점검 / B19-R3 중간 시간 binding 잔존·FIX3 우선
+- 마지막 확인 시각: 2026-11-17 23:11:32 +09:00 (Asia/Seoul). Orca escalation·최근handoffs/Git확인,新최종고유보고아직없음. B20미추적3파일/T122/T137保護,새미기록완료없음.
+- R3고정00fe68a 原47/27/17PASS·원8+4해소와新12중10PASS2FAIL분리. closure.at와같은initial canceled.completedAt不一致、同fence publication.reservedAt가보존canceledClaim lease밖인데수용두件. 임의현재clock과비교한추가정책아니고기록내부동일사건binding문제,새ready우회입증아님.
+- Backend B19-FIX3 최소state/schema/test/고유보고우선배정. firstclosure실원인이벤트binding·같은fence당시claim시간검증,정상과거reclaim/lease만료후cancel유지·중복보존필드감사. B20안전checkpoint뒤수정,스키마수용보류。reviewer는현fixed최종FAIL근거/고유12harness정리계속,새SHA혼입금지。
+- 배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
