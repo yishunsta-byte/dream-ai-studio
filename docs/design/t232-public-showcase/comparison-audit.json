@@ -1,0 +1,60 @@
+[
+  {
+    "width": 1280,
+    "overflow": 0,
+    "broken": 0,
+    "small": [],
+    "h1": 1
+  },
+  {
+    "width": 1280,
+    "mobileDetailsOpen": true
+  },
+  {
+    "width": 1280,
+    "name": "screen",
+    "h1": 1,
+    "demoFile": "file:///D:/starwork/dream-ai-studio/docs/design/t232-public-showcase/neon-screen.html"
+  },
+  {
+    "width": 1280,
+    "name": "sound",
+    "h1": 1,
+    "demoFile": "file:///D:/starwork/dream-ai-studio/docs/design/t232-public-showcase/sound-color.html"
+  },
+  {
+    "width": 1280,
+    "name": "feed",
+    "h1": 1,
+    "demoFile": "file:///D:/starwork/dream-ai-studio/docs/design/t232-public-showcase/creator-feed.html"
+  },
+  {
+    "width": 390,
+    "overflow": 0,
+    "broken": 0,
+    "small": [],
+    "h1": 1
+  },
+  {
+    "width": 390,
+    "mobileDetailsOpen": true
+  },
+  {
+    "width": 390,
+    "name": "screen",
+    "h1": 1,
+    "demoFile": "file:///D:/starwork/dream-ai-studio/docs/design/t232-public-showcase/neon-screen.html"
+  },
+  {
+    "width": 390,
+    "name": "sound",
+    "h1": 1,
+    "demoFile": "file:///D:/starwork/dream-ai-studio/docs/design/t232-public-showcase/sound-color.html"
+  },
+  {
+    "width": 390,
+    "name": "feed",
+    "h1": 1,
+    "demoFile": "file:///D:/starwork/dream-ai-studio/docs/design/t232-public-showcase/creator-feed.html"
+  }
+]

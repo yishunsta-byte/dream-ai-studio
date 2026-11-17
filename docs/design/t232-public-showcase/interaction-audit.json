@@ -1,0 +1,800 @@
+[
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "category filters content",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "search and category combine",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "search empty and no false results",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "reset preserves search focus",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "loading is busy and explicitly simulated",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "list retry recovers sample without network",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "rail controls move horizontal works",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "detail opens with explicit still-media limit",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "reverse tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "forward tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "play entry shows simulated loading only",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "play error has explicit missing media explanation",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "return to still image hides overlay",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "Escape returns focus to exact card",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "creator login guidance without credential form or navigation",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "creator anchor focuses correct section",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "core text contrast >=4.5",
+    "pass": true,
+    "details": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 18.424460998554924
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 10.122177583818694
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 9.121231653215148
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 9.948422523245348
+      },
+      {
+        "fg": "on",
+        "bg": "button",
+        "ratio": 5.445084943935853
+      }
+    ]
+  },
+  {
+    "theme": "screen",
+    "width": 1280,
+    "name": "reduced motion removes hero animation",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "category filters content",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "search and category combine",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "search empty and no false results",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "reset preserves search focus",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "loading is busy and explicitly simulated",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "list retry recovers sample without network",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "detail opens with explicit still-media limit",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "reverse tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "forward tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "play entry shows simulated loading only",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "play error has explicit missing media explanation",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "return to still image hides overlay",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "Escape returns focus to exact card",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "creator login guidance without credential form or navigation",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "persistent player uses selected work",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "creator anchor focuses correct section",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "core text contrast >=4.5",
+    "pass": true,
+    "details": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 14.484741428734127
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 5.860129993695684
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 6.2076642863541025
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 6.665009036571878
+      },
+      {
+        "fg": "on",
+        "bg": "button",
+        "ratio": 5.4697675729681565
+      }
+    ]
+  },
+  {
+    "theme": "sound",
+    "width": 1280,
+    "name": "reduced motion removes hero animation",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "category filters content",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "search and category combine",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "search empty and no false results",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "reset preserves search focus",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "loading is busy and explicitly simulated",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "list retry recovers sample without network",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "detail opens with explicit still-media limit",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "reverse tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "forward tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "play entry shows simulated loading only",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "play error has explicit missing media explanation",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "return to still image hides overlay",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "Escape returns focus to exact card",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "creator login guidance without credential form or navigation",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "creator channel guidance opens",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "core text contrast >=4.5",
+    "pass": true,
+    "details": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 13.594306580417078
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 5.4093424440279065
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 5.809146784831262
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 6.864572346334247
+      },
+      {
+        "fg": "on",
+        "bg": "button",
+        "ratio": 5.983252281072839
+      }
+    ]
+  },
+  {
+    "theme": "feed",
+    "width": 1280,
+    "name": "reduced motion removes hero animation",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "category filters content",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "search and category combine",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "search empty and no false results",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "reset preserves search focus",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "loading is busy and explicitly simulated",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "list retry recovers sample without network",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "keyboard focus brings last rail work into view",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "detail opens with explicit still-media limit",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "reverse tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "forward tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "play entry shows simulated loading only",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "play error has explicit missing media explanation",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "return to still image hides overlay",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "Escape returns focus to exact card",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "creator login guidance without credential form or navigation",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "creator anchor focuses correct section",
+    "pass": true
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "core text contrast >=4.5",
+    "pass": true,
+    "details": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 18.424460998554924
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 10.122177583818694
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 9.121231653215148
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 9.948422523245348
+      },
+      {
+        "fg": "on",
+        "bg": "button",
+        "ratio": 5.445084943935853
+      }
+    ]
+  },
+  {
+    "theme": "screen",
+    "width": 390,
+    "name": "reduced motion removes hero animation",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "category filters content",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "search and category combine",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "search empty and no false results",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "reset preserves search focus",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "loading is busy and explicitly simulated",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "list retry recovers sample without network",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "detail opens with explicit still-media limit",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "reverse tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "forward tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "play entry shows simulated loading only",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "play error has explicit missing media explanation",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "return to still image hides overlay",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "Escape returns focus to exact card",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "creator login guidance without credential form or navigation",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "persistent player uses selected work",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "creator anchor focuses correct section",
+    "pass": true
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "core text contrast >=4.5",
+    "pass": true,
+    "details": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 14.484741428734127
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 5.860129993695684
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 6.2076642863541025
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 6.665009036571878
+      },
+      {
+        "fg": "on",
+        "bg": "button",
+        "ratio": 5.4697675729681565
+      }
+    ]
+  },
+  {
+    "theme": "sound",
+    "width": 390,
+    "name": "reduced motion removes hero animation",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "category filters content",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "search and category combine",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "search empty and no false results",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "reset preserves search focus",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "loading is busy and explicitly simulated",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "list retry recovers sample without network",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "detail opens with explicit still-media limit",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "reverse tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "forward tab stays in detail",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "play entry shows simulated loading only",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "play error has explicit missing media explanation",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "return to still image hides overlay",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "Escape returns focus to exact card",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "creator login guidance without credential form or navigation",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "creator channel guidance opens",
+    "pass": true
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "core text contrast >=4.5",
+    "pass": true,
+    "details": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 13.594306580417078
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 5.4093424440279065
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 5.809146784831262
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 6.864572346334247
+      },
+      {
+        "fg": "on",
+        "bg": "button",
+        "ratio": 5.983252281072839
+      }
+    ]
+  },
+  {
+    "theme": "feed",
+    "width": 390,
+    "name": "reduced motion removes hero animation",
+    "pass": true
+  }
+]
