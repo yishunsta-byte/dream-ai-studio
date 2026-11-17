@@ -1904,5 +1904,5 @@
 ### 점검 / B20-R2 잔존 operationId 연결 누락·B20-FIX2 배정
 - 마지막 확인 시각: 2026-11-18 00:17:29 +09:00 (Asia/Seoul). 지정 wake msg_3f8272710af0·Git/최근 handoffs 및 해당 SQL/model schema 참조 확인. 원3FAIL 해소와 원80PASS 보고는 인정하되 새 독립8 중7PASS/1FAIL escalation으로 후보 eeca88d 수용 보류. 최종 고유보고는 아직 정리 중이며 최종완료로 표현하지 않는다.
 - 정상 초기 실패 uid3003의 time/revision/worker를 유지한 채 closure.operationId만 uid3999로 변경해도 deferred 검사가 수용. 보고된 selected relational linkage 누락을 필수 수정 판정. 재현 D:/starwork/b20-r2-eeca88d/tests/postgres/b20-r2-independent.test.ts:439부근, 정상 exercise(false)/잘못된 exercise(true) 대조. 원SQL1..3/발행manifest 불변, 전체프로토콜 동등성 요구와 구분.
-- Backend B20-FIX2 실제 전송 msg_f808100f32a8: 최소 relational 수정·원80/독립8 기대유지 재현·ID/null/owner/유효취소·cleanup 경계·고정SHA/해시/정리 보고. 전송 영수증 확보, 수락은 아직 미확인. 검수자 ctx_3e03ef64ee4e에 msg_c4714ac46bf7 최종 FAIL 증거·정상대조·cleanup·재현 직접 인계 요청 전송. 고유보고 외 제품 수정 금지.
+- Backend B20-FIX2 실제 전송 msg_f808100f32a8: 최소 relational 수정·원80/독립8 기대유지 재현·ID/null/owner/유효취소·cleanup 경계·고정SHA/해시/정리 보고. 전송 후 msg_202f36105278로 Backend 수신·범위 수락·착수 확인. 검수자 ctx_3e03ef64ee4e에 msg_c4714ac46bf7 최종 FAIL 증거·정상대조·cleanup·재현 직접 인계 요청 전송. 고유보고 외 제품 수정 금지.
 - B21 현후보 참조는 수용대기이며 FIX2 고정 후 재갱신 필요. v2구현/SQL4발행/운영변경 보류 유지. 기존 T122/T137 미추적 보존, 새 미기록 handoff 없음. 30분 예약 활성·첫 실행 아직 미검증.
