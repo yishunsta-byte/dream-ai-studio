@@ -2,7 +2,7 @@ import "server-only";
 import type { Pool, PoolClient } from "pg";
 import { loadPostgresMigrations, postgresMigrationManifest, PostgresMigrationError } from "./migration-manifest";
 import { createPostgresPool } from "./connection";
-import { inspectMigrationTarget, type MigrationTarget } from "./migration-target";
+import { inspectMigrationTarget, isSessionMigrationProfile, type MigrationTarget } from "./migration-target";
 
 const tables = ["activity_log", "assets", "backups", "characters", "exports", "generations", "jobs", "plans", "project_assets", "project_characters", "projects", "renders", "review_items", "scene_versions", "scenes", "settings", "stage_states", "timeline_revisions"];
 // Constant shared by the provision template. Transaction lock automatically
@@ -72,6 +72,7 @@ export async function runPostgresMigrations(options: {
   const approvedTarget = Object.freeze({ ...options.target });
   const source = await loadPostgresMigrations(options.sourceRoot);
   const target = inspectMigrationTarget(approvedTarget);
+  if (isSessionMigrationProfile(approvedTarget.profile) && !options.ca?.trim()) throw new PostgresMigrationError("MIGRATION_TARGET");
   if (!/^[a-f0-9]{64}$/.test(options.expectedTargetHash) || options.expectedTargetHash !== target.targetHash || !["dry-run", "apply"].includes(options.mode)) throw new PostgresMigrationError("MIGRATION_TARGET");
   // Hash and connection use this same immutable input. Managed TLS/DNS hostname
   // validation stays with pg/TLS; no IP equality is presented as DNS assurance.

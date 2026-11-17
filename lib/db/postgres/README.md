@@ -82,7 +82,7 @@ driver 근거(2026-11-17): [동일 client transaction](https://node-postgres.com
 
 B5-FIX migration API는 target/hash 검증과 실제 연결을 분리할 수 없도록 내부에서 같은 immutable target으로 pool을 생성·종료한다. 독립 pool/factory를 입력받지 않으며 과거 pool 필드는 JavaScript 호출에서도 명시 거부한다. 일반 B3/B4 pool API는 변경하지 않았다. managed TLS/DNS hostname 검증은 기존 pg/TLS 경계를 유지하고, 서버IP 문자열 비교를 일반 DNS/TLS 보장으로 사용하지 않는다. 성공·상태 검증 실패·BEGIN/COMMIT/rollback 실패에도 소유 pool을 종료한다.
 
-CLI는 별도 migration 환경변수만 읽고 일반 DATABASE_URL·앱 자격으로 fallback하지 않는다. URL은 명령행 인자로 받지 않는다. `DREAM_PG_MIGRATION_PROFILE`은 명시 synthetic 또는 managed-staging, URL은 full user/password/port/db와 query 없는 형식이다. `fingerprint`는 비밀을 제외한 profile/host/port/db/operator의 SHA256만 출력한다. 승인된 target 정보를 별도로 대조한 뒤 그 hash를 `DREAM_PG_MIGRATION_TARGET_HASH`로 주입해야 dry-run/apply가 가능하다. `dry-run`은 READ ONLY이고 schema/role/history를 만들지 않는다. 출력은 target hash·mode·적용/대기 개수·고정 manifest id/checksum뿐이며 실제 host/db/user/DSN은 출력하지 않는다.
+CLI는 별도 migration 환경변수만 읽고 일반 DATABASE_URL·앱 자격으로 fallback하지 않는다. URL은 명령행 인자로 받지 않는다. `DREAM_PG_MIGRATION_PROFILE`은 명시 synthetic, managed-staging(Direct), managed-session-staging 또는 managed-session-live이며, URL은 full user/password/port/db와 query 없는 형식이다. `fingerprint`는 비밀을 제외한 target SHA256만 출력한다. 승인된 target 정보를 별도로 대조한 뒤 그 hash를 `DREAM_PG_MIGRATION_TARGET_HASH`로 주입해야 dry-run/apply가 가능하다. `dry-run`은 READ ONLY이고 schema/role/history를 만들지 않는다. 출력은 target hash·mode·적용/대기 개수·고정 manifest id/checksum뿐이며 실제 host/db/user/DSN은 출력하지 않는다.
 
 ```powershell
 node --conditions=react-server --import tsx scripts/postgres/migrate.ts fingerprint
@@ -98,12 +98,33 @@ node tests/postgres/run-migrations-local.mjs --bin D:/path/to/signed/pgsql/bin
 
 Master 수신 원메시지 `msg_377e681fe114`(Front T179 V0 생성 보고), `msg_eb75ca2fe4c9`(같은 region/ref 재확인)를 Master `msg_9da1ba1cca7c`로 전달받았다. 당시 공개 Auth URL은 **https://osvjfyjlbixmvnjkxdry.supabase.co**, 조직 star / dream-ai-studio / Seoul ap-northeast-2 / NANO, Data API on·auto-public off·auto-RLS on 보고였다. 이는 당시 보고의 공개 식별자이며 현재 project 소유/DB 빈 상태/접속 자격·권한/실제 region을 독립 확인한 증거가 아니다. 이 ref/URL을 runner default로 넣지 않았으며 기존 Auth 운영 프로젝트를 임의 staging 대상으로 삼지 않는다.
 
-다음 managed 적용은 runner 독립 수용 후 Master가 **정확한 비운영 target/project ref와 migration owner/범위**를 지정한 다음에만 수행한다. 이번 B5에서는 managed URL 접속, SQL/role 적용, 새 프로젝트/계정/paid 생성, 실 DSN 조회를 하지 않는다.
+다음 managed 적용은 runner 독립 수용 후 Master가 **정확한 target/project ref·실제 환경 구분과 migration owner/범위**를 지정한 다음에만 수행한다. 이번 B5에서는 managed URL 접속, SQL/role 적용, 새 프로젝트/계정/paid 생성, 실 DSN 조회를 하지 않았다. 후속 B8/B9의 실제 읽기 확인 범위는 각 고유 보고서에 구분한다.
 
 1. 별도 staging인지, 기존 Auth/데이터가 있는 live 프로젝트인지 확인한다. 기존 dream/history/role 상태가 다르면 거부 결과를 Master에 반환하고 DROP/adopt하지 않는다.
 2. migration 실행자의 effective database CREATE·CREATEROLE/REFERENCES auth.users(id uuid unique not-null), 현재 session/operator와 이후 schema/table 소유권을 검사한다. managed 권한으로 안 되는 작업이 있으면 제한 사유를 먼저 반환한다. 슈퍼유저라고 가정하지 않는다.
-3. migration profile은 명시 `db.<project-ref>.supabase.co` **direct host**만 받는다. username/db/실제 backend port도 target과 대조한다. pooler 주소를 임의 유추하거나 direct migration이 성공했다고 runtime pooler SET LOCAL/reset까지 확인됐다고 하지 않는다.
+3. 기존 `managed-staging`은 명시 `db.<project-ref>.supabase.co` **direct host**만 받는다. 별도 Session profile은 아래의 추가 binding을 모두 요구한다. username/db/실제 backend port도 target과 대조한다. pooler 주소를 임의 유추하거나 migration 연결이 성공했다고 runtime pooler SET LOCAL/reset까지 확인됐다고 하지 않는다.
 4. managed TLS는 인증서 검증을 유지하고 필요 CA는 `DREAM_PG_MIGRATION_CA`로 명시한다. 서비스용 API/worker login은 migration owner와 분리한다. 비밀 provision/rotation은 지정된 담당만 수행하고 application login에 DDL/history 권한을 주지 않는다.
 5. 실제 Auth A/B UUID FK, API RLS/no actor/교차 owner/DDL 차단, worker의 의도된 cross-owner 범위·claim fencing, runtime 선택 pooler의 역할 전환/동시 재사용/rollback/disconnect를 검증한다. 이 로컬 runner 시험은 실제 managed Auth/pooler/Storage를 대신하지 않는다.
 
 공식 근거(2026-11-17): [PostgreSQL transaction advisory lock](https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS), [GRANT membership options](https://www.postgresql.org/docs/current/sql-grant.html), [Supabase roles](https://supabase.com/docs/guides/database/postgres/roles). SQL3개 외부 source/history 무결성과 full schema drift 검사의 차이를 유지한다.
+
+### B9 명시 Session migration profile (독립 검수 전)
+
+`managed-session-staging`과 `managed-session-live`는 환경 구분이 포함된 별도 계약이다. profile 선택은 실제 실행 승인이나 staging 판정이 아니다. 기존 Direct/synthetic fingerprint는 유지하고, Session hash는 profile/제공 host/port/database/provider username에 project ref와 예상 실제 DB role을 추가한다. 두 환경 label은 같은 endpoint에서도 서로 다른 hash를 만든다.
+
+`DREAM_PG_MIGRATION_URL`, `DREAM_PG_MIGRATION_PROJECT_REF` 외에 아래 항목을 승인된 제공 정보와 별도로 대조하여 **모두** 프로세스에 주입한다. 실제 값은 파일/채팅/명령행/로그에 넣지 않는다. 기본 endpoint·region·ref·role은 없다.
+
+| 변수 | 의미 |
+| --- | --- |
+| `DREAM_PG_MIGRATION_SESSION_HOST` | Connect UI가 제공한 정확한 shared Session host. 현재 공식 AWS shared pooler 형식만 허용 |
+| `DREAM_PG_MIGRATION_SESSION_PORT` | 명시 `5432`. transaction `6543`은 거부 |
+| `DREAM_PG_MIGRATION_SESSION_DATABASE` | URL과 일치하는 정확한 DB |
+| `DREAM_PG_MIGRATION_SESSION_USERNAME` | 제공된 provider 라우팅 username |
+| `DREAM_PG_MIGRATION_SESSION_ROLE` | 별도로 확인한 실제 PostgreSQL migration role |
+| `DREAM_PG_MIGRATION_CA` | 공식 출처에서 검증한 CA PEM. Session 실행 시 필수 |
+
+URL username은 위 role과 ref의 정확한 `role.ref` 계약에 일치해야 한다. suffix를 임의 제거해 실제 role을 추정하지 않는다. 실제 연결 후 `session_user`와 `current_user` 모두 명시 role, database와 backend port도 target과 같아야 한다. 현재 Session 계약은 frontend/backend port 모두5432로 제한한다. 다른 provider/포트/role 형식은 자동 허용하지 않는다. target은 primitive 필드만 immutable snapshot하고 그 동일 DSN으로 owned pool을 생성한다. TLS CA/hostname 검증, source/checksum/history/role graph/lock/rollback/disposal 경계는 유지된다.
+
+공식 [Prisma migration 안내](https://supabase.com/docs/guides/database/prisma)는 Session 또는 Direct를 지원한다. [Session 연결 계약](https://supabase.com/kb/troubleshooting/supavisor-and-connection-terminology-explained-9pr_ZO)은 client 동안 전용 backend를 유지하며, [연결 문서](https://supabase.com/docs/guides/database/connecting-to-postgres)는 Session의 session-state 지원과 `role.ref` 매핑을 설명한다. transaction mode는 이 기능의 지원 대상이 아니다. 기술적 DDL/transaction/advisory-lock 사용 가능성과 해당 프로젝트 실제 migration 통과는 별개다.
+
+TLS는 두 구간으로 구분한다. client→pooler 검증 TLS가 pooler→DB TLS를 증명하지 않는다. [공식 SSL enforcement 문서](https://supabase.com/docs/guides/platform/ssl-enforcement)는 shared pooler 양쪽 구간을 설명하지만, B8 실제 backend `pg_stat_ssl.ssl=false` 관찰을 TLS 전체 성공으로 바꾸지 않는다. 내부 transport 수용·설정 변경은 별도 판단이며 이 CLI가 provider SSL 설정을 변경하지 않는다.

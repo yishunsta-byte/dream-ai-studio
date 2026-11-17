@@ -9,7 +9,12 @@ export async function runMigrationCli(args: readonly string[], env: Readonly<Rec
   try {
     if (args.length !== 1 || !["fingerprint", "dry-run", "apply", "provision-template"].includes(args[0])) throw new PostgresMigrationError("MIGRATION_TARGET");
     if (args[0] === "provision-template") { output(postgresProvisionTemplate()); return 0; }
-    const target: MigrationTarget = { connectionString: env.DREAM_PG_MIGRATION_URL ?? "", profile: env.DREAM_PG_MIGRATION_PROFILE as MigrationTarget["profile"], projectRef: env.DREAM_PG_MIGRATION_PROJECT_REF };
+    const target: MigrationTarget = {
+      connectionString: env.DREAM_PG_MIGRATION_URL ?? "", profile: env.DREAM_PG_MIGRATION_PROFILE as MigrationTarget["profile"], projectRef: env.DREAM_PG_MIGRATION_PROJECT_REF,
+      sessionHost: env.DREAM_PG_MIGRATION_SESSION_HOST, sessionPort: env.DREAM_PG_MIGRATION_SESSION_PORT,
+      sessionDatabase: env.DREAM_PG_MIGRATION_SESSION_DATABASE, sessionUsername: env.DREAM_PG_MIGRATION_SESSION_USERNAME,
+      sessionRole: env.DREAM_PG_MIGRATION_SESSION_ROLE,
+    };
     const { targetHash } = inspectMigrationTarget(target);
     if (args[0] === "fingerprint") { output(JSON.stringify({ targetHash })); return 0; }
     if (env.DREAM_PG_MIGRATION_TARGET_HASH !== targetHash) throw new PostgresMigrationError("MIGRATION_TARGET");
