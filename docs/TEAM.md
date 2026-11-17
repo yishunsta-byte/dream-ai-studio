@@ -1293,3 +1293,8 @@
 - F168-1: physical ffmpeg/probe appear40 times in20 production traces, verify-build exit1. No claim UI caused this preexisting/configuration interaction.
 - T169 priority real tracing/exclusion fix requested, verification must remain enabled and cannot whitelist leaked native/data. Isolated Windows builds with physical tools/external runtime root required; shared3013/.next protected.
 - Full build acceptance withheld. Reviewer server/browser ended; auto-review blocked APP deletion, retained artifacts documented without bypass. User DB/deployment unchanged.
+### T169 build tracing ready_review; T170 independent
+
+- msg_a4cac267b2b3 /46664c7 report read. Author isolated physical-tool builds6 combinations pass; Next Windows exclude/path issue and static tool path tracing documented, verifier strengthened rather than disabled. Shared next-env.d.ts WIP protected.
+- T170 ctx_34cc506c81d0 /task_0c45305b0131 dispatched original F168-1 review, physical tools/private sentinels/resolver/negative controls and runtime file inclusion. No independent build acceptance yet.
+- T168 runtime UI evidence retained; no standalone/runtime deployment, user DB migration, physical-device or listening completion claimed.
