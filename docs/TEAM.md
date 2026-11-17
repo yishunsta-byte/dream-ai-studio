@@ -1396,3 +1396,7 @@
 - User reports login failure and asks credentials/main UI. Master selectively read local DREAM_ALLOWED_EMAILS only: yishunsta@gmail.com; production equality not yet verified. App password is not available from Auth, DB/service credentials must never be given as login password.
 - T194 Design requested three main-only alternatives/comparison/desktop-mobile captures after T192 report finalization, new artifact paths only, no product/deployment changes.
 - T195 Front requested safe production login/config/account diagnosis and user reset instructions, no actual password/mail/account mutations without further scope. CloudPending versus failed login must be distinguished.
+### T193 Auth resolver independent acceptance
+
+- msg_a101f4b2410f report read. be59435 actual SDK/Next RSC and handler one internal lookup, concurrent A/B UUID/email isolation, HTTP reevaluation, error/body/no-store and T186 regression pass.20+157/lint/type/build and client sentinel checks independently verified.
+- Master accepts fixed resolver contract. Backend informed; B4-I adapter and B4-R service review remain separate, managed/cloud API still not opened. T195 real login diagnosis and T194 main options continue independently.
