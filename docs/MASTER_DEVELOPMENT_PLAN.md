@@ -104,7 +104,7 @@ P0/P1과 P2 타임라인·편집·영상/오디오 렌더·SRT/VTT·원본 재�
 - T209 F209-1 탭 간 계정 표시 잔류 FAIL: Front T213 수정 중, 배포 전 독립 재검수 필요. T214 오류 화면 h1 보완은 그 뒤 순차 수행.
 - T208 새 멀티미디어 3안 제출·Master PC/모바일 시각 확인. 사용자 선택·제품 적용 미완료.
 
-### 현재 실행 기준 — 2026-11-17 22:33:04 +09:00
+### 현재 실행 기준 — 2026-11-18 02:00 +09:00
 | 작업 | 현재 상태 | 다음 완료 조건 |
 |---|---|---|
 | T224/T225 세션·입력·탐색 경계 | 독립 검수 수용, 8ffe3c75 운영 서빙 보고 | Master 원격 SHA와 익명 HTTPS 확인, 실로그인 후 동작은 미검증 |
@@ -113,10 +113,13 @@ P0/P1과 P2 타임라인·편집·영상/오디오 렌더·SRT/VTT·원본 재�
 | B16-FIX/B16-R2 | 수정 설계 독립 수용 | 구현 단계별 검수 필요 |
 | B19/B19-FIX4 | 독립 B19-R5 수용: 고정 d9d438a의 지정 순수 프로토콜 | 보수적 이력 검증 모델이며 실제 DB 영속·락·권한·운영 준비 검증은 별도 |
 | B20 SQL4 draft / FIX2 | 고정9d38899 독립 R3 PASS 수용 | 원104+독립6PASS. 선택DDL관계 범위만 수용, 현v1 manifest/운영 미적용 |
-| B21 버전 이관 계약 | 796cc50 설계 문서 ready_review, Master 원문 확인 | v1 SQL3 계약 보존·별도 v2 제안. B20 수정 후 SQL4 해시 갱신 및 검토 필요. 실행기 구현·운영 이관 미배정 |
+| B21 버전 이관 계약 | 수용 SQL4 참조 갱신, B22/B23 로컬 구현 검수 수용 | v1 SQL3 계약 보존, 실제 managed 이관은 미배정 |
+| B22 source/catalog | f5d009e 독립 R2 PASS 수용 | SELECT-only·PG18.7 synthetic 한정, principal 충돌 수정 수용 |
+| B23 v2 runner | ea5a477 독립 PASS 수용 | 원자 이관·경쟁·unknown outcome synthetic 검증, 운영 적용 미승인 |
+| B24 v2 CLI | Backend running, 첫56PASS 보고(순수42+실제child14) | 출력 projection·env snapshot 추가검증→고정본 제출→기존 Tester 독립검수 |
 | 운영/비용 | SSL DEC-SSL-01 미답변, Supabase Free50MB·2GiB 미충족, 구매 없음 | 실제 운영 변경·비용은 별도 결정. 무료 격리 개발 계속 |
 | 디자인 T208 | 새 멀티미디어3안 제출·PC/모바일 시각 확인 | 사용자 선택·제품 적용 미완료 |
 
-턴 밖 30분 예약은 현재 Master 기존 대화에 메시지만 전송한다. 별도 Codex 자동화는 중지했으며 새 Codex 창을 만들지 않는다. 실행 중5분/수신이벤트 점검과 마지막확인 기록은 AI_TEAM_RULES v1.3 및 TEAM.md를 따른다. 배포 후보/구현 수용을 실제 클라우드 전체 개통으로 표시하지 않는다.
+턴 밖 30분 예약은 현재 Master 기존 대화에 메시지만 전송한다. 별도 Codex 자동화는 중지했으며 새 Codex 창을 만들지 않는다. 실행 중5분/수신이벤트 점검과 마지막확인 기록은 AI_TEAM_RULES v1.4 및 TEAM.md를 따른다. 배포 후보/구현 수용을 실제 클라우드 전체 개통으로 표시하지 않는다.
 
-현재 B22: 고정f5d009e source/catalog SELECT-only 기반 독립R2 PASS 수용(8b5237d). 원88·기존독립20·추가25 통과, 원표식충돌6변형 해소; 운영/apply 수용 아님. B23 고정ea5a477은 독립192f0a6 PASS 수용(원66·추가29, synthetic 한정). 후속 B24 별도 v2 CLI 신규4파일을 Backend가 수신·수락, 명시schema/target/action 승인값·비밀출력차단·실제childprocess 검증 구현 예정. 기존v1/SQL/target/state/runtime/CLI 불변, managed·운영 적용은 미배정.
+현재 B22: 고정f5d009e source/catalog SELECT-only 기반 독립R2 PASS 수용(8b5237d). 원88·기존독립20·추가25 통과, 원표식충돌6변형 해소; 운영/apply 수용 아님. B23 고정ea5a477은 독립192f0a6 PASS 수용(원66·추가29, synthetic 한정). 후속 B24 별도 v2 CLI 신규4파일을 Backend가 수신·수락, 명시schema/target/action 승인값·비밀출력차단·실제childprocess 첫56PASS 보고, 출력projection/env snapshot 추가검증 중. 기존v1/SQL/target/state/runtime/CLI 불변, managed·운영 적용은 미배정.
