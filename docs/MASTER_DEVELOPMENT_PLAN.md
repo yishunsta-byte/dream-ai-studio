@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 06:41 KST): B33-FIX2 5f97f00는R3 2afbc3e로CODE/UNIT/FAULT PASS수용(원3결함폐쇄·실DB미증명). Backend B34가실제service/createPool/pgdriver를새소유PG18.7/fullSQL1~5에서normalnative검증하는2파일범위를수락했다. 원SQL/fuse/기존코드불변·실운영provenance/route/env/registry/managed활성화없음, 첫native불일치시수정없이반환. T239타입기반수용·FrontT238준비수용/사용자직접push전. 이최신판정이아래과거상태보다우선한다.
+최신 판정(2026-11-18 07:02 KST): B33 code/unit/fault수용후B34 3749241 실제service/createPool/pg normalnative는독립862e2fb PASS수용. Backend B35 실제COMMIT응답유실·primarydurable관측/동일key명시reconcile의한scenario를소유PG18.7/TCPproxy로검증하도록2파일배정(수신미확인). 원코드/SQL/fuse·환경/registry/runtime/managed불변·scratch파생한정. 운영activation/AuthB3/evolved/descriptor/provenance/budgets는후속gate. FrontT238준비수용·사용자직접push전. 이최신판정이아래과거상태보다우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
