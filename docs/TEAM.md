@@ -1287,3 +1287,9 @@
 - msg_022fbff58f8a: report read/imported. Independent48+3/lint/type confirms late same-size/mtime mutation rejected, orphan/foreign preservation, DB retry and normal restore. Master accepts T166 bounded correction with T163 inherited writer evidence; trust/ABA limits retained.
 - msg_053094ef576f /3dadf45: T164 UI ready_review. Author22 actual viewport/state combinations, real requests/download/retry/409; tested older writer snapshot, so no current integrated UI PASS claimed.
 - T168 requested current UI+4838017 snapshot actual app/worker/file/error/keyboard/390 validation, report only. Existing untracked user reports preserved. No user DB/deployment changes.
+### T168 runtime UI pass; F168-1 build tracing blocks acceptance
+
+- msg_5b1d6de59e1a report read/imported. Related29+actual worker1/lint/type,17 viewport/state observations and real download/409/late failure/retry pass. UI runtime bounded evidence accepted separately from deployment readiness.
+- F168-1: physical ffmpeg/probe appear40 times in20 production traces, verify-build exit1. No claim UI caused this preexisting/configuration interaction.
+- T169 priority real tracing/exclusion fix requested, verification must remain enabled and cannot whitelist leaked native/data. Isolated Windows builds with physical tools/external runtime root required; shared3013/.next protected.
+- Full build acceptance withheld. Reviewer server/browser ended; auto-review blocked APP deletion, retained artifacts documented without bypass. User DB/deployment unchanged.
