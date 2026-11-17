@@ -30,10 +30,11 @@
 @media(max-width:1023px) { .shell { display:block; } .desktop { display:none; } .menuButton { display:grid; } .topbar { padding-inline:var(--sp-4); } }
 @media(max-width:639px) {
   /* Reserve one full row for the menu and title; status controls use the next row. */
-  .withHeaderStatus { --topbar-h:calc(var(--touch-min) * 2 + var(--sp-2) * 3); }
   .topbar { display:grid; grid-template-columns:var(--touch-min) minmax(0,1fr); gap:var(--sp-2) var(--sp-3); min-height:var(--touch-min); }
   .crumbRoot { display:none; }
   .headerStatus { grid-column:1 / -1; width:100%; max-width:none; min-height:var(--touch-min); }
+  .headerStatus > div { flex-wrap:wrap; max-width:100%; }
+  .headerStatus [role="alert"] { position:static; flex-basis:100%; max-width:100%; }
 }
 .queueCount { display:inline-flex; align-items:center; min-height:var(--touch-min); font-size:var(--text-sm); color:var(--fg-link); white-space:nowrap; }
 .queueNumbers { display:inline-flex; gap:var(--sp-2); margin-left:auto; color:var(--c-mint-200); }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { MenuConfig } from "@/lib/menus/schema";
 import { Icon, type IconName } from "./ui/Icon";
 import { PhaseChip, StatusPill } from "./ui/primitives";
@@ -20,6 +20,18 @@ export function StudioShell({ navigation, sampleMode, account = null, children }
   const pathname = usePathname();
   const drawer = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const header = useRef<HTMLElement>(null);
+  const main = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const bar=header.current,container=main.current;
+    if(!bar||!container)return;
+    // This variable changes scroll clearance only, never the header's own minimum height.
+    const measure=()=>container.style.setProperty("--studio-header-height",`${bar.getBoundingClientRect().height}px`);
+    measure();
+    const observer=new ResizeObserver(measure);
+    observer.observe(bar);
+    return()=>{observer.disconnect();container.style.removeProperty("--studio-header-height");};
+  },[]);
   const [open, setOpen] = useState(false);
   const [breadcrumb,setBreadcrumb]=useState<BreadcrumbValue>(null);
   const [counts,setCounts]=useState<{running:number;queued:number;failed:number}|null>(null);
@@ -54,6 +66,6 @@ export function StudioShell({ navigation, sampleMode, account = null, children }
       if (event.shiftKey && document.activeElement === items[0]) { event.preventDefault(); items.at(-1)?.focus(); }
       else if (!event.shiftKey && document.activeElement === items.at(-1)) { event.preventDefault(); items[0]?.focus(); }
     }}><div className={styles.drawerInner}><button type="button" aria-label="메뉴 닫기" className={styles.closeButton} onClick={close}><Icon name="close" /></button>{links}</div></dialog>
-    <div className={`${styles.main} ${hasHeaderStatus ? styles.withHeaderStatus : ""}`}><header className={styles.topbar}><button type="button" ref={trigger} className={styles.menuButton} aria-label="메뉴 열기" aria-expanded={open} onClick={() => { drawer.current?.showModal(); setOpen(true); }}><Icon name="menu" /></button><div className={styles.crumb}><span className={styles.crumbRoot}>{breadcrumb?.parent??"작업실"} / </span><strong title={title}>{title}</strong></div>{hasHeaderStatus&&<div className={styles.headerStatus} role="group" aria-label="작업 상태와 계정">{counts&&counts.running+counts.queued>0&&<Link href="/jobs" className={styles.queueCount}>진행 {counts.running} · 대기 {counts.queued}</Link>}{sampleMode && <StatusPill status="sample">샘플 모드</StatusPill>}{account && <AccountMenu email={account} />}</div>}</header><main id="main-content" tabIndex={-1} className="content">{children}</main></div>
+    <div ref={main} className={styles.main}><header ref={header} className={styles.topbar}><button type="button" ref={trigger} className={styles.menuButton} aria-label="메뉴 열기" aria-expanded={open} onClick={() => { drawer.current?.showModal(); setOpen(true); }}><Icon name="menu" /></button><div className={styles.crumb}><span className={styles.crumbRoot}>{breadcrumb?.parent??"작업실"} / </span><strong title={title}>{title}</strong></div>{hasHeaderStatus&&<div className={styles.headerStatus} role="group" aria-label="작업 상태와 계정">{counts&&counts.running+counts.queued>0&&<Link href="/jobs" className={styles.queueCount}>진행 {counts.running} · 대기 {counts.queued}</Link>}{sampleMode && <StatusPill status="sample">샘플 모드</StatusPill>}{account && <AccountMenu email={account} />}</div>}</header><main id="main-content" tabIndex={-1} className="content">{children}</main></div>
   </div></BreadcrumbContext.Provider>;
 }
