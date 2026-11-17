@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 04:36 KST): B28 지정9그룹 및 B29 84fb3bb의3종native경합은 독립검수 PASS 수용. Backend B30은 native UUID180·wire/canonical/client 입력 경계·정확epoch3timezone/대표entryCOMMIT 검증을 수락했다. 원SQL/fuse·기존harness·registry/runtime/managed불변, 본인소유PG18.7 scratch파생실행만과제한정허용. Front T238 준비수용·사용자직접push전. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 04:54 KST): B28指定9그룹/B29경합3종/B30 ee709a6의317층별native 검증은 독립PASS 수용. Backend B31이 실제 만료·정책epoch/body 전환 후 원history replay/새권한·중복쓰기없음·변경client/owner/stale신규거부 검증을 수락했다. 원SQL/fuse·기존harness·registry/runtime/managed불변, ownPG18.7 scratch파생실행만과제한정허용. Front T238 준비수용·사용자직접push전. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
