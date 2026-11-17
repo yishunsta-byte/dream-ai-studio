@@ -1660,3 +1660,9 @@
 - T222 fb7698b: t164 2FAIL은고정claim12:00Z와실request Date혼용. 고정371d5cc와이전661cfe1 모두실제/미래2FAIL5PASS,과거7PASS·단독재현. 이두실패에대한T220회귀근거없음판정수용,다른관측문서이동원인은여전히미확인.
 - T223 Front에t164한파일Date-only시간축/첫cleanup복원수정배정. 실제/과거/미래7PASS·기존관련ZIP/backup·깨끗한고정사본전체1회/lint/type,제품/기대값/fixture불변. 유사혼용읽기감사후후보만보고,타파일수정미허용.
 - T221세션재검수·B14-R독립검수·B15연결개발유지. DEC-SSL-01미수신·운영변경금지,턴 밖 자동 점검 미설정.
+
+### 점검 / B14-R 로컬 private reader 수용
+- 마지막 확인 시각: 2026-11-17 21:19:44 +09:00 (Asia/Seoul). worker_done·B14-R원문/최근handoffs/Git확인. 신규검수수신,Backend B15/Front T223미커밋파일기존배정으로보호,기존T122/T137보존. 새미기록완료보고없음.
+- ed129105 고정ba3ad446 신뢰privateRoot경계의로컬Storage reader계약독립PASS수용. 원fakeHTTP46/focused97중복/추가15·원tsconfig typegen/tsc/lint PASS. 정확GET/redirect·ownerMIMEkey network0·byte/hash/실decode·abort/timeout/noqueue/disposal·TOCTOU snapshot검증.
+- junction대조의cleanup외부삭제거부는확인,동일OS주체가privateRoot를변조할때외부쓰기전체방지sandbox아님. privateRoot접근제어·로컬OS신뢰전제유지. service_role RLS우회와privatebucketpoint-in-time·실upload/RLS/DB등록/운영readiness미완료분리.
+- Backend수용전달/B15진행유지,Tester T221현재검증단계·차단여부를다음작업경계에서요청(실행중단/추가범위없음). Front T223실패시계수정기존배정유지. DEC-SSL-01미수신·운영변경보류,턴 밖 자동 점검 미설정.
