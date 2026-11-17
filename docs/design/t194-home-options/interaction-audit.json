@@ -1,0 +1,380 @@
+[
+  {
+    "design": "desk",
+    "name": "new dialog focus",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "reverse focus trap",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "forward focus trap",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "new flow is safely escaped + unsaved",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "Esc closes and restores focus",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "project anchor keyboard",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "resume is an unconnected preview",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "loading has no pretend count and explains disabled action",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "empty first project opens preview",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "read error differs from empty",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "retry is clearly simulated",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "offline is not process exit or completed render",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "guest login never asks for credentials",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "cloud only previews, no create action",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "cloud tour preserves readiness boundary",
+    "passed": true
+  },
+  {
+    "design": "desk",
+    "name": "file-only resources, no password field",
+    "passed": true,
+    "detail": {
+      "entries": [],
+      "controls": 0
+    }
+  },
+  {
+    "design": "desk",
+    "name": "core text contrast >= 4.5",
+    "passed": true,
+    "detail": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 12.548560356803472
+      },
+      {
+        "fg": "ink",
+        "bg": "surface",
+        "ratio": 13.51859560355816
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 5.400381676512385
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 5.8178447498206305
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 5.9812645605081185
+      },
+      {
+        "fg": "on",
+        "bg": "accent",
+        "ratio": 6.443631340352458
+      },
+      {
+        "fg": "warning",
+        "bg": "warning-bg",
+        "ratio": 6.050901210400064
+      }
+    ]
+  },
+  {
+    "design": "deck",
+    "name": "new dialog focus",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "reverse focus trap",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "forward focus trap",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "new flow is safely escaped + unsaved",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "Esc closes and restores focus",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "project anchor keyboard",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "resume is an unconnected preview",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "loading has no pretend count and explains disabled action",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "empty first project opens preview",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "read error differs from empty",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "retry is clearly simulated",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "offline is not process exit or completed render",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "guest login never asks for credentials",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "cloud only previews, no create action",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "cloud tour preserves readiness boundary",
+    "passed": true
+  },
+  {
+    "design": "deck",
+    "name": "file-only resources, no password field",
+    "passed": true,
+    "detail": {
+      "entries": [],
+      "controls": 0
+    }
+  },
+  {
+    "design": "deck",
+    "name": "core text contrast >= 4.5",
+    "passed": true,
+    "detail": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 15.974751434476829
+      },
+      {
+        "fg": "ink",
+        "bg": "surface",
+        "ratio": 13.52554560456703
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 9.76708350763301
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 8.269620591466262
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 13.442794747494938
+      },
+      {
+        "fg": "on",
+        "bg": "accent",
+        "ratio": 11.95812999074927
+      },
+      {
+        "fg": "warning",
+        "bg": "warning-bg",
+        "ratio": 9.707195073475576
+      }
+    ]
+  },
+  {
+    "design": "story",
+    "name": "new dialog focus",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "reverse focus trap",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "forward focus trap",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "new flow is safely escaped + unsaved",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "Esc closes and restores focus",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "project anchor keyboard",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "resume is an unconnected preview",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "loading has no pretend count and explains disabled action",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "empty first project opens preview",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "read error differs from empty",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "retry is clearly simulated",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "offline is not process exit or completed render",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "guest login never asks for credentials",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "cloud only previews, no create action",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "cloud tour preserves readiness boundary",
+    "passed": true
+  },
+  {
+    "design": "story",
+    "name": "file-only resources, no password field",
+    "passed": true,
+    "detail": {
+      "entries": [],
+      "controls": 0
+    }
+  },
+  {
+    "design": "story",
+    "name": "core text contrast >= 4.5",
+    "passed": true,
+    "detail": [
+      {
+        "fg": "ink",
+        "bg": "bg",
+        "ratio": 12.393466072291492
+      },
+      {
+        "fg": "ink",
+        "bg": "surface",
+        "ratio": 13.715846318078613
+      },
+      {
+        "fg": "muted",
+        "bg": "bg",
+        "ratio": 5.05931629664229
+      },
+      {
+        "fg": "muted",
+        "bg": "surface",
+        "ratio": 5.599144290590362
+      },
+      {
+        "fg": "accent",
+        "bg": "bg",
+        "ratio": 6.207085507927432
+      },
+      {
+        "fg": "on",
+        "bg": "accent",
+        "ratio": 6.983249075593058
+      },
+      {
+        "fg": "warning",
+        "bg": "warning-bg",
+        "ratio": 6.050901210400064
+      }
+    ]
+  }
+]

@@ -1,0 +1,40 @@
+[
+  {
+    "name": "comparison 1280",
+    "passed": true,
+    "overflow": 0,
+    "broken": 0,
+    "minTarget": 44
+  },
+  {
+    "name": "comparison 390",
+    "passed": true,
+    "overflow": 0,
+    "broken": 0,
+    "minTarget": 44
+  },
+  {
+    "name": "open-desk primary comparison link + dialog",
+    "passed": true
+  },
+  {
+    "name": "open-desk cloud link",
+    "passed": true
+  },
+  {
+    "name": "production-deck primary comparison link + dialog",
+    "passed": true
+  },
+  {
+    "name": "production-deck cloud link",
+    "passed": true
+  },
+  {
+    "name": "story-table primary comparison link + dialog",
+    "passed": true
+  },
+  {
+    "name": "story-table cloud link",
+    "passed": true
+  }
+]
