@@ -1647,3 +1647,10 @@
 - Backend B14진행중,기존B12 asset DTO에는ownerId/MIME없음보고. 현재B14 OwnedStorageAsset는필수owner/MIME로독립구현계속,검수된B12수정미배정. 실제연결미완료를명시하고추정owner/kind→MIME/타입assert/항상true우회금지지시.
 - B15후속후보는owner-filtered실DB row의owner_id/MIME메타데이터반환과신뢰서버연결의좁은변경으로예약만. 현재착수미배정,B14고정SHA/검수뒤정확범위재배정예정. service/policy검증과실Storage/개통구분유지.
 - Front T220우선계속,운영SSL DEC미수신·설정변경보류. 턴 밖 자동 점검 미설정.
+
+### 점검 / T220·B14 제출·정정 및 독립 검수·후속 배정
+- 마지막 확인 시각: 2026-11-17 21:10:56 +09:00 (Asia/Seoul). 사용자wake3건의check처리·Git/최근handoffs대조. 첫목록에서메시지전B14신규인계발견해확인했고후속실보고와대조. T220보고서미추적상태는ec91a55단독커밋정정으로해소확인(제품371d5cc). 기존T122/T137보존,타indexlock삭제/우회없음.
+- T220 371d5cc ready_review,공통SessionBoundary+보호본문hidden/inert·확정DOM제거·중복감시제거. 작성자14/관련423/HTTP14,전체2FAIL(1352PASS/84skip)은t164미import만으로기존비회귀확정못함. T221원Tester에세원재현/경합/키보드·본문inventory 독립재검수배정. Front는session수정보류후T222두실패원로그/고정부모대조원인진단만배정.
+- B14 ba3ad44 ready_review원문확인. 작성자fakeHTTP실SDK46/focused97/lint/roottsc통과,실Storage/서비스Role RLS우회·DTO미연결한계명시. B14-R재개 ctx_045375862e3d/task_056b8e361bd5 ready,고정byte/owner/secret/redirect/stream/abort/temp경계독립검수. 실제managed/storage쓰기없음.
+- B15 Backend메타데이터연결이제배정:owner-filtered실DB owner_id/MIME반환·최소additiveDTO·새trustedadapter·실합성PG+fakeHTTP검증. B14검수대상변경금지,설정/Storage/업로드/API쓰기개통미배정. B14결함나오면통합수용보류·우선재조정.
+- DEC-SSL-01미수신·운영변경보류. 턴 밖 자동 점검 미설정. 이번진행은수신이벤트처리,독립worker시작후wake절차준수.
