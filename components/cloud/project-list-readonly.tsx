@@ -25,8 +25,13 @@ export function ProjectListReadonly({ projects }: { projects: readonly CloudProj
   </>;
 }
 
-export function CloudReadUnavailable({ retryHref }: { retryHref: string }) {
-  return <Callout tone="warning" title="프로젝트를 불러오지 못했어요">잠시 뒤 다시 시도해 주세요. <Link href={retryHref}>다시 시도</Link></Callout>;
+// 불러오기 실패 화면도 정상 화면과 같은 페이지 제목(h1) 하나를 둔다(T-214). 안내 문구·다시 시도 링크는 그대로다.
+export function CloudReadUnavailable({ retryHref, title, back = false }: { retryHref: string; title: string; back?: boolean }) {
+  return <>
+    {back && <p><Link href="/cloud/projects">← 내 프로젝트</Link></p>}
+    <PageHeader title={title} description={<CloudReadOnlyNote />} />
+    <Callout tone="warning" title="프로젝트를 불러오지 못했어요">잠시 뒤 다시 시도해 주세요. <Link href={retryHref}>다시 시도</Link></Callout>
+  </>;
 }
 
 export function CloudReadLocal() {

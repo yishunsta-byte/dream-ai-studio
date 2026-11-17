@@ -186,6 +186,24 @@ describe("확인된 계정: adapter(요청마다 새로, resolveAuth=getRenderAu
       expect(markup).not.toMatch(/postgres|DATABASE_URL|SQL|stack/i);
     }
   });
+  it("모든 상태의 페이지 제목(h1)은 정확히 하나(T-214): 목록 정상·빈·불러오기 오류, 단건 정상·불러오기 오류", async () => {
+    const h1 = (markup: string) => [...markup.matchAll(/<h1[^>]*>(.*?)<\/h1>/g)].map((match) => match[1]);
+    signedIn(); state.list.mockResolvedValue(ok([row]));
+    expect(h1(html(await listPage()))).toEqual(["내 프로젝트"]);
+    signedIn(); state.list.mockResolvedValue(ok([]));
+    expect(h1(html(await listPage()))).toEqual(["내 프로젝트"]);
+    signedIn(); state.list.mockResolvedValue(fail(503, "PROJECT_READ_UNAVAILABLE"));
+    const listError = html(await listPage());
+    expect(h1(listError)).toEqual(["내 프로젝트"]);
+    expect(listError).not.toContain("아직 클라우드에 옮긴 프로젝트가 없어요");
+    expect(listError).toContain("프로젝트를 불러오지 못했어요");
+    signedIn(); state.get.mockResolvedValue(ok(detail));
+    expect(h1(html(await detailPage(Promise.resolve({ id: PA }))))).toEqual([detail.project.title]);
+    signedIn(); state.get.mockResolvedValue(fail(503, "PROJECT_READ_UNAVAILABLE"));
+    const detailError = html(await detailPage(Promise.resolve({ id: PA })));
+    expect(h1(detailError)).toEqual(["프로젝트 보기"]);
+    expect([...detailError.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/cloud/projects", "/cloud/projects"]);
+  });
   it.each([["AUTH_REQUIRED", 401, "/login?next=%2Fcloud%2Fprojects"], ["AUTH_FORBIDDEN", 403, "/login?error=forbidden"], ["AUTH_UNAVAILABLE", 503, "/login?error=unavailable"]])("adapter가 %s를 돌려주면 로그인 이동", async (code, status, to) => {
     signedIn(); state.list.mockResolvedValue(fail(status, code));
     expect((await settle(listPage)).error?.to).toBe(to);

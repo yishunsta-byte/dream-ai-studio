@@ -187,7 +187,7 @@ try {
   }
   await admin.query("UPDATE dream.projects SET template_snapshot_json='{}' WHERE id=$1", [PB]);
   const corruptList = await request("/cloud/projects", jars.B), corruptDetail = await request(`/cloud/projects/${PB}`, jars.B);
-  for (const reply of [corruptList, corruptDetail]) { assert.equal(reply.status, 200); assert(reply.text.includes("프로젝트를 불러오지 못했어요")); assert(!/DATABASE_URL|dream\.projects/i.test(reply.text)); }
+  for (const reply of [corruptList, corruptDetail]) { assert.equal(reply.status, 200); assert(reply.text.includes("프로젝트를 불러오지 못했어요")); assert.equal((reply.text.match(/<h1[\s>]/g) ?? []).length, 1, "T-214: 불러오기 오류 화면도 h1 하나"); assert(!/DATABASE_URL|dream\.projects/i.test(reply.text)); }
   await admin.query("UPDATE dream.projects SET template_snapshot_json=$2 WHERE id=$1", [PB, snapshot]);
   const recovered = await request(`/cloud/projects/${PB}`, jars.B); assert.equal(recovered.status, 200); assert(recovered.text.includes(titles[PB]));
   observations.push({ name: "corrupt-snapshot-then-recover", list: summary(corruptList), detail: summary(corruptDetail), recovered: summary(recovered) });

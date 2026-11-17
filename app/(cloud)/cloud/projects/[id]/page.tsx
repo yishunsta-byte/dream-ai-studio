@@ -12,6 +12,6 @@ export default async function CloudProjectPage({ params }: { params: Promise<{ i
   if (result.kind === "local") return <CloudReadLocal />;
   // 형식 오류·없음·남의 것·보관을 같은 404로 보인다.
   if (result.kind === "notFound") notFound();
-  if (result.kind !== "ok") return <CloudReadUnavailable retryHref="/cloud/projects" />;
+  if (result.kind !== "ok") return <CloudReadUnavailable retryHref="/cloud/projects" title="프로젝트 보기" back />;
   return <ProjectDetailReadonly project={result.data} />;
 }
