@@ -2104,3 +2104,9 @@
 - 기존필수수정처리유지: ec1609e 목록fix는작성자검증후재수용전, FrontT235 commonfocus좁은수정WIP. T234 FAIL은구현범위를위임한작업완료보고로수신하되제품수용done으로올리지 않음.
 - B25-R 후속기존배정에따라 Tester msg_72ccd5753e1c로원서버/브라우저종료후고정da0f740 읽기·새소유archive 실제착수. 현재활성검수B25하나·browser미사용, T235후보도착시suite안전경계우선조정. BackendB26수락후신규파일/완료메시지는아직미확인하여 msg_834dcf1605ec 실제근거/선택지·차단·문서반환경계회신요청. 지연을유휴/종료로추정하거나대체worker생성안함.
 - Design3안정적수용·방향비교제공상태/Front수정/Backend문서준비/Testercodec 병행. current session-boundary WIP는Front허용점유로보호, T122/T137보존. 새Codex창agentworktree/운영배포/비밀조회없음.
+### 점검 / B26 실제 계약 공백·T235 제품 commit 발견
+- 실제 점검 완료 시각: 2026-11-18 03:06:04 +09:00 (Asia/Seoul). 지정wake msg_7a504c117b08·Git/최근handoffs·미기록ebe84ea3파일stat/공통focus10행diff확인. Front검증최종인계아직없음, commit발견만으로ready_review/독립PASS선언안함. 기존T122/T137보존.
+- Backend B26은실제근거B3/SQL3·4/B16/B19/B25를읽었으나문서파일미작성이라고명시. 5공백확인보고: api권한없음·policy본문없음·serverfingerprint로client재시도판별대체불가·evolvedrow pristine replay불가·B3 PG_TRANSACTION의COMMIT결과구분없음. 외부차단없음, 단일문서마무리예정. 이를문서완료/최소권한구현완료로표현안함.
+- Master msg_9d2dbe6b156d로정확SQL5 role/function/RLS/grantdelta·actor위조/고정search_path·idempotentledger/원snapshot/evolvedrow/unknownCOMMIT관찰계획·실PGmatrix를근거와함께문서화지시. definerowner가FORCERLS우회가능하다고가정금지·관리clientruntime우회금지. 추천을실role/SECDEF새SQL구현승인으로취급안함, 독립설계검토후구현범위별도.
+- T235 ebe84ea는원focusactualelement를hidden진입시보존하고동일복귀시viewport밖target최소scroll이동 추가source확인. 실제원인/성공은아직Front최종browser근거미수신으로미확인. 기존Auth판정/usewatch/권한/API불변범위유지, source를정적검토한것과nativebrowser실행구분.
+- 현재Tester B25-R 단일활성검수·Frontfocus고정최종대기·Backend B26문서·Design3안반환완료. 새창agentworktree/운영변경없음, 원T234FAIL2/기존정적시안수용경계유지.
