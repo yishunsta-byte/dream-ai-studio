@@ -1984,3 +1984,9 @@
 - 마지막 확인 시각: 2026-11-18 01:22:26 +09:00 (Asia/Seoul). 지정 wake msg_008e0734138e/msg_78106a904ff5·R2최종8b5237d 원문/최근handoffs/Git 확인. 고정f5d009e 원88PASS·기존독립20byte동일20PASS·추가25PASS, 원6wrongowner/ACL은STATE/historyReadfalse·정상marker이름owner허용. 원1015blob/statehash/reference 의미slot감사/type/lint·소유4cluster정리 보고와지정범위대조. original FAIL b4d9d4f 보존. SELECT-only foundation 한정독립PASS 수용, 수량중복합산/완전공간증명/실환경수용으로확대안함.
 - Backend B23 실제전송 msg_4208bcd7e860→msg_78106a904ff5 수신·신규4파일범위 수락확인. B23 runner-v2/test/ownedPG runner/고유인계만, B21 closed3/4·target+manifestbinding/기존TLSprofile/ownedpool·공유lock후재inspection·fresh/upgrade원자성·zeroapply/unknown거부·ambiguousCOMMIT/lifecycle·실2client경쟁검증. 기존target/state/manifest/SQL1~4/v1/runtime/CLI/package불변, 변경필요시조정. managed/운영/새창agent금지.
 - Tester에 msg_236a83446bbb 최종수용통지 실제전송, 현재배정완료·후속고정본전대기. 새작업검수 아직미배정. 기존T122/T137 보존, 기록누락완료보고없음. 사용자 추가결정없이 승인된로컬구현계속, 배포/SSL/Storage/과금게이트불변·현재Master 메시지전용30분예약유지.
+### OPS-MASTER-1.4 / 사용자 정기 점검·작업 지휘 전문 반영
+- 실제 점검 완료 시각: 2026-11-18 01:29:35 +09:00 (Asia/Seoul). Master 직접작업 범위 AI_TEAM_RULES.md/docs/team/CODEX_MASTER.md/docs/TEAM.md. 두지침·현재Git/점유·예약작업과별도자동화상태만확인했으며 이번문서갱신에서 전체제품/모든잔여기능을재검증한것아님. B23 신규runner/handoff/ownedrunner WIP와기존 T122/T137 보호.
+- 공통v1.4에 사용자5개항목 적용: 실제점검기준5분/도구후첫안전시점이벤트, 기존대화30분알림만·신규Codex창/agent/worktree금지, 등록/전송/수신/실점검단계구분·실패기록, 전체및카테고리잔여/선행/우선/미배포·세션점유/검수/사람조치·미등록신규수정handoff/결과·타세션사용자직접지시충돌확인. 근거대조판정·단일책임/범위/완료조건/검증담당후속배정·차단사유/해소담당/재개조건·중복대기작업금지. 마지막변경중심/기록시각대체금지.
+- 맥미니Tester=동작테스트·검수·디버깅, 빌드·배포=메인PC 담당자로명시. 실제Mac연결/동기화미확인이므로 기존Windows Tester handle을Mac으로추정재등록하지 않음. 장비별경계통지·충돌시보고요청. 자잘한수정은모아검증후한번배포, 기존운영/비용/권한게이트불변.
+- 예약재확인: Windows Reminder Ready/PT30M·hidden send 기존run만, last01:00:01 result0/next01:30. 별도Codex070fa0ae enabledfalse, 추가창/agent/worktree 생성없음. 이번에새예약시험/메시지수신성공을주장하지않고 이전시험/정규수신기록과현재설정확인을구분.
+- Backend/Front/Design/Tester 네기존terminal에 v1.4 실제통지영수증확보, terminal-only비영구경고·각세션읽음/수락은아직미확인. B23 기존배정계속·Tester다음고정후보대기·중복작업미배정. 지침diff-check통과·새사용자결정요청없음.
