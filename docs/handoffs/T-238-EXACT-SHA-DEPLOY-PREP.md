@@ -83,12 +83,13 @@
   ! git push origin ebe84eae6611f5e11eedbe6e678c4a05506e0e7a:refs/heads/master
   ```
   - 기대 출력: `8ffe3c7..ebe84ea  ebe84eae… -> master`
-  - force가 아니에요. 원격이 8ffe3c7이 아니면 거절되니 멈추고 다시 확인해요.
+  - force가 아니에요.
+  - **정정(Master `msg_6ab5ec81657a`):** 일반 fast-forward push는 원격이 8ffe3c7이 아니어도 ebe84ea의 다른 조상이면 성공해요. 그래서 **실행 직전에** `git ls-remote origin refs/heads/master`가 정확히 `8ffe3c75b5eaa908ee000f574cf688dd65125378`인지 대조하고, 다르면 push하지 말고 멈춰서 Master에 알려요.
 
 ### push 뒤 확인(별도 배정 시)
 1. `git ls-remote origin refs/heads/master` = `ebe84ea…`
 2. Vercel `dream-ai-studio` 새 배포: Source `master ebe84ea`, Ready, Production Current
-   - 두 번째 프로젝트 `dream-ai-studio-kzxq`도 같은 push로 배포될 수 있어요(T-228). 상태만 읽어요.
+   - 두 번째 프로젝트 `dream-ai-studio-kzxq`는 사용자 직접 승인으로 삭제됐고 Master가 404를 확인했어요(`f8e8fc2` 이후). "같은 push로 재배포될 수 있다"던 T-228 내용은 과거 정보라 폐기해요.
 3. 공개 주소(`dream-ai-studio-orpin.vercel.app`), 로그인 없이
    - `/login` 200
    - `/`, `/cloud/projects`, `/cloud/manage` 307 → `/login?next=…`
@@ -97,9 +98,29 @@
 
 ## 6. 되돌리기
 - 직전 운영 배포는 **`3QDyZWKqj9ddY8Aw2ZXcCiyEeUEV`**(Source `master 8ffe3c7`, T-227/T-228)예요.
-- 문제가 생기면 Vercel에서 이 배포를 Promote(Instant Rollback)해요. 사용자 승인이 필요해요.
+- 문제가 생기면 Vercel에서 이 배포를 Promote(Instant Rollback)해요.
+  - **정정:** 기존 일반 배포·복구 승인 범위 안의 되돌리기라서 매번 새 사용자 승인이 필요한 것은 아니에요. 새 영향이나 권한이 생기는지만 확인해요.
+  - 자동 도구 권한 판정(제 세션의 실행 거절)은 별도 문제예요. 막히면 우회하지 않고 사용자 직접 실행으로 넘겨요.
 - git 되돌리기(force push)는 쓰지 않아요.
 - "Deployment Retention" 설정 때문에 오래된 배포가 지워질 수 있어요. 되돌리기 전에 그 배포가 남아 있는지 먼저 확인해요.
+
+### 되돌리기 대상 읽기 확인(2026-11-18, 기존 로그인 ego, 읽기 전용)
+- 방법: 주인님 브라우저에 이미 로그인된 Vercel 화면을 읽기만 했어요. 설정 변경·Promote·재배포는 하지 않았고, 환경변수 화면은 열지 않았어요.
+- 배포 상세 `3QDyZWKqj9ddY8Aw2ZXcCiyEeUEV`
+  - Status **Ready, Latest**
+  - Environment **Production, Current**
+  - Source `master 8ffe3c7`
+  - 도메인 `dream-ai-studio-orpin.vercel.app` 외
+- 운영 배포 목록: 8ffe3c7(Ready) → 4458283(Ready) → a278e80 → … → ac374c0이 모두 Ready로 남아 있어요.
+  - 목록 아래 문구: "Deployment Retention is enabled for this project — some deployments will be deleted after a set time period."
+- Settings › Security의 Recently Deleted Deployments
+  - "No recently deleted deployments were found."
+  - "Most deployments can be restored within 30 days of their initial deletion."
+- **미확인으로 남은 것**
+  - 보존 기간의 실제 값: 읽은 화면에 숫자가 보이지 않았어요. 다른 설정 화면은 더 열지 않았어요.
+  - Promote·Instant Rollback 메뉴가 실제로 활성인지: 메뉴를 열거나 누르지 않았어요.
+  - Hobby 요금제의 되돌리기 범위 제한: 공식 문서 기준 확인이 필요해요. 이번에 따로 검증하지 않았어요.
+  - 따라서 "지금 3QDy로 실제 되돌리기가 된다"는 직접 확인하지 않았어요. 확인된 것은 **배포가 남아 있고 Ready이며 삭제 기록이 없다**는 것까지예요.
 - DB·Storage·env 변경이 없어서 되돌릴 데이터 변경도 없어요.
 
 ## 보호
