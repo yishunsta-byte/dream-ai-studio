@@ -1498,3 +1498,8 @@
 ### T208 멀티미디어 새 시안 3안 등록
 - Design msg_6965c97748ef: 사용자가 담당자에게 직접 더 화려한 멀티미디어 스타일 새3안 요청했다고 보고. 기존T194 보존, docs/design/t194-multimedia-options/ 및 고유 T-208-MULTIMEDIA-HOME-OPTIONS.md 산출물로 범위 등록·계속 지시 전달.
 - 네온 플랫폼/컬러 탐색 갤러리/시네마 쇼케이스, 자체 생성 미디어의 실제산출물 및 양폭/키보드 검증 제출. 제품/cloud/Auth/DB/공용.next/3013/배포 변경 미허용. 새시안 요청을 제품선택·배포 완료로 확대하지 않음.
+
+### T205 독립 수용 / T209 브라우저 전환 검수
+- T205 8263cb7 원문 확인, 기준1c36974 시험 시계/cleanup 수정 지정 범위 수용. Date fake/set/real 3문 이외 AST토큰·assertion·제품·fixture 동일, s9 hash 보존. 독립 원14 PASS, 실제/미래각14+cleanup예외2 PASS·복원16/16. 원본미래13 FAIL/1 PASS 대조와원본과거14 PASS 확인.
+- 작성자 전체1177 PASS/53 skip은 독립결과와 합산하지 않음. 과거단발1실패는 원로그/실패명 미보존으로 원인미확인 유지, 소급해결 선언하지 않음.
+- Tester 다음 T209 배정: 고정1c36974 합성Auth에서 실제브라우저 client navigation/prefetch/back-forward/세션만료·로그아웃/계정잔상과private저장소차단 검증. 제품 수정 미배정, 도구없으면 미검증으로 반환. T207/B5/3013/.next 보호. 고유 T-209-BROWSER-SESSION-REVIEW.md. 전달완료, 수락/결과는 후속확인.
