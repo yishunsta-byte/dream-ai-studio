@@ -1332,3 +1332,8 @@
 - Backend session term_c931d897-df7e-4d39-a3d0-9bc3a8fe88f0 B1 accepted inspection. Tester term_410f8ff2-8498-4f5c-a984-2f7152153727 T185 accepted isolated a278e80 review.
 - Master found separate Postgres SQL/API guard commits not integrated. Integrated locally as87723ba/0daab31/d167550. No managed SQL application/push/deployment performed.
 - Master combined auth tests142:129 PASS/13 FAIL due newly added auth routes versus older blanket protected-route enumeration. Typecheck exit0. B2 backend assigned precise public-auth/protected/password contract regression correction; no skip or blind guard addition. Deployment held pending validation.
+### B2 verified; T185 interim auth FAIL and T186 fixes
+
+- msg_0212eaf0d646 /e60b1c0: test inventory explicitly distinguishes public auth/self-guarded password/protected APIs. Master reran three auth files:143 PASS, resolving13 integration-test failures without changing product auth.
+- msg_9791e9764a37 Tester actual fake-Auth/Next reproduces F184-1 cross-origin form session creation and F184-2 logout failure hidden after password update. These product failures remain despite143 tests passing.
+- T186 Front owner requested priority defense/error-handling fixes; safe isolated testing, no user password/mail/DB mutation, no unverified push/deploy. Tester continues original fixed baseline and final report. B1 backend contract work continues separately.
