@@ -1443,3 +1443,8 @@
 
 - B5 requested public project identity source while continuing implementation. Master supplied original Front msg_377e681fe114 and msg_eb75ca2fe4c9: https://osvjfyjlbixmvnjkxdry.supabase.co, dream-ai-studio, Seoul. This is historical reported public metadata, not current managed-connection verification.
 - No secrets read, no automatic production DSN/default or managed application authorized. Runner work continues with synthetic targets.
+### T199 legacy API gate accepted
+
+- msg_2fe6f2d44af0 /de86cef report read/imported. Fixed acfbd0b independent70 new +252 related/lint/type/build and100 actual HTTP controls pass. Existing20 protected files26 methods only; worktree73 author count not reused.
+- Master accepts scoped T198 gate: auth-first denial/no local data access, logout partial/session semantics and local positive controls. New GET/RSC/managed readiness remain separate, T200 continues.
+- Reviewer stopped owned processes; auto-review denied temp cleanup,941MB retained without bypass. User runtime/database unchanged.
