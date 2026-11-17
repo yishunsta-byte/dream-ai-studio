@@ -1970,3 +1970,8 @@
 - B22-R 공식 FAIL 반환 수용: owner/ACL principal표식충돌 필수1건·실제6변형. 원71PASS/0skip, 독립20=14PASS6FAIL 기대유지, source/reference/literal/declaredargs감사 및tsc/lint PASS, 원1013blob불변/4ownedcluster종료 보고. 초기검수fixture오류는최종제품결함과구분. 현재runtime/apply권한우회 실증아님.
 - Backend에 최종보고 정확한commit/path와 기존FIX지속 msg_a6da2fbf33b0 실제전송. 기존근본수정범위·6변형 baseline/정상대조/소유정리·고정수정SHA 제출 유지. 원FAIL수신은새결함/새수정작업으로중복계수하지 않음. Tester는현재배정완료 후 수정본반환 전대기, 새수정본/추가독립검수 미수신·미배정.
 - B22-FIX 현재태그/OID분리계획은문서에서확인했으나 실행성공/최종통과는아직미확인. 운영·SQL1~4/v1/B19/API/applyCLI 불변, 새Codex창없음·기존Master 메시지전용예약 유지.
+### 점검 / B22-FIX 반환·기존 Tester R2 재검수 요청
+- 마지막 확인 시각: 2026-11-18 01:13:27 +09:00 (Asia/Seoul). 지정 wake msg_c1c2ae9ddafe·FIX인계/commit3파일범위·state SQLquery표현·최근handoffs/Git 확인. 고정f5d009ec72ce9411eeda322fa1ca12b2345dbe65 ready_review. 기존 T122/T137 보존·새미기록완료보고없음.
+- 작성자 baseline71PASS/5FAIL→ACL추가71PASS/6FAIL 원기대유지 재현후 fixed88PASS=원71+6+추가11 보고. pure35/66skip중복구분, tsc/lint/4run정리 보고. Master 실제state canonical LF SHA c51745a4c482732a428374831690ebd1eb5ee310487221cf9a95858465c77f70 일치와 finalcleanup-safe 두flagtrue 확인; 전체PG88은Master재실행아님.
+- 수정은 sessionOID/OID0 기반 disjoint JSON principal 표현을 owners/ACL grantor·grantee/policyroles에적용. descriptor는별도knownreference만 offline변환·target학습없음 주장, 기존SQL1~4/manifest/v1/B19/runtime불변. 실제정상owner의marker/PUBLIC/JSON형이름 허용과 foreign거부·historyReadfalse 회귀보고. 독립수용은아직아님.
+- 기존Tester B22-R2 실제전송 msg_a7791c60b99f. 고정새archive/소유PG 원88+원독립20·추가부정/양성/metadata-before-history/provenance/원소스불변·정리 검수, 고유R2보고만허용. 수신·착수는회신전미확인, 새Codex창/agent생성없음. apply/CLI/운영은수용전보류 유지.
