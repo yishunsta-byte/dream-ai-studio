@@ -2401,3 +2401,7 @@
 - 실제 점검 완료 시각: 2026-11-18 08:30:39 +09:00 (Asia/Seoul). msg_9b36d83cdbc7 정기 메시지를 현재 Master 대화에서 수신하고 Git/status/최근8개 처리 메시지·08:14 이후 신규/수정 인수인계 파일을 대조했다. 신규 인수인계/완료·오류 보고는 없고 migration-catalog-v3.ts만 미추적 WIP다. Backend 기존3경로 배정 유지, WIP를 완료/독립검수 수용으로 판단하지 않았다. T122/T137 기존 미추적 문서 보존, Master 변경TEAM만.
 - Windows 예약 LastRunTime08:30:01/LastTaskResult0/다음09:00 확인. 예약 성공·메시지 전송·현재 대화 수신·이번 실제 점검을 구분한다. 턴 밖에는 메시지만 전송하며 새 창/agent/worktree 실행 없음.
 - Backend msg_76231abac87a 실제 전달: 다음 안전 시점 현재 구현 범위/남은 reader·decoder·normalizer/unit 단계/차단·첫 실패 여부 회신 요청. 수신 수락은 아직 미확인. 기존 구현을 중단하거나 중복 과제를 만들지 않았다. 결과 고정 후 기존 Tester 독립검수로 진행하며 현재 DB/native/reference/운영 배포 변경 없음. 실제 코드 검증·새 reference·운영 상태는 이번 미확인, 이전 수용 범위를 확대하지 않는다.
+### B38 진행 회신 / 구현 후 단위검사 착수
+- 실제 확인 시각: 2026-11-18 08:31:23 +09:00 (Asia/Seoul). msg_0a4f3423cc9e Backend 회신·Git/status 대조: 14category reader/decoder/normalizer 약500행 작성 중, 마지막 query/protocol binding 점검 후 unit fixture 착수, 차단 없음. 앞단 type/lint0는 작성자 중간 검사이며 최종 검증·독립 검수 통과가 아니다. 신규 결과/고정 SHA는 아직 없다.
+- valid-shape digest 보존과 정상 schema5 판정 분리를 확인했다. msg_23ac37f3c768 실제 전달: TOAST/default dependency auxiliary의 고정 typed parent/allowlist 근거 명시, 알 수 없는 endpoint·다중부모·이름충돌·부모 없음·누락 default 보정 거부의 단위 반례 요청. 이는 기존 strict observation 경계 확인이며 설계 확대가 필요하면 먼저 구체 차이를 반환하도록 지시했다. 수신은 아직 미확인.
+- 기존3경로/unit·회귀/fulltype/lint 완료→고정본→Tester 독립 검수 유지. 실제 SQL/native/reference 실행 없음이라는 작성자 한계를 보존했다. 다른 담당자 변경·T122/T137 보존, Master 변경은 TEAM만이다.
