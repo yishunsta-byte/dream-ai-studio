@@ -1490,3 +1490,11 @@
 - B6 c7ca15a 문서 확인. CLI 네 mode/target pin/권한·AuthFK·기존schema-role-history/런타임pooler/TLS/중단기준 및 COMMIT후 down 없음 한계를 수용. 문서 수용은 managed 실행 완료가 아니다.
 - B7 Backend 배정: 설치된 CLI/기존연결 메타데이터와 필요한 secret의 선택적 프로그램 내부 읽기로 정확 대상·제공 endpoint 확인. 확인된 기존 대상에서 pure SELECT/read-only 메타데이터 검사만 허용. 고유 B7-MANAGED-ENVIRONMENT-CHECK.md 결과 제출.
 - 기존 Auth ref를 staging으로 재분류하지 않음. 사용자 row 조회·Auth 변경·DDL/GRANT/apply/provision·신규자원·배포환경 변경 미허용. secret/DSN 원문 출력금지, endpoint 추측금지. B5-R 수용 전 신규runner 실행 미배정. 부족한 접근수단은 사실로 반환하며 이미승인된 점검을 사용자에게 재승인 요구하지 않음.
+
+### B5-R FAIL 수용·B5-FIX 우선 배정
+- b073269e 독립 보고 원문 확인. 원25 PASS와 추가부정대조4 PASS/2 FAIL은 구분. F1/P1 runtime role 간접 SET membership을 제한 검사하지 않아 실제 API LOGIN이 migration history 3행을 DELETE할 수 있는 상태를 정상 수용(합성transaction rollback으로 보존). F2/P2 독립pool과 승인target endpoint 미결합. CLI 동일DSN 경로에서 재현한 것은 아님.
+- Backend에 B5-FIX 우선 배정. B7 진행중 읽기transaction은 안전 종료 후 새조회 보류. migration 범위의 role그래프·target/connection 신뢰경계·template·전용회귀 수정만 허용. SQL3/SQLite/Auth/API서비스/T207 불변. 실제managed 적용금지 유지, 새 고정SHA 독립재검수 필요.
+
+### T208 멀티미디어 새 시안 3안 등록
+- Design msg_6965c97748ef: 사용자가 담당자에게 직접 더 화려한 멀티미디어 스타일 새3안 요청했다고 보고. 기존T194 보존, docs/design/t194-multimedia-options/ 및 고유 T-208-MULTIMEDIA-HOME-OPTIONS.md 산출물로 범위 등록·계속 지시 전달.
+- 네온 플랫폼/컬러 탐색 갤러리/시네마 쇼케이스, 자체 생성 미디어의 실제산출물 및 양폭/키보드 검증 제출. 제품/cloud/Auth/DB/공용.next/3013/배포 변경 미허용. 새시안 요청을 제품선택·배포 완료로 확대하지 않음.
