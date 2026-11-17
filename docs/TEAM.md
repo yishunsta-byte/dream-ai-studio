@@ -2168,4 +2168,7 @@
 - 실제 점검 완료 시각: 2026-11-18 03:52:00 +09:00 (Asia/Seoul). 지정 check msg_77b1d631faea·Git/status/최근 신규 인계와 SQL5 수정 위치 확인. Master 수정은 TEAM 기록만, Backend 미커밋 draft와 T122/T137 보호.
 - Backend 진행 보고: 설치 Zod4.6.7/shared lowercase UUID/B25 길이36을 대조한 정확 문법, JS paired60(양34/음26) 일치. schema owner와 typed ACL4행을 양방향 EXCEPT로 대조하도록 보완 중. Master도 해당 regex/inventory 추가 및 실행금지 fuse 잔존을 소스에서 확인. 이는 미커밋 WIP이며 SQL native 구문/권한 PASS나 최종 수정 수용이 아니다.
 - Backend가 Tester에 최종 근거·추가 gap 요청 msg_7494bc75655e를 실제 보냈다고 보고해 직접 협조 기록. Tester 원 dfb521c 최종 source-only 보고 반환 후 누락 보완·고정본 재검토로 진행한다. 추가 중복 배정 없이 기존 단일 담당 범위 유지.
-- Front T238 문서 정정/rollback 가용성 읽기확인은 기존 배정 진행, 새 완료 보고 미수신. 실제 DB 실행·role 생성·push·배포·새 창/agent/worktree 없음. 직전 계획·검증을 반복하지 않고 변경 범위만 점검했다.
+- Front T238 문서 정정/rollback 가용성 읽기확인은 기존 배정 진행, 새 완료 보고 미수신. 실제 DB 실행·role 생성·push·배포·새 창/agent/worktree 없음. 직전 계획·검증을 반복하지 않고 변경 범위만 점검했다.### 점검 / B27-R 원고정 최종 수정요구 확정
+- 실제 점검 완료 시각: 2026-11-18 03:53:00 +09:00 (Asia/Seoul). 지정 msg_2ba7d4287fc3·독립9b8fb17 보고 전문/원 dfb521c 근거·Git/status/최근 인계 대조. 판정 SOURCE CHANGES REQUIRED: F27-1 UUID 문법·F27-2 namespace exact ACL 두 필수 gap, 추가 필수 없음. SQL5 native 검증 전체 미실행 유지, 원고정 수용 아님.
+- 기존 Backend FIX 배정을 유지하고 최종9b8fb17 실제 전달. 추가 minor POLICY tag 누락은 신규 FIX 보고에 정정, 원고정 B27 보고 보존. whole-envelope paired 검증과 후속 native 음성fixture 게이트·고정 SHA/LF hash/재현근거 구분 후 반환하도록 지시. 수정본 반환 뒤 Tester 고정 소스 재검토를 별도 배정한다.
+- 현재 draft WIP 및 보호 미추적 T122/T137 보존. Master 변경은 TEAM 기록만. Front T238 준비 정정/rollback 읽기확인 계속, 새 완료 미수신. 새 창/agent/worktree·SQL 실행·role 생성·push·배포 없음.
