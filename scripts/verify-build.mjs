@@ -1,4 +1,5 @@
-﻿import { readdirSync, readFileSync, realpathSync } from "node:fs";
+﻿import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { Buffer } from "node:buffer";
 import { dirname, join, relative, resolve, isAbsolute, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 function inside(parent,child){const value=relative(parent,child);return value===""||value!==".."&&!value.startsWith(`..${sep}`)&&!isAbsolute(value);}
@@ -24,4 +25,12 @@ export function verifyBuild(project=process.cwd(),runtime=process.env.DREAM_DATA
     if(kinds.has("tool"))throw new Error("빌드 파일 목록에 이 PC의 실행 도구(.tools·ffmpeg·ffprobe)가 포함되어 중단했어요.");
     throw new Error("빌드 파일 목록에 영상 만들기 도구(렌더러·번들러·브라우저)가 포함되어 중단했어요.");}
   return traces;}
-if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){verifyBuild();console.log("운영 빌드 확인: 로컬 데이터·비밀 설정·영상 만들기 도구 추적 없음");}
+// T-182: 화면에 내려가는 파일(.next/static)에 서비스 키가 섞이면 누구나 RLS를 우회할 수 있다.
+// 환경변수 값이 그대로 있거나, role이 service_role인 JWT가 보이면 실패한다.
+export function clientSecretLeaks(project=process.cwd(),secret=process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()){const dir=join(resolve(project),".next/static");const found=[];let files=0;if(!existsSync(dir))return 0;
+  for(const filename of readdirSync(dir,{recursive:true})){if(!/\.(js|css|html|json|map|txt)$/.test(filename))continue;files++;const text=readFileSync(join(dir,filename),"utf8");
+    if(secret&&secret.length>=20&&text.includes(secret)){found.push(filename.replaceAll("\\","/"));continue;}
+    for(const token of text.match(/eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g)??[]){try{if(JSON.parse(Buffer.from(token.split(".")[1],"base64url").toString()).role==="service_role"){found.push(filename.replaceAll("\\","/"));break;}}catch{/* JWT 모양이지만 해석되지 않는 글자는 건너뛴다 */}}}
+  if(found.length){for(const file of found)console.error(`secret	${file}`);throw new Error("화면용 빌드 파일에 Supabase 서비스 키가 들어 있어 중단했어요.");}
+  return files;}
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){verifyBuild();clientSecretLeaks();console.log("운영 빌드 확인: 로컬 데이터·비밀 설정·영상 만들기 도구 추적 없음, 화면 파일에 서비스 키 없음");}

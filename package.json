@@ -24,6 +24,8 @@
     "@remotion/bundler": "4.0.543",
     "@remotion/player": "4.0.543",
     "@remotion/renderer": "4.0.543",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.119.0",
     "better-sqlite3": "13.2.0",
     "drizzle-orm": "0.45.4",
     "file-type": "22.3.0",

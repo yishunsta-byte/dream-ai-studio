@@ -8,6 +8,7 @@ import { Icon, type IconName } from "./ui/Icon";
 import { PhaseChip, StatusPill } from "./ui/primitives";
 import styles from "./studio-shell.module.css";
 import { BreadcrumbContext, type BreadcrumbValue } from "./breadcrumb";
+import { AccountMenu } from "./auth/account-menu";
 
 export type NavigationData = {
   groups: MenuConfig["groups"];
@@ -15,7 +16,7 @@ export type NavigationData = {
   workspaces: Pick<MenuConfig["workspaces"][number], "id" | "label">[];
 };
 
-export function StudioShell({ navigation, sampleMode, children }: { navigation: NavigationData; sampleMode: boolean; children: ReactNode }) {
+export function StudioShell({ navigation, sampleMode, account = null, children }: { navigation: NavigationData; sampleMode: boolean; account?: string | null; children: ReactNode }) {
   const pathname = usePathname();
   const drawer = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -52,6 +53,6 @@ export function StudioShell({ navigation, sampleMode, children }: { navigation: 
       if (event.shiftKey && document.activeElement === items[0]) { event.preventDefault(); items.at(-1)?.focus(); }
       else if (!event.shiftKey && document.activeElement === items.at(-1)) { event.preventDefault(); items[0]?.focus(); }
     }}><div className={styles.drawerInner}><button type="button" aria-label="메뉴 닫기" className={styles.closeButton} onClick={close}><Icon name="close" /></button>{links}</div></dialog>
-    <div className={styles.main}><header className={styles.topbar}><button type="button" ref={trigger} className={styles.menuButton} aria-label="메뉴 열기" aria-expanded={open} onClick={() => { drawer.current?.showModal(); setOpen(true); }}><Icon name="menu" /></button><div className={styles.crumb}><span className={styles.crumbRoot}>{breadcrumb?.parent??"작업실"} / </span><strong>{title}</strong></div>{counts&&counts.running+counts.queued>0&&<Link href="/jobs" className={styles.queueCount}>진행 {counts.running} · 대기 {counts.queued}</Link>}{sampleMode && <StatusPill status="sample">샘플 모드</StatusPill>}</header><main id="main-content" tabIndex={-1} className="content">{children}</main></div>
+    <div className={styles.main}><header className={styles.topbar}><button type="button" ref={trigger} className={styles.menuButton} aria-label="메뉴 열기" aria-expanded={open} onClick={() => { drawer.current?.showModal(); setOpen(true); }}><Icon name="menu" /></button><div className={styles.crumb}><span className={styles.crumbRoot}>{breadcrumb?.parent??"작업실"} / </span><strong>{title}</strong></div>{counts&&counts.running+counts.queued>0&&<Link href="/jobs" className={styles.queueCount}>진행 {counts.running} · 대기 {counts.queued}</Link>}{sampleMode && <StatusPill status="sample">샘플 모드</StatusPill>}{account && <AccountMenu email={account} />}</header><main id="main-content" tabIndex={-1} className="content">{children}</main></div>
   </div></BreadcrumbContext.Provider>;
 }

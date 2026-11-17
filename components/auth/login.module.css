@@ -1,0 +1,15 @@
+.page { min-height:100dvh; display:grid; place-items:center; padding:var(--sp-6) var(--sp-4); background:var(--bg-app); }
+.panel { width:100%; max-width:420px; display:flex; flex-direction:column; gap:var(--sp-4); padding:var(--sp-8) var(--sp-6); background:var(--bg-surface); border:1px solid var(--line); border-radius:var(--radius-md); box-shadow:var(--shadow-1); }
+.brand { display:flex; align-items:center; gap:var(--sp-3); }
+.brand div { display:flex; flex-direction:column; min-width:0; }
+.brand strong { color:var(--fg-strong); font-size:var(--text-md); }
+.brand span { color:var(--fg-muted); font-size:var(--text-sm); }
+.brand .logo { display:grid; place-items:center; width:var(--touch-min); height:var(--touch-min); border-radius:var(--radius-sm); background:var(--accent); color:var(--fg-on-accent); font-weight:var(--weight-bold); flex:none; }
+.title { margin:var(--sp-2) 0 0; font-size:var(--text-xl); color:var(--fg-strong); }
+.lead { margin:0; color:var(--fg-muted); font-size:var(--text-md); }
+.form, .sent { display:flex; flex-direction:column; gap:var(--sp-4); }
+.form button[type="submit"] { width:100%; }
+.note { margin:0; color:var(--fg-muted); font-size:var(--text-sm); }
+.account { display:flex; align-items:center; gap:var(--sp-2); margin-left:auto; min-width:0; }
+.email { min-width:0; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--fg-muted); font-size:var(--text-sm); }
+@media(max-width:600px) { .panel { padding:var(--sp-6) var(--sp-4); } .email { display:none; } }
