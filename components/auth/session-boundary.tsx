@@ -54,12 +54,20 @@ export function ProtectedContent({ children }: { children: ReactNode }) {
     if (!shown) {
       // 가려진 본문 안에 있던(또는 이미 잃은) 포커스는 안내로 옮긴다.
       const inBody = !!active && !!body.current?.contains(active);
+      // T-235(F234-2): 돌려줄 대상은 가리는 순간의 실제 포커스 요소로 기억한다. focus 이벤트(onFocus)는
+      // 창이 포커스를 갖지 않을 때(document.hasFocus()=false) 오지 않아 lastFocus가 비어 복귀가 빠졌다.
+      if (inBody && active instanceof HTMLElement) lastFocus.current = active;
       if (inBody || !active || active === document.body) { moved.current = inBody || !!lastFocus.current; notice.current?.focus(); }
       return;
     }
     // 같은 계정 확인 뒤: 안내로 옮겼던 포커스만 원래 입력으로 돌려준다(입력 칸의 선택 위치는 요소에 남아 있다).
     const target = lastFocus.current;
-    if (moved.current && target && target.isConnected && body.current?.contains(target) && (!active || active === document.body)) target.focus({ preventScroll: true });
+    if (moved.current && target && target.isConnected && body.current?.contains(target) && (!active || active === document.body)) {
+      target.focus({ preventScroll: true });
+      // 가린 동안 문서가 짧아져 스크롤이 올라갔을 수 있다. 돌려준 포커스가 화면 밖이면 보이는 곳까지만 옮긴다.
+      const box = target.getBoundingClientRect();
+      if (document.activeElement === target && (box.bottom > window.innerHeight || box.top < 0)) target.scrollIntoView({ block: "nearest" });
+    }
     moved.current = false;
   }, [shown, boundary]);
   if (!boundary) return <>{children}</>;
