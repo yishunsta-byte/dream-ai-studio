@@ -1929,3 +1929,8 @@
 - Front GitHub Vercel success3QDyZWKqj9ddY8Aw2ZXcCiyEeUEV 및같은push의별도kzxq FqNrw2VMGFLcBJzm9ETmsXwWfrmM 보고, 운영loginchunk dream-auth-session으로새빌드서빙 확인. 대시보드Current는 아직미열람이라 엄밀식별 미검증 유지.
 - Master actual 익명 HTTPS: https://dream-ai-studio-orpin.vercel.app/login 200 private/no-store, /cloud/projects307→login next no-store, /api/projects401 no-store. 실계정로그인·새Storage/DB/쓰기개통 검증아님. 롤백조건 발견없음.
 - T228 Front 실제전송 msg_c15754ccc28b: 기존수단으로읽기전용 Current/Ready/exactSHA 및두번째프로젝트주소·연결·plan/용도확인, 고유보고만반환. 수락아직미확인. 삭제/설정/env/배포/계정/유료변경금지, 새Codex창 미생성. Master플랜의배포차단 및오래된턴밖미설정문구를 현상태로갱신.
+### 점검 / T228 운영 배포 식별 수용·중복 연결 결정 분리
+- 마지막 확인 시각: 2026-11-18 00:37:50 +09:00 (Asia/Seoul). 지정 wake msg_35deaec247bf·T228 38819e7 전문/최근 handoffs/Git 확인. Backend B22 지정7경로 WIP(B21포함)와 T122/T137 보호, 새 미기록 완료인계 없음.
+- Front 기존로그인 대시보드 읽기 증거로 main3QDyZWKqj Ready/Latest·Production/Current·master8ffe3c7·Hobby 확인. 이전4458283 Ready보존 관측. Master 기존원격SHA/HTTPS 대조와 일치해 T227 배포식별 검증 수용. 실제로그인후 화면/클라우드쓰기개통은 여전히미검증.
+- kzxq FqNrw2VMG 동일SHA Current·같은repo/master자동Production 연결 및공개HTTPS503/no-store 확인. 용도/생성자/env실제목록 미확인, 오류문구만으로 env항목 부재를단정하지 않음. 두번째주소삭제/설정변경 없음.
+- DEC-VERCEL-02 docs/QUESTIONS.md 기록·async질문등록: exact kzxq Git연결만해제(권장,프로젝트/기존배포보존) vs유지. 용도불명 운영설정 변경이므로 응답대기; 2FA/삭제/계정변경은 묶어승인받지 않음. BackendB22는 이 결정과 독립적으로계속, 현재Master 메시지전용30분예약 유지·새Codex창없음.

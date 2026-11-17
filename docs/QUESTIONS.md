@@ -23,3 +23,12 @@ P0-4 확인: npm 레지스트리의 eslint-plugin-jsx-a11y 6.10.2 peerDependenci
 | ID | 날짜 | 질문 (관련 PLAN 절) | 제안 | 답변 | 상태 |
 |---|---|---|---|---|---|
 | Q-001 | 2026-11-15 | P0-2 의존성 검수: typescript-eslint 8.72.2 하위 minimatch에 전체 npm audit 중간 등급 7건이 남음. 운영 의존성은 0건. 일반 audit fix로 해결되지 않음 | 현재 공식 호환 버전을 고정하고 강제 major override는 피함. 플래너가 개발 도구 잔여 항목 검토 후 업데이트 추적 여부 결정. lint/build/typecheck/test 통과 | **제안대로 수용.** 근거: 운영 의존성 0건, 해당 경로는 개발 중 린트 도구에서만 실행되고 외부 입력을 받지 않음. `npm audit fix --force`·override 금지. **추적 규칙**: 매 마일스톤 PROGRESS에 `npm audit --omit=dev` 결과(0이어야 함)와 전체 audit 건수를 적는다. 운영 의존성에 1건이라도 생기거나 개발 도구 건이 high 이상이 되면 그 마일스톤에서 해결. typescript-eslint가 TS 6.1+ 지원 판을 내면 함께 올린다 (플래너 2026-11-15) | 닫힘 |
+
+## DEC-VERCEL-02 / 중복 Vercel 프로젝트 Git 연결 / waiting_human
+- 확인 시각: 2026-11-18 00:37:50 +09:00 (Asia/Seoul). 근거: docs/handoffs/T-228-VERCEL-DEPLOYMENT-IDENTITY.md (38819e7).
+- 결정할 사항: dream-ai-studio-kzxq에 연결된 yishunsta-byte/dream-ai-studio Git 연결만 해제할지, 현재 연결을 유지할지.
+- 확인된 사실: 동일 master push로 두 프로젝트 모두 Production 배포. 주운영 orpin은3QDyZWKqj Ready/Current/8ffe3c7. kzxq는FqNrw2VMG Ready/Current/동일SHA이며 공개HTTPS는로그인설정 미완료503/no-store. env 목록/생성목적은 확인하지 않았다.
+- 추천안: kzxq 프로젝트·기존배포를 보존하고 Git 연결만 해제하여 이후 중복 자동배포를 중지. 주운영 dream-ai-studio/orpin의 연결·도메인·환경은 변경하지 않음. 기존 kzxq 공개배포가 삭제되거나 비공개로 바뀌는 작업은 아님.
+- 다른안: 용도확인 전 기존연결 유지. 현재503이라는 관측만으로 미래권한/설정이 안전하다고 판단하지 않음.
+- 사용자 결정이 필요한 이유: 다른 용도가 있을 수 있는 운영 프로젝트의 연결 설정 변경이며 해당 범위는 아직 지정되지 않았다. 실제 변경 전 exact 프로젝트·연결 상태 재확인 필요. 프로젝트삭제/2FA/계정·env변경은 이번결정 범위에 포함하지 않는다.
+- 상태: 사용자에게 async 선택 요청 등록, 응답 전 미실행. 답변 전 Backend B22 독립 로컬 구현 계속.

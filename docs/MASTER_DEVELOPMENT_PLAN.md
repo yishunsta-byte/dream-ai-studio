@@ -108,7 +108,7 @@ P0/P1과 P2 타임라인·편집·영상/오디오 렌더·SRT/VTT·원본 재�
 | 작업 | 현재 상태 | 다음 완료 조건 |
 |---|---|---|
 | T224/T225 세션·입력·탐색 경계 | 독립 검수 수용, 8ffe3c75 운영 서빙 보고 | Master 원격 SHA와 익명 HTTPS 확인, 실로그인 후 동작은 미검증 |
-| T227 Vercel 배포 / T228 식별 | 사용자 직접 exactSHA push 후 GitHub Vercel success 및 새빌드 서빙 보고 | 원격8ffe3c75·Master HTTPS 200/307/401 확인. Dashboard Current·두번째 프로젝트는 T228 읽기전용 추가확인 |
+| T227 Vercel 배포 / T228 식별 | 사용자 직접 exactSHA push 후 GitHub Vercel success 및 새빌드 서빙 보고 | 원격8ffe3c75·Master HTTPS 200/307/401·대시보드 Ready/Current 확인. kzxq 중복연결503, DEC-VERCEL-02 Git해제 결정대기 |
 | B12/B14/B15 | 미연결 생성·파일검증·메타데이터 adapter의 지정 로컬 계약 독립 수용 | 실제 Storage/업로드/RLS/등록/API 개통과 별개 |
 | B16-FIX/B16-R2 | 수정 설계 독립 수용 | 구현 단계별 검수 필요 |
 | B19/B19-FIX4 | 독립 B19-R5 수용: 고정 d9d438a의 지정 순수 프로토콜 | 보수적 이력 검증 모델이며 실제 DB 영속·락·권한·운영 준비 검증은 별도 |
