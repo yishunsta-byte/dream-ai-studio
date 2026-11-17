@@ -1666,3 +1666,9 @@
 - ed129105 고정ba3ad446 신뢰privateRoot경계의로컬Storage reader계약독립PASS수용. 원fakeHTTP46/focused97중복/추가15·원tsconfig typegen/tsc/lint PASS. 정확GET/redirect·ownerMIMEkey network0·byte/hash/실decode·abort/timeout/noqueue/disposal·TOCTOU snapshot검증.
 - junction대조의cleanup외부삭제거부는확인,동일OS주체가privateRoot를변조할때외부쓰기전체방지sandbox아님. privateRoot접근제어·로컬OS신뢰전제유지. service_role RLS우회와privatebucketpoint-in-time·실upload/RLS/DB등록/운영readiness미완료분리.
 - Backend수용전달/B15진행유지,Tester T221현재검증단계·차단여부를다음작업경계에서요청(실행중단/추가범위없음). Front T223실패시계수정기존배정유지. DEC-SSL-01미수신·운영변경보류,턴 밖 자동 점검 미설정.
+
+### 점검 / T221 중간 필수 결함·T224 우선 수정
+- 마지막 확인 시각: 2026-11-17 21:21:38 +09:00 (Asia/Seoul). Orca중간보고·Git/최근handoffs확인,Master session-boundary/StudioShell관련코드직접확인. 최종T221보고아직미수신,미기록최종완료파일없음. B15/FrontT223 WIP보호.
+- F221-1/P1: 실제합성SQLite+계정StudioShell에서의심→same재확인때ProjectForm입력초기화/DOMdisconnect 재현보고. current단일div와checking fragment/두sibling형태변화로remount가능코드확인. F221-2/P2: 본문hidden/제거에도sidebar작업수·실패수·링크표시/Tab잔류. 새요청인증우회로해석하지않음.
+- Front T224우선수정배정: T223실행중안전checkpoint·결과보존후동일subtree/DOM identity/입력상태보존과sidebar/drawer/nav/counts/poll후응답경계보완. confirmed때본문제거·같은epoch재등장차단·T220원세경로유지. auth서버/API/DB불변,실local/cloud양폭검증후분리SHA반환.
+- Tester고정371나머지race/회귀·정리/최종보고계속지시,현재timeout관측은결론미확정으로분리. 최종FAIL과새수정재검수는구분. BackendB15유지,DEC-SSL-01미수신/운영변경보류,턴 밖 자동 점검 미설정.
