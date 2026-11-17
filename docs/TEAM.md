@@ -2158,3 +2158,10 @@
 - T238은 Front 준비 중: 후보 ebe84ea, 원격8ffe 대비 FF·동일 소스 메인PC build/환경·DB 변경0·현재 운영3QDyZWKqj9ddY8Aw2ZXcCiyEeUEV/8ffe rollback 근거. 준비 문서만, push/publish 미실행. 새 HEAD/미검수 SQL5를 후보로 삼지 않음. 기존 자동 승인 거절 우회/무조건 재시도 금지, 기존 배포 승인 자체 재질문 없음.
 - Backend B26 결정14fd8a3 및 B27 dfb521c 반환 msg_8222075a38a2 확인. SQL5 초안은 미발행 실행차단 fuse 유지·registry/runtime 불변, 실제 DB/role 실행 없음. Tester에 B27-R msg_07708b354018 실제 전달→msg_58afc3b5f106 수신·source-only 범위 수락. 고정 소스/선행 계약 대조·필수 gap/실행 전 게이트를 고유 B27-R 보고1파일로 반환, 모든 DB 실행/fuse 제거/role 생성 금지.
 - Design T232 정적3안 수용·실제 메인 미적용 유지. 운영은 이번 점검에서 재조회하지 않았으며 직전8ffe 확인과 구분. 새 창·agent·worktree 생성 없음. 후속 결과는 Orca 이벤트에서 처리한다.
+
+### 점검 / B27 소스 결함 수정 반환·T238 준비 검토
+- 실제 점검 완료 시각: 2026-11-18 03:51:00 +09:00 (Asia/Seoul). 지정 wake/최근 인계·Git/status, SQL5 policy UUID 및 최종 권한 검사, shared schema z.uuid(), T238 edcf2ff 보고 원문 대조. 보호 미추적 T122/T137 유지. Master 변경 범위 TEAM 공식기록1파일.
+- Tester B27-R 중간 필수 gap2: authority UUID regex와 기존 shared UUID 허용집합 불일치, 새 schema ACL의 exact principal/owner/grantor/grantability 검증 누락으로 예상 밖 default grants 잔류 가능. Master 직접 소스 대조 후 Backend B27-FIX 실제전달 msg_15a0c25e8a7c→msg_4e62effad662 수신·2파일 범위 수락. 잘못 적은 메시지ID 도입문은 msg_04a4fbd49bd8로 즉시 정정. draft+신규 FIX 보고만, fuse 유지·어떤DB에도실행금지. Tester는 원 dfb521c 고정 소스 최종보고 계속, 새 수정본 재검수와 구분(msg_7192696b5974).
+- Front T238 준비 반환 msg_6c24d6eaa4d4/edcf2ff: 정확ebe84ea 격리 build/verify/tsc/lint0·관련449/본repo1618, archive 전체20fail은 ffmpeg ENOENT로 분리. 실행경로/env/DB/Storage opt-in 변경0 및 기본 인증 차단 synthetic 확인 보고. 실제 push/운영 배포 미실행, 예전 자동 승인 거절 조건 지속. 자동 승인 검토가 Front push를 실행 전 거절했던 이유는 Destructive or Unwanted Actions이며 다른 도구로 우회하지 않는다.
+- T238 문서에 삭제완료 kzxq를 재배포 가능으로 기술, 원격이 정확8ffe가 아니면 일반 FF push가 항상거절된다는 부정확함, rollback 항상 사용자승인 요구가 있어 Front에 고유보고1파일 정정·현재rollback 대상 retention/가용성 읽기확인 실제배정. 실제 publish/promote/설정변경 금지. 출처 로컬경로·프로젝트ref는 키/토큰과 구분, 이번 검수후보를 바꾸는 무관 삭제는 하지 않음.
+- UI T236 제품 독립 PASS/T237 하네스 보완 수용 유지. Backend 수정과 Tester 최종 소스 검토/Front 준비정정 병행, 새 창·agent·worktree·실DB실행·배포 없음. 운영 주소/SHA는 이번에 재조회하지 않아 직전확인과 구분한다.
