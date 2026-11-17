@@ -1,0 +1,94 @@
+[
+  {
+    "name": "1280: anchor Enter focuses backup",
+    "passed": true
+  },
+  {
+    "name": "1280: Tab continues to backup links",
+    "passed": true
+  },
+  {
+    "name": "1280: restore anchor + Tab",
+    "passed": true
+  },
+  {
+    "name": "1280: Shift+Tab returns through document order",
+    "passed": true
+  },
+  {
+    "name": "1280: anchors retain both drafts",
+    "passed": true
+  },
+  {
+    "name": "1280: stale overview + unchanged snapshot",
+    "passed": true
+  },
+  {
+    "name": "1280: stale summary goes to error",
+    "passed": true
+  },
+  {
+    "name": "1280: recovery retains inputs and summary order",
+    "passed": true
+  },
+  {
+    "name": "1280: inspect ticket survives anchor navigation",
+    "passed": true
+  },
+  {
+    "name": "1280: primary action height",
+    "passed": true
+  },
+  {
+    "name": "1280: A1 restore error/ticket preserved after refresh",
+    "passed": true
+  },
+  {
+    "name": "390: anchor Enter focuses backup",
+    "passed": true
+  },
+  {
+    "name": "390: Tab continues to backup links",
+    "passed": true
+  },
+  {
+    "name": "390: restore anchor + Tab",
+    "passed": true
+  },
+  {
+    "name": "390: Shift+Tab returns through document order",
+    "passed": true
+  },
+  {
+    "name": "390: anchors retain both drafts",
+    "passed": true
+  },
+  {
+    "name": "390: stale overview + unchanged snapshot",
+    "passed": true
+  },
+  {
+    "name": "390: stale summary goes to error",
+    "passed": true
+  },
+  {
+    "name": "390: recovery retains inputs and summary order",
+    "passed": true
+  },
+  {
+    "name": "390: inspect ticket survives anchor navigation",
+    "passed": true
+  },
+  {
+    "name": "390: primary action height",
+    "passed": true
+  },
+  {
+    "name": "390: A1 restore error/ticket preserved after refresh",
+    "passed": true
+  },
+  {
+    "name": "locked mode remains locked",
+    "passed": true
+  }
+]

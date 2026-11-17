@@ -1,0 +1,132 @@
+[
+  {
+    "width": 1280,
+    "scenario": "normal",
+    "overflow": 0,
+    "minTarget": 44,
+    "cards": [
+      "저장 점검",
+      "작업 처리기",
+      "이 환경의 백업"
+    ],
+    "duplicateIds": [],
+    "unnamedFields": 0
+  },
+  {
+    "width": 1280,
+    "scenario": "warning",
+    "overflow": 0,
+    "minTarget": 44,
+    "cards": [
+      "저장 점검",
+      "작업 처리기",
+      "이 환경의 백업"
+    ],
+    "duplicateIds": [],
+    "unnamedFields": 0
+  },
+  {
+    "width": 1280,
+    "scenario": "empty",
+    "overflow": 0,
+    "minTarget": 44,
+    "cards": [
+      "저장 점검",
+      "작업 처리기",
+      "이 환경의 백업"
+    ],
+    "duplicateIds": [],
+    "unnamedFields": 0
+  },
+  {
+    "width": 1280,
+    "scenario": "inherited",
+    "overflow": 0,
+    "minTarget": 44,
+    "cards": [
+      "저장 점검",
+      "작업 처리기",
+      "이 환경의 백업"
+    ],
+    "duplicateIds": [],
+    "unnamedFields": 0
+  },
+  {
+    "width": 1280,
+    "scenario": "active",
+    "overflow": 0,
+    "minTarget": 44,
+    "cards": [
+      "저장 점검",
+      "작업 처리기",
+      "이 환경의 백업"
+    ],
+    "duplicateIds": [],
+    "unnamedFields": 0
+  },
+  {
+    "width": 390,
+    "scenario": "normal",
+    "overflow": 0,
+    "minTarget": 44,
+    "cards": [
+      "저장 점검",
+      "작업 처리기",
+      "이 환경의 백업"
+    ],
+    "duplicateIds": [],
+    "unnamedFields": 0
+  },
+  {
+    "width": 390,
+    "scenario": "warning",
+    "overflow": 0,
+    "minTarget": 44,
+    "cards": [
+      "저장 점검",
+      "작업 처리기",
+      "이 환경의 백업"
+    ],
+    "duplicateIds": [],
+    "unnamedFields": 0
+  },
+  {
+    "width": 390,
+    "scenario": "empty",
+    "overflow": 0,
+    "minTarget": 44,
+    "cards": [
+      "저장 점검",
+      "작업 처리기",
+      "이 환경의 백업"
+    ],
+    "duplicateIds": [],
+    "unnamedFields": 0
+  },
+  {
+    "width": 390,
+    "scenario": "inherited",
+    "overflow": 0,
+    "minTarget": 44,
+    "cards": [
+      "저장 점검",
+      "작업 처리기",
+      "이 환경의 백업"
+    ],
+    "duplicateIds": [],
+    "unnamedFields": 0
+  },
+  {
+    "width": 390,
+    "scenario": "active",
+    "overflow": 0,
+    "minTarget": 44,
+    "cards": [
+      "저장 점검",
+      "작업 처리기",
+      "이 환경의 백업"
+    ],
+    "duplicateIds": [],
+    "unnamedFields": 0
+  }
+]

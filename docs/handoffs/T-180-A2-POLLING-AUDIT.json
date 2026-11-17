@@ -1,0 +1,46 @@
+[
+  {
+    "width": 1280,
+    "state": "poll-failure",
+    "passed": true,
+    "detail": {
+      "focus": "backup-directory",
+      "draft": "D:/poll-draft",
+      "stale": true,
+      "order": "저장 점검/작업 처리기/이 환경의 백업"
+    }
+  },
+  {
+    "width": 1280,
+    "state": "poll-recovery",
+    "passed": true,
+    "detail": {
+      "focus": "backup-directory",
+      "draft": "D:/poll-draft",
+      "stale": false,
+      "order": "저장 점검/작업 처리기/이 환경의 백업"
+    }
+  },
+  {
+    "width": 390,
+    "state": "poll-failure",
+    "passed": true,
+    "detail": {
+      "focus": "backup-directory",
+      "draft": "D:/poll-draft",
+      "stale": true,
+      "order": "저장 점검/작업 처리기/이 환경의 백업"
+    }
+  },
+  {
+    "width": 390,
+    "state": "poll-recovery",
+    "passed": true,
+    "detail": {
+      "focus": "backup-directory",
+      "draft": "D:/poll-draft",
+      "stale": false,
+      "order": "저장 점검/작업 처리기/이 환경의 백업"
+    }
+  }
+]
