@@ -5,10 +5,11 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { allowedEmails, authMode, authReady, callbackOrigin, isAllowedEmail, isPublicPath, loginPath, safeNextPath, trustedOrigins } from "@/lib/auth/config";
 
-type OtpCall = { email: string; options: { emailRedirectTo: string; shouldCreateUser: boolean } };
+type SignUpCall = { email: string; password: string; options: { emailRedirectTo: string } };
+type AuthError = null | { status?: number; code?: string; message: string };
 const { user, calls } = vi.hoisted(() => ({
   user: { current: null as null | { email: string } },
-  calls: { exchange: [] as string[], verify: [] as unknown[], otp: [] as OtpCall[], signOut: 0, fail: false },
+  calls: { exchange: [] as string[], verify: [] as unknown[], password: [] as { email: string; password: string }[], signup: [] as SignUpCall[], reset: [] as { email: string; options: { redirectTo: string } }[], update: [] as { password: string }[], authError: null as AuthError, signOut: 0, fail: false },
 }));
 vi.mock("@supabase/ssr", () => ({
   createServerClient: () => ({ auth: { getUser: async () => ({ data: { user: user.current } }) } }),
@@ -20,13 +21,16 @@ vi.mock("@/lib/auth/server", () => ({
     verifyOtp: async (args: unknown) => { calls.verify.push(args); return { error: calls.fail ? new Error("만료") : null }; },
     getUser: async () => ({ data: { user: user.current } }),
     signOut: async () => { calls.signOut++; return { error: null }; },
-    signInWithOtp: async (args: OtpCall) => { calls.otp.push(args); return { error: null }; },
+    signInWithPassword: async (args: { email: string; password: string }) => { calls.password.push(args); return { error: calls.authError }; },
+    signUp: async (args: SignUpCall) => { calls.signup.push(args); return { error: calls.authError }; },
+    resetPasswordForEmail: async (email: string, options: { redirectTo: string }) => { calls.reset.push({ email, options }); return { error: calls.authError }; },
+    updateUser: async (args: { password: string }) => { calls.update.push(args); return { error: calls.authError }; },
   } }),
 }));
 
 const KEYS = ["DREAM_AUTH_MODE", "VERCEL", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "DREAM_ALLOWED_EMAILS", "DREAM_SITE_URL", "VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"] as const;
 const saved: Record<string, string | undefined> = {};
-beforeEach(() => { for (const key of KEYS) { saved[key] = process.env[key]; delete process.env[key]; } user.current = null; Object.assign(calls, { exchange: [], verify: [], otp: [], signOut: 0, fail: false }); });
+beforeEach(() => { for (const key of KEYS) { saved[key] = process.env[key]; delete process.env[key]; } user.current = null; Object.assign(calls, { exchange: [], verify: [], password: [], signup: [], reset: [], update: [], authError: null, signOut: 0, fail: false }); });
 afterEach(() => { for (const key of KEYS) { if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key]; } });
 
 function ready() {
@@ -90,9 +94,9 @@ describe("T-182 로그인 설정", () => {
     expect(callbackOrigin(req("127.0.0.1:3000"), vercel)).toBe("https://studio.vercel.app");
     expect(callbackOrigin(req("dream.example.kr"), { DREAM_SITE_URL: "https://dream.example.kr, not a url" })).toBe("https://dream.example.kr");
   });
-  it("로그인 없이 열리는 곳은 로그인 화면·링크 확인·링크 요청뿐이다", () => {
-    expect(["/login", "/auth/callback", "/api/auth/login"].every(isPublicPath)).toBe(true);
-    expect(["/", "/api/jobs", "/api/auth/logout", "/settings", "/login2"].some(isPublicPath)).toBe(false);
+  it("로그인 없이 열리는 곳은 로그인 화면·링크 확인·로그인·가입·비밀번호 찾기뿐이다", () => {
+    expect(["/login", "/auth/callback", "/api/auth/login", "/api/auth/signup", "/api/auth/reset"].every(isPublicPath)).toBe(true);
+    expect(["/", "/api/jobs", "/api/auth/logout", "/api/auth/password", "/account/password", "/settings", "/login2"].some(isPublicPath)).toBe(false);
   });
 });
 
@@ -185,40 +189,90 @@ describe("T-182 검수 수정: 로그인 링크 확인(callback)", () => {
   });
 });
 
-describe("T-182 검수 수정: 로그인 링크 요청", () => {
-  async function login(body: string, headers: Record<string, string> = {}) {
-    const { POST } = await import("@/app/api/auth/login/route");
-    return POST(new Request("http://localhost:43182/api/auth/login", { method: "POST", body, headers: { host: "127.0.0.1:43182", "content-type": "application/json", ...headers } }));
+describe("T-184 이메일·비밀번호 로그인·가입·비밀번호 찾기", () => {
+  async function call(route: "login" | "signup" | "reset" | "password", body: string, headers: Record<string, string> = {}) {
+    const mod = route === "login" ? await import("@/app/api/auth/login/route") : route === "signup" ? await import("@/app/api/auth/signup/route") : route === "reset" ? await import("@/app/api/auth/reset/route") : await import("@/app/api/auth/password/route");
+    return mod.POST(new Request(`http://localhost:43182/api/auth/${route}`, { method: "POST", body, headers: { host: "127.0.0.1:43182", "content-type": "application/json", ...headers } }));
   }
-  it("O182-1: JSON null·배열·문자열은 500이 아니라 400", async () => {
-    ready();
-    for (const body of ["null", "[]", "\"x\"", "3", "{bad"]) {
-      const response = await login(body);
-      expect(response.status, body).toBe(400);
+  const json = (value: unknown) => JSON.stringify(value);
+  it("O182-1: JSON null·배열·문자열은 네 곳 모두 500이 아니라 400", async () => {
+    ready(); user.current = { email: "owner@example.com" };
+    for (const route of ["login", "signup", "reset", "password"] as const) for (const body of ["null", "[]", "\"x\"", "3", "{bad"]) {
+      const response = await call(route, body);
+      expect(response.status, `${route} ${body}`).toBe(400);
       expect((await response.json()).code).toBe("BAD_REQUEST");
     }
   });
-  it("F182-2: 메일 링크는 x-forwarded-host가 아닌 접속 주소로 만든다", async () => {
+  it("비밀번호 규칙: 8~72자, 영문과 숫자를 함께", async () => {
+    const { passwordProblem } = await import("@/lib/auth/config");
+    expect(passwordProblem("abc1234")).toMatch(/8자/);
+    expect(passwordProblem("abcdefgh")).toMatch(/영문과 숫자/);
+    expect(passwordProblem("12345678")).toMatch(/영문과 숫자/);
+    expect(passwordProblem(`a1${"x".repeat(71)}`)).toMatch(/72자/);
+    expect(passwordProblem("dream2026")).toBeNull();
+    expect(passwordProblem(undefined)).toMatch(/8자/);
+  });
+  it("로그인: 허용 계정은 Supabase로 확인하고, 틀리면 계정 존재 여부를 드러내지 않는다", async () => {
     ready();
-    const response = await login(JSON.stringify({ email: "owner@example.com", next: "/\t/evil.test" }), { "x-forwarded-host": "evil.test", "x-forwarded-proto": "https" });
+    expect((await call("login", json({ email: " Owner@Example.com ", password: "dream2026" }))).status).toBe(200);
+    expect(calls.password[0]).toEqual({ email: "Owner@Example.com", password: "dream2026" });
+    calls.authError = { status: 400, code: "invalid_credentials", message: "x" };
+    const wrong = await call("login", json({ email: "owner@example.com", password: "nope" }));
+    expect(wrong.status).toBe(400);
+    const wrongBody = await wrong.json();
+    const stranger = await call("login", json({ email: "stranger@example.com", password: "dream2026" }));
+    expect(await stranger.json()).toEqual(wrongBody);
+    expect(calls.password).toHaveLength(2);
+  });
+  it("로그인: 메일 인증 전·시도 과다는 따로 알려 준다", async () => {
+    ready();
+    calls.authError = { status: 400, code: "email_not_confirmed", message: "x" };
+    expect((await (await call("login", json({ email: "owner@example.com", password: "dream2026" }))).json()).code).toBe("EMAIL_NOT_CONFIRMED");
+    calls.authError = { status: 429, message: "x" };
+    expect((await call("login", json({ email: "owner@example.com", password: "dream2026" }))).status).toBe(429);
+  });
+  it("가입: 메일 링크는 x-forwarded-host가 아닌 접속 주소로 만들고 첫 화면으로 돌아온다", async () => {
+    ready();
+    const response = await call("signup", json({ email: "owner@example.com", password: "dream2026" }), { "x-forwarded-host": "evil.test", "x-forwarded-proto": "https" });
     expect(response.status).toBe(200);
-    const link = new URL(calls.otp[0].options.emailRedirectTo);
+    const link = new URL(calls.signup[0].options.emailRedirectTo);
     expect(link.origin).toBe("http://127.0.0.1:43182");
+    expect(link.pathname).toBe("/auth/callback");
     expect(link.searchParams.get("next")).toBe("/");
-    expect(calls.otp[0].options.shouldCreateUser).toBe(false);
   });
-  it("목록에 없는 주소로 접속하면 메일을 보내지 않는다", async () => {
+  it("가입: 허용 밖·이미 가입한 주소도 같은 안내, 허용 밖은 Supabase에 보내지 않는다", async () => {
     ready();
-    const response = await login(JSON.stringify({ email: "owner@example.com" }), { host: "evil.test" });
-    expect(response.status).toBe(400);
-    expect((await response.json()).code).toBe("AUTH_ORIGIN_UNTRUSTED");
-    expect(calls.otp).toHaveLength(0);
+    const stranger = await (await call("signup", json({ email: "stranger@example.com", password: "dream2026" }))).json();
+    expect(calls.signup).toHaveLength(0);
+    calls.authError = { status: 422, code: "user_already_exists", message: "x" };
+    const existing = await (await call("signup", json({ email: "owner@example.com", password: "dream2026" }))).json();
+    expect(existing).toEqual(stranger);
   });
-  it("허용 밖 주소는 같은 안내만 주고 메일을 보내지 않는다", async () => {
+  it("가입: 약한 비밀번호·목록 밖 접속 주소는 거절한다", async () => {
     ready();
-    const response = await login(JSON.stringify({ email: "stranger@example.com" }));
-    expect(response.status).toBe(200);
-    expect(calls.otp).toHaveLength(0);
+    expect((await (await call("signup", json({ email: "owner@example.com", password: "short" }))).json()).code).toBe("WEAK_PASSWORD");
+    expect((await (await call("signup", json({ email: "owner@example.com", password: "dream2026" }), { host: "evil.test" })).json()).code).toBe("AUTH_ORIGIN_UNTRUSTED");
+    expect(calls.signup).toHaveLength(0);
+  });
+  it("비밀번호 찾기: 링크는 새 비밀번호 화면으로, 허용 밖 주소는 같은 안내만", async () => {
+    ready();
+    expect((await call("reset", json({ email: "owner@example.com" }))).status).toBe(200);
+    const link = new URL(calls.reset[0].options.redirectTo);
+    expect(link.origin).toBe("http://127.0.0.1:43182");
+    expect(link.searchParams.get("next")).toBe("/account/password");
+    const a = await (await call("reset", json({ email: "stranger@example.com" }))).json();
+    expect(calls.reset).toHaveLength(1);
+    expect(a.ok).toBe(true);
+  });
+  it("새 비밀번호: 로그인 필요, 허용 계정만, 규칙 확인", async () => {
+    ready();
+    expect((await call("password", json({ password: "dream2026" }))).status).toBe(401);
+    user.current = { email: "stranger@example.com" };
+    expect((await call("password", json({ password: "dream2026" }))).status).toBe(403);
+    user.current = { email: "owner@example.com" };
+    expect((await call("password", json({ password: "weak" }))).status).toBe(400);
+    expect((await call("password", json({ password: "dream2026" }))).status).toBe(200);
+    expect(calls.update).toEqual([{ password: "dream2026" }]);
   });
 });
 

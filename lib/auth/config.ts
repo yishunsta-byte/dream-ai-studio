@@ -29,8 +29,30 @@ export function authReady(env: Env = process.env) {
   return !!supabasePublicConfig(env) && allowedEmails(env).size > 0;
 }
 
+const PUBLIC_PATHS = new Set(["/login", "/auth/callback", "/api/auth/login", "/api/auth/signup", "/api/auth/reset"]);
 export function isPublicPath(pathname: string) {
-  return pathname === "/login" || pathname === "/auth/callback" || pathname === "/api/auth/login";
+  return PUBLIC_PATHS.has(pathname);
+}
+
+// 비밀번호 규칙(T-184): 8~72자, 영문과 숫자를 함께. 72자는 Supabase(bcrypt) 한도.
+export const PASSWORD_RULE = "8자 이상, 영문과 숫자를 함께 넣어 주세요.";
+export function passwordProblem(password: unknown) {
+  if (typeof password !== "string" || password.length < 8) return "비밀번호는 8자 이상이어야 해요.";
+  if (password.length > 72) return "비밀번호는 72자까지 쓸 수 있어요.";
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) return "비밀번호에 영문과 숫자를 함께 넣어 주세요.";
+  return null;
+}
+
+export function validEmail(value: unknown): value is string {
+  return typeof value === "string" && value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+// JSON 본문을 객체로만 받는다(null·배열·문자열은 거절).
+export async function readJsonObject(request: Request): Promise<Record<string, unknown> | null> {
+  try {
+    const body: unknown = await request.json();
+    return body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : null;
+  } catch { return null; }
 }
 
 // 제어문자(U+0000~U+001F, U+007F)와 역슬래시. URL 해석이 탭·줄바꿈을 지우고 역슬래시를 /로 바꾸면서
