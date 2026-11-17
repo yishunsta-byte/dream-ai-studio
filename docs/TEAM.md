@@ -1782,3 +1782,9 @@
 - B19-R2동일reviewer재개,고정7bfd139 원8拒否·27원harness/정상policy변경과새이력/부분損傷追加반례검증. 제품/DB/실IO실행미배정.
 - BackendB20기존미발행draft3파일+고유보고조건부조정재개. 新필드↔SQL/guard/executor맵핑·fixtureidentifier數字문제안전수정·원자rollback/RLS/FK/receiptN/최소권한검증. B19-R2수용전schema완료수용안함,기존SQL3/history/runner변경금지·實managed미적용。
 - 배포도구권한/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
+
+### 점검 / B19-R2 중간 필수 잔존·FIX2 우선
+- 마지막 확인 시각: 2026-11-17 22:49:11 +09:00 (Asia/Seoul). Orca escalation·최근handoffs/Git확인. R2최종고유보고미도착,stopReason없는진행중발견보고로처리. B20draft3파일/T122/T137보존,새미기록최종완료없음.
+- 고정7bfd139 原41/32/27PASS와새17중4拒否기대FAIL분리. prepared.closed+pendingclaim/canceled完成rev超過/aggregate revision<stateRevision admission/canceled liveclaim복원수용4件필수잔존보고. 전체권한자위조가아닌내부단독부분모순,아직수용아님.
+- BackendB19-FIX2우선배정: B20안전checkpoint後status×lifecycle/activeclaim/time/revision/pub/receipt/revocation 전체실제전이행렬·단독경계변조검증,4건국소패치로만끝내지않음. protocol4module/test/고유보고만,실SQL/IO/설정/runtime변경금지. 스키마수용계속보류.
+- 독립reviewer에게현fixed범위최종trace/FAIL보고계속지시,새수정SHA혼입금지. T227권한조치/SSL DEC미수신·운영변경보류,턴 밖 자동 점검 미설정.
