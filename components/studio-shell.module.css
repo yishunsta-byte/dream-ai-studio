@@ -17,6 +17,8 @@
 .topbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:var(--sp-3); min-height:var(--topbar-h); padding:var(--sp-2) var(--sp-6); background:var(--bg-surface); border-bottom:1px solid var(--line); }
 .crumb { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:var(--text-sm); }
 .crumbRoot { color:var(--fg-muted); }
+.headerStatus { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:var(--sp-2) var(--sp-3); min-width:0; max-width:70%; }
+.headerStatus button { min-height:var(--touch-min); }
 .menuButton,.closeButton { display:grid; place-items:center; width:var(--touch-min); height:var(--touch-min); border:1px solid var(--line); background:var(--bg-surface); color:var(--fg-strong); border-radius:var(--radius-sm); cursor:pointer; flex-shrink:0; }
 .menuButton { display:none; }
 .drawer { margin:0; padding:0; border:0; max-width:100%; width:var(--sidebar-w); height:100dvh; max-height:100dvh; background:var(--bg-sidebar); color:var(--fg-on-sidebar); }
@@ -26,7 +28,13 @@
 .skip { position:fixed; left:var(--sp-4); top:var(--sp-4); transform:translateY(-200%); z-index:200; padding:var(--sp-3); background:var(--bg-surface); }
 .skip:focus { transform:translateY(0); }
 @media(max-width:1023px) { .shell { display:block; } .desktop { display:none; } .menuButton { display:grid; } .topbar { padding-inline:var(--sp-4); } }
-@media(max-width:639px) { .crumbRoot { display:none; } }
-.queueCount { font-size:var(--text-sm); color:var(--fg-link); white-space:nowrap; }
+@media(max-width:639px) {
+  /* Reserve one full row for the menu and title; status controls use the next row. */
+  .withHeaderStatus { --topbar-h:calc(var(--touch-min) * 2 + var(--sp-2) * 3); }
+  .topbar { display:grid; grid-template-columns:var(--touch-min) minmax(0,1fr); gap:var(--sp-2) var(--sp-3); min-height:var(--touch-min); }
+  .crumbRoot { display:none; }
+  .headerStatus { grid-column:1 / -1; width:100%; max-width:none; min-height:var(--touch-min); }
+}
+.queueCount { display:inline-flex; align-items:center; min-height:var(--touch-min); font-size:var(--text-sm); color:var(--fg-link); white-space:nowrap; }
 .queueNumbers { display:inline-flex; gap:var(--sp-2); margin-left:auto; color:var(--c-mint-200); }
 .failedCount { color:var(--st-danger-line); }
