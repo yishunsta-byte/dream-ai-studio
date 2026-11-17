@@ -46,7 +46,10 @@ function flipKeepingTime(file:string){const before=statSync(file),bytes=readFile
   const after=statSync(file);flips.push({size:[before.size,after.size],mtimeMs:[before.mtimeMs,after.mtimeMs]});}
 const expectSameStat=()=>{expect(flips).toHaveLength(1);expect(flips[0].size[1]).toBe(flips[0].size[0]);expect(Math.trunc(flips[0].mtimeMs[1])).toBe(Math.trunc(flips[0].mtimeMs[0]));/* same to the millisecond: utimes cannot set sub-ms exactly */};
 beforeEach(async()=>{
-  root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t166-")));folder=join(root,"rt");time=Date.parse("2026-11-17T10:00:00Z");hook.afterWrite=null;hook.afterVerify=null;flips.length=0;
+  root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t166-")));folder=join(root,"rt");time=Date.parse("2026-11-17T10:00:00Z");
+  // T-204: 제품 request는 new Date()로 nextRunAt을 적고 claim은 주입한 now로 비교한다. Date만 가짜로 두어 두 시계를 같은 축(고정 시각 1초 전)에 맞춘다. 타이머(setInterval 등)는 실제 그대로.
+  vi.useFakeTimers({toFake:["Date"]});vi.setSystemTime(time-1000);
+  hook.afterWrite=null;hook.afterVerify=null;flips.length=0;
   await verifyBackupArchive(S9_ZIP,await readBackupManifest(S9_ZIP),folder);mkdirSync(join(folder,"backups"),{recursive:true});
   const sqlite=new Database(join(folder,"data/app.db"));try{sqlite.pragma("foreign_keys = ON");migrateDatabase(sqlite,{migrations:productMigrations()});}finally{sqlite.close();}
   vi.stubEnv("DREAM_DATA_ROOT",folder);handle=openDatabase(join(folder,"data/app.db"),{fileMustExist:true});
@@ -55,7 +58,7 @@ beforeEach(async()=>{
   handle.sqlite.prepare("UPDATE scenes SET needs_recheck=0 WHERE project_id=?").run(P);editingService(handle).complete(P,revision());
   const review=reviewService(handle);for(const item of review.get(P).items)review.update(P,revision(),{itemId:item.templateItemId,status:"pass",note:"가상 s9 사본 확인"});review.approve(P,revision());
 });
-afterEach(()=>{handle?.close();vi.unstubAllEnvs();hook.afterWrite=null;hook.afterVerify=null;if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temporary boundary rejected");rmSync(root,{recursive:true,force:true});});
+afterEach(()=>{vi.useRealTimers();/* T-204: 시험이 실패해도 가장 먼저 실제 시계로 되돌린다 */handle?.close();vi.unstubAllEnvs();hook.afterWrite=null;hook.afterVerify=null;if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temporary boundary rejected");rmSync(root,{recursive:true,force:true});});
 async function runExport(){const request=exportService(handle).request(P,revision());await runNextJob(handle,{now,sleep});return request;}
 function expectRefused(request:{id:string;jobId:string},pattern:RegExp){
   const job=jobRow(request.jobId);expect(job).toMatchObject({status:"failed",code:"EXPORT_INVALID"});expect(job.message).toMatch(pattern);expect(isRetryableCode(job.code)).toBe(false);

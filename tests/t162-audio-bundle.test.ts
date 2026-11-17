@@ -48,14 +48,17 @@ type ExportRow={id:string;status:string;file_path:string|null;manifest_version:n
 const exportRow=(id:string)=>handle.sqlite.prepare("SELECT * FROM exports WHERE id=?").get(id) as ExportRow;
 const jobRow=(id:string)=>handle.sqlite.prepare("SELECT status,error_code AS code,error_message AS message FROM jobs WHERE id=?").get(id) as {status:string;code:string|null;message:string|null};
 beforeEach(async()=>{
-  root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t162-")));folder=join(root,"rt");time=Date.parse("2026-11-17T10:00:00Z");hook.during=null;hook.after=null;
+  root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t162-")));folder=join(root,"rt");time=Date.parse("2026-11-17T10:00:00Z");
+  // T-204: 제품 request는 new Date()로 nextRunAt을 적고 claim은 주입한 now로 비교한다. Date만 가짜로 두어 두 시계를 같은 축(고정 시각 1초 전)에 맞춘다. 타이머(setInterval 등)는 실제 그대로.
+  vi.useFakeTimers({toFake:["Date"]});vi.setSystemTime(time-1000);
+  hook.during=null;hook.after=null;
   await verifyBackupArchive(S9_ZIP,await readBackupManifest(S9_ZIP),folder);mkdirSync(join(folder,"backups"),{recursive:true});
   const sqlite=new Database(join(folder,"data/app.db"));try{sqlite.pragma("foreign_keys = ON");expect(journal(sqlite)!.map(row=>row.version)).toEqual([1,2,3,4,5,6,7,8,9]);migrateDatabase(sqlite,{migrations:productMigrations()});}finally{sqlite.close();}
   vi.stubEnv("DREAM_DATA_ROOT",folder);handle=openDatabase(join(folder,"data/app.db"),{fileMustExist:true});
   // the s9 backup was taken while its own backup job ran; nothing else may be claimed before the export
   handle.sqlite.prepare("UPDATE jobs SET status='failed',lease_until=NULL WHERE status IN ('running','queued')").run();
 });
-afterEach(()=>{handle?.close();vi.unstubAllEnvs();hook.during=null;hook.after=null;if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temporary boundary rejected");rmSync(root,{recursive:true,force:true});});
+afterEach(()=>{vi.useRealTimers();/* T-204: 시험이 실패해도 가장 먼저 실제 시계로 되돌린다 */handle?.close();vi.unstubAllEnvs();hook.during=null;hook.after=null;if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temporary boundary rejected");rmSync(root,{recursive:true,force:true});});
 // s9 leaves scene 2 waiting for its plan-change check (needs_recheck); this copy marks it checked before approving.
 function approve(){handle.sqlite.prepare("UPDATE scenes SET needs_recheck=0 WHERE project_id=?").run(P);const editing=editingService(handle);editing.complete(P,revision());const review=reviewService(handle);for(const item of review.get(P).items)review.update(P,revision(),{itemId:item.templateItemId,status:"pass",note:"가상 s9 사본 확인"});review.approve(P,revision());}
 async function runExport(){const request=exportService(handle).request(P,revision());await runNextJob(handle,{now,sleep});return request;}
