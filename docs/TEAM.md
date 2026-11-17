@@ -2046,3 +2046,9 @@
 - Master T229 source발견: empty성공시이관미실시/작품PC보관단정은조회DTO로입증안됨, empty0/조회시각누락과latestinvalidDate fallback확인요청을 Front msg_06cda0f76484 실제전송. 허용page/test범위안보완·dataerror가짜0/성공시각금지·원Authgate기대유지. 단순작업자완료를기다리는것아닌source대조후구체수정반환.
 - Design T231 msg_1b0002d87d4f 실제배정: fixed6308791 명세-구현source차이/필수추천/실제Front동일SHA 캡처증거대조·고유보고만. baseline차이를후속수정SHA에몰래재사용금지, 새build/공유Auth수정없음. 수락아직미확인. Tester기능보안독립범위와DesignUX범위분리.
 - B25 현재배정계속·고정codec결과아직미수신, Front구현·명세협조병행. 운영개통/Storage/쓰기/배포/새창agentworktree미실행. 공식표T230수용/T231대조/Front보완상태갱신, 문서diff검증만수행·제품시험실행안함.
+### 사용자 신규 방향 / T232 공개 멀티미디어 메인 3안 우선 배정
+- 실제 점검 완료 시각: 2026-11-18 02:28:51 +09:00 (Asia/Seoul). 사용자메인완성콘텐츠방문자노출·새3안·YouTube/Suno/영상사이트참고화려한방향지시 및지정wake처리. T231 msg_eac530c69fb0 수신/수락·기존명세대조착수 확인후 최신사용자요구를우선순위에반영. 기존home/privategate/실자료공개는수정실행안함.
+- Design T232 msg_c14c9d021a30 실제전송. T231현재근거보존후후순위, T208원후보보존·신규t232-public-showcase 비교index+3HTML/CSS/자체자산/1280·390캡처/고유보고만허용. 다크네온시네마·사운드앨범·크리에이터영상피드처럼3구조구분, 작품/탐색/재생·상태와가독성/대비/키보드/reducedmotion 조건. 현재공개사이트실참고URL/시각/차용근거·예시asset표시·권한있는자산·실재생과시연구분지시. 수신·우선전환회신아직미확인.
+- Front msg_b4978eb38efb 신규공개home요구/Designer우선변경통지·현T229보완/검증계속. 완성공개작품showcase와private창작/관리/초안/원본분리, 공개선택자산만후속계약으로노출·실DB/PC파일일괄게시없음. 선택후제품home구현범위별도, 현재Auth/root/layout임의수정없음. Master PLAN/통합기준에신규요구·현재단계/후속공개데이터계약미완료명시.
+- 제한소스검색에서기존public publishing catalog를확인하지못했음(선택rg범위만이며전체부재증명아님). 현재실콘텐츠를이미노출/배포했다고보고하지 않음. 기존Frontend관리/B25병행·추가비용/운영권한확대없음·새Codex창agentworktree없음.
+- Backend B25 msg_d799b3cd2eab의표현매핑수신: owner/authority는원Auth일반UUID, object/asset/intent/request는원계약v7 유지, SQL별도열없는policy/권한/incomingVersion은versionedserverenvelope/raw보존교차검증. Master msg_5cf79835e218로원계약유지·범위수락/신뢰증명아님/정확시각roundtrip검증지시. 잘못된owner까지v7확대문구정정, 원SQL/모델무단변경금지.
