@@ -1720,3 +1720,9 @@
 - 90c46f7 고정79787f9 설계완료수용FAIL. F1/P1 재검증/만료갱신과receipt finalidentity uniqueness·append-only충돌,별도reverification generation권한필요. F2/P1 promoted-orphanGC와finalize共通행lock/CAS·externalpublish전durableidentity기록없어삭제된K ready경합배제불가. 실행공격재현아닌논리counterexample로구분.
 - Backend B16-FIX문서2개만우선배정. object1:receiptN/history·currentstate·별도generation·terminal再조회우선/lease권한分離,publication先durable記錄/GC tombstone/fence/정확락·멱등·응답유실복구trace·capability예약/creationfingerprint 정책정리. SQL/코드/실설정변경미배정. B18안전preview진행중이면증거checkpoint후수정,결제확정금지.
 - T225세션독립검수·Front T226배포준비완료기존상태유지,실배포는T225수용뒤. DEC-SSL-01미수신·운영변경보류,턴 밖 자동 점검 미설정.
+
+### 점검 / B18 안전 checkpoint·B16-FIX 우선 확인
+- 마지막 확인 시각: 2026-11-17 21:48:51 +09:00 (Asia/Seoul). Orca중간상태·최근handoffs/Git확인. B18고유보고아직미작성으로prepared checkpoint수신과문서완료구분,기존T122/T137보존,새미기록완료파일없음.
+- B18관찰: exactorg projects2/paused1·현재Free·Pro From25/month비교표까지만확인,Upgrade plan-card 미click·결제정보미열람·설정변경없음. org전체plan/공유quota/pausedcompute미과금은primary자료근거,실청구총액/일할/세금/당일금액/최종버튼未確認。25달러를실org견적으로확정안함.
+- Backend B16-FIX두문서우선진행수락확인·계속지시. B18은추가provider조사중단,이후고유보고에현checkpoint/조건부시나리오/미확인정리만허용,구매/타pausedproject변경금지. 현작업중단유발하는무내용회신요구안함.
+- T225독립검수/T226 exact배포준비기존상태유지,DEC-SSL-01미수신·운영변경보류. 턴 밖 자동 점검 미설정.
