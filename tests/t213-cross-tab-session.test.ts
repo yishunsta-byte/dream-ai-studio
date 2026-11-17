@@ -213,7 +213,7 @@ describe("화면 연결(정적 계약)", () => {
   });
   it("계정 메뉴: 확인 전에는 이메일을 숨기고, 로그아웃 완료·부분 때만 알린다", () => {
     const menu = read("components/auth/account-menu.tsx");
-    expect(menu).toMatch(/useSessionWatch\(email, busy\)/);
+    expect(menu).toMatch(/useSessionWatch\(email, busy, !boundary\)/); // T-220: 공통 경계가 있으면 그 상태를 쓴다
     expect(menu).toMatch(/confirmed\s*\?\s*<span[^>]*title=\{email\}/);
     // 확인 안내는 좁은 화면에서도 숨기지 않는 별도 스타일(이메일 .email은 600px 이하에서 숨김)
     expect(menu).toMatch(/className=\{styles\.accountNotice\} role="status"/);

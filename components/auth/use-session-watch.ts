@@ -10,9 +10,14 @@ import { checkSession, decideSession, onSessionSignal, reloadOnce } from "@/lib/
 //   / 확인 불가·오프라인 → 의심 상태면 숨긴 채 정직하게 알리고, 아니면 표시 유지.
 export type SessionView = "current" | "checking" | "offline" | "unavailable" | "stale";
 
-export function useSessionWatch(account: string, paused = false) {
+// cleared(T-220, F216-1): 서버가 계정 변경·로그인 없음·허용 밖을 확정했다. 이전 화면 본문은 다시 보여 주지 않는다
+// (다시 받기·로그인 이동·수동 새로 고침만). 의심 상태(checking·offline·unavailable)는 같음 확인 뒤에만 복원한다.
+// enabled=false면 듣지 않는다(공통 경계가 이미 감시할 때 AccountMenu가 중복 감시하지 않게).
+export function useSessionWatch(account: string, paused = false, enabled = true) {
   const [view, setView] = useState<SessionView>("current");
+  const [cleared, setCleared] = useState(false);
   const suspect = useRef(false), running = useRef(false), again = useRef(false), last = useRef(0), pausedRef = useRef(paused);
+  const clearedRef = useRef(false);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
   const verify = useCallback(async (reason: "signal" | "return") => {
@@ -26,7 +31,10 @@ export function useSessionWatch(account: string, paused = false) {
       const decision = decideSession(await checkSession(account), suspect.current);
       if (again.current) return;
       if (decision.view === "keep") return;
+      // 한 번 변경이 확정된 문서는 같은 답이 와도 이전 본문을 되살리지 않는다(새로 고침으로만 해소).
+      if (clearedRef.current && decision.view === "current") { setView("stale"); return; }
       suspect.current = decision.view !== "current";
+      if (decision.go) { clearedRef.current = true; setCleared(true); }
       if (decision.go === "reload") { setView(reloadOnce() ? "checking" : "stale"); return; }
       setView(decision.view);
       if (decision.go) {
@@ -40,6 +48,7 @@ export function useSessionWatch(account: string, paused = false) {
   }, [account]);
 
   useEffect(() => {
+    if (!enabled) return;
     const stop = onSessionSignal(() => { void verify("signal"); });
     const onReturn = () => { if (document.visibilityState === "visible") void verify("return"); };
     const onPageShow = (event: PageTransitionEvent) => { if (event.persisted) void verify("signal"); };
@@ -54,7 +63,7 @@ export function useSessionWatch(account: string, paused = false) {
       window.removeEventListener("pageshow", onPageShow);
       document.removeEventListener("visibilitychange", onReturn);
     };
-  }, [verify]);
+  }, [verify, enabled]);
 
-  return { view, retry: () => { void verify("signal"); } };
+  return { view, cleared, retry: () => { void verify("signal"); } };
 }

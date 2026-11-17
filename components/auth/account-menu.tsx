@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/primitives";
 import { requestLogout } from "@/lib/auth/logout-client";
 import { announceSessionChange } from "@/lib/auth/session-sync";
 import { useSessionWatch, type SessionView } from "./use-session-watch";
+import { useSessionBoundary } from "./session-boundary";
 import styles from "./login.module.css";
 
 // 계정을 확인하지 못한 동안 보이는 문구. 이전 계정 이메일은 보여 주지 않는다(T-213).
@@ -18,7 +19,11 @@ const NOT_CONFIRMED: Record<Exclude<SessionView, "current">, string> = {
 export function AccountMenu({ email }: { email: string }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const { view, retry } = useSessionWatch(email, busy);
+  // 공통 경계(SessionBoundary) 안이면 그 감시 상태를 함께 쓴다(본문과 같은 판정). 경계 밖이면 자체 감시(T-213 동작).
+  const boundary = useSessionBoundary();
+  const own = useSessionWatch(email, busy, !boundary);
+  const { view, retry } = boundary ?? own;
+  useEffect(() => { boundary?.setPaused(busy); }, [boundary, busy]);
   async function logout() {
     setBusy(true); setProblem(null);
     const result = await requestLogout();
