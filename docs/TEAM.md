@@ -1342,3 +1342,7 @@
 - msg_9d2707c8f4e6 /30b302e B1 report read. SQLite services remain; SQL/API guard integrated, actual Postgres pool/repo not yet connected.
 - B3 Backend assigned new driver/transaction-local actor/async project reader and isolated real-driver tests. Driver+type package/lock ownership Backend only; Front T186 informed. Auth/current production/issued SQL/managed project mutations excluded.
 - Real Postgres availability must be confirmed; PGlite/mock cannot count as driver integration. Environment blockers require concrete evidence and prepared reproducible test path while independent implementation continues.
+### B3 real database test environment
+
+- msg_e30583135595: B3 accepted055784e; installed local Postgres/container runtime not found, actual driver integration blocked while code/test harness continues.
+- Master authorized isolated portable official-distribution PostgreSQL test setup only: no admin/service/PATH/public listener, synthetic cluster/roles and owner-tracked process. Managed/prod DB untouched. Verification/source/version and permission failures must be reported; no silent mock substitution.
