@@ -112,7 +112,7 @@ P0/P1과 P2 타임라인·편집·영상/오디오 렌더·SRT/VTT·원본 재�
 | B12/B14/B15 | 미연결 생성·파일검증·메타데이터 adapter의 지정 로컬 계약 독립 수용 | 실제 Storage/업로드/RLS/등록/API 개통과 별개 |
 | B16-FIX/B16-R2 | 수정 설계 독립 수용 | 구현 단계별 검수 필요 |
 | B19/B19-FIX4 | 독립 B19-R5 수용: 고정 d9d438a의 지정 순수 프로토콜 | 보수적 이력 검증 모델이며 실제 DB 영속·락·권한·운영 준비 검증은 별도 |
-| B20 SQL4 draft / B20-FIX | 원 독립 검수 JSON 우회 3건 FAIL → eeca88d 수정본 ready_review, B20-R2 배정 | 원22PASS/3FAIL 재현 후 작성자80PASS 보고. 수정 고정SHA 독립 재검수 전 발행 금지, 현manifest/운영 미적용 |
+| B20 SQL4 draft / B20-FIX | 원 JSON 우회 3건 수정 확인, B20-R2에서 operationId 연결 누락 1건 추가 FAIL → B20-FIX2 배정 | 독립 원80PASS 및 추가8 중7PASS/1FAIL 보고. 새 수정 고정SHA 재검수 전 발행 금지, 현manifest/운영 미적용 |
 | B21 버전 이관 계약 | 796cc50 설계 문서 ready_review, Master 원문 확인 | v1 SQL3 계약 보존·별도 v2 제안. B20 수정 후 SQL4 해시 갱신 및 검토 필요. 실행기 구현·운영 이관 미배정 |
 | 운영/비용 | SSL DEC-SSL-01 미답변, Supabase Free50MB·2GiB 미충족, 구매 없음 | 실제 운영 변경·비용은 별도 결정. 무료 격리 개발 계속 |
 | 디자인 T208 | 새 멀티미디어3안 제출·PC/모바일 시각 확인 | 사용자 선택·제품 적용 미완료 |

@@ -1901,3 +1901,8 @@
 - 마지막 확인 시각: 2026-11-18 00:16:14 +09:00 (Asia/Seoul). 지정 Orca wake msg_ac44f4e6bf8b, Git/status/최근 handoffs 확인. Backend가 실제 v1.2 두문서를 읽고 점검주기·설정/실행 구분·중복scheduler/Master 금지·현게이트 유지를 수락했다고 회신. 다른3세션 수신은 아직 미확인이며 일괄 수락으로 올리지 않는다.
 - 새 구현/독립 검수 결과·미기록 handoff 없음. 기존 T122/T137 미추적 보존. B20-R2 ctx_3e03ef64ee4e 고정 eeca88d 배정 유지, 아직 결과 미수신. B21 후보 참조 갱신은 Master 문서검토 통과 기록과 구분하여 설계 전체/SQL4 수용으로 확대하지 않는다.
 - 후속 판정: 기존 독립 검수 유지, 중복 검수·제품 구현/SQL4 발행 추가배정 없음. 필수수정 또는 PASS 결과 도착 후 다음 범위를 배정한다. 30분 예약 활성/최초00:30KST 실행 전 상태 유지, 이번 wake는 예약 실행 증거가 아니다.
+### 점검 / B20-R2 잔존 operationId 연결 누락·B20-FIX2 배정
+- 마지막 확인 시각: 2026-11-18 00:17:29 +09:00 (Asia/Seoul). 지정 wake msg_3f8272710af0·Git/최근 handoffs 및 해당 SQL/model schema 참조 확인. 원3FAIL 해소와 원80PASS 보고는 인정하되 새 독립8 중7PASS/1FAIL escalation으로 후보 eeca88d 수용 보류. 최종 고유보고는 아직 정리 중이며 최종완료로 표현하지 않는다.
+- 정상 초기 실패 uid3003의 time/revision/worker를 유지한 채 closure.operationId만 uid3999로 변경해도 deferred 검사가 수용. 보고된 selected relational linkage 누락을 필수 수정 판정. 재현 D:/starwork/b20-r2-eeca88d/tests/postgres/b20-r2-independent.test.ts:439부근, 정상 exercise(false)/잘못된 exercise(true) 대조. 원SQL1..3/발행manifest 불변, 전체프로토콜 동등성 요구와 구분.
+- Backend B20-FIX2 실제 전송 msg_f808100f32a8: 최소 relational 수정·원80/독립8 기대유지 재현·ID/null/owner/유효취소·cleanup 경계·고정SHA/해시/정리 보고. 전송 영수증 확보, 수락은 아직 미확인. 검수자 ctx_3e03ef64ee4e에 msg_c4714ac46bf7 최종 FAIL 증거·정상대조·cleanup·재현 직접 인계 요청 전송. 고유보고 외 제품 수정 금지.
+- B21 현후보 참조는 수용대기이며 FIX2 고정 후 재갱신 필요. v2구현/SQL4발행/운영변경 보류 유지. 기존 T122/T137 미추적 보존, 새 미기록 handoff 없음. 30분 예약 활성·첫 실행 아직 미검증.
