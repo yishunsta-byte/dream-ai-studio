@@ -1434,3 +1434,8 @@
 
 - msg_4303af80b994 /d539523 report read. Master directly viewed all three1280 PNGs: A Open Desk, B Production Deck, C Story Table. Recommend A for clear new/continue actions and project visibility; this is design review, not independent behavior certification.
 - Author42 layouts/51 interactions/8 compare links and44 captures are self-QA. Static artifacts only, no production UI change or user selection presumed. Comparison/three views presented to user.
+### B4-G returned; T201 and B5
+
+- msg_808009678a9c /74e3be7 report read. Author actualTLS/Next-dev HTTP7 controls and236 related tests/lint/type, no production build/managed activation claim.
+- T201 Tester requested fixed GET/auth/tenant/no-store/legacy combination review. T199 and T200 remain independent legacy checks.
+- B5 Backend assigned real checksum/history/lock/dry-run migration runner and isolated apply/idempotency/rollback/provision tests, no managed DDL or changes to issued SQL. Concrete managed provision readiness follows independent acceptance.
