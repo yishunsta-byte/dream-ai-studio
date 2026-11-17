@@ -2116,3 +2116,9 @@
 - B25-R원86/추가49(37pure12PG) 중간PASS/원1036blob·source/protected20·정확시간3timezone/MAXSAFE/raw·권한한계/type/lint0/2cluster정리보고 수신. 최종고유report/commit은아직미수신으로수용전. 재해시일관성은actor/livepolicy증명아님명시유지.
 - T236 기존Tester 실제후속배정 msg_2d6227f4ff17: B25최종반환후단일다음검수로누적ebe84ea 원F2341/2·foreground/background/samefocus2회/입력선택/removeddisabled/다른control·세션irreversible/44px·양폭검수. 공유고유T236보고만·productionbuild는Front/mainPCartifact출처대조만. 수락아직미확인, B25완료전동시착수안함.
 - Front msg_014f9bd6a4cc 실제artifact/source/BUILD_ID·서비스지원요청, 브라우저는Tester배타소유·동시쿠키/fixture변경금지. 정적UI3안반환·B26권한문서준비병행, 현재수정본수용/배포아님. 새Codex창agentworktree/운영변경없음.
+### 점검 / B25 최종 독립 수용·B26 설계 반환 및 별도 검토
+- 실제 점검 완료 시각: 2026-11-18 03:12:59 +09:00 (Asia/Seoul). 지정wake msg_18fc7a645521/msg_7db3766bca23/msg_4e223c25f3d4·B26 153행문서/기존소스근거·B25-R85108b6 원문·Git/최근handoffs확인. 기존T122/T137보존, 전체제품시험반복안함.
+- B25 da0f740 원86/추가49 첫실행PASS·원1036blob/protected20감사·exactraw/time/SQLparameter·양성재해시trust한계/소유2cluster정리·type/lint근거검토후pristine-only codec 지정범위독립PASS 수용. production예약/actor/livepolicy/leastprivilege/Storage개통은별개. Backend msg_da6040493a65 통지→msg_4e223c25f3d4 수신·후속경계수락확인. Tester B25반환으로T236선행조건해소·현재배정전환예정, actualT236실행회신은아직미수신으로구분.
+- B26 8d53575241b45588e2a8cd1e799f39b8466e335d doc-only ready_review. 5공백/9table read3INSERT·고정searchpath/actorGUCtrustedcredential/전용NOLOGIN·FORCERLS·lock-only UPDATE/checkfalse·canonicalclientledger/compositeFK·policy/request/objectlock·원snapshot/evolvedreplay·unknownCOMMITprimaryunique-latch·version5delta 및5미정선택확인. 작성자문서검증만이며새SQL/권한실증은아직없음.
+- B26-R 기존Front에 msg_4190db95455f 실제독립설계검토배정, T236mainPC서비스협조우선·브라우저Tester전용. 고유보고만공유수정, 불확실RLS lock/deferredcontext는공식자료/선택ownednativeprobe로검증또는미확인표시·같은제품환경/타cluster변경없음. 수락아직미확인. Backend는설계질문/근거협조, 실제SQL5/role/SECDEF/API코드승인없음.
+- 현재T236/UI수정검수준비·B26독립설계병행, 디자인3안정적산출수용/방향확정전제품통합미실행. 새창agentworktree·운영DB/과금/배포없음, 기준표갱신.
