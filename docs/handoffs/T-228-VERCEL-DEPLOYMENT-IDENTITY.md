@@ -68,3 +68,16 @@
 
 ## 보호
 - 새 Codex 창·별도 점검 agent 없음. 3013, 공유 .next, Backend WIP 미접촉. 비밀값 조회 없음.
+
+## 추가: kzxq 프로젝트 삭제(사용자 직접 승인, 2026-11-17T16:0xZ)
+- 주인님이 이 대화에서 "너가 하면 되잖아 승인할께"라고 직접 승인했어요. Master 배정(T-228은 읽기 전용) 밖의 **사용자 결정**이에요.
+- 실행
+  - Vercel `dream-ai-studio-kzxq` → Settings → General → Delete Project.
+  - 확인 창 문구를 먼저 읽었어요: "This will permanently delete the project and related resources like Deployments, Domains and Environment Variables… To confirm, type “dream-ai-studio-kzxq” / “delete my project”".
+  - 경로가 `/dream-ai-studio-kzxq/settings`이고 확인 창 대상이 kzxq인지 코드로 검사한 뒤에만 입력·삭제했어요.
+  - 화면: `tmp/t228-shots/kzxq-delete-dialog.png`, `kzxq-after-delete.png`
+- 결과(2026-11-17T16:02:31Z)
+  - `https://dream-ai-studio-kzxq.vercel.app` `/login`·`/`·`/api/projects` → **404 DEPLOYMENT_NOT_FOUND**
+  - 프로젝트 목록에 kzxq가 없고, `dream-ai-studio`(orpin, 8ffe3c7)만 남았어요.
+  - 운영 `dream-ai-studio-orpin.vercel.app`: `/login` 200, `/` 307 → 로그인, `/api/projects` 401. **변화 없음**이에요.
+- 운영 프로젝트·GitHub 저장소·env·도메인(운영)은 건드리지 않았어요. 삭제는 되돌릴 수 없어요.
