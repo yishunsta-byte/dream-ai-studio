@@ -1890,3 +1890,9 @@
 - 마지막 확인 시각: 2026-11-18 00:13:42 +09:00 (Asia/Seoul). 지정 wake msg_6205bb0b72cc·Git status/log/최근 handoffs 확인. B21 1da5a5984889c9c15846536bfa9a70bccb6cbb06 단일문서 diff 검토, 기존 T122/T137 보존. 새 미기록 보고 없음.
 - Master가 실제 draft canonical LF SHA256 7568cf313b3fb203bda8a8d810b62d8345c0d158931902bef06dffa6703566d4 계산하여 B21 표의 현후보와 일치 확인. 현후보 eeca88d 및 거절된 ef38db7/0385c666 역사 구분, 변경 guard 정의 동시고정 필요와 불변 counts, B20-R2 미수용/미발행 경계를 확인. 이번 문서 참조 갱신 범위는 검토 통과; schema/runner 구현이나 운영 수용은 아님.
 - B20-R2 dispatch ctx_3e03ef64ee4e는 이전 배정 유지, 새 결과 아직 없음. Backend 추가 제품 구현/중복 검수는 배정하지 않고 필수수정 반환 시 우선 대응; SQL4 발행 및 v2 구현은 독립 재검수 판정 후 다음 범위로 배정한다. 사용자 새 결정 필요 없음. 턴 밖 자동 점검 미설정.
+### 운영 규칙 v1.2 / 실행 중 5분·턴 밖 30분 점검
+- 마지막 확인 시각: 2026-11-18 00:15:17 +09:00 (Asia/Seoul). 사용자 요청으로 AI_TEAM_RULES.md와 docs/team/CODEX_MASTER.md 갱신. 실행 중5분, 메시지/완료/유휴 이벤트 가능한 첫 시점 확인, tracked/untracked 인수인계 대조, 판정 후 실제 배정·시각 기록 유지. 이전 '턴 밖 미설정'은 이 시점부터 새 설정으로 대체하며 과거 기록은 보존한다.
+- installed orca automations create 도움말/기존 list=[] 확인 후 예약 생성 성공. ID070fa0ae-40ce-46d7-8e25-fd9700b419bb, 이름 Dream AI Studio Master 30분 상태점검, provider codex, existing D:/starwork/dream-ai-studio, fresh-session, local_host_service, enabled=true, cron */30 * * * *, timezone Asia/Seoul. 생성영수증 nextRunAt1794929400000 = 2026-11-18 00:30 KST.
+- CX-CHECK-30M은 읽기전용 단발 점검 후 run:run_a3e2ad32d55d에 실제 status 보고, Master가 후속 판정/배정/공용기록 담당. 기존 Master와 상태문서 동시수정·중복배정 방지, mailbox check/polling·제품/운영변경 금지. 로컬 호스트/Orca/에이전트 실행환경 가동 필요. 설정 활성은 확인했으나 최초 예약 실행/보고 수신은 아직 미검증.
+- 진행작업 B20-R2 고정 eeca88d 독립 재검수 및 현재 검수 게이트는 유지한다. 이번 요청은 점검 주기 변경이며 배포/SSL/과금 권한 확대가 아니다. 관련4세션에 규칙 변경 통지 예정, 수신 확인 전 적용 완료로 주장하지 않는다.
+- 규칙 변경 통지: Backend/Front/Design/Tester 네 terminal mailbox에 실제 전송 영수증 확보(2026-11-18 00:15:38 +09:00). terminal-only 비영구 전달 경고 있으며 상대 수신·읽음은 아직 미확인. automation show 재조회 enabled/cron/AsiaSeoul/nextRunAt 일치 확인. 문서 diff-check 통과.
