@@ -30,12 +30,14 @@ const approve=()=>{handle.sqlite.prepare("UPDATE scenes SET needs_recheck=0 WHER
 const source=()=>join(folder,"storage",(handle.sqlite.prepare("SELECT file_path FROM assets WHERE id=?").get(ids.voice) as {file_path:string}).file_path);
 beforeEach(async()=>{
  root=realpathSync(mkdtempSync(join(tmpdir(),"dream-t164-ui-")));folder=join(root,"rt");time=Date.parse("2026-11-17T12:00:00Z");
+ // T-223(T-204와 같은 방식): 제품 request는 new Date()로 nextRunAt을 적고 claim은 주입한 now로 비교한다. Date만 가짜로 두어 두 시계를 같은 축(고정 시각 1초 전)에 맞춘다. 타이머는 실제 그대로.
+ vi.useFakeTimers({toFake:["Date"]});vi.setSystemTime(time-1000);
  await verifyBackupArchive(S9_ZIP,await readBackupManifest(S9_ZIP),folder);mkdirSync(join(folder,"backups"),{recursive:true});
  const sqlite=new Database(join(folder,"data/app.db"));try{sqlite.pragma("foreign_keys=ON");migrateDatabase(sqlite,{migrations:productMigrations()});}finally{sqlite.close();}
  vi.stubEnv("DREAM_DATA_ROOT",folder);handle=openDatabase(join(folder,"data/app.db"),{fileMustExist:true});
  handle.sqlite.prepare("UPDATE jobs SET status='failed',lease_until=NULL WHERE status IN ('running','queued')").run();
 });
-afterEach(()=>{handle?.close();vi.unstubAllEnvs();if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temp boundary");rmSync(root,{recursive:true,force:true});});
+afterEach(()=>{vi.useRealTimers();handle?.close();vi.unstubAllEnvs();if(dirname(realpathSync(root))!==realpathSync(tmpdir()))throw new Error("Temp boundary");rmSync(root,{recursive:true,force:true});});
 
 describe("T164 actual fake-DB preview to export UI",()=>{
  it("v2 lists actual source roles/count/rights and honest size/backup/manual-edit limits",()=>{
