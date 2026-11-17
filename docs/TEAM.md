@@ -1523,3 +1523,8 @@
 - Front 679e703 제출: 목록 loading 삭제, 401/403/503×목록/단건 실제307·정확Location·no-store·query0 강제. 작성자 고정사본HTTP14관찰 PASS/관련442/type/lint PASS, 아직 독립수용 전. 검증기 사본삭제누락 중간FAIL도 보고에 보존.
 - T211 독립 worker에 T207+T210 묶음 검수 재개 요청. 기준679e703, 실제원HTTP runner/운영start/TLS PG와auth/DTO/import/local/owner경계, 고유 T-211-CLOUD-READ-UI-REVIEW.md. 제품수정 미허용.
 - T212 Front에 이전 미확인 빈목록/공통오류 화면의 양폭·키보드·재시도 실제browser 검증만 배정. 고유 T-212-CLOUD-READ-STATE-UI-CHECK.md. 검수중제품추가수정보류, 실제managed·3013/.next·Backend보호.
+
+### T208 새 멀티미디어 3안 수신·시각 검토
+- Design 25210ae/report T-208-MULTIMEDIA-HOME-OPTIONS.md 확인. 새3안: NEON PLAY(추천), COLOR WAVE, CINEMA STAGE. 비교 docs/design/t194-multimedia-options/index.html. 정적시안만이며실재생/저장/제작/클라우드호출없음.
+- Master가3안PC preview 및390normal 총6장 직접view_image로시각확인. 동작·색대비 전체를독립검수했다고확대하지않음. 작성자42레이아웃/53동작·키보드대조및47스크린샷은작성자검증근거로보존.
+- 사용자에게실제비교링크와추천1번제공. 선택/제품적용/배포미완료. Design에수신과보존범위전달,제품변경추가미배정. 기존T194와진행중cloud/Auth/DB변경보호.
