@@ -1337,3 +1337,8 @@
 - msg_0212eaf0d646 /e60b1c0: test inventory explicitly distinguishes public auth/self-guarded password/protected APIs. Master reran three auth files:143 PASS, resolving13 integration-test failures without changing product auth.
 - msg_9791e9764a37 Tester actual fake-Auth/Next reproduces F184-1 cross-origin form session creation and F184-2 logout failure hidden after password update. These product failures remain despite143 tests passing.
 - T186 Front owner requested priority defense/error-handling fixes; safe isolated testing, no user password/mail/DB mutation, no unverified push/deploy. Tester continues original fixed baseline and final report. B1 backend contract work continues separately.
+### B1 accepted as contract; B3 actual connection implementation
+
+- msg_9d2707c8f4e6 /30b302e B1 report read. SQLite services remain; SQL/API guard integrated, actual Postgres pool/repo not yet connected.
+- B3 Backend assigned new driver/transaction-local actor/async project reader and isolated real-driver tests. Driver+type package/lock ownership Backend only; Front T186 informed. Auth/current production/issued SQL/managed project mutations excluded.
+- Real Postgres availability must be confirmed; PGlite/mock cannot count as driver integration. Environment blockers require concrete evidence and prepared reproducible test path while independent implementation continues.
