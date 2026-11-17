@@ -2,7 +2,14 @@ import { requireApiAuth } from "@/lib/auth/api";
 import { z } from "zod";
 import { createProject, ProjectInputError } from "@/lib/services/projects";
 import { WorkflowError } from "@/lib/domain/stages";
+import { createProjectReadRequest } from "@/lib/services/postgres/project-read-request";
 export const runtime="nodejs";
+// New cloud-read API. The existing POST below keeps its local creation contract.
+export async function GET() {
+ const reads=createProjectReadRequest();
+ const reply=await reads.list();
+ return Response.json(reply.body,{status:reply.status,headers:reply.headers});
+}
 const requestSchema=z.strictObject({menuId:z.string().min(1).max(80),inputs:z.record(z.string(),z.unknown())});
 export async function POST(request:Request){
  const denied=await requireApiAuth();if(denied)return denied;

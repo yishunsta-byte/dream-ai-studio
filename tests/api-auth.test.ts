@@ -127,7 +127,7 @@ const guardedRoutes = [
   "backups/configuration", "backups", "characters", "exports/[id]", "jobs",
   "library/archive", "projects/[id]/finishing", "projects/[id]/production",
   "projects/[id]/renders", "projects/[id]/timeline", "projects/[id]/workflow",
-  "projects", "renders/[id]/cancel", "renders/[id]/file", "restore/finish", "restore/inspect",
+  "projects", "projects/[id]", "renders/[id]/cancel", "renders/[id]/file", "restore/finish", "restore/inspect",
 ];
 const modulePath = (route: string) => `../app/api/${route}/route.ts`;
 const protectedRoutes = Object.entries(routeModules).filter(([path]) =>
