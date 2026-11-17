@@ -1355,3 +1355,8 @@
 
 - msg_c0631bcc5f63: Tester final original a278e80 report read. Actual F184-1/2 and normal controls preserved;767/23skip after clean env, API/settings/backup/runtime verified within scope. No T186 result merged into original verdict.
 - T187 fixed dec2be1 snapshot recheck accepted and started. Mobile title clipping U185-1 P3 is a separate follow-up, not an authentication acceptance blocker. Backend package/new Postgres WIP protected.
+### B3 ready_review; independent B3-R and B4 contract preparation
+
+- msg_851e548cf25e /994a894 report/stat read. Actual portablePG18.7 driver13+unit20 authorPASS, isolated runner ownership/stop evidence. Managed database/production callers still disconnected, not complete cloud backend.
+- Original independent reviewer requested B3-R fresh-cluster real driver verification, report only. Backend assigned B4-C project-read/verified-actor/safe-error contract document, no concurrent B3/auth product edits.
+- Current Design shell WIP protected. T187 auth recheck remains separate; no push/deploy yet.
