@@ -364,3 +364,104 @@ describe("B19-FIX internally consistent snapshot boundaries", () => {
     expect(traps).toBe(2);
   });
 });
+
+function reachableMatrix() {
+  const pending = apply(fresh(), complete(), owner, 1);
+  const leased = apply(pending, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 0, leaseUntil: 80 }, worker, 2);
+  const publication = apply(leased, { type: "reservePublication", operationId: op1, fingerprint: fp, expectedFence: 1, identity }, worker, 3);
+  const failed = apply(publication, { type: "rejectVerification", operationId: op1, fingerprint: fp, expectedFence: 1, failureCode: "MEDIA_INVALID" }, worker, 4);
+  const canceled = apply(publication, { type: "cancel" }, owner, 4);
+  const emptyCanceled = apply(fresh(), { type: "cancel" }, owner, 1);
+  const cleanup = apply(canceled, { type: "claimCleanup", cleanupId }, gc, 5);
+  const unboundCleanup = apply(emptyCanceled, { type: "claimCleanup", cleanupId }, gc, 2);
+  const observation = { type: "observeCleanup" as const, cleanupId, expectedBarrierFence: 1, absent: true, writerQuiescent: true, identityDigest: protocolDigest("object-identity", identity) };
+  const tombstone = apply(cleanup, observation, gc, 6);
+  const late = apply(tombstone, { ...observation, absent: false, writerQuiescent: false }, gc, 7);
+  const ready = registered(), revoked = apply(ready, { type: "revoke" }, owner, 2);
+  const reverify = apply(ready, complete(op2, "reverify", 90), owner, 2);
+  const reverifyLease = apply(reverify, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 80 }, worker, 3);
+  const reverifyFailure = apply(reverifyLease, { type: "rejectVerification", operationId: op2, fingerprint: fp, expectedFence: 1, failureCode: "HASH_MISMATCH" }, worker, 4);
+  const reverifySuccess = apply(reverifyLease, finalize(op2, r2, 90), worker, 4);
+  const supersede = (s: UploadModel) => apply(s, complete(uid(210), "reverify", 90), owner, 5);
+  const reclaim = apply(publication, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 1, leaseUntil: 89 }, worker, 81);
+  return [
+    ["fresh", fresh()], ["initial unclaimed", pending], ["initial leased", leased], ["publication", publication], ["initial failed", failed],
+    ["initial canceled unclaimed", apply(pending, { type: "cancel" }, owner, 2)], ["initial canceled claimed", canceled], ["empty canceled", emptyCanceled],
+    ["cleanup bound", cleanup], ["cleanup unbound", unboundCleanup], ["tombstone", tombstone], ["late write", late], ["registered", ready], ["revoked", revoked],
+    ["reverify unclaimed", reverify], ["reverify leased", reverifyLease], ["reverify failed", reverifyFailure], ["reverify succeeded", reverifySuccess],
+    ["superseded unclaimed", supersede(reverify)], ["superseded claimed", supersede(reverifyLease)], ["reclaimed old publication", reclaim],
+  ] as const;
+}
+
+describe("B19-FIX2 reachable-state and mutation matrix", () => {
+  it("keeps every actual reachable lifecycle/status positive control and accepts higher unrecorded CAS counters", () => {
+    const states = reachableMatrix(); expect(states).toHaveLength(21);
+    for (const [, s] of states) {
+      expect(checkedModel(s)).toEqual(s);
+      const higher = structuredClone(s); higher.revision++;
+      expect(checkedModel(higher).revision).toBe(higher.revision); // lower bound, not invented exact full-history count
+      const changedPolicy = structuredClone(s); changedPolicy.verifiers = [stranger];
+      expect(checkedModel(changedPolicy).verifiers).toEqual([stranger]); // current set != historical authority
+    }
+  });
+  it("rejects single-field lifecycle/closed/state/generation/current corruption across reachable snapshots", () => {
+    let attempts = 0;
+    for (const [, s] of reachableMatrix()) {
+      const changes: Array<(v: UploadModel) => void> = [v => { v.closed = !v.closed; }, v => { v.stateRevision++; }, v => { v.activeGeneration++; },
+        v => { v.currentReceiptId = uid(999); }, v => { v.lifecycle = v.lifecycle === "registered" ? "reserved" : "tombstoned"; }];
+      if (s.lifecycle === "tombstoned") changes[4] = v => { v.lifecycle = "cleanup_claimed"; };
+      if (s.revision > 0) changes.push(v => { v.revision = 0; });
+      if (s.identity) changes.push(v => { v.publication = null; });
+      if (s.revocations.length) changes.push(v => { v.revocations = []; });
+      for (const change of changes) { const bad = structuredClone(s); change(bad); fails("INPUT", () => checkedModel(bad)); attempts++; }
+    }
+    expect(attempts).toBe(142);
+  });
+  it("checks all status substitutions and claim/completion/revision boundaries for every retained operation", () => {
+    let rejected = 0, unchanged = 0;
+    for (const [, s] of reachableMatrix()) for (let index = 0; index < s.operations.length; index++) {
+      const o = s.operations[index];
+      for (const status of ["pending", "succeeded", "failed", "canceled"] as const) {
+        const bad = structuredClone(s); bad.operations[index].status = status;
+        if (status === o.status) { checkedModel(bad); unchanged++; } else { fails("INPUT", () => checkedModel(bad)); rejected++; }
+      }
+      const changes: Array<(v: UploadModel["operations"][number]) => void> = [v => { v.expectedStateRevision = s.stateRevision + 1; },
+        v => { v.completedStateRevision = s.stateRevision + 1; }, v => { v.createdAt = v.authorizationUntil; }, v => { v.fence = Number.MAX_SAFE_INTEGER; }];
+      if (o.leaseUntil !== null) changes.push(v => { v.workerId = null; }, v => { v.leaseUntil = v.authorizationUntil + 1; });
+      if (o.completedAt !== null) changes.push(v => { v.completedAt = v.createdAt - 1; });
+      if (o.status === "canceled" && o.canceledClaim) changes.push(v => { v.canceledClaim = null; }, v => {
+        const h = v.canceledClaim!; v.workerId = h.workerId; v.leaseUntil = h.leaseUntil; v.claimedAt = h.claimedAt; v.claimVerifiers = [...h.claimVerifiers];
+      });
+      for (const change of changes) { const bad = structuredClone(s); change(bad.operations[index]); fails("INPUT", () => checkedModel(bad)); rejected++; }
+    }
+    expect(rejected).toBe(240); expect(unchanged).toBe(26);
+  });
+  it("preserves canceled historical claim with no live slot and forbids reopening an empty canceled intent", () => {
+    const before = prepared(), canceled = apply(before, { type: "cancel" }, owner, 2), o = canceled.operations[0];
+    expect(o.workerId).toBeNull(); expect(o.claimedAt).toBeNull(); expect(o.leaseUntil).toBeNull(); expect(o.claimVerifiers).toEqual([]);
+    expect(o.canceledClaim).toMatchObject({ workerId: worker, fence: 1, claimedAt: 1, leaseUntil: 80 });
+    expect(o.fence).toBe(o.canceledClaim!.fence + 1);
+    expect(operationResult(canceled, op1, fp, ctx(canceled, owner, 999)).status).toBe("canceled");
+    const empty = structuredClone(apply(fresh(), { type: "cancel" }, owner)); empty.closed = false;
+    fails("INPUT", () => checkedModel(empty));
+    const futureRevision = structuredClone(canceled); futureRevision.operations[0].completedStateRevision = 999;
+    fails("INPUT", () => checkedModel(futureRevision));
+  });
+  it("requires recorded cleanup observation for completion and monotonically ordered observation time", () => {
+    let s = apply(apply(prepared(), { type: "cancel" }, owner, 2), { type: "claimCleanup", cleanupId }, gc, 3);
+    const noObservation = structuredClone(s); noObservation.lifecycle = "tombstoned"; fails("INPUT", () => checkedModel(noObservation));
+    const action = { type: "observeCleanup" as const, cleanupId, expectedBarrierFence: 1, absent: true, writerQuiescent: true, identityDigest: protocolDigest("object-identity", identity) };
+    fails("EXPIRED", () => apply(s, action, gc, 2));
+    s = apply(s, action, gc, 4); expect(s.cleanup!.observation?.at).toBe(4);
+    const detached = structuredClone(s); detached.cleanup!.observation = null; fails("INPUT", () => checkedModel(detached));
+    fails("EXPIRED", () => apply(s, { ...action, absent: false }, gc, 3));
+  });
+  it("retains exact creation revision counts for its fully represented begin/settle/retire history", () => {
+    const request = { requestId: uid(230), payload: { menuId: "unit", title: "title", inputs: {}, referenceIds: [] }, snapshot: { menu: {}, config: {}, policyEpoch: 1 }, authorizationUntil: 10 };
+    let s = beginCreation(reserveCreationLedger(owner, [worker]), request, ctx({ revision: 0 }, owner));
+    const bad = structuredClone(s); bad.revision = 0; fails("INPUT", () => creationResult(bad, request.requestId, request.payload, ctx(bad, owner)));
+    s = settleCreation(s, { requestId: request.requestId, fingerprint: s.entries[0].fingerprint, result: { status: "canceled" } }, ctx(s, worker, 2));
+    s = retireCreation(s, request.requestId, ctx(s, worker, 3)); expect(s.revision).toBe(3);
+    expect(beginCreation(s, request, ctx(s, owner, 999))).toEqual(s);
+  });
+});

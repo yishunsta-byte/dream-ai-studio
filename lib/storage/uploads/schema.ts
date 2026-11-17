@@ -92,24 +92,29 @@ export type Receipt = z.infer<typeof receiptSchema>;
 export const verificationFailureSchema = z.enum(["INVALID_BYTES", "MIME_MISMATCH", "SIZE_MISMATCH", "HASH_MISMATCH", "MEDIA_INVALID"]);
 export const verificationSchema = z.strictObject({
   id: recordId, kind: z.enum(["initial", "reverify"]), generation: counter.min(1), fingerprint: digestSchema,
-  policyEpoch: counter, policyDigest: digestSchema, authorizationUntil: counter, fence: counter, leaseUntil: counter.nullable(), workerId: id.nullable(),
+  policyEpoch: counter, policyDigest: digestSchema, createdAt: counter, authorizationUntil: counter, fence: counter, leaseUntil: counter.nullable(), workerId: id.nullable(),
   claimedAt: counter.nullable(), claimVerifiers: z.array(id).max(100), completedAt: counter.nullable(), completedStateRevision: counter.nullable(),
+  canceledClaim: z.strictObject({ workerId: id, fence: counter.min(1), claimedAt: counter, leaseUntil: counter,
+    authorizationUntil: counter, policyEpoch: counter, policyDigest: digestSchema, claimVerifiers: z.array(id).min(1).max(100) }).nullable(),
   expectedStateRevision: counter, status: z.enum(["pending", "succeeded", "failed", "canceled"]),
   receiptId: recordId.nullable(), terminalPayloadDigest: digestSchema.nullable(), failureCode: verificationFailureSchema.nullable(),
 });
 export const uploadModelSchema = z.strictObject({
   ownerId: id, objectId: recordId, assetId: recordId, intentId: recordId,
-  revision: counter, policyEpoch: counter, policyDigest: digestSchema, barrierFence: counter, stateRevision: counter, activeGeneration: counter,
+  revision: counter, reservedAt: counter, policyEpoch: counter, policyDigest: digestSchema, barrierFence: counter, stateRevision: counter, activeGeneration: counter,
   lifecycle: z.enum(["reserved", "publication_reserved", "registered", "cleanup_claimed", "tombstoned"]),
   intentExpiresAt: counter, issueEnvelopeUntil: counter, maxIssues: counter.min(1).max(1000), closed: z.boolean(),
+  closure: z.strictObject({ revision: counter.min(1), at: counter, principalId: id, authorizers: z.array(id).min(1).max(100),
+    reason: z.enum(["cancel", "verification_failure", "cleanup"]), operationId: recordId.nullable() }).nullable(),
   verifiers: z.array(id).min(1).max(100), collectors: z.array(id).min(1).max(100), policyManagers: z.array(id).min(1).max(100),
   identity: identitySchema.nullable(), incoming: sourceSchema, media: mediaSchema.nullable(), currentReceiptId: recordId.nullable(), revoked: z.boolean(),
   revocations: z.array(z.strictObject({ revision: counter.min(1), at: counter, principalId: id, authorizers: z.array(id).min(1).max(101),
     operationId: recordId.nullable(), kind: z.enum(["manual", "verification_failure"]) })).max(1000),
   operations: z.array(verificationSchema).max(1000), receipts: z.array(receiptSchema).max(1000),
   issues: z.array(z.strictObject({ id: recordId, issueUntil: counter, horizon: counter.nullable(), boundEvidence: digestSchema.nullable(), dispatched: z.boolean() })).max(1000),
-  publication: z.strictObject({ operationId: recordId, fence: counter.min(1), barrierFence: counter, identityDigest: digestSchema }).nullable(),
-  cleanup: z.strictObject({ id: recordId, barrierFence: counter.min(1), claimedAt: counter }).nullable(),
+  publication: z.strictObject({ operationId: recordId, fence: counter.min(1), barrierFence: counter, reservedAt: counter, identityDigest: digestSchema }).nullable(),
+  cleanup: z.strictObject({ id: recordId, barrierFence: counter.min(1), claimedAt: counter,
+    observation: z.strictObject({ at: counter, absent: z.boolean(), writerQuiescent: z.boolean(), identityDigest: digestSchema }).nullable() }).nullable(),
 });
 export type UploadModel = z.infer<typeof uploadModelSchema>;
 export const commandSchema = z.discriminatedUnion("type", [

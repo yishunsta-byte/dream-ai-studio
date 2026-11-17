@@ -25,6 +25,7 @@ export type CreationLedger = z.infer<typeof ledgerSchema>;
 function ledger(input: unknown) {
   const s = parse(ledgerSchema, input);
   need(new Set(s.entries.map(v => v.requestId)).size === s.entries.length, "INPUT");
+  need(s.revision === s.entries.length + s.entries.filter(e => e.terminal !== null).length + s.entries.filter(e => e.retirement !== null).length, "INPUT");
   for (const e of s.entries) {
     need(e.fingerprint === composedFingerprint(e.clientDigest, e.snapshotDigest), "INPUT");
     if (e.snapshot) need(e.snapshotDigest === protocolDigest("creation-snapshot", e.snapshot), "INPUT");
