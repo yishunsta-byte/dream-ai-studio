@@ -7,7 +7,7 @@ const state = vi.hoisted(() => ({ canStart: false, account: null as string | nul
 vi.mock("@/lib/services/startup", () => ({
   checkStartup: () => ({ canStart: state.canStart, checks: [{ id: "data", label: "data 폴더", status: state.canStart ? "pass" : "fail", message: "파일을 저장할 수 없어요." }] }),
 }));
-vi.mock("@/lib/auth/server", () => ({ currentAccountEmail: async () => state.account }));
+vi.mock("@/lib/auth/render", () => ({ currentAccountEmail: async () => state.account }));
 vi.mock("@/lib/menus/server", () => ({ getMenuConfig: () => ({ groups: [], menus: [], workspaces: [] }) }));
 
 const saved = process.env.VERCEL;

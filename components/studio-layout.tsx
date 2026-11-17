@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { getMenuConfig } from "@/lib/menus/server";
 import { checkStartup } from "@/lib/services/startup";
-import { currentAccountEmail } from "@/lib/auth/server";
+import { currentAccountEmail } from "@/lib/auth/render";
 import { SetupReport } from "./setup-report";
 import { CloudPending } from "./auth/cloud-pending";
 import { StudioShell } from "./studio-shell";

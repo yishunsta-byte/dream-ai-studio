@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { authMode } from "@/lib/auth/config";
-import { currentAccountEmail } from "@/lib/auth/server";
+import { currentAccountEmail } from "@/lib/auth/render";
 import { NewPasswordForm } from "@/components/auth/new-password-form";
 import styles from "@/components/auth/login.module.css";
 

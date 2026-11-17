@@ -20,7 +20,7 @@ vi.mock("@/lib/auth/server", () => ({
   createSupabaseServer: async () => ({ auth: {
     exchangeCodeForSession: async (code: string) => { calls.exchange.push(code); return { error: calls.fail ? new Error("만료") : null }; },
     verifyOtp: async (args: unknown) => { calls.verify.push(args); return { error: calls.fail ? new Error("만료") : null }; },
-    getUser: async () => ({ data: { user: user.current } }),
+    getUser: async () => ({ data: { user: user.current && { id: "00000000-0000-4000-8000-000000000182", ...user.current } } }),
     signOut: async (options?: { scope?: string }) => {
       calls.signOut++; calls.signOutScopes.push(options?.scope ?? "global");
       const next = calls.signOutErrors.shift() ?? null;

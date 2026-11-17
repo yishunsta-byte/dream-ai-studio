@@ -66,12 +66,12 @@ describe("independent API authentication guard", () => {
     expect(state.create).not.toHaveBeenCalled();
   });
   it("verified allowed account may enter the service", async () => {
-    state.user = { id: "synthetic", email: "OWNER@example.invalid" };
+    state.user = { id: "00000000-0000-4000-8000-000000000191", email: "OWNER@example.invalid" };
     expect(await requireApiAuth()).toBeNull();
     expect(state.getUser).toHaveBeenCalledOnce();
   });
   it("a returned user with an Auth error is rejected", async () => {
-    state.user = { id: "synthetic", email: "owner@example.invalid" };
+    state.user = { id: "00000000-0000-4000-8000-000000000191", email: "owner@example.invalid" };
     state.error = { name: "AuthApiError", status: 401 };
     expect((await requireApiAuth())?.status).toBe(401);
   });
@@ -83,7 +83,7 @@ describe("independent API authentication guard", () => {
     expect(await response?.json()).toMatchObject({ code: "AUTH_REQUIRED" });
   });
   it("email-less account is forbidden", async () => {
-    state.user = { id: "synthetic" };
+    state.user = { id: "00000000-0000-4000-8000-000000000191" };
     expect((await requireApiAuth())?.status).toBe(403);
   });
   it.each([
@@ -100,7 +100,7 @@ describe("independent API authentication guard", () => {
     expect((await requireApiAuth())?.status).toBe(503);
   });
   it("allowed account reaches the existing route service and DTO", async () => {
-    state.user = { id: "synthetic", email: "owner@example.invalid" };
+    state.user = { id: "00000000-0000-4000-8000-000000000191", email: "owner@example.invalid" };
     const { GET } = await import("@/app/api/jobs/route");
     const response = await GET();
     expect(response.status).toBe(200);
@@ -151,7 +151,7 @@ describe("direct route calls without proxy", () => {
       { scenario: "provider throws", status: 503, code: "AUTH_UNAVAILABLE" },
       { scenario: "missing config", status: 503, code: "AUTH_UNAVAILABLE" },
     ])(`${path}: $scenario blocks before request body or params`, async ({ scenario, status, code }) => {
-      if (scenario === "forbidden account") state.user = { id: "synthetic", email: "other@example.invalid" };
+      if (scenario === "forbidden account") state.user = { id: "00000000-0000-4000-8000-000000000191", email: "other@example.invalid" };
       if (scenario === "provider throws") state.fail = true;
       if (scenario === "missing config") delete process.env.NEXT_PUBLIC_SUPABASE_URL;
       const loadedRoute = await load();
@@ -204,8 +204,8 @@ describe("password change independently authenticates its session", () => {
   it.each([
     { scenario: "missing session", user: null, status: 401, code: "AUTH_REQUIRED" },
     { scenario: "expired session", user: null, status: 401, code: "AUTH_REQUIRED", error: { name: "AuthSessionMissingError", status: 400 } },
-    { scenario: "forbidden account", user: { id: "synthetic", email: "other@example.invalid" }, status: 403, code: "AUTH_FORBIDDEN" },
-    { scenario: "email-less account", user: { id: "synthetic" }, status: 403, code: "AUTH_FORBIDDEN" },
+    { scenario: "forbidden account", user: { id: "00000000-0000-4000-8000-000000000191", email: "other@example.invalid" }, status: 403, code: "AUTH_FORBIDDEN" },
+    { scenario: "email-less account", user: { id: "00000000-0000-4000-8000-000000000191" }, status: 403, code: "AUTH_FORBIDDEN" },
   ])("$scenario cannot update a password", async ({ user, status, code, ...rest }) => {
     state.user = user;
     state.error = ("error" in rest ? rest.error : null) ?? null;
@@ -238,7 +238,7 @@ describe("password change independently authenticates its session", () => {
   });
 
   it("only a verified allowed account reaches updateUser", async () => {
-    state.user = { id: "synthetic", email: "OWNER@example.invalid" };
+    state.user = { id: "00000000-0000-4000-8000-000000000191", email: "OWNER@example.invalid" };
     const response = await changePassword(validBody);
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true });

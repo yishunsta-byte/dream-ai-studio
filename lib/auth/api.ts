@@ -1,29 +1,18 @@
 import "server-only";
-import { AUTH_MESSAGES, authMode, authReady, isAllowedEmail } from "./config";
-import { createSupabaseServer } from "./server";
+import { AUTH_MESSAGES } from "./config";
+import { resolveServerAuth, type ServerAuthResult } from "./resolve";
 
-function deny(status: 401 | 403 | 503, code: string, error: string) {
-  return Response.json({ error, code }, { status, headers: { "cache-control": "no-store" } });
+const MESSAGES = { AUTH_REQUIRED: AUTH_MESSAGES.required, AUTH_FORBIDDEN: AUTH_MESSAGES.forbidden, AUTH_UNAVAILABLE: AUTH_MESSAGES.unavailable } as const;
+
+// 거절 결과를 API 응답으로 바꾼다: {error, code}, no-store, 리다이렉트 없음.
+export function authDeniedResponse(result: Extract<ServerAuthResult, { kind: "denied" }>) {
+  return Response.json({ error: MESSAGES[result.code], code: result.code }, { status: result.status, headers: { "cache-control": "no-store" } });
 }
 
-// Every protected route calls this before reading params/body or touching data.
-// The proxy refreshes cookies; this check independently verifies the user with Auth.
-// A null result means the existing single-user API may run, not owner/RLS migration completion.
+// 기존 보호 API용 호환 함수(T-191): 공통 판별 결과를 예전처럼 Response|null로 돌려준다.
+// 모든 보호 라우트는 params·본문·데이터를 건드리기 전에 이것을 부른다. 새 읽기 API는 resolveServerAuth를 한 번 불러
+// denied면 authDeniedResponse, verified면 userId를 actor에 넘긴다(같은 핸들러에서 두 번 부르지 않는다).
 export async function requireApiAuth(): Promise<Response | null> {
-  if (authMode() === "off") return null;
-  if (!authReady()) return deny(503, "AUTH_UNAVAILABLE", AUTH_MESSAGES.unavailable);
-  try {
-    const supabase = await createSupabaseServer();
-    if (!supabase) return deny(503, "AUTH_UNAVAILABLE", AUTH_MESSAGES.unavailable);
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error && ((error.status !== undefined && error.status >= 500) || error.name === "AuthRetryableFetchError")) {
-      return deny(503, "AUTH_UNAVAILABLE", AUTH_MESSAGES.unavailable);
-    }
-    if (error || !user) return deny(401, "AUTH_REQUIRED", AUTH_MESSAGES.required);
-    if (!isAllowedEmail(user.email)) return deny(403, "AUTH_FORBIDDEN", AUTH_MESSAGES.forbidden);
-    return null;
-  } catch {
-    // Auth/network/cookie failures must not enter the service or disclose provider details.
-    return deny(503, "AUTH_UNAVAILABLE", AUTH_MESSAGES.unavailable);
-  }
+  const result = await resolveServerAuth();
+  return result.kind === "denied" ? authDeniedResponse(result) : null;
 }
