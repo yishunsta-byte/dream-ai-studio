@@ -1346,3 +1346,8 @@
 
 - msg_e30583135595: B3 accepted055784e; installed local Postgres/container runtime not found, actual driver integration blocked while code/test harness continues.
 - Master authorized isolated portable official-distribution PostgreSQL test setup only: no admin/service/PATH/public listener, synthetic cluster/roles and owner-tracked process. Managed/prod DB untouched. Verification/source/version and permission failures must be reported; no silent mock substitution.
+### T186 fixes returned; T187 Tester recheck
+
+- T186 report/commit dec2be18755d3db1f264e9d81ca2e9b92ece8620 returned local origin/JSON defense and honest logout partial/failure handling, no push/deploy.
+- Master read report/stat. T187 requested msg_50f4af06df81 from Tester after preserving T185 original findings: original actual failures and normal SDK/network/UI controls, fixed snapshot only. Existing B3 package WIP protected.
+- No independent authentication acceptance or production update yet.
