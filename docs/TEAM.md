@@ -2177,4 +2177,8 @@
 - 제품 후보 ebe84ea 유지. Front 자동 push 거절은 Destructive or Unwanted Actions 사유의 기존 gate라 우회하지 않으며 사용자 직접 실행 전 단계. Backend B27-FIX 미커밋 draft/Tester 최종2필수gap 판정 보존, 새 고정 수정본 미반환. 보호 T122/T137 유지·새 창/agent/worktree/SQL 실행/배포 없음.### 점검 / T238 메뉴 읽기 완료·원격 미반영 재확인
 - 실제 점검 완료 시각: 2026-11-18 03:54:51 +09:00 (Asia/Seoul). 지정 msg_e4c38dce91ce·2dea6bb T238 문서diff·Git/status/신규 FIX 인계 확인. Master actual ls-remote origin/master=8ffe3c75b5eaa908ee000f574cf688dd65125378, 후보ebe 미push 확정.
 - Front 메뉴 읽기: 현재3QDy Instant Rollback/Promote aria-disabled=true, Redeploy 등 활성·플랜 제한 안내 없음. 현재배포라 비활성이라는 해석은 추정이며, 후속 배포 후 실제복구가능 여부는 미확인 유지. 메뉴 항목 선택/운영변경 없었다는 보고와 구분. 추가 같은메뉴 반복검증·중복build 배정 없음.
-- T238 준비는 수용·실배포는 기존 자동push 거절로 사용자 직접 실행 필요. Backend B27-FIX draft/신규고유인계 작성 중, 고정본 최종 반환 전이며 실제 DB실행 금지 유지. 보호 T122/T137·새 창/agent/worktree 없음. Master 변경 범위 TEAM 기록만.
+- T238 준비는 수용·실배포는 기존 자동push 거절로 사용자 직접 실행 필요. Backend B27-FIX draft/신규고유인계 작성 중, 고정본 최종 반환 전이며 실제 DB실행 금지 유지. 보호 T122/T137·새 창/agent/worktree 없음. Master 변경 범위 TEAM 기록만.### 점검 / B27-FIX 고정 반환·B27-R2 실제 수락
+- 실제 점검 완료 시각: 2026-11-18 03:56:00 +09:00 (Asia/Seoul). 지정 msg_18725fb59bf3/msg_6f24ef5282b1·fbfc48c 두경로stat·FIX보고 전문/재현명령·Git/status/최근인계 대조. SQL543행 LF9d347523a99a808240d03498dad24401c2c22d9c92e2479b1f9313eebd418ccb 반환, 수정수용 확정 전이다.
+- Backend UUID shared/Zod/B25 whole-envelope 비교180(60×3배열, 양102/음78) 보고와 namespace owner/typed ACL4행 양방향 EXCEPT·개수검사·POLICY tag 보완 근거 확인. JS로 SQL regex 문자열을 평가한 근거이며 실제 SQL regex/권한/native PASS와 구분. 원B27/B27-R/SQL1~4/registry/runtime불변·실행금지 fuse 유지.
+- Tester B27-R2 msg_4207ca10358b 실제배정→msg_6f24ef5282b1 수신·고정fbfc48c/보고1파일/source-only 범위 수락. 소유scratch에서 JS근거 재현 허용, 모든 DB/parser/role실행 금지. F27-1/2·tag수정/회귀/남은native게이트 검토후 Master 판정, 원고정 FAIL 기록 보존.
+- Front T238 준비수용·실push미실행 경계 유지. 현재 새 완료검증 없는 반복 build/중복과제 없음. 보호 T122/T137 유지·Master 변경 TEAM기록1파일·새 창/agent/worktree/배포 없음.
