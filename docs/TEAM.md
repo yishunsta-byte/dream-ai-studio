@@ -1732,3 +1732,10 @@
 - 고정8ffe3c75 T225지정범위PASS수용: 실제합성local폼DOM/값/selection/포커스보존·사용자초점미탈취,sidebar/drawer/nav/counts/oldjobs epoch폐기,cloud세원경로·partial/nativehistory/legacy/newpending회귀확인. 관련427/원HTTP14/build/typegen/tsc/lint/verify PASS,중복수·관측21총합과구분. 자연exp/실hidden/BFCache/실Authmanaged未検証·과거미확정이동한계유지,원T221FAIL보존.
 - T227 Front배포실행배정(기존사용자배포승인): remote44582839가유지될때만8ffe3c75:master exactfastforward push,HEAD/force금지·Vercelsource/ID/Ready/Current확인·운영익명HTTPS스모크. 환경/DB/SSL/Storage/실계정변경미허용. 실제승격뒤criticalauth회귀는정확이전E5k... InstantRollback만복구허용,Git이력보존.
 - preparation과실배포완료구분,현재는지시전송완료·결과대기. Tester에수용/후속운영스모크예정전달,실배포전별도조회/polling미배정. DEC-SSL-01미수신·DB운영변경보류,턴 밖 자동 점검 미설정.
+
+### 점검 / T227 자동권한거절·사용자 도구조치 / B16-R2
+- 마지막 확인 시각: 2026-11-17 21:54:19 +09:00 (Asia/Seoul). 두wake→Orca배포차단/B16-FIX메시지·수정고유문서/최근handoffs/Git확인. 기존T122/T137보존,새미기록보고없음.
+- T227 Front실보고: exact8ffe3c75 push자동권한검토가destructive/unwanted로거절,remote4458283불변/Vercel새배포없음. 기존사용자배포승인과실도구차단구분. Master/타actor·명령변형으로같은거절동작우회하지않음,반복push/임의권한규칙수정금지.
+- 사용자에게Front터미널해당push권한허용또는직접exactSHA push후상태회신도구조치요청(비용/제품결정재승인아님). Front는고유T227차단보고작성반환지시,권한조치확인전실행대기. payload/state미변경을완료배포로표현금지.
+- B16-FIX 9302419문서2개ready_review확인. 동일독립검수자B16-R2재개 ctx_04436a8fe690/task_ece5ad97cedb ready,object1:receiptN/generation/terminal-first와publication先durable/barrier/GCtombstone논리trace재검토. 코드/SQL/provider변경미배정.
+- Backend는검수중문서수정보류,이미확보B18안전checkpoint·조건부가격보고만정리하도록지시(추가조사/구매없음). DEC-SSL-01미수신·운영변경보류,턴 밖 자동 점검 미설정.
