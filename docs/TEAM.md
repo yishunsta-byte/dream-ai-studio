@@ -2122,3 +2122,7 @@
 - B26 8d53575241b45588e2a8cd1e799f39b8466e335d doc-only ready_review. 5공백/9table read3INSERT·고정searchpath/actorGUCtrustedcredential/전용NOLOGIN·FORCERLS·lock-only UPDATE/checkfalse·canonicalclientledger/compositeFK·policy/request/objectlock·원snapshot/evolvedreplay·unknownCOMMITprimaryunique-latch·version5delta 및5미정선택확인. 작성자문서검증만이며새SQL/권한실증은아직없음.
 - B26-R 기존Front에 msg_4190db95455f 실제독립설계검토배정, T236mainPC서비스협조우선·브라우저Tester전용. 고유보고만공유수정, 불확실RLS lock/deferredcontext는공식자료/선택ownednativeprobe로검증또는미확인표시·같은제품환경/타cluster변경없음. 수락아직미확인. Backend는설계질문/근거협조, 실제SQL5/role/SECDEF/API코드승인없음.
 - 현재T236/UI수정검수준비·B26독립설계병행, 디자인3안정적산출수용/방향확정전제품통합미실행. 새창agentworktree·운영DB/과금/배포없음, 기준표갱신.
+### 점검 / B26-R 수락·T236 메인 PC 전용 서비스 인계
+- 실제 점검 완료 시각: 2026-11-18 03:13:57 +09:00 (Asia/Seoul). 지정wake msg_87f37a0119be·Git/최근handoffs 확인. Front B26-R 고정8d53575/고유보고1파일 범위수락·경로충돌없음·검토착수확인. nativeprobe는본인소유temp PG만, 미실행은미확인표시·제품SQL5구현미배정경계유지.
+- Front T236 전용mainPC서비스기동/Tester단독인계 msg_5ebe648e62c3 보고: port57134/base85108b6/BUILD noWccfF-On6i8n5k59z10. 본인은ego/DB미조작, 브라우저Tester배타소유. Master gitdiff로 ebe84ea↔85108b6 app/components/lib/proxy/config/package/public 제품차이없음 확인. 실제Tester source/artifact/overlay대조·native실행결과는그후독립보고로판정, 인계만으로검수완료아님.
+- B25수용완료·T236기존배정·B26권한설계독립검토병행 유지. 새결함/새고정완료보고없어중복할당/서버상태변경안함. 기존T122/T137 보존·새Codex창agentworktree/운영배포없음, 공식기록갱신.
