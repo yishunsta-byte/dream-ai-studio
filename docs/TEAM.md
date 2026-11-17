@@ -1528,3 +1528,8 @@
 - Design 25210ae/report T-208-MULTIMEDIA-HOME-OPTIONS.md 확인. 새3안: NEON PLAY(추천), COLOR WAVE, CINEMA STAGE. 비교 docs/design/t194-multimedia-options/index.html. 정적시안만이며실재생/저장/제작/클라우드호출없음.
 - Master가3안PC preview 및390normal 총6장 직접view_image로시각확인. 동작·색대비 전체를독립검수했다고확대하지않음. 작성자42레이아웃/53동작·키보드대조및47스크린샷은작성자검증근거로보존.
 - 사용자에게실제비교링크와추천1번제공. 선택/제품적용/배포미완료. Design에수신과보존범위전달,제품변경추가미배정. 기존T194와진행중cloud/Auth/DB변경보호.
+
+### B5-FIX 제출 / B5-R2 재검수 / B7 읽기 확인 재개
+- 52ea968 보고/8파일 diff범위 확인. 작성자 실제PG33 PASS(기존25+신규8)/관련218/lint PASS. 원workspace tsc FAIL과 고정사본 원tsconfig typegen/tsc PASS를 구분. 아직독립수용전.
+- 원FAIL독립검수자에게 B5-R2 재배정: 고정52ea968, rolegraph F1/targetbinding F2 실부정대조와ownedpool disposal·원자성·기존권한 재검수. 고유 B5-R2-MIGRATION-RUNNER-REVIEW.md. 원B5-R FAIL 기록유지,실managed적용금지.
+- Backend는 검수중migration파일수정보류, 기존 B7 읽기환경확인만재개 지시. 제공endpoint확인/순수SELECT범위,새runner사용·DDL·권한/계정변경·유료/배포금지. 실제연결수단부족은고유B7보고로반환.
