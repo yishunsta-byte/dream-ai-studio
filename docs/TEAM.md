@@ -1400,3 +1400,8 @@
 
 - msg_a101f4b2410f report read. be59435 actual SDK/Next RSC and handler one internal lookup, concurrent A/B UUID/email isolation, HTTP reevaluation, error/body/no-store and T186 regression pass.20+157/lint/type/build and client sentinel checks independently verified.
 - Master accepts fixed resolver contract. Backend informed; B4-I adapter and B4-R service review remain separate, managed/cloud API still not opened. T195 real login diagnosis and T194 main options continue independently.
+### B4-R read-service acceptance
+
+- msg_2cb9186894b1 /8fc19e2 report read/imported. Independent real B4 9+42 and priorB3 33,259 impact tests/10 controls/lint/type confirm snapshot/owner404/missing-stage503/safe-domain/DB-failure priority/no fallback.
+- Master accepts e260310 local-service scope. Backend notified; B4-I request adapter remains running. Production API/RSC/managed pooler/TLS/Auth FK still not connected or verified.
+- Owned clusters stopped; automatic approval denied temp deletion, approximately909MB retained without bypass. No user DB/3013 changes.
