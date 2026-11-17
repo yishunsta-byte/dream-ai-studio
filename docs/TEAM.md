@@ -1474,3 +1474,14 @@
 - T207 Front 구현 범위: lib/cloud/project-read-page.ts, app/(cloud)/**, components/cloud/project-*-readonly.tsx, tests/t207-* 및 고유 보고서. 기존 디자인 primitives 사용. auth/proxy/API/Backend/root layout/legacy gate/CloudPending 변경 미허용. T202 수용 전 준비화면 링크 추가 금지.
 - RootLayout은 docs/spec/menus.json 정적 설정 읽기를 수행하므로 새 route group이 이를 우회한다고 주장하지 않는다. SQLite/startup/업무파일 부작용 차단과 구분한다. streaming notFound의 실제 HTTP 상태도 검증하도록 지시.
 - 실제 managed DB 적용/연결/배포 미배정. T204 원본 대조 일시적1실패는 시험명/원로그 미보존으로 원인 미확인, 재실행 통과를 원인 확정으로 확대하지 않는다.
+
+### B5 제출 / B5-R 독립 검수 / B6 사전점검 절차
+- B5 82e5745 보고 확인. 작성자 실제PG25(12integration+13unit), 관련218/lint/tsc PASS. 실제managed 미적용, ready_review 유지.
+- B5-R 독립 worker ctx_f2ea846eeaa7/task_188c992d8aec ready. 고정82e5745 격리 합성PG로 rollback/checksum/target/동시잠금/최소권한·CLI 비밀 비노출 검수, 보고 B5-R-MIGRATION-RUNNER-REVIEW.md. 제품수정·운영접속 미허용.
+- Backend B6 managed 적용 전 읽기전용 점검 절차 명세 배정(msg_1649441b2561). 문서만, 실제env/DSN/managed접속/DDL 미배정.
+
+### T202 원판정 보존 및 Master 범위 결정
+- 독립 보고 ab73727 가져옴. 원 요구 전체판정 FAIL F202-1 유지: root의 고정 정적 메뉴 읽기가 RSC auth 전 발생. 실제HTTP 순서와 단위FAIL로 재현. 개인DB 노출을 뜻하지 않음.
+- Master 결정: 배포 소스에 포함된 고정 docs/spec/menus.json 공용 메타데이터를 기존root가 읽는 것만 허용 예외. 사용자DB/업무파일/외부설정/동적메뉴/사용자제어경로로 확대하지 않는다. 공용설정 오류가 로그인 포함 전체root에 영향을 주는 현행 한계 기록.
+- 좁힌 수용 범위: 14페이지 및 StudioLayout의 인증 우선·private 저장소 부작용0·A/B 요청격리. 독립381 PASS/build/verify/type/lint/HTTP96 근거 수용. 원보고를 전체PASS로 고치지 않는다. T207 root정적읽기 한계 유지, CloudPending 링크는 별도 배정.
+- 검수 소유 임시 사본 약959.5MB 삭제는 자동 승인 검토가 정책상 거절하여 잔존, 우회하지 않음. 보고서에 경로 보존. 실사용3013 보호 및 소유서버 종료 보고 확인.
