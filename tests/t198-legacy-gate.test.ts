@@ -90,7 +90,7 @@ const routeModules = import.meta.glob<Record<string, unknown>>("../app/api/**/ro
 const methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 type Handler = (request: Request, context: { params: Promise<{ id: string }> }) => Promise<Response>;
 // 인증 전용(업무 데이터 미사용) 또는 자체 인증·공개 인증 경로. 나머지는 모두 legacy-data여야 한다.
-const authRoutes = ["auth/login", "auth/signup", "auth/reset", "auth/password", "auth/logout"].map((r) => `../app/api/${r}/route.ts`);
+const authRoutes = ["auth/login", "auth/signup", "auth/reset", "auth/password", "auth/logout", "auth/session"].map((r) => `../app/api/${r}/route.ts`);
 // Backend의 새 Postgres 조회 GET(B4-G)은 legacy 차단을 부르지 않는다(getUser 중복 금지). 같은 파일의 다른 메서드는 legacy다.
 const NEW_READ: Record<string, string[]> = { "../app/api/projects/route.ts": ["GET"], "../app/api/projects/[id]/route.ts": ["GET"] };
 const legacyMethods = (path: string, loaded: Record<string, unknown>) => methods.filter((m) => typeof loaded[m] === "function" && !(NEW_READ[path] ?? []).includes(m));

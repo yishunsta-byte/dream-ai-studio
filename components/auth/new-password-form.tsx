@@ -4,6 +4,7 @@ import { useId, useState, type FormEvent } from "react";
 import { Button, Callout } from "@/components/ui/primitives";
 import { PASSWORD_RULE, passwordProblem } from "@/lib/auth/config";
 import { requestLogout } from "@/lib/auth/logout-client";
+import { announceSessionChange } from "@/lib/auth/session-sync";
 import styles from "./login.module.css";
 
 export function NewPasswordForm() {
@@ -17,8 +18,8 @@ export function NewPasswordForm() {
   async function finishWithLogout() {
     setBusy(true); setLogoutFailure(null);
     const result = await requestLogout();
-    if (result.state === "ended") { window.location.assign("/login?notice=password"); return; }
-    if (result.state === "partial") { window.location.assign("/login?notice=password-partial"); return; }
+    if (result.state === "ended") { announceSessionChange(); window.location.assign("/login?notice=password"); return; }
+    if (result.state === "partial") { announceSessionChange(); window.location.assign("/login?notice=password-partial"); return; }
     setLogoutFailure(result.message); setBusy(false);
   }
 

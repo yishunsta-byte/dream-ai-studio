@@ -3,6 +3,7 @@
 import { useId, useRef, useState, type ComponentProps, type FormEvent, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Button, Callout } from "@/components/ui/primitives";
 import { PASSWORD_RULE, passwordProblem, validEmail } from "@/lib/auth/config";
+import { announceSessionChange } from "@/lib/auth/session-sync";
 import styles from "./login.module.css";
 
 type Mode = "login" | "signup" | "reset";
@@ -88,6 +89,8 @@ export function LoginForm({ next, initialError, initialNotice }: { next: string;
     try {
       if (mode === "login") {
         await post("/api/auth/login", { email, password });
+        // 다른 탭에 "로그인이 바뀌었다"는 신호만 보낸다(계정 정보 없음, T-213).
+        announceSessionChange();
         window.location.assign(next);
         return;
       }
