@@ -166,6 +166,7 @@ export async function runReservationAttempt(actorId: string, request: Reservatio
       try { original = lease.client.query(text, [...values]); } catch { lease.broken = true; throw new Fault("SERVICE_UNAVAILABLE"); }
       const tracked = lease.trackQuery(original).then(r => {
         if (text === "COMMIT" && r.command === "COMMIT" && candidate) committed = candidate;
+        if (text === "ROLLBACK" && r.command === "ROLLBACK" && !commitSent && !committed) rolledBack = true;
         return r;
       });
       void tracked.catch(() => {});
@@ -213,7 +214,7 @@ export async function runReservationAttempt(actorId: string, request: Reservatio
       reason = error instanceof Fault ? error.reason : error instanceof ReservationReplyError ? "REPLY_INVALID" : "SERVICE_UNAVAILABLE";
       if (committed) lease.cleanupError = true;
       else if (!commitSent && begun && !lease.broken && !lease.abandoned) {
-        try { rolledBack = (await query("ROLLBACK")).command === "ROLLBACK"; } catch { lease.broken = true; }
+        try { await query("ROLLBACK"); } catch { lease.broken = true; }
       }
     }
     const cleanup = await lease.cleanup(config.limits.cleanupDeadlineMs);

@@ -159,6 +159,53 @@ describe("B33 closed adapter with controllable fake driver; NOT native DB proof"
     const { pool, service } = setup(); pool.client.reserveTag = "INPUT"; pool.client.hook = text => text === "ROLLBACK" ? result([], "not-ROLLBACK") : undefined;
     expect(await service.reserve(actor, request())).toMatchObject({ commit: "unknown", reason: "OUTCOME_UNKNOWN" });
   });
+  it.each(["before-end", "after-end", "missing-end"])("late original ROLLBACK ACK before public return is preserved (%s)", async order => {
+    const { pool, service } = setup(), wire = deferred<QueryResult>();
+    pool.client.reserveTag = "INPUT"; pool.client.endAutomatically = false;
+    pool.client.hook = text => text === "ROLLBACK" ? wire.promise : undefined;
+    let returned = false;
+    const pending = service.reserve(actor, request()).then(value => { returned = true; return value; });
+    await flush(); await vi.advanceTimersByTimeAsync(10);
+    expect(pool.client.releases).toBe(1); expect(returned).toBe(false);
+    await vi.advanceTimersByTimeAsync(5); expect(performance.now()).toBe(15);
+    if (order === "after-end") pool.client.emit("end");
+    wire.resolve(result([], "ROLLBACK")); await flush();
+    if (order === "before-end") { expect(returned).toBe(false); pool.client.emit("end"); }
+    if (order === "missing-end") await vi.advanceTimersByTimeAsync(10);
+    expect(await pending).toMatchObject({ commit: "not-applied", reason: "ADMISSION_REJECTED", cleanup: order === "missing-end" ? "failed" : "ok" });
+    expect(pool.client.calls.filter(q => q.text === "ROLLBACK")).toHaveLength(1);
+    expect(pool.client.calls.some(q => q.text === "COMMIT" || q.text.includes("reservation.hygiene"))).toBe(false);
+    expect(pool.client.releases).toBe(1); expect(pool.ends).toBe(1);
+  });
+  it("ROLLBACK ACK after public return cannot mutate the unknown result", async () => {
+    const { pool, service } = setup(), wire = deferred<QueryResult>(); pool.client.reserveTag = "INPUT";
+    pool.client.hook = text => text === "ROLLBACK" ? wire.promise : undefined;
+    const pending = service.reserve(actor, request()); await flush(); await vi.advanceTimersByTimeAsync(20);
+    const value = await pending, before = JSON.stringify(value);
+    expect(value).toMatchObject({ commit: "unknown", cleanup: "failed" });
+    wire.resolve(result([], "ROLLBACK")); await flush();
+    expect(JSON.stringify(value)).toBe(before); expect(pool.client.releases).toBe(1); expect(pool.ends).toBe(1);
+  });
+  it.each(["wrong-tag", "reject"])("late ROLLBACK %s provides no rollback confirmation", async mode => {
+    const { pool, service } = setup(), wire = deferred<QueryResult>();
+    pool.client.reserveTag = "INPUT"; pool.client.endAutomatically = false;
+    pool.client.hook = text => text === "ROLLBACK" ? wire.promise : undefined;
+    const pending = service.reserve(actor, request()); await flush(); await vi.advanceTimersByTimeAsync(10);
+    if (mode === "wrong-tag") wire.resolve(result([], "COMMIT")); else wire.reject(new Error("late rollback secret"));
+    await flush(); pool.client.emit("end");
+    expect(await pending).toMatchObject({ commit: "unknown", cleanup: "ok", reason: "OUTCOME_UNKNOWN" });
+    expect(pool.client.calls.filter(q => q.text === "ROLLBACK")).toHaveLength(1);
+  });
+  it.each(["COMMIT", "ROLLBACK"])("late %s response to dispatched COMMIT preserves commit precedence", async command => {
+    const { pool, service } = setup(), wire = deferred<QueryResult>(); pool.client.endAutomatically = false;
+    pool.client.hook = text => text === "COMMIT" ? wire.promise : undefined;
+    const pending = service.reserve(actor, request()); await flush(); await vi.advanceTimersByTimeAsync(100);
+    wire.resolve(result([], command)); await flush(); pool.client.emit("end");
+    const value = await pending;
+    if (command === "COMMIT") expect(value).toMatchObject({ commit: "confirmed", record: { origin: "created" } });
+    else expect(value).toMatchObject({ commit: "unknown", reason: "OUTCOME_UNKNOWN" });
+    expect(pool.client.calls.some(q => q.text === "ROLLBACK")).toBe(false); expect(pool.client.releases).toBe(1);
+  });
   it("server-work may remain after early query rejection; never queues rollback/hygiene/COMMIT", async () => {
     const { pool, service } = setup(); let serverWork = false;
     pool.client.hook = text => { if (text.includes("reserve_upload_v1($1")) { serverWork = true; return Promise.reject(new Error("secret query read timeout while server active")); } };
