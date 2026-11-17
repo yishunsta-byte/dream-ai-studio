@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 06:11 KST): B28~31지정native/B32수정설계수용. B33 실제adapter6모듈+3unit/fault+인계가75f6fb8로반환돼Tester B33-R독립코드검수수락. 저자127집중/299관련통과·12native skip·fulltype/lint0이며코드미수용. T239223bd6 타입기반보완은Master전체tsc0확인수용. runtimeapproved DISABLED·route/env/SQL/B3/registry/managed미연결·실adapternative는후속별도. Front T238준비수용·사용자직접push전. 이최신판정이아래과거상태보다우선한다.
+최신 판정(2026-11-18 06:25 KST): B33원75f6fb8은독립a94e8e1에서기한뒤SQL발송/F33-1 및미정리querycleanupok/F33-2 두재현결함으로CHANGES REQUIRED. Backend가attempt/test/FIX인계3경로최소보완·자체회귀중이며최종보고대조후고정반환→Tester재검토예정. 기존B28~31지정native/B32설계수용·T239타입기반수용유지. runtimeapproved DISABLED·route/env/SQL/B3/registry/managed미연결. FrontT238준비수용·사용자직접push전. 이최신판정이아래과거상태보다우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
