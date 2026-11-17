@@ -27,6 +27,7 @@
 .inputWrap:focus-within { border-color:var(--accent); box-shadow:var(--focus-ring); }
 .inputWrap.invalid { border-color:var(--st-danger-line); }
 .inputIcon { display:grid; place-items:center; color:var(--fg-muted); flex:none; }
+.inputWrap input, .inputWrap input:focus, .inputWrap input:focus-visible { box-shadow:none; outline:none; border:0; border-radius:0; padding:0; }
 .inputWrap input { flex:1; min-width:0; min-height:calc(var(--control-h-lg) - 2px); border:0; outline:none; background:transparent; color:var(--fg-strong); font:inherit; font-size:16px; }
 .reveal { flex:none; min-height:36px; min-width:var(--touch-min); padding:0 var(--sp-2); border:0; border-radius:var(--radius-sm); background:transparent; color:var(--fg-link); font:inherit; font-size:var(--text-sm); cursor:pointer; }
 .help { margin:0; color:var(--fg-muted); font-size:var(--text-sm); }
