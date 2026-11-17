@@ -1684,3 +1684,9 @@
 - B15-R 기존검수자재개요청,고정1d561c1 실합성PG+fakeHTTP/취소·COMMIT·rollback/metadata권한·바이트경계재검수. B14소스신뢰한계/실Storage未接続/네이티브Vercel미수용분리. 고유 B15-R-CREATE-STORAGE-ADAPTER-REVIEW.md.
 - Backend B16설계만배정: upload intent/private nooverwrite/worker실byte-native검증/receipt·DB등록/가벼운Vercel생성readiness·권한/불변성·동시멱등/lease/RLS·새appendSQL필요성 구체화. ffprobe/대용량검증·장시간행lock을VercelHTTP로직결하지않음. 현재검증을단순boolean으로완화하지않음,실bucket/worker/upload/API/SQL적용미배정.
 - Front T224우선·T221최종검수진행,DEC-SSL-01미수신·운영변경보류. 턴 밖 자동 점검 미설정.
+
+### 점검 / T221 최종 FAIL 수용·T224 수정 지속
+- 마지막 확인 시각: 2026-11-17 21:29:19 +09:00 (Asia/Seoul). 최종Orca보고·T221원문/최근handoffs/Git확인. 신규2a0f5e97수신,기존T122/T137미추적보존,새미기록완료보고없음. workingtree청결(기존untracked제외)을T224작업완료로추정하지않음.
+- 고정371d5cc 전체FAIL유지: F221-1P1 실제합성local StudioShell폼동일문서입력소실/원inputdisconnect, F221-2P2 의심/확정때sidebar job/failedcounts와Tab잔류. 기존cloud본문차단/계정변경·partial/nativehistory·준비안내는범위PASS. 423/원HTTP14와실패관측20assertion구분,모든기능PASS로표현안함.
+- lateSame대기timeout은실문서교체를도구가놓친관측과일치하여제품결함분류안함,작성자의별도원인미정1회이동은계속미확인. 실hidden/BFCache/자연exp미검증유지.
+- Front에최종보고와원증거위치전달,T224기존범위우선계속. Tester는T224고정SHA반환뒤T225재검수예정임을전달(현재착수미배정). B15-R/BackendB16기존배정유지,SSL DEC미수신·운영변경보류. 턴 밖 자동 점검 미설정.
