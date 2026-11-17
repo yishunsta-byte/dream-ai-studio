@@ -1415,3 +1415,9 @@
 - msg_82c4991d88ee report read: registered email identity/confirmation exists but no password setup record; user must set password through reset. No user password can be retrieved and no DB/service credentials provided.
 - Recent production400 did not reach provider; exact cause remains unconfirmed (input/allowed-address mismatch possible). Production secret allowlist not independently visible. No automatic account/mail/env changes authorized by this diagnosis.
 - T197 Front assigned generic reset guidance on login failure, preserve input/accessibility and avoid account enumeration. Route/backend/env changes excluded, no push before review.
+### B4-I returned; B4-I-R, B4-G and T198
+
+- msg_ea69043c6cba /0bf6da7: author realPG8+unit41,280 impact/lint/type. Request adapter not yet production route; independent ctx_27c2ac3b4f5e /task_b368592a6abd assigned.
+- B4-G Backend assigned new list/detail GET adapters and explicit auth inventory/real HTTP tests, preserving POST and forbidding fallback. No managed DB activation.
+- T198 Front queued after T197: default legacy-data API gate, explicit auth-only logout, no unauth DB access or cloud SQLite fallback. Front must not edit Backend-owned api-auth inventory. RSC legacy blocking remains separate before cloud activation.
+- Deployment/PG opt-in prohibited until route/legacy/RSC/staging evidence is verified. Current shared work protected.
