@@ -17,9 +17,9 @@
 | 버전별 DB 검사 | B22 f5d009e·R2 수용 | SELECT-only catalog·PG18.7 synthetic 한정. principal marker 충돌 수정 수용 |
 | 버전별 이관 실행기 | B23 ea5a477·R 수용 | 원66·독립29 통과. 운영 대상 실행은 별도 정확한 범위 필요 |
 | 버전별 CLI | B24 eccac35·R3b683d4 수용 | 원59·독립43, actual children22+20 검사. fingerprint는 사용자 승인 증명 아님 |
-| 업로드 예약 DB 변환 | **B25 Backend 구현 배정·수락** | reserved-only codec·SQL parameter/row 변환·실PG roundtrip/rollback→고정본 독립검수 |
+| 업로드 예약 DB 변환 | **B25 da0f740 ready_review·독립검수 대기 / B26 권한·transaction 계약 준비** | reserved-only codec·SQL parameter/row 변환·실PG roundtrip/rollback→고정본 독립검수 |
 | 클라우드 개인 관리 | **T234 새 목록링크18px 필수FAIL → T229-FIX Front 수정 반환** | 실제 project 조회 기반 읽기 전용 상태·미연결 정직 표시·세션 경계·양폭 검수 |
-| 공개 멀티미디어 메인 | 사용자 신규 요구: 방문자가 완성 콘텐츠를 보는 화려한 쇼케이스. **T232 Design 새3안 최우선 수락·제작 진행** | YouTube/Suno/영상사이트 현재화면 참고·3개서로다른구조·1280/390비교. 기존T208보존, private초안/파일 일괄공개 없음 |
+| 공개 멀티미디어 메인 | 사용자 신규 요구: 방문자가 완성 콘텐츠를 보는 화려한 쇼케이스. **T232 Design 새3안 제작·PC/390캡처 후 인터랙션 QA 진행** | YouTube/Suno/영상사이트 현재화면 참고·3개서로다른구조·1280/390비교. 기존T208보존, private초안/파일 일괄공개 없음 |
 | 운영·비용 | 실제 Supabase Free50MB, 앱 요구2GiB 미충족. SSL DEC-SSL-01 미결정 | 무료 synthetic 개발 계속. 유료 전환·운영 SSL 변경은 승인 전 미실행 |
 | 운영 정리 | kzxq 사용자 승인 삭제 보고·Master404 확인, 주운영 보존 | Vercel2FA는 사용자 보류. 같은 질문 반복 없음 |
 | AI·확장 | 로컬 mock 기반 유지 | P3 실AI 예산/계정·P4분야·P5게시·P6고급·P7협업·P8전문은 아래 진입 기준 적용 |
@@ -39,7 +39,7 @@
 ## 2. 담당·점유·검증 책임
 
 - Master: 플랜 갱신·우선순위·범위/점유 조정·결과 판정·다음 배정·공식 기록. AI_TEAM_RULES v1.4 적용.
-- Backend: B25 신규 codec/test/owned runner/고유 인계 4파일 단독 작성. 기존 SQL/모델/서비스 변경 불가.
+- Backend: B25 고정da0f740 제출·독립수용전. B26 실제예약 transaction/최소권한 계약 문서1개 준비 수락, SQL/role/코드 변경 없음. 검수 필수수정 우선.
 - Front(메인 PC): T229 cloud/manage 신규 화면/CSS/test/고유 인계 및 project list의 관리 링크만. 필요한 production build는 이 담당의 격리 환경, 배포는 검수 수용 후 묶음 처리.
 - Design: T230 명세8507612 수용. 사용자 신규 T232 공개 멀티미디어 메인3안 우선. T231은 현재 증거 보존 후 후순위; 기존 관리자 구현을 막지 않는다. 시안/고유보고만, 제품 파일 수정 없음.
 - Tester: T234 고정3b32ad0의 T229 개인관리 독립검수 착수. B25 반환 시 현재 검수/위험·의존성을 조정하여 다음 배정. 동작/검수/디버깅, production build·배포는 Front가 근거 지원.
@@ -50,7 +50,7 @@
 
 | ID / 우선순위 | 단일 책임자 / 상태 | 허용 범위·완료 조건 | 검증 담당 / 다음 행동 |
 |---|---|---|---|
-| B25 / P2 | Backend · 수신·수락 | 예약전용 pure DB codec/parameter/decoder·test/ownedPG runner/인계. 원문/ID/정책/시간/owner 일치·음성 입력·실PG roundtrip/rollback | 작성자 검사 후 고정 SHA 제출→기존 Tester 독립검수→Master 판정 |
+| B25→B26 / P2 | B25 제출·독립검수 순서 대기, Backend B26 문서 수락 | 예약전용 pure DB codec/parameter/decoder·test/ownedPG runner/인계. 원문/ID/정책/시간/owner 일치·음성 입력·실PG roundtrip/rollback | 작성자 검사 후 고정 SHA 제출→기존 Tester 독립검수→Master 판정 |
 | T229-FIX / P2 | Front 필수수정 요청·Tester 원고정 검수 계속 | /cloud/manage 읽기 전용 UI·목록 표시건수/상태·조회오류·미연결 안내·목록 링크. Auth/layout/backend 불변 | Front 합성 동작·메인 PC 격리 build, 기존 Tester 독립검수·Design 시각 대조 |
 | T232 / P2·사용자 우선 | Design · 수신·최우선 수락 | 공개 방문자 중심 영상·음악·이미지 쇼케이스 새3안/비교index/1280·390캡처·상태/출처·추천안 | Master3안비교→선택/구현범위결정→Front구현·Tester검수. T231은 기존 증거 보존 후 후순위 |
 

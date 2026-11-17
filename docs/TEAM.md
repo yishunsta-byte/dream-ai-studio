@@ -2073,3 +2073,10 @@
 - Front T229-FIX msg_6d05d51c7f3b 실제전송: 목록link/CSS·전용회귀/고유FIX인계만 최소수정·44px실측/keyboard/overflow·같은SHA sourcebuild근거·새고정후보반환. 원서비스종료/변경은Tester와조정, Auth/globals/원기대완화/운영/새창금지. 수신은아직미확인. Tester msg_69b7743a950a 원fixed남은empty/error/Auth/session검수마무리·새후보혼입금지 통지.
 - 미기록 B25문서는ready_review표시로작성단계발견, 고정commit/실검증최종반환뒤전체검토/검수배정예정. currentTester는T234원fixed정리중으로중복검수안배정. DesignT232최우선계속.
 - 관찰범위정정: 이전Master manage390 PNG확인은정상목록1개/조회시각/미연결배치에한정하며 empty실제화면을본것아님. empty/자료오류browser확인은당시미검증이었고현재Tester추가검수범위다. 실제점검/문서/작성자시험/독립실측구분유지.
+### 점검 / 공개메인3안 초안 시각확인·B25 고정반환·검수 순서 조정
+- 실제 점검 완료 시각: 2026-11-18 02:48:04 +09:00 (Asia/Seoul). 지정wake msg_3bbeaaaf16bb/msg_0c48bb639148/msg_d4620a527988/msg_e263f46035f7 및Git/최근handoffs·T232산출파일/비교index/B25최종원문/commit4경로 확인. 기존T122/T137·Design미추적폴더·각작성자변경보호.
+- T232 Design3안제작·PC/3906정상캡처 자체시각확인·참고YouTube/Suno/Vimeo직접열람/생성3커버·기존자체3asset재사용 보고. Master actual screen/sound/feed1280 PNG3장열어 hero/앨범/영상피드구조와색/타이포/작품우선배치관찰. 독립모바일/인터랙션/실재생검증아님, 최종고정SHA/QA인계아직미수신. msg_cc354087f052로최종QA·추천근거/출처·미검증마무리지시. 화려함1안/발견성3안장점의비교는관찰의견이지최종선택/배포아님.
+- B25 da0f7407e194a0dc84c612b44fb98aa43f2efc2a ready_review. 작성자86PASS=74pure12PG 및B19회귀56+74/12skip중복구분, raw/정확safeinteger UTC왕복·pristine한정/재해시위조인증불가한계원문확인. Master actual codecLF761f416fd90640e557ff978613dee274c3e9e47f4331946d072186a9e16133b2 일치·cleanup-safe두flagtrue 확인. 원86을Master재실행아님.
+- T229-FIX Front수신·범위수락 msg_d4620a527988 확인. 기존검수service PG약3분stop/원복후Tester통지보고를받아 msg_17bc1d37664c 및msg_5a08717bbc29로겹친관찰은fixture시각과구분/영향범위만재확인·현재원고정서비스변경은사전조정·수정본별도service지시. 작성자4상태browser확인을독립검증으로대신계수안함.
+- 검수순서: 기존Tester T234원후보최종보고→FIX후보고정반환시44px좁은재검수→B25독립codec범위배정 제안전달, 동시테스트서비스/DB경합을만들지않음. B25즉시running검수라고주장안함. 별도agent/창/worktree없음.
+- 독립준비후속 Backend B26 문서1개 실제전송 msg_8fd8c825dccb→msg_e263f46035f7 수신·범위수락. 실제예약transaction의verifiedactor/livepolicy/락/idempotency·unknownCOMMIT·최소권한대안/실PGmatrix구체화만, management/superuser/service-role runtime우회/새SQL·role·API·provider구현미배정. B25필수결함시수정우선. 이준비는다음서비스구현의실권한선행계약이며중복codec구현아님.
