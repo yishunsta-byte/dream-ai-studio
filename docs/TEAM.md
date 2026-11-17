@@ -1763,3 +1763,9 @@
 - B19순수protocol4파일/원32PASS·1536bounded시도·roottsc/scopedlint작성자검증반환,DB/provider/락영속보장아님. B19-R동일독립검수자재개요청,terminal/reverify/GC/creation/strictschema·相互一貫性/immutable·fingerprint反例검증. 아직수용아님.
 - B20 Backendoffline draftSQL4 구조/不変guard/RLS/최소권한·owner複合FK·receiptN/operation/永久tombstone/creationledger schema와새합성PG전용검증배정. draft미발행·현manifest미등록,SQL3/history/기존runner/18표불변. 전이함수·upgrade runner/runtime/APIs/worker/실managed미배정,SQL제약만으로서비스락/CAS보장주장금지.
 - B19검수결함시영향draft보류·조정. T227push도구권한과DEC-SSL-01답변未수신·운영변경보류. 턴 밖 자동 점검 미설정.
+
+### 점검 / B19-R FAIL·B19-FIX 우선 배정
+- 마지막 확인 시각: 2026-11-17 22:31:30 +09:00 (Asia/Seoul). worker_done·B19-R원문전체/최근handoffs/Git확인,新27162629수신。BackendB20draft/새runner미추적은기존진행범위보호,기존T122/T137보존,새미기록완료보고없음.
+- 고정91c6dfc 原32/1536직렬시도통과와獨立27중19PASS/8FAIL구분,전체수용FAIL. F1P1 lifecycle/receipt/issuer/lease/revocation/closed내부모순6거부누락,F2P1원creation snapshot-fingerprint재검증binding누락1,F3P2 getter실행및foreign오류未정제1. coherent외부전체위조sandbox와달리입력내부충돌검증문제임.
+- Backend B19-FIX4module/원test/고유보고우선수정배정. B20진행소유환경안전checkpoint후필수수정,원8독립기대/원trace유지·긍정control/type/lint재검증. 입력schema만완화·실패기대skip금지,실IO/SQL/provider/worker/API/운영변경미허용.
+- B20draft는미발행진행중유지,protocol필드변경영향검토·독립수용전스키마완료수용보류. 배포도구권한조치/SSL DEC답변미수신,다른actor우회없음. 턴 밖 자동 점검 미설정.
