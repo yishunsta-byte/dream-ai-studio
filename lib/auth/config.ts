@@ -118,6 +118,29 @@ export function callbackOrigin(request: Request, env: Env = process.env) {
   return trusted[0] ?? null;
 }
 
+// 상태를 바꾸는 인증 요청(로그인·가입·재설정·비밀번호 변경·로그아웃)은 이 사이트 화면에서 보낸 것만 받는다(T-186, F184-1).
+// 다른 사이트의 폼(text/plain 등)이 세션을 만들거나 바꾸지 못하게, Supabase 호출·본문 읽기 전에 거절한다.
+export function allowedRequestOrigins(request: Request, env: Env = process.env) {
+  const origins = new Set(trustedOrigins(env));
+  const host = (request.headers.get("host") ?? "").trim().toLowerCase();
+  if (!env.VERCEL && LOOPBACK_HOST.test(host)) origins.add(`http://${host}`);
+  return origins;
+}
+
+export function rejectCrossSite(request: Request, { json }: { json: boolean }, env: Env = process.env): Response | null {
+  const headers = { "cache-control": "no-store" };
+  const fetchSite = request.headers.get("sec-fetch-site");
+  const origin = request.headers.get("origin");
+  if ((fetchSite && fetchSite !== "same-origin") || !origin || !allowedRequestOrigins(request, env).has(origin)) {
+    return Response.json({ error: "이 사이트 화면에서 보낸 요청만 받을 수 있어요. 화면을 새로 고친 뒤 다시 시도해 주세요.", code: "AUTH_ORIGIN_REJECTED" }, { status: 403, headers });
+  }
+  if (json) {
+    const type = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    if (type !== "application/json") return Response.json({ error: "요청 형식이 올바르지 않아요.", code: "UNSUPPORTED_MEDIA_TYPE" }, { status: 415, headers });
+  }
+  return null;
+}
+
 export const AUTH_MESSAGES = {
   required: "로그인이 필요해요. 다시 로그인해 주세요.",
   forbidden: "이 계정은 사용할 수 없어요.",

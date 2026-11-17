@@ -179,7 +179,7 @@ describe("public authentication routes called without proxy or session", () => {
   it.each(publicAuthRoutes)("%s remains reachable without an existing login", async route => {
     const loadedRoute = await routeModules[modulePath(route)]();
     const request = new Request(`http://127.0.0.1/api/${route}`, {
-      method: "POST", headers: { "content-type": "application/json", host: "127.0.0.1" },
+      method: "POST", headers: { "content-type": "application/json", host: "127.0.0.1", origin: "http://127.0.0.1" },
       body: JSON.stringify({ email: "owner@example.invalid", password: "SyntheticPassword123!" }),
     });
     const response = await (loadedRoute.POST as Handler)(request, { params: Promise.resolve({ id: "unused" }) });
@@ -195,8 +195,8 @@ describe("public authentication routes called without proxy or session", () => {
 describe("password change independently authenticates its session", () => {
   async function changePassword(body: string) {
     const { POST } = await import("@/app/api/auth/password/route");
-    return POST(new Request("https://example.invalid/api/auth/password", {
-      method: "POST", headers: { "content-type": "application/json" }, body,
+    return POST(new Request("http://127.0.0.1/api/auth/password", {
+      method: "POST", headers: { "content-type": "application/json", host: "127.0.0.1", origin: "http://127.0.0.1" }, body,
     }));
   }
   const validBody = JSON.stringify({ password: "SyntheticPassword123!" });

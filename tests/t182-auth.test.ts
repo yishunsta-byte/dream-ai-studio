@@ -9,8 +9,9 @@ type SignUpCall = { email: string; password: string; options: { emailRedirectTo:
 type AuthError = null | { status?: number; code?: string; message: string };
 const { user, calls } = vi.hoisted(() => ({
   user: { current: null as null | { email: string } },
-  calls: { exchange: [] as string[], verify: [] as unknown[], password: [] as { email: string; password: string }[], signup: [] as SignUpCall[], reset: [] as { email: string; options: { redirectTo: string } }[], update: [] as { password: string }[], authError: null as AuthError, signOut: 0, fail: false },
+  calls: { exchange: [] as string[], verify: [] as unknown[], password: [] as { email: string; password: string }[], signup: [] as SignUpCall[], reset: [] as { email: string; options: { redirectTo: string } }[], update: [] as { password: string }[], authError: null as AuthError, signOut: 0, signOutScopes: [] as string[], signOutErrors: [] as (AuthError | "throw")[], fail: false },
 }));
+vi.mock("server-only", () => ({}));
 vi.mock("@supabase/ssr", () => ({
   createServerClient: () => ({ auth: { getUser: async () => ({ data: { user: user.current } }) } }),
 }));
@@ -20,7 +21,12 @@ vi.mock("@/lib/auth/server", () => ({
     exchangeCodeForSession: async (code: string) => { calls.exchange.push(code); return { error: calls.fail ? new Error("만료") : null }; },
     verifyOtp: async (args: unknown) => { calls.verify.push(args); return { error: calls.fail ? new Error("만료") : null }; },
     getUser: async () => ({ data: { user: user.current } }),
-    signOut: async () => { calls.signOut++; return { error: null }; },
+    signOut: async (options?: { scope?: string }) => {
+      calls.signOut++; calls.signOutScopes.push(options?.scope ?? "global");
+      const next = calls.signOutErrors.shift() ?? null;
+      if (next === "throw") throw new Error("network");
+      return { error: next };
+    },
     signInWithPassword: async (args: { email: string; password: string }) => { calls.password.push(args); return { error: calls.authError }; },
     signUp: async (args: SignUpCall) => { calls.signup.push(args); return { error: calls.authError }; },
     resetPasswordForEmail: async (email: string, options: { redirectTo: string }) => { calls.reset.push({ email, options }); return { error: calls.authError }; },
@@ -30,7 +36,7 @@ vi.mock("@/lib/auth/server", () => ({
 
 const KEYS = ["DREAM_AUTH_MODE", "VERCEL", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "DREAM_ALLOWED_EMAILS", "DREAM_SITE_URL", "VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"] as const;
 const saved: Record<string, string | undefined> = {};
-beforeEach(() => { for (const key of KEYS) { saved[key] = process.env[key]; delete process.env[key]; } user.current = null; Object.assign(calls, { exchange: [], verify: [], password: [], signup: [], reset: [], update: [], authError: null, signOut: 0, fail: false }); });
+beforeEach(() => { for (const key of KEYS) { saved[key] = process.env[key]; delete process.env[key]; } user.current = null; Object.assign(calls, { exchange: [], verify: [], password: [], signup: [], reset: [], update: [], authError: null, signOut: 0, signOutScopes: [], signOutErrors: [], fail: false }); });
 afterEach(() => { for (const key of KEYS) { if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key]; } });
 
 function ready() {
@@ -192,7 +198,7 @@ describe("T-182 검수 수정: 로그인 링크 확인(callback)", () => {
 describe("T-184 이메일·비밀번호 로그인·가입·비밀번호 찾기", () => {
   async function call(route: "login" | "signup" | "reset" | "password", body: string, headers: Record<string, string> = {}) {
     const mod = route === "login" ? await import("@/app/api/auth/login/route") : route === "signup" ? await import("@/app/api/auth/signup/route") : route === "reset" ? await import("@/app/api/auth/reset/route") : await import("@/app/api/auth/password/route");
-    return mod.POST(new Request(`http://localhost:43182/api/auth/${route}`, { method: "POST", body, headers: { host: "127.0.0.1:43182", "content-type": "application/json", ...headers } }));
+    return mod.POST(new Request(`http://localhost:43182/api/auth/${route}`, { method: "POST", body, headers: { host: "127.0.0.1:43182", origin: "http://127.0.0.1:43182", "content-type": "application/json", ...headers } }));
   }
   const json = (value: unknown) => JSON.stringify(value);
   it("O182-1: JSON null·배열·문자열은 네 곳 모두 500이 아니라 400", async () => {
@@ -251,7 +257,7 @@ describe("T-184 이메일·비밀번호 로그인·가입·비밀번호 찾기",
   it("가입: 약한 비밀번호·목록 밖 접속 주소는 거절한다", async () => {
     ready();
     expect((await (await call("signup", json({ email: "owner@example.com", password: "short" }))).json()).code).toBe("WEAK_PASSWORD");
-    expect((await (await call("signup", json({ email: "owner@example.com", password: "dream2026" }), { host: "evil.test" })).json()).code).toBe("AUTH_ORIGIN_UNTRUSTED");
+    expect((await (await call("signup", json({ email: "owner@example.com", password: "dream2026" }), { host: "evil.test", origin: "http://evil.test" })).json()).code).toBe("AUTH_ORIGIN_REJECTED");
     expect(calls.signup).toHaveLength(0);
   });
   it("비밀번호 찾기: 링크는 새 비밀번호 화면으로, 허용 밖 주소는 같은 안내만", async () => {
@@ -273,6 +279,102 @@ describe("T-184 이메일·비밀번호 로그인·가입·비밀번호 찾기",
     expect((await call("password", json({ password: "weak" }))).status).toBe(400);
     expect((await call("password", json({ password: "dream2026" }))).status).toBe(200);
     expect(calls.update).toEqual([{ password: "dream2026" }]);
+  });
+});
+
+describe("T-186 외부 사이트 요청 차단(F184-1)과 로그아웃 실패 정직 처리(F184-2)", () => {
+  type Route = "login" | "signup" | "reset" | "password" | "logout";
+  async function send(route: Route, headers: Record<string, string>, body = JSON.stringify({ email: "owner@example.com", password: "dream2026" })) {
+    const mod = route === "login" ? await import("@/app/api/auth/login/route") : route === "signup" ? await import("@/app/api/auth/signup/route") : route === "reset" ? await import("@/app/api/auth/reset/route") : route === "password" ? await import("@/app/api/auth/password/route") : await import("@/app/api/auth/logout/route");
+    return mod.POST(new Request(`http://127.0.0.1:43182/api/auth/${route}`, { method: "POST", body: route === "logout" ? undefined : body, headers: { host: "127.0.0.1:43182", ...headers } }));
+  }
+  const providerCalls = () => calls.password.length + calls.signup.length + calls.reset.length + calls.update.length + calls.signOut;
+  const SAME = { origin: "http://127.0.0.1:43182", "content-type": "application/json" };
+  // 검수 원재현: 외부 사이트의 enctype=text/plain 폼이 JSON 모양 본문을 보낸다.
+  const FORM_BODY = '{"email":"owner@example.com","password":"dream2026","padding":"="}';
+  const CROSS_FORM = { origin: "http://localhost:43186", "content-type": "text/plain", "sec-fetch-site": "cross-site" };
+
+  it("외부 사이트 text/plain 폼은 다섯 곳 모두 Supabase 호출·쿠키 없이 403", async () => {
+    ready(); user.current = { email: "owner@example.com" };
+    for (const route of ["login", "signup", "reset", "password", "logout"] as const) {
+      const response = await send(route, CROSS_FORM, FORM_BODY);
+      expect(response.status, route).toBe(403);
+      expect((await response.json()).code, route).toBe("AUTH_ORIGIN_REJECTED");
+      expect(response.headers.get("set-cookie"), route).toBeNull();
+    }
+    expect(providerCalls()).toBe(0);
+  });
+  it("출처 없음·다른 출처·같은 사이트 표시가 아닌 요청은 거절, Vercel에선 루프백도 거절", async () => {
+    ready();
+    for (const headers of [{ "content-type": "application/json" }, { ...SAME, origin: "https://evil.test" }, { ...SAME, origin: "null" }, { ...SAME, "sec-fetch-site": "same-site" }]) {
+      expect((await send("login", headers)).status, JSON.stringify(headers)).toBe(403);
+    }
+    process.env.VERCEL = "1"; process.env.DREAM_SITE_URL = "https://studio.vercel.app";
+    expect((await send("login", SAME)).status).toBe(403);
+    expect(calls.password).toHaveLength(0);
+  });
+  it("같은 출처라도 JSON이 아니면 415, 인증 서버를 부르지 않는다", async () => {
+    ready();
+    for (const type of ["text/plain", "application/x-www-form-urlencoded", "multipart/form-data; boundary=x", ""]) {
+      const response = await send("login", { ...SAME, "content-type": type }, FORM_BODY);
+      expect(response.status, type).toBe(415);
+    }
+    expect(calls.password).toHaveLength(0);
+  });
+  it("정상: 같은 출처 JSON(charset 포함)·Vercel 사이트 주소·sec-fetch-site same-origin은 통과", async () => {
+    ready();
+    expect((await send("login", { ...SAME, "content-type": "application/json; charset=utf-8", "sec-fetch-site": "same-origin" })).status).toBe(200);
+    process.env.VERCEL = "1"; process.env.DREAM_SITE_URL = "https://studio.vercel.app";
+    const mod = await import("@/app/api/auth/login/route");
+    const response = await mod.POST(new Request("https://studio.vercel.app/api/auth/login", { method: "POST", body: JSON.stringify({ email: "owner@example.com", password: "dream2026" }), headers: { host: "studio.vercel.app", origin: "https://studio.vercel.app", "content-type": "application/json" } }));
+    expect(response.status).toBe(200);
+    expect(calls.password).toHaveLength(2);
+  });
+  it("로그아웃 정상: Supabase 성공이면 200", async () => {
+    ready(); user.current = { email: "owner@example.com" };
+    const response = await send("logout", { origin: SAME.origin });
+    expect(response.status).toBe(200);
+    expect(calls.signOut).toBe(1);
+  });
+  it("로그아웃 실패: Supabase 오류를 성공으로 숨기지 않고 이 브라우저 로그인만 지운 뒤 502", async () => {
+    ready(); user.current = { email: "owner@example.com" };
+    calls.signOutErrors = [{ status: 500, message: "x" }, null];
+    const response = await send("logout", { origin: SAME.origin });
+    expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({ code: "LOGOUT_PARTIAL", localCleared: true });
+    expect(calls.signOutScopes).toEqual(["global", "local"]);
+  });
+  it("로그아웃: 서버 폐기 요청이 둘 다 실패해도 이 브라우저 로그인을 지웠으면 PARTIAL", async () => {
+    ready(); user.current = { email: "owner@example.com" };
+    calls.signOutErrors = [{ status: 500, message: "x" }, { status: 500, message: "x" }];
+    expect(await (await send("logout", { origin: SAME.origin })).json()).toMatchObject({ code: "LOGOUT_PARTIAL", localCleared: true });
+  });
+  it("로그아웃 실패: 브라우저 로그인도 못 지우면 LOGOUT_FAILED", async () => {
+    ready(); user.current = { email: "owner@example.com" };
+    calls.signOutErrors = ["throw", "throw"];
+    const response = await send("logout", { origin: SAME.origin });
+    expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({ code: "LOGOUT_FAILED", localCleared: false });
+  });
+});
+
+describe("T-186 브라우저 로그아웃 결과 나누기", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => { globalThis.fetch = realFetch; });
+  async function result(reply: Response | Error) {
+    globalThis.fetch = (async () => { if (reply instanceof Error) throw reply; return reply; }) as typeof fetch;
+    const { requestLogout } = await import("@/lib/auth/logout-client");
+    return requestLogout();
+  }
+  it("성공·이미 로그인 없음(401)은 끝남", async () => {
+    expect(await result(Response.json({ ok: true }))).toEqual({ state: "ended" });
+    expect(await result(Response.json({ code: "AUTH_REQUIRED" }, { status: 401 }))).toEqual({ state: "ended" });
+  });
+  it("이 브라우저만 지운 경우는 partial, 서버 오류·네트워크 실패는 failed", async () => {
+    expect((await result(Response.json({ code: "LOGOUT_PARTIAL", localCleared: true, error: "부분" }, { status: 502 }))).state).toBe("partial");
+    expect((await result(Response.json({ code: "LOGOUT_FAILED", localCleared: false }, { status: 502 }))).state).toBe("failed");
+    expect((await result(new Response("oops", { status: 500 }))).state).toBe("failed");
+    expect((await result(new TypeError("Failed to fetch"))).state).toBe("failed");
   });
 });
 

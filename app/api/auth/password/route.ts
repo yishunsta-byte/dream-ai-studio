@@ -1,10 +1,12 @@
-import { isAllowedEmail, passwordProblem, readJsonObject } from "@/lib/auth/config";
+import { isAllowedEmail, passwordProblem, readJsonObject, rejectCrossSite } from "@/lib/auth/config";
 import { createSupabaseServer } from "@/lib/auth/server";
 
 const bad = (error: string, code: string, status = 400) => Response.json({ error, code }, { status });
 
 // 로그인한 사람(비밀번호 찾기 링크로 들어온 경우 포함)의 비밀번호를 바꾼다(T-184).
 export async function POST(request: Request) {
+  const blocked = rejectCrossSite(request, { json: true });
+  if (blocked) return blocked;
   const body = await readJsonObject(request);
   if (!body) return bad("요청 형식이 올바르지 않아요.", "BAD_REQUEST");
   const problem = passwordProblem(body.password);

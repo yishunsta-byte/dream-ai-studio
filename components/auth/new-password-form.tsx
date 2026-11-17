@@ -3,13 +3,24 @@
 import { useId, useState, type FormEvent } from "react";
 import { Button, Callout } from "@/components/ui/primitives";
 import { PASSWORD_RULE, passwordProblem } from "@/lib/auth/config";
+import { requestLogout } from "@/lib/auth/logout-client";
 import styles from "./login.module.css";
 
 export function NewPasswordForm() {
   const base = useId();
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  // 비밀번호는 바뀌었지만 로그아웃이 안 된 상태(T-186, F184-2). 성공으로 숨기지 않고 다시 시도하게 한다.
+  const [logoutFailure, setLogoutFailure] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({});
+
+  async function finishWithLogout() {
+    setBusy(true); setLogoutFailure(null);
+    const result = await requestLogout();
+    if (result.state === "ended") { window.location.assign("/login?notice=password"); return; }
+    if (result.state === "partial") { window.location.assign("/login?notice=password-partial"); return; }
+    setLogoutFailure(result.message); setBusy(false);
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -26,13 +37,18 @@ export function NewPasswordForm() {
       const response = await fetch("/api/auth/password", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error ?? "비밀번호를 바꾸지 못했어요.");
-      await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
-      window.location.assign("/login?notice=password");
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : "비밀번호를 바꾸지 못했어요.");
+      setFailure(error instanceof Error && error.message !== "Failed to fetch" ? error.message : "비밀번호를 바꾸지 못했어요. 인터넷 연결을 확인해 주세요.");
       setBusy(false);
+      return;
     }
+    await finishWithLogout();
   }
+
+  if (logoutFailure) return <div className={styles.form}>
+    <div role="alert"><Callout tone="danger" title="비밀번호는 바뀌었지만 로그아웃하지 못했어요">{logoutFailure} 이 브라우저는 아직 로그인된 상태일 수 있어요.</Callout></div>
+    <Button type="button" size="lg" loading={busy} loadingLabel="로그아웃하는 중" onClick={finishWithLogout}>로그아웃 다시 시도</Button>
+  </div>;
 
   const field = (name: "password" | "confirm", label: string, help?: string) => {
     const id = `${base}-${name}`;

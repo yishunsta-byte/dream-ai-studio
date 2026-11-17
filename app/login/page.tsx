@@ -13,6 +13,8 @@ const ERRORS: Record<string, string> = {
 };
 const NOTICES: Record<string, string> = {
   password: "비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요.",
+  "password-partial": "비밀번호를 바꿨고 이 브라우저의 로그인은 지웠어요. 다른 기기의 로그인까지 끝났는지는 확인하지 못했으니, 다른 기기를 쓰셨다면 그 기기에서도 로그아웃해 주세요.",
+  "logout-partial": "이 브라우저의 로그인은 지웠어요. 다른 기기의 로그인까지 끝났는지는 확인하지 못했어요.",
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string; notice?: string }> }) {

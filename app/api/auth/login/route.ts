@@ -1,4 +1,4 @@
-import { authMode, authReady, isAllowedEmail, readJsonObject, validEmail } from "@/lib/auth/config";
+import { authMode, authReady, isAllowedEmail, readJsonObject, rejectCrossSite, validEmail } from "@/lib/auth/config";
 import { createSupabaseServer } from "@/lib/auth/server";
 
 const bad = (error: string, code: string, status = 400) => Response.json({ error, code }, { status });
@@ -9,6 +9,8 @@ const WRONG = "이메일 또는 비밀번호가 맞지 않아요.";
 export async function POST(request: Request) {
   if (authMode() === "off") return bad("이 환경은 로그인 없이 써요.", "AUTH_OFF", 404);
   if (!authReady()) return bad("로그인 설정이 아직 끝나지 않았어요.", "AUTH_UNAVAILABLE", 503);
+  const blocked = rejectCrossSite(request, { json: true });
+  if (blocked) return blocked;
   const body = await readJsonObject(request);
   if (!body) return bad("요청 형식이 올바르지 않아요.", "BAD_REQUEST");
   const email = typeof body.email === "string" ? body.email.trim() : "";

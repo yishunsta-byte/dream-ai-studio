@@ -55,3 +55,5 @@
   .panel { padding:var(--sp-5) var(--sp-4); }
   .account .email { display:none; }
 }
+.accountError { color:var(--st-danger-fg); font-size:var(--text-sm); max-width:260px; }
+@media(max-width:600px) { .accountError { position:absolute; right:var(--sp-4); top:100%; max-width:calc(100vw - 32px); padding:var(--sp-2) var(--sp-3); background:var(--bg-surface); border:1px solid var(--st-danger-line); border-radius:var(--radius-sm); box-shadow:var(--shadow-2); z-index:20; } }
