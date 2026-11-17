@@ -68,6 +68,7 @@ class Lease {
   settled = false; abandoned = false; adopted = false; broken = false;
   ended = false; cleanupError = false; private released = false; private fallback = false;
   private poolEndStarted = false; private poolEndSettled = false;
+  private pendingQueries = 0;
   private wakes = new Set<() => void>();
   readonly checkout: Promise<PoolClient>;
   constructor(readonly pool: Pool, skipConnect = false) {
@@ -84,6 +85,14 @@ class Lease {
     void this.checkout.catch(() => {}); // Original settlement remains supervised after a race returns.
   }
   private notify() { for (const wake of this.wakes) wake(); }
+  trackQuery(original: Promise<QueryResult>): Promise<QueryResult> {
+    this.pendingQueries++;
+    return original.then(value => {
+      this.pendingQueries--; this.notify(); return value;
+    }, () => {
+      this.pendingQueries--; this.broken = true; this.notify(); throw new Fault("SERVICE_UNAVAILABLE");
+    });
+  }
   retire() {
     const c = this.client;
     if (!c || this.released) return;
@@ -106,7 +115,7 @@ class Lease {
   }
   async cleanup(ms: number): Promise<"ok" | "failed"> {
     this.abandoned = true; this.retire(); this.endPool();
-    const done = () => this.settled && (!this.client || this.ended) && this.poolEndSettled;
+    const done = () => this.settled && this.pendingQueries === 0 && (!this.client || this.ended) && this.poolEndSettled;
     if (!done()) await new Promise<void>(resolve => {
       const finish = () => { clearTimeout(timer); this.wakes.delete(wake); resolve(); };
       const wake = () => { if (done()) finish(); };
@@ -142,17 +151,25 @@ export async function runReservationAttempt(actorId: string, request: Reservatio
     let begun = false, mayReserve = false, commitSent = false, rolledBack = false;
     let candidate: ReservationRecord | undefined, committed: ReservationRecord | undefined;
     let reason: ClosedReason = "SERVICE_UNAVAILABLE";
-    const query = async (text: string, values: readonly unknown[] = []): Promise<QueryResult> => {
+    let finalizationDeadline: number | undefined;
+    const query = async (text: string, values: readonly unknown[] = [], reserveDispatch = false): Promise<QueryResult> => {
       if (!lease.adopted || lease.abandoned || lease.broken || !lease.client) throw new Fault("SERVICE_UNAVAILABLE");
-      if (signal?.aborted && !commitSent && text !== "ROLLBACK") throw new Fault("CANCELLED");
+      // No normal statement (including COMMIT) starts after cancellation/deadline.
+      // Healthy rollback / confirmed-commit hygiene have a separate finite grace.
+      const finalizing = text === "ROLLBACK" || text === hygieneSql && committed !== undefined;
+      const dispatchDeadline = finalizing ? (finalizationDeadline ??= performance.now() + config.limits.cleanupDeadlineMs) : deadline;
+      if (!finalizing && signal?.aborted) throw new Fault("CANCELLED");
+      if (performance.now() >= dispatchDeadline) throw new Fault("SERVICE_UNAVAILABLE");
       let original: Promise<QueryResult>;
+      if (text === "COMMIT") commitSent = true;
+      if (reserveDispatch) mayReserve = true;
       try { original = lease.client.query(text, [...values]); } catch { lease.broken = true; throw new Fault("SERVICE_UNAVAILABLE"); }
-      const tracked = original.then(r => {
+      const tracked = lease.trackQuery(original).then(r => {
         if (text === "COMMIT" && r.command === "COMMIT" && candidate) committed = candidate;
         return r;
-      }, () => { lease.broken = true; throw new Fault("SERVICE_UNAVAILABLE"); });
+      });
       void tracked.catch(() => {});
-      return bounded(tracked, deadline, commitSent || text === "ROLLBACK" ? undefined : signal, () => { lease.abandoned = true; lease.broken = true; });
+      return bounded(tracked, dispatchDeadline, commitSent || finalizing ? undefined : signal, () => { lease.abandoned = true; lease.broken = true; });
     };
     try {
       await bounded(lease.checkout, deadline, signal, () => { lease.abandoned = true; });
@@ -178,8 +195,8 @@ export async function runReservationAttempt(actorId: string, request: Reservatio
         const model = reserveUpload(reservation, { principalId: actorId, now: s.now, expectedRevision: 0 });
         const raw = canonicalJson({ codecVersion: 1, requestId: request.requestId, maxBytes: Math.min(request.client.requestedMaxBytes, p.maxBytes, p.providerMaxBytes), reservedAt: s.now, reservation });
         const prepared = encodeUploadReservation({ model, requestJson: raw }); // Never execute its INSERT specs.
-        mayReserve = true;
-        reply = decodeReservationReply((await repo.reserve(request.requestId, request.client.canonicalJson, prepared.requestJson)).rows, "reserve", actorId, request, prepared.requestJson);
+        const reserveRepo = reservationEntries({ query: (text, values) => query(text, values, true) });
+        reply = decodeReservationReply((await reserveRepo.reserve(request.requestId, request.client.canonicalJson, prepared.requestJson)).rows, "reserve", actorId, request, prepared.requestJson);
       }
       if (reply.tag !== "replay" && reply.tag !== "staged") {
         if (reply.tag === "seed") throw new Fault("REPLY_INVALID");
@@ -187,7 +204,6 @@ export async function runReservationAttempt(actorId: string, request: Reservatio
       }
       candidate = reply.record;
       if (signal?.aborted) throw new Fault("CANCELLED");
-      commitSent = true;
       const ack = await query("COMMIT");
       if (ack.command !== "COMMIT" || !committed) throw new Fault("SERVICE_UNAVAILABLE");
       begun = false;

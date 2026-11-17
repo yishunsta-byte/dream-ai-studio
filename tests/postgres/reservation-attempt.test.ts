@@ -170,8 +170,85 @@ describe("B33 closed adapter with controllable fake driver; NOT native DB proof"
   it("external deadline while original query never settles poisons instead of fake idle", async () => {
     const { pool, service } = setup(); const wire = deferred<QueryResult>(); pool.client.hook = text => text.includes("reserve_upload_v1($1") ? wire.promise : undefined;
     const pending = service.reserve(actor, request()); await flush(); expect(hasWrite(pool.client)).toBe(true); await vi.advanceTimersByTimeAsync(100);
-    const value = await pending; expect(value.commit).toBe("unknown"); expect(pool.client.calls.some(q => q.text === "ROLLBACK" || q.text === "COMMIT")).toBe(false);
+    await vi.advanceTimersByTimeAsync(10);
+    const value = await pending; expect(value).toMatchObject({ commit: "unknown", cleanup: "failed" }); expect(pool.client.calls.some(q => q.text === "ROLLBACK" || q.text === "COMMIT")).toBe(false);
     wire.reject(new Error("late secret")); await flush(); expect(Object.isFrozen(value)).toBe(true);
+  });
+  it("F33-1 synchronous ID preparation exceeding the deadline sends no reserve or COMMIT", async () => {
+    const cfg = config(); let n = 100;
+    Object.assign(cfg, { nextRecordId: () => { vi.advanceTimersByTime(101); return uid(++n); } });
+    const { pool, service } = setup(undefined, cfg);
+    expect(await service.reserve(actor, request())).toMatchObject({ commit: "not-applied", cleanup: "ok", reason: "SERVICE_UNAVAILABLE" });
+    expect(hasWrite(pool.client)).toBe(false); expect(pool.client.calls.some(q => q.text === "COMMIT")).toBe(false);
+    expect(pool.client.calls.filter(q => q.text === "ROLLBACK")).toHaveLength(1);
+  });
+  it("F33-2 positive client/pool end cannot settle a pending original reserve promise", async () => {
+    const { pool, service } = setup(), wire = deferred<QueryResult>();
+    pool.client.hook = text => text.includes("reserve_upload_v1($1") ? wire.promise : undefined;
+    let returned = false;
+    const pending = service.reserve(actor, request()).then(value => { returned = true; return value; });
+    await flush(); await vi.advanceTimersByTimeAsync(100);
+    expect(pool.client.releases).toBe(1); expect(pool.ends).toBe(1); expect(returned).toBe(false);
+    await vi.advanceTimersByTimeAsync(10);
+    const value = await pending, before = JSON.stringify(value);
+    expect(value).toMatchObject({ commit: "unknown", cleanup: "failed", reason: "OUTCOME_UNKNOWN" });
+    wire.reject(new Error("late native secret")); await flush();
+    expect(JSON.stringify(value)).toBe(before); expect(pool.client.releases).toBe(1); expect(pool.ends).toBe(1);
+  });
+  it("F33-1 expiry after a successful reserve reply prevents COMMIT and permits healthy rollback", async () => {
+    const { pool, service } = setup(), wire = deferred<QueryResult>(); let raw = "";
+    pool.client.hook = (text, values) => {
+      if (text.includes("reserve_upload_v1($1")) { raw = String(values[2]); return wire.promise; }
+    };
+    const pending = service.reserve(actor, request()); await flush(); expect(hasWrite(pool.client)).toBe(true);
+    // The original query has already been dispatched and wrapped at clock 0.
+    // Release its real success, then move only the controllable clock read before
+    // its consumer resumes; no timeout/abort is fired to fake a poisoned client.
+    wire.resolve(result([{ reservation_reply: history(raw) }]));
+    const clock = vi.spyOn(performance, "now").mockReturnValue(101);
+    try {
+      expect(await pending).toMatchObject({ commit: "not-applied", cleanup: "ok", reason: "SERVICE_UNAVAILABLE" });
+      expect(pool.client.calls.some(q => q.text === "COMMIT")).toBe(false);
+      expect(pool.client.calls.filter(q => q.text === "ROLLBACK")).toHaveLength(1);
+    } finally { clock.mockRestore(); }
+  });
+  it.each(["resolve", "reject"])("native reserve %s within cleanup grace is observed without further SQL", async settlement => {
+    const { pool, service } = setup(), wire = deferred<QueryResult>();
+    pool.client.hook = text => text.includes("reserve_upload_v1($1") ? wire.promise : undefined;
+    const pending = service.reserve(actor, request()); await flush(); await vi.advanceTimersByTimeAsync(100);
+    const calls = pool.client.calls.length;
+    if (settlement === "resolve") wire.resolve(result([{ reservation_reply: { tag: "INPUT" } }])); else wire.reject(new Error("late native secret"));
+    expect(await pending).toMatchObject({ commit: "unknown", cleanup: "ok" });
+    expect(pool.client.calls).toHaveLength(calls); expect(pool.client.releases).toBe(1); expect(pool.ends).toBe(1);
+  });
+  it("pending native read requires failed cleanup even when no reserve was sent", async () => {
+    const { pool, service } = setup(), wire = deferred<QueryResult>();
+    pool.client.hook = text => text.includes("read_upload_seed_v1($1") ? wire.promise : undefined;
+    const pending = service.reserve(actor, request()); await flush(); await vi.advanceTimersByTimeAsync(110);
+    const value = await pending;
+    expect(value).toMatchObject({ commit: "not-applied", cleanup: "failed" }); expect(hasWrite(pool.client)).toBe(false);
+    wire.resolve(result([])); await flush(); expect(pool.client.calls.some(q => q.text === "ROLLBACK" || q.text === "COMMIT")).toBe(false);
+  });
+  it("expired preparation allows only bounded healthy rollback, retaining its unresolved promise", async () => {
+    const cfg = config(); let n = 100;
+    Object.assign(cfg, { nextRecordId: () => { vi.advanceTimersByTime(101); return uid(++n); } });
+    const { pool, service } = setup(undefined, cfg), wire = deferred<QueryResult>();
+    pool.client.hook = text => text === "ROLLBACK" ? wire.promise : undefined;
+    const pending = service.reserve(actor, request()); await flush();
+    expect(hasWrite(pool.client)).toBe(false); expect(pool.client.calls.filter(q => q.text === "ROLLBACK")).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(20);
+    expect(await pending).toMatchObject({ commit: "not-applied", cleanup: "failed" });
+    wire.reject(new Error("late rollback secret")); await flush(); expect(pool.client.releases).toBe(1);
+  });
+  it("abort of pending reserve retains original settlement and sends no rollback", async () => {
+    const { pool, service } = setup(), wire = deferred<QueryResult>(), abort = new AbortController();
+    pool.client.hook = text => text.includes("reserve_upload_v1($1") ? wire.promise : undefined;
+    const pending = service.reserve(actor, request(), { signal: abort.signal }); await flush(); abort.abort();
+    await flush(); await vi.advanceTimersByTimeAsync(10);
+    const value = await pending, before = JSON.stringify(value);
+    expect(value).toMatchObject({ commit: "unknown", cleanup: "failed" });
+    expect(pool.client.calls.some(q => q.text === "ROLLBACK" || q.text === "COMMIT" || q.text.includes("reservation.hygiene"))).toBe(false);
+    wire.resolve(result([])); await flush(); expect(JSON.stringify(value)).toBe(before);
   });
   it("abort before reserve dispatch can confirm rollback", async () => {
     const cfg = config(), abort = new AbortController(); let n = 100; Object.assign(cfg, { nextRecordId: () => { abort.abort(); return uid(++n); } });
@@ -250,8 +327,8 @@ describe("B33 closed adapter with controllable fake driver; NOT native DB proof"
   });
   it("late COMMIT reply cannot mutate a previously returned unknown outcome", async () => {
     const { pool, service } = setup(), wire = deferred<QueryResult>(); pool.client.hook = text => text === "COMMIT" ? wire.promise : undefined;
-    const pending = service.reserve(actor, request()); await flush(); await vi.advanceTimersByTimeAsync(100); const value = await pending, before = JSON.stringify(value);
-    expect(value.commit).toBe("unknown"); wire.resolve(result([], "COMMIT")); await flush(); expect(JSON.stringify(value)).toBe(before); expect(mocked.pool).toHaveBeenCalledTimes(1);
+    const pending = service.reserve(actor, request()); await flush(); await vi.advanceTimersByTimeAsync(110); const value = await pending, before = JSON.stringify(value);
+    expect(value).toMatchObject({ commit: "unknown", cleanup: "failed" }); wire.resolve(result([], "COMMIT")); await flush(); expect(JSON.stringify(value)).toBe(before); expect(mocked.pool).toHaveBeenCalledTimes(1);
   });
   it.each(["POLICY", "POLICY_LOCK", "ACTOR_REQUIRED", "ISOLATION"])("maps read-side configuration tag %s without generating IDs", async tag => {
     const cfg = config(), generate = vi.fn(cfg.nextRecordId); Object.assign(cfg, { nextRecordId: generate }); const { pool, service } = setup(undefined, cfg); pool.client.readTag = tag;
@@ -286,6 +363,15 @@ describe("B33 closed adapter with controllable fake driver; NOT native DB proof"
   it("post-COMMIT role/GUC hygiene failure preserves record and never rolls back", async () => {
     const { pool, service } = setup(); pool.client.hook = text => text.includes("reservation.hygiene") ? result([{ current_oid: "11", login_oid: "11", actor_guc: A }]) : undefined;
     expect(await service.reserve(actor, request())).toMatchObject({ commit: "confirmed", cleanup: "failed", record: { origin: "created" } }); expect(pool.client.calls.some(q => q.text === "ROLLBACK")).toBe(false);
+  });
+  it("confirmed hygiene has finite finalization grace and retains unresolved native work", async () => {
+    const { pool, service } = setup(), wire = deferred<QueryResult>();
+    pool.client.hook = text => text.includes("reservation.hygiene") ? wire.promise : undefined;
+    const pending = service.reserve(actor, request()); await flush(); await vi.advanceTimersByTimeAsync(20);
+    const value = await pending, before = JSON.stringify(value);
+    expect(value).toMatchObject({ commit: "confirmed", cleanup: "failed", reason: "CLEANUP_FAILED", record: { origin: "created" } });
+    wire.resolve(result([{ current_oid: "11", login_oid: "11", actor_guc: "" }])); await flush();
+    expect(JSON.stringify(value)).toBe(before); expect(pool.client.calls.some(q => q.text === "ROLLBACK")).toBe(false); expect(pool.client.releases).toBe(1);
   });
   it.each(["duplicate", "thenable"])("rejects %s ID source without write dispatch", async kind => {
     const cfg = config(); Object.assign(cfg, { nextRecordId: () => kind === "duplicate" ? uid(1) : Promise.resolve(uid(1)) });
