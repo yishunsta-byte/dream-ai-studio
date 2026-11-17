@@ -119,4 +119,4 @@ P0/P1과 P2 타임라인·편집·영상/오디오 렌더·SRT/VTT·원본 재�
 
 턴 밖 30분 예약은 현재 Master 기존 대화에 메시지만 전송한다. 별도 Codex 자동화는 중지했으며 새 Codex 창을 만들지 않는다. 실행 중5분/수신이벤트 점검과 마지막확인 기록은 AI_TEAM_RULES v1.3 및 TEAM.md를 따른다. 배포 후보/구현 수용을 실제 클라우드 전체 개통으로 표시하지 않는다.
 
-현재 B22: 고정f5d009e source/catalog SELECT-only 기반 독립R2 PASS 수용(8b5237d). 원88·기존독립20·추가25 통과, 원표식충돌6변형 해소; 운영/apply 수용 아님. 후속 B23 고정ea5a477 신규4파일 ready_review, 작성자66PASS(46mock/admission+20실PG). 기존Tester B23-R 수락·착수, 수용전 원자이관/공유락/owned lifecycle·unknown COMMIT 독립검수 중. 기존v1/SQL/target/state/runtime/CLI 불변, managed·운영 적용은 미배정.
+현재 B22: 고정f5d009e source/catalog SELECT-only 기반 독립R2 PASS 수용(8b5237d). 원88·기존독립20·추가25 통과, 원표식충돌6변형 해소; 운영/apply 수용 아님. B23 고정ea5a477은 독립192f0a6 PASS 수용(원66·추가29, synthetic 한정). 후속 B24 별도 v2 CLI 신규4파일을 Backend가 수신·수락, 명시schema/target/action 승인값·비밀출력차단·실제childprocess 검증 구현 예정. 기존v1/SQL/target/state/runtime/CLI 불변, managed·운영 적용은 미배정.
