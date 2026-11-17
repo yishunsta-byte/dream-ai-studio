@@ -1,0 +1,63 @@
+{
+  "environment": "fixture bundle of actual SettingsPanel; fetch replaced with synthetic responses; no real APIs/DB",
+  "results": [
+    {
+      "name": "1280: failed read retains times and draft",
+      "passed": true
+    },
+    {
+      "name": "1280: successful read changes backup time only",
+      "passed": true,
+      "detail": [
+        "2026-11-17T02:00:00Z",
+        "2026-11-17T05:33:20.465Z"
+      ]
+    },
+    {
+      "name": "1280: success retains draft + clears action error",
+      "passed": true
+    },
+    {
+      "name": "1280: layout + genuine empty state",
+      "passed": true,
+      "detail": {
+        "overflow": 0,
+        "emptyBackup": true,
+        "errors": []
+      }
+    },
+    {
+      "name": "390: failed read retains times and draft",
+      "passed": true
+    },
+    {
+      "name": "390: successful read changes backup time only",
+      "passed": true,
+      "detail": [
+        "2026-11-17T02:00:00Z",
+        "2026-11-17T05:33:22.733Z"
+      ]
+    },
+    {
+      "name": "390: success retains draft + clears action error",
+      "passed": true
+    },
+    {
+      "name": "390: layout + genuine empty state",
+      "passed": true,
+      "detail": {
+        "overflow": 0,
+        "emptyBackup": true,
+        "errors": []
+      }
+    },
+    {
+      "name": "poll failure retains backup row + previous read time + draft",
+      "passed": true
+    },
+    {
+      "name": "poll success commits data + timestamp, keeps draft",
+      "passed": true
+    }
+  ]
+}
