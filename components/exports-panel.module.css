@@ -6,10 +6,20 @@
 .root { font-weight:var(--weight-semibold); }
 .note { color:var(--fg-muted); font-family:var(--font-pretendard),var(--font-sans); }
 .missing { display:flex; gap:var(--sp-2); align-items:center; color:var(--st-danger-fg); margin:0; }
+.panel { overflow-wrap:anywhere; }
+.panel a { display:inline-flex; align-items:center; min-height:var(--touch-min); }
+.panel button { min-height:var(--touch-min); }
+.audioSources { display:flex; flex-direction:column; gap:var(--sp-3); margin:0; padding:0; list-style:none; min-width:0; }
+.audioSource { display:flex; flex-direction:column; gap:var(--sp-2); padding:var(--sp-3); border:1px solid var(--line); border-radius:var(--radius-sm); min-width:0; }
+.audioSource h4, .audioSource p { margin:0; }
+.audioSource h4 { font-size:var(--text-md); }
+.details summary { min-height:var(--touch-min); padding-block:var(--sp-3); cursor:pointer; }
+.details summary:focus-visible { outline:1px solid var(--line-focus); box-shadow:var(--focus-ring); border-radius:var(--radius-sm); }
 .icon { width:1.25em; height:1.25em; flex:none; }
 .scroll { overflow-x:auto; max-width:100%; }
-.files { border-collapse:collapse; font-size:var(--text-sm); }
-.files td { padding:var(--sp-1) var(--sp-3) var(--sp-1) 0; white-space:nowrap; vertical-align:top; }
+.files { width:100%; table-layout:fixed; border-collapse:collapse; font-size:var(--text-sm); }
+.files td, .files th { padding:var(--sp-2) var(--sp-3) var(--sp-2) 0; overflow-wrap:anywhere; vertical-align:top; text-align:left; }
+.files th:first-child { width:70%; }
 .kv { display:grid; grid-template-columns:max-content minmax(0,1fr); gap:var(--sp-2) var(--sp-4); margin:0; }
 .kv dt { color:var(--fg-muted); }
 .kv dd { margin:0; min-width:0; }
