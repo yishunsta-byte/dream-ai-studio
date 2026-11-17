@@ -1896,3 +1896,8 @@
 - CX-CHECK-30M은 읽기전용 단발 점검 후 run:run_a3e2ad32d55d에 실제 status 보고, Master가 후속 판정/배정/공용기록 담당. 기존 Master와 상태문서 동시수정·중복배정 방지, mailbox check/polling·제품/운영변경 금지. 로컬 호스트/Orca/에이전트 실행환경 가동 필요. 설정 활성은 확인했으나 최초 예약 실행/보고 수신은 아직 미검증.
 - 진행작업 B20-R2 고정 eeca88d 독립 재검수 및 현재 검수 게이트는 유지한다. 이번 요청은 점검 주기 변경이며 배포/SSL/과금 권한 확대가 아니다. 관련4세션에 규칙 변경 통지 예정, 수신 확인 전 적용 완료로 주장하지 않는다.
 - 규칙 변경 통지: Backend/Front/Design/Tester 네 terminal mailbox에 실제 전송 영수증 확보(2026-11-18 00:15:38 +09:00). terminal-only 비영구 전달 경고 있으며 상대 수신·읽음은 아직 미확인. automation show 재조회 enabled/cron/AsiaSeoul/nextRunAt 일치 확인. 문서 diff-check 통과.
+
+### 점검 / Backend v1.2 수신 확인
+- 마지막 확인 시각: 2026-11-18 00:16:14 +09:00 (Asia/Seoul). 지정 Orca wake msg_ac44f4e6bf8b, Git/status/최근 handoffs 확인. Backend가 실제 v1.2 두문서를 읽고 점검주기·설정/실행 구분·중복scheduler/Master 금지·현게이트 유지를 수락했다고 회신. 다른3세션 수신은 아직 미확인이며 일괄 수락으로 올리지 않는다.
+- 새 구현/독립 검수 결과·미기록 handoff 없음. 기존 T122/T137 미추적 보존. B20-R2 ctx_3e03ef64ee4e 고정 eeca88d 배정 유지, 아직 결과 미수신. B21 후보 참조 갱신은 Master 문서검토 통과 기록과 구분하여 설계 전체/SQL4 수용으로 확대하지 않는다.
+- 후속 판정: 기존 독립 검수 유지, 중복 검수·제품 구현/SQL4 발행 추가배정 없음. 필수수정 또는 PASS 결과 도착 후 다음 범위를 배정한다. 30분 예약 활성/최초00:30KST 실행 전 상태 유지, 이번 wake는 예약 실행 증거가 아니다.
