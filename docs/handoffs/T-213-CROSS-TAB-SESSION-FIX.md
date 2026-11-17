@@ -16,7 +16,7 @@
 | `components/auth/login-form.tsx` | 로그인 성공 뒤 이동하기 직전에 알림을 보내요. |
 | `components/auth/new-password-form.tsx` | 비밀번호를 바꾼 뒤 로그아웃이 완료됐거나 일부만 됐을 때 알림을 보내요. |
 | `components/auth/login.module.css` | `.accountNotice`를 추가했어요. 좁은 화면에서도 숨기지 않고 계정 칸 안에서 줄을 바꿔 보여 줘요. |
-| `tests/t213-cross-tab-session.test.ts`(새) | 25건이에요. |
+| `tests/t213-cross-tab-session.test.ts`(새) | 24건이에요. |
 | `tests/t213-cross-tab-session-http.mjs`(새) | T-207 검증기를 복사해서 비밀번호 로그인, 부분 로그아웃 전환 파일, 유지 모드 인증 기록을 더했어요. |
 | `tests/api-auth.test.ts`, `tests/t198-legacy-gate.test.ts` | 라우트 목록에 `auth/session`을 넣었어요(guarded·auth 경로). |
 
@@ -74,7 +74,7 @@
 ## 확인
 | 확인 | 결과 |
 |---|---|
-| t213 | 25/25 |
+| t213 | 24/24 |
 | 관련 회귀(t213·api-auth·t198·t182·t183·t191·t200·t207) | **417/417** |
 | `tsc --noEmit`(사본 정리 뒤) | exit 0 |
 | `eslint .` | exit 0 |
