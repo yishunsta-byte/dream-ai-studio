@@ -17,7 +17,7 @@
 | 버전별 DB 검사 | B22 f5d009e·R2 수용 | SELECT-only catalog·PG18.7 synthetic 한정. principal marker 충돌 수정 수용 |
 | 버전별 이관 실행기 | B23 ea5a477·R 수용 | 원66·독립29 통과. 운영 대상 실행은 별도 정확한 범위 필요 |
 | 버전별 CLI | B24 eccac35·R3b683d4 수용 | 원59·독립43, actual children22+20 검사. fingerprint는 사용자 승인 증명 아님 |
-| 업로드 예약 DB 변환 | **B25 da0f740 독립85108b6 PASS 수용 / B26-FIX 1858550 계약 보완 제출·Front B26-R2 재대조 착수** | reserved-only codec·SQL parameter/row 변환·실PG roundtrip/rollback→고정본 독립검수 |
+| 업로드 예약 DB 변환 | **B25 da0f740 독립85108b6 PASS 수용 / B26 G1-a Master 기술방향 확정·문서 반영 / B27 미발행 SQL5 초안 수락** | reserved-only codec·SQL parameter/row 변환·실PG roundtrip/rollback→고정본 독립검수 |
 | 클라우드 개인 관리 | **T234 링크18px FAIL·공통focus 복귀 추가결함 → 목록FIX ec1609e 제출 / Front T235 ebe84ea 제출·T236 독립 재검수 후속 배정** | 실제 project 조회 기반 읽기 전용 상태·미연결 정직 표시·세션 경계·양폭 검수 |
 | 공개 멀티미디어 메인 | 사용자 신규 요구: 방문자가 완성 콘텐츠를 보는 화려한 쇼케이스. **T232 b918e42 새3안·정적시안 범위 수용, Master PC/390 정상6캡처 확인** | 새3안 비교index 제공·구조/화려함/탐색성 방향결정 후 제품범위 배정. 실제재생/API/실콘텐츠 공개는 미구현, 기존T208/private초안 보존 |
 | 운영·비용 | 실제 Supabase Free50MB, 앱 요구2GiB 미충족. SSL DEC-SSL-01 미결정 | 무료 synthetic 개발 계속. 유료 전환·운영 SSL 변경은 승인 전 미실행 |
@@ -39,7 +39,7 @@
 ## 2. 담당·점유·검증 책임
 
 - Master: 플랜 갱신·우선순위·범위/점유 조정·결과 판정·다음 배정·공식 기록. AI_TEAM_RULES v1.4 적용.
-- Backend: B25 고정da0f740 codec 수용. B26-FIX1858550 제출·B26-R2 질문/결함 대응, SQL5/role/SECDEF/API/runtime 구현 미배정.
+- Backend: B25 고정da0f740 codec 수용. B26 G1-a/b 기술결정 문서 반영 + B27 drafts SQL5/고유인계 작성 수락. 실제 SQL5/role/권한 실행·registry/API/runtime 변경 없음.
 - Front(메인 PC): T235 누적ebe84ea 수정본 제출. T236 동일SHA artifact/소유서비스만 지원, 브라우저는 Tester 단독 소유. 배포는 독립검수 수용 후 묶음 처리.
 - Design: T230 명세8507612 수용. 사용자 신규 T232 공개 멀티미디어 메인3안 우선. T231은 현재 증거 보존 후 후순위; 기존 관리자 구현을 막지 않는다. 시안/고유보고만, 제품 파일 수정 없음.
 - Tester: T234 원고정 최종보고 후 B25-R 고정da0f740 순차 검수 배정. B25 최종반환 후 T236 누적ebe84ea UI 재검수로 전환. 단일 활성 검수·브라우저 소유, production build·배포는 Front 지원.
@@ -50,7 +50,7 @@
 
 | ID / 우선순위 | 단일 책임자 / 상태 | 허용 범위·완료 조건 | 검증 담당 / 다음 행동 |
 |---|---|---|---|
-| B25→B26-FIX / P2 | B25 수용·B26-FIX1858550 제출·Front 재대조 착수 | 예약전용 pure DB codec/parameter/decoder·test/ownedPG runner/인계. 원문/ID/정책/시간/owner 일치·음성 입력·실PG roundtrip/rollback | 작성자 검사 후 고정 SHA 제출→기존 Tester 독립검수→Master 판정 |
+| B26→B27 / P2 | Backend 기술결정 문서 반영·미발행 SQL5 초안 수락 | 예약전용 pure DB codec/parameter/decoder·test/ownedPG runner/인계. 원문/ID/정책/시간/owner 일치·음성 입력·실PG roundtrip/rollback | 작성자 검사 후 고정 SHA 제출→기존 Tester 독립검수→Master 판정 |
 | T229-FIX / T235 / P2 | 목록FIX+focus 누적ebe84ea 제출, T236 기존Tester 후속 배정 | /cloud/manage 읽기 전용 UI·목록 표시건수/상태·조회오류·미연결 안내·목록 링크. Auth/layout/backend 불변 | Front 합성 동작·메인 PC 격리 build, 기존 Tester 독립검수·Design 시각 대조 |
 | T232 / P2·사용자 우선 | Design 제출·새3안 정적시안 범위 수용 | 공개 방문자 중심 영상·음악·이미지 쇼케이스 새3안/비교index/1280·390캡처·상태/출처·추천안 | Master3안비교→선택/구현범위결정→Front구현·Tester검수. T231은 기존 증거 보존 후 후순위 |
 
@@ -131,3 +131,9 @@ P0/P1과 P2 타임라인·편집·영상/오디오 렌더·SRT/VTT·원본 재�
 - T232 새3안은 대형 네온 시네마/사운드·앨범 중심/크리에이터 영상 피드처럼 구조부터 달리 제작한다. 화려한 색·커버·모션과 한국어 가독성·대비·390반응형·키보드·reduced motion을 함께 검증한다.
 - 실제 공개 콘텐츠 목록/권한/출판 계약은 아직 없다. 시안의 샘플은 샘플로 표시하고, 운영 시에는 공개 대상으로 선택된 완성 콘텐츠와 허용 자산만 노출한다. 기존 private DB/PC 파일을 자동으로 게시하지 않는다.
 - 현재 배정은 시안 제작이며 운영 root/Auth/layout/파일공개 변경은 아직 구현·배포하지 않았다. T208은 과거 후보로 보존하고, T229 개인 관리/B25 저장계층은 병행한다.
+### B26 G1-a/b Master 기술선택 (2026-11-18)
+
+- PG18.7 축소 native 검토 B26-R2 92c6a70에 따라, 비슈퍼유저 생성자가 직접 회수할 수 없는 자동 ADMIN 간선은 마이그레이션 전용 trusted owner의 정확한1개(admin=true/INHERIT=false/SET=false·검증된 native grantor)만 최종 예외로 설계한다. ADMIN의 SET 재획득 가능성을 숨기지 않고 런타임 DB credential과 관리 root를 분리한다. runtime/API/worker·기타 경로는 허용하지 않는다.
+- createrole_self_grant와 실제 간선·대상 메이저는 preflight/native inventory로 검증하고 미확인은 실패 처리한다. 서버 global 설정을 자동 변경하지 않는다.
+- 단일 migration transaction·함수 생성 직후 명시적 PUBLIC/API/worker REVOKE·COMMIT 전 exact ACL 검증을 필수로 한다. 이번 경로에서는 global default ACL을 임시 변경하지 않는다.
+- 현재 B27은 drafts/0005_upload_reservation.sql 및 고유 인계의 **파일 작성만** 허용한다. 어느 DB에도 적용하지 않고 기존3/4 registry·SQL1~4·runtime을 바꾸지 않는다. 초안 검토와 실제 전체 SQL4+5/권한·경쟁·실패 회귀는 다음 별도 단계다.

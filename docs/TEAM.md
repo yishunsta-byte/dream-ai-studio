@@ -2137,3 +2137,8 @@
 - G1한migrationtx내defaultACLglobalPUBLIC임시차단/schema추가grant제거·생성시private·exact2OWNER전환용membership/CREATE임시부여·자동membership포함회수·최종nativeinventory/기존defaultACL복원·실패원자rollback 명시. G2양entryFOUND/expectedrow/tuple와기존object0행vsfreshuniqueINSERT구분, RC/VOLATILE강제·락양음성행렬·C1queuedrole18.7縮小실증/fullSQL4+5·실targetmajor게이트확인. 새로운defaultACL순서가실현됐다는주장아님.
 - Front B26-R2 msg_bb174abfd54c 실제배정→msg_ffabd5ca696c 수신·좁은diff재대조/고유보고1파일범위 수락·착수. 원G1/G2/C1~3·새defaultACL계약이상충없는지·증거/미검증분리, T236서비스/Tester브라우저불간섭. 필요ownedprobe는명령보존/정리, 제품/SQL5/role/권한/API미구현·새창agentworktree없음.
 - 현재B25수용/UI누적T236실행결과미수신/메인3안정적수용과별개. Backend는원계약고정유지·반환질문/결함대응, 원SQL1~4/운영변경없음. 기존T122/T137보호·플랜상태갱신.
+### 점검 / B26-R2 추가 계약 gap 판정·Master 기술선택·B27 오프라인 초안 수락
+- 실제 점검 완료 시각: 2026-11-18 03:29:22 +09:00 (Asia/Seoul). 지정wake msg_08eccf8df269/msg_0ddfb2b768e9·B26-R2 92c6a70 전문/nativeP4/P5·Git/최근handoffs 확인. G2/C1~3수용가능하나G1자동creatorADMIN회수조건이비superuser에게불가능하다는필수gap근거확인. P4 adminT/inhF/setF/부트스트랩grantor·selfrevoke불가·SET직접불가하지만ADMIN으로재획득가능 native보고. 축소PG18.7범위/actualsetting/targetmajor미검증 유지.
+- Master 기술판정: 제안1채택·trustedmigrationowner exactautoADMIN edge1최종예외/런타임모든edge0, ADMIN의SET재획득위협모델명시·runtimecredential분리. 실target/preflight setting/nativegrantor/정확inventory미확인failclosed. G1-b단일tx생성직후explicitrevoke/commit전ACL검증으로단순화·globaldefaultACL변경이번엔안함. 다른세션은commit전함수미가시성 P5관측과실manifest원자성전제구분, 단계별failure/fullSQL5검증미완료.
+- Backend msg_14e88865e97f 실제문서보완+B27초안배정→msg_0ddfb2b768e9 수신·총3경로수락. 기존B26문서+신규draftsSQL5/B27고유인계만, 어떤DB적용/role실생성/registry/원SQL1~4/v1/B25/runtime/API/운영변경미허용. 실행가능한DDL로구체화하되미정/미실행을숨기지않고고정SHA/source리뷰후별도native검증.
+- Front msg_f81e99cce493 Master선택·fewlines재대조가능범위 통지, 기존검토결과는신결정문서에소급PASS처리안함. UI T236mainPC서비스/Tester브라우저단독유지, 새UI최종결과아직없음. B25수용·메인3시안정적수용과별개. T122/T137보존·새창agentworktree/실managed/배포없음.
