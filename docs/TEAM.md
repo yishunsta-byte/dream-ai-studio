@@ -1672,3 +1672,9 @@
 - F221-1/P1: 실제합성SQLite+계정StudioShell에서의심→same재확인때ProjectForm입력초기화/DOMdisconnect 재현보고. current단일div와checking fragment/두sibling형태변화로remount가능코드확인. F221-2/P2: 본문hidden/제거에도sidebar작업수·실패수·링크표시/Tab잔류. 새요청인증우회로해석하지않음.
 - Front T224우선수정배정: T223실행중안전checkpoint·결과보존후동일subtree/DOM identity/입력상태보존과sidebar/drawer/nav/counts/poll후응답경계보완. confirmed때본문제거·같은epoch재등장차단·T220원세경로유지. auth서버/API/DB불변,실local/cloud양폭검증후분리SHA반환.
 - Tester고정371나머지race/회귀·정리/최종보고계속지시,현재timeout관측은결론미확정으로분리. 최종FAIL과새수정재검수는구분. BackendB15유지,DEC-SSL-01미수신/운영변경보류,턴 밖 자동 점검 미설정.
+
+### 점검 / T223 시험 시계 수정 직접 수용
+- 마지막 확인 시각: 2026-11-17 21:23:28 +09:00 (Asia/Seoul). Orca이벤트·T223원문/234806b diff/최근handoffs/Git확인,기존B15WIP및T122/T137보호. 새미기록보고없음.
+- T223 고정234806b 시험한파일Date-only fake/set/첫cleanup복원변경확인,제품/기대값/fixture불변. Master직접t164실행7/7PASS(exit0)로좁은시험수정수용. 작성자깨끗한be0e304+수정사본실제/과거/미래7·관련42·전체1356PASS/84skip/lint/type는작성자근거로구분,현재WIP HEAD전체검사아님.
+- be0e304는커밋T220을포함하므로보고의T220소스미혼입표현은추가미커밋WIP배제의미인지정확히정정하도록전달. 이문서정정때문에T224우선작업중단요청안함. 유사시계10파일두날짜121PASS/1skip은해당대조범위이며모든날짜보장아님.
+- Front T224입력보존/사이드바보호우선계속,Tester T221최종보고및Backend B15진행유지. 운영SSL DEC미수신·변경보류,턴 밖 자동 점검 미설정.
