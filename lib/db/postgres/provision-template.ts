@@ -1,6 +1,6 @@
 import "server-only";
 import { postgresMigrationManifest } from "./migration-manifest";
-import { migrationLock } from "./migration-runner";
+import { migrationLock, restrictedRoleGraphViolationsSql } from "./migration-runner";
 
 // A reviewed, password-free template, not an automatic provisioning operation.
 // Existing logins are never adopted, altered or granted additional roles.
@@ -20,6 +20,7 @@ DO $checks$ BEGIN
    EXCEPT SELECT ordinal,id,checksum FROM dream_migrations.history
  ) THEN RAISE EXCEPTION 'Known migration history required'; END IF;
  IF (SELECT count(*) FROM pg_roles WHERE rolname IN ('dream_api','dream_worker') AND NOT rolsuper AND NOT rolbypassrls AND NOT rolcanlogin AND NOT rolinherit AND NOT rolcreaterole AND NOT rolcreatedb AND NOT rolreplication)<>2 THEN RAISE EXCEPTION 'Restricted runtime roles required'; END IF;
+ IF EXISTS(${restrictedRoleGraphViolationsSql}) THEN RAISE EXCEPTION 'Unexpected runtime role graph'; END IF;
 END $checks$;
 CREATE ROLE dream_api_login LOGIN PASSWORD NULL NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION;
 CREATE ROLE dream_worker_login LOGIN PASSWORD NULL NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION;

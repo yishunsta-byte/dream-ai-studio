@@ -42,7 +42,9 @@ try {
   checked(await run(join(bin, "postgres.exe"), ["--version"], "version.txt"), "Postgres version check failed");
   const password = join(root, "synthetic-password.txt");
   await writeFile(password, "b3-synthetic-admin-only");
-  checked(await run(join(bin, "initdb.exe"), ["-D", cluster, "-U", "dream_test_admin", `--pwfile=${password}`, "--auth-host=scram-sha-256", "--auth-local=scram-sha-256", "--encoding=UTF8", "--locale=C"], "initdb.log"), "Synthetic initdb failed");
+  // A concurrent build/copy can make the initial filesystem sync exceed 60s.
+  // Keep sync enabled; extend only this owned initialization timeout.
+  checked(await run(join(bin, "initdb.exe"), ["-D", cluster, "-U", "dream_test_admin", `--pwfile=${password}`, "--auth-host=scram-sha-256", "--auth-local=scram-sha-256", "--encoding=UTF8", "--locale=C"], "initdb.log", env, 120000), "Synthetic initdb failed");
   const listener = createServer();
   const port = await new Promise((resolvePort, reject) => {
     listener.once("error", reject);

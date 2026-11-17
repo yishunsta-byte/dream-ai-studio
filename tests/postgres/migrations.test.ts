@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import type { Pool } from "pg";
+import { Pool } from "pg";
 import { loadPostgresMigrations, postgresMigrationManifest } from "@/lib/db/postgres/migration-manifest";
 import { inspectMigrationTarget } from "@/lib/db/postgres/migration-target";
 import { runPostgresMigrations } from "@/lib/db/postgres/migration-runner";
@@ -24,10 +24,10 @@ describe("B5 locked source and safe targets", () => {
     const dir = join(process.cwd(), "tmp", `b5-manifest-${randomUUID()}`); await mkdir(dir, { recursive: true });
     for (const entry of postgresMigrationManifest) await writeFile(join(dir, entry.file), await readFile(new URL(`../../lib/db/postgres/${entry.file}`, import.meta.url)));
     await writeFile(join(dir, postgresMigrationManifest[1].file), "-- changed source");
-    const connect = vi.fn();
-    await expect(runPostgresMigrations({ pool: { connect } as unknown as Pick<Pool, "connect">, target,
+    const connect = vi.spyOn(Pool.prototype, "connect");
+    await expect(runPostgresMigrations({ target,
       expectedTargetHash: inspectMigrationTarget(target).targetHash, mode: "apply", sourceRoot: pathToFileURL(`${dir}/`) })).rejects.toMatchObject({ code: "MIGRATION_SOURCE" });
-    expect(connect).not.toHaveBeenCalled();
+    expect(connect).not.toHaveBeenCalled(); connect.mockRestore();
   });
   it("target fingerprint excludes passwords while fixing host/port/database/operator", () => {
     const result = inspectMigrationTarget(target);
@@ -44,9 +44,9 @@ describe("B5 locked source and safe targets", () => {
     expect(inspectMigrationTarget({ connectionString: `postgresql://owner:secret@db.${ref}.supabase.co:5432/postgres`, profile: "managed-staging", projectRef: ref }).targetHash).toMatch(/^[a-f0-9]{64}$/);
   });
   it("wrong expected target hash refuses before connecting", async () => {
-    const connect = vi.fn();
-    await expect(runPostgresMigrations({ pool: { connect } as unknown as Pick<Pool, "connect">, target, expectedTargetHash: "a".repeat(64), mode: "apply" })).rejects.toMatchObject({ code: "MIGRATION_TARGET" });
-    expect(connect).not.toHaveBeenCalled();
+    const connect = vi.spyOn(Pool.prototype, "connect");
+    await expect(runPostgresMigrations({ target, expectedTargetHash: "a".repeat(64), mode: "apply" })).rejects.toMatchObject({ code: "MIGRATION_TARGET" });
+    expect(connect).not.toHaveBeenCalled(); connect.mockRestore();
   });
 });
 describe("B5 CLI and password-free provision output", () => {

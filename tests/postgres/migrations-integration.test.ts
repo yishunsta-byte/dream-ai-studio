@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createPostgresPool } from "@/lib/db/postgres/connection";
@@ -11,6 +11,7 @@ vi.mock("server-only", () => ({}));
 const A = "00000000-0000-4000-8000-000000000001", B = "00000000-0000-4000-8000-000000000002";
 describe.skipIf(process.env.DREAM_PG_MIGRATION_TEST !== "1")("B5 actual atomic migration/provision runner", () => {
   let pool: Pool, target: MigrationTarget, hash: string, api: Pool, worker: Pool;
+  let runtimePoolsClosed = false;
   beforeAll(async () => {
     const uri = process.env.DREAM_PG_MIGRATION_TEST_URL ?? "";
     target = { connectionString: uri, profile: "synthetic" };
@@ -21,8 +22,8 @@ describe.skipIf(process.env.DREAM_PG_MIGRATION_TEST !== "1")("B5 actual atomic m
     const state = (await pool.query("SELECT to_regnamespace('dream')::text AS dream,to_regnamespace('auth')::text AS auth")).rows[0];
     if (state.dream || state.auth) throw new Error("Fresh owned cluster required");
   });
-  afterAll(async () => { await Promise.all([pool?.end(), api?.end(), worker?.end()]); });
-  const run = (mode: "dry-run" | "apply" = "apply") => runPostgresMigrations({ pool, target, expectedTargetHash: hash, mode });
+  afterAll(async () => { await Promise.all([pool?.end(), ...(runtimePoolsClosed ? [] : [api?.end(), worker?.end()])]); });
+  const run = (mode: "dry-run" | "apply" = "apply") => runPostgresMigrations({ target, expectedTargetHash: hash, mode });
   const absent = async () => (await pool.query("SELECT to_regnamespace('dream')::text AS dream,to_regnamespace('dream_migrations')::text AS history,(SELECT count(*)::int FROM pg_roles WHERE rolname IN ('dream_api','dream_worker')) AS roles")).rows[0];
 
   it("dry-run rejects missing Auth FK prerequisites without creating anything", async () => {
@@ -102,7 +103,7 @@ describe.skipIf(process.env.DREAM_PG_MIGRATION_TEST !== "1")("B5 actual atomic m
     await expect(api.query("DELETE FROM dream_migrations.history")).rejects.toMatchObject({ code: "42501" });
     const url = new URL(target.connectionString); url.username = "dream_api_login"; url.password = "b5-synthetic-api";
     const deniedTarget = { ...target, connectionString: url.toString() };
-    await expect(runPostgresMigrations({ pool: api, target: deniedTarget, expectedTargetHash: inspectMigrationTarget(deniedTarget).targetHash, mode: "apply" })).rejects.toMatchObject({ code: "MIGRATION_PRIVILEGE" });
+    await expect(runPostgresMigrations({ target: deniedTarget, expectedTargetHash: inspectMigrationTarget(deniedTarget).targetHash, mode: "apply" })).rejects.toMatchObject({ code: "MIGRATION_PRIVILEGE" });
   });
   it("API RLS owner isolation and immutable identity guards survive runner application", async () => {
     const client = await api.connect();
@@ -151,5 +152,65 @@ describe.skipIf(process.env.DREAM_PG_MIGRATION_TEST !== "1")("B5 actual atomic m
     const lines: string[] = [];
     expect(await runMigrationCli(["apply"], { DREAM_PG_MIGRATION_URL: url.toString(), DREAM_PG_MIGRATION_PROFILE: "synthetic", DREAM_PG_MIGRATION_TARGET_HASH: hash }, line => lines.push(line))).toBe(1);
     expect(lines).toEqual([JSON.stringify({ error: "MIGRATION_FAILED" })]);
+  });
+  it("F1: indirect SET ROLE history DELETE is real, and both modes reject the expanded graph", async () => {
+    await pool.query("CREATE ROLE b5_fix_parent NOLOGIN; CREATE ROLE b5_fix_extra NOLOGIN; GRANT USAGE ON SCHEMA dream_migrations TO b5_fix_extra; GRANT DELETE ON dream_migrations.history TO b5_fix_extra; GRANT b5_fix_extra TO b5_fix_parent WITH INHERIT FALSE, SET TRUE; GRANT b5_fix_parent TO dream_api WITH INHERIT FALSE, SET TRUE");
+    const end = vi.spyOn(Pool.prototype, "end");
+    try {
+      const client = await api.connect();
+      try {
+        await client.query("BEGIN; SET LOCAL ROLE b5_fix_extra");
+        expect((await client.query("DELETE FROM dream_migrations.history")).rowCount).toBe(3);
+        await client.query("ROLLBACK");
+      } finally { client.release(); }
+      await expect(run("apply")).rejects.toMatchObject({ code: "MIGRATION_STATE" });
+      await expect(run("dry-run")).rejects.toMatchObject({ code: "MIGRATION_STATE" });
+      expect(end).toHaveBeenCalledTimes(2);
+    } finally { end.mockRestore(); await pool.query("REVOKE b5_fix_parent FROM dream_api; REVOKE b5_fix_extra FROM b5_fix_parent; REVOKE ALL ON TABLE dream_migrations.history FROM b5_fix_extra; REVOKE ALL ON SCHEMA dream_migrations FROM b5_fix_extra; DROP ROLE b5_fix_parent; DROP ROLE b5_fix_extra"); }
+  });
+  it("F1 template rejects a worker parent before creating either login", async () => {
+    // This dedicated synthetic case removes only the logins it provisioned above.
+    await api.end(); await worker.end(); runtimePoolsClosed = true;
+    await pool.query("DROP ROLE dream_api_login; DROP ROLE dream_worker_login; CREATE ROLE b5_fix_template_parent NOLOGIN; GRANT b5_fix_template_parent TO dream_worker WITH INHERIT FALSE, SET TRUE");
+    const client = await pool.connect();
+    try {
+      await expect(client.query(postgresProvisionTemplate())).rejects.toThrow("Unexpected runtime role graph");
+      await client.query("ROLLBACK");
+      expect((await client.query("SELECT count(*)::int AS n FROM pg_roles WHERE rolname IN ('dream_api_login','dream_worker_login')")).rows[0].n).toBe(0);
+    } finally {
+      await client.query("ROLLBACK"); client.release();
+      await pool.query("REVOKE b5_fix_template_parent FROM dream_worker; DROP ROLE b5_fix_template_parent");
+    }
+    const end = vi.spyOn(Pool.prototype, "end");
+    try { expect(await run("dry-run")).toMatchObject({ applied: 0, pending: 0 }); expect(end).toHaveBeenCalledTimes(1); }
+    finally { end.mockRestore(); }
+  });
+  it.each(["apply", "dry-run"] as const)("F2: an independently supplied IPv4 pool with IPv6 target is rejected in %s", async mode => {
+    const otherTarget = { ...target, connectionString: target.connectionString.replace("127.0.0.1", "[::1]") };
+    expect((await pool.query("SELECT host(inet_server_addr()) AS address")).rows[0].address).toBe("127.0.0.1");
+    const legacy = { pool, target: otherTarget, expectedTargetHash: inspectMigrationTarget(otherTarget).targetHash, mode };
+    await expect(runPostgresMigrations(legacy as unknown as Parameters<typeof runPostgresMigrations>[0])).rejects.toMatchObject({ code: "MIGRATION_TARGET" });
+    expect((await pool.query("SELECT count(*)::int AS n FROM dream_migrations.history")).rows[0].n).toBe(3);
+  });
+  it.each(["BEGIN", "COMMIT", "ROLLBACK", "COMMIT_AS_ROLLBACK"])("owned client is destroyed and pool ended on %s failure", async point => {
+    const originalConnect = Pool.prototype.connect as unknown as (this: Pool) => Promise<PoolClient>;
+    let destroyed: boolean | undefined;
+    const end = vi.spyOn(Pool.prototype, "end");
+    const connect = vi.spyOn(Pool.prototype, "connect").mockImplementation((async function(this: Pool) {
+      const client = await originalConnect.call(this);
+      return new Proxy(client, { get(real, key) {
+        if (key === "release") return (bad: boolean) => { destroyed = bad; real.release(bad); };
+        if (key === "query") return async (sql: string, params?: unknown[]) => {
+          if ((point === "BEGIN" && sql.startsWith("BEGIN")) || (point === "COMMIT" && sql === "COMMIT") || (point === "ROLLBACK" && (sql === "ROLLBACK" || sql.startsWith("SELECT current_database")))) throw new Error("synthetic driver failure with private text");
+          if (point === "COMMIT_AS_ROLLBACK" && sql === "COMMIT") return real.query("ROLLBACK");
+          return real.query(sql, params);
+        };
+        const value = Reflect.get(real, key); return typeof value === "function" ? value.bind(real) : value;
+      } });
+    }) as unknown as Pool["connect"]);
+    try {
+      await expect(run("dry-run")).rejects.toMatchObject({ code: "MIGRATION_FAILED" });
+      expect(destroyed).toBe(true); expect(end).toHaveBeenCalledTimes(1);
+    } finally { connect.mockRestore(); end.mockRestore(); }
   });
 });
