@@ -34,3 +34,6 @@ P0-4 확인: npm 레지스트리의 eslint-plugin-jsx-a11y 6.10.2 peerDependenci
 - 상태: 사용자에게 async 선택 요청 등록, 응답 전 미실행. 답변 전 Backend B22 독립 로컬 구현 계속.
 ### DEC-VERCEL-02 후속 종결 (2026-11-18 01:03:27 +09:00)
 Front f8e8fc2/msg_4b1d8a249538에 따르면 사용자가 Front 대화에서 kzxq 삭제를 직접 승인했고 실행 완료. 연결만해제/유지의 이전 질문은 superseded. Master는 해당승인대화 직접열람이 아니라 보고수신으로구분; 결과는 actualHTTPS kzxq404 DEPLOYMENT_NOT_FOUND/mainlogin200/api401 재확인. 추가삭제·설정변경 미실행, 사용자에게동일질문반복하지 않음.
+
+### Vercel 2FA 사용자 보류 기록 (2026-11-18 01:30:59 +09:00)
+Front msg_dea5d67c6f6c에 따르면 사용자가 '나중에 할께 패스'로 보류. 현범위에서는 설정하지 않고 같은질문을반복하지 않는다. 사용자후속지시전대기이며 Backend B23/기존운영을중단시키는선행조건으로사용하지 않는다.

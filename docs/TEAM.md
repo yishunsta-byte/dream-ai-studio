@@ -1990,3 +1990,9 @@
 - 맥미니Tester=동작테스트·검수·디버깅, 빌드·배포=메인PC 담당자로명시. 실제Mac연결/동기화미확인이므로 기존Windows Tester handle을Mac으로추정재등록하지 않음. 장비별경계통지·충돌시보고요청. 자잘한수정은모아검증후한번배포, 기존운영/비용/권한게이트불변.
 - 예약재확인: Windows Reminder Ready/PT30M·hidden send 기존run만, last01:00:01 result0/next01:30. 별도Codex070fa0ae enabledfalse, 추가창/agent/worktree 생성없음. 이번에새예약시험/메시지수신성공을주장하지않고 이전시험/정규수신기록과현재설정확인을구분.
 - Backend/Front/Design/Tester 네기존terminal에 v1.4 실제통지영수증확보, terminal-only비영구경고·각세션읽음/수락은아직미확인. B23 기존배정계속·Tester다음고정후보대기·중복작업미배정. 지침diff-check통과·새사용자결정요청없음.
+### 점검 / v1.4 장비 확인·Front 유휴와 Tester 입력대기 구분
+- 실제 점검 완료 시각: 2026-11-18 01:30:59 +09:00 (Asia/Seoul). 지정 wake msg_dea5d67c6f6c/msg_ae9c7b638623 및01:30정규알림 msg_799022d12ee1·Git/최근handoffs/B23원문 확인. 새완료인계없음, Backend B23 허용4파일 WIP·기존T122/T137 보존. 이번에는마지막확인후 장비/지침/사용자직접결정/신규인계변경을확인했으며 전체기능재검증한것아님.
+- Front v1.4 읽음·actual mainPC Windows/host star·프론트+빌드배포역할충돌없음·진행작업없음 available 회신. Tester v1.4 읽음·actualWindows10.0.26300/PowerShell/D:연결 유지·맥미니실검증아님·B22-R2 완료후B23 고정입력대기 회신. Mac mini 연결을현재 handle에추정등록하지 않음. 빌드·배포는mainPC, Tester는동작/검수/디버깅 및동일SHA 빌드근거요청 경계확인.
+- 사용자직접지시변경: Front가Vercel2FA에 '나중에 할께 패스' 사용자보류를전달. Master원문직접열람아닌보고수신으로기록, 기존T227직접push·T228삭제결정은이미처리되어재실행없음. 2FA새설정/동일질문추가하지 않음.
+- 판정/후속: B23 Backend running기존범위계속. Tester는검수가능한고정후보미제출이라는선행조건대기(해소담당Backend·재개조건ready_review SHA/결과반환), Front는새검증완료제품배포후보없으므로available 유지. 대기채우기중복작업/개별문서배포/추가창생성없음. pending을완료/실패로단정하지않음.
+- 메시지전용예약 actual01:30:01 result0/next02:00KST 확인, 기존Master수신과대조. 등록/발송/수신/실제점검완료를구분. 새Codex창/agent/worktree 미생성.
