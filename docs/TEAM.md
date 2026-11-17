@@ -1945,3 +1945,11 @@
 - B22-R 기존Tester term_410f8ff2에 msg_407cfff8ece2 실제전송. 새Codex창/worker-start없이 기존세션만, 가용/기존배정충돌 확인요청·고정archive/소유PG/추가독립 catalog/history/readonly/role/Auth/source·v1불변 검수·고유보고범위 지정. 최종수락/실행은 회신 전 미확인, 단순전송을running으로올리지 않음.
 - Backend msg_70792fbade10 안내→msg_97b516ec7d46 수신확인. 지정범위유지·필수검수수정대응·v2apply/CLI 별도배정전보류 수락. PG18.7/C literal기반한계와trustedcaller transaction/target-lifecycle 미구현 구분. 운영DB·API·배포·SSL/과금작업없음. 현재Master 메시지전용30분알림유지.
 - 후속 실제수신 확인 2026-11-18 00:53:54 +09:00 : msg_ddb1aa621004로 기존 Tester가 B22-R 수락·다른진행배정없음·T225종료·범위충돌없음 및 착수 회신. B22-R running으로 확인. 새창/agent/scheduler 미생성 원칙 수락, 완료/통합은 아직 아님.
+
+### 점검 / B22 owner 표식 충돌 필수 수정 배정
+- 지정 wake msg_5132f140cd26 및 정기알림 msg_8d7e229c658e, Git/최근 handoffs 확인. 고정853e861 원71PASS 독립재현 이후 추가검수에서 literal role $owner와 소유자 정규화 표식이 충돌. relation/journal/schema/function/domain 실제 foreign owner 5변형이 정상 complete4 pending0 수용, native same_owner=false와 일반foreignrole거부·rollback정상대조 확인 보고. 5건은 공통원인 한 결함의 변형이며 최종고유보고 아직 미제출.
+- journal owner도 metadata를 통과해 historyRead=true. 검사대상 identity/owner admission 계약 위반으로 필수FAIL 판정; apply/TLS/lock 외범위요구나 현runtime권한우회 입증으로 혼동하지 않음. 첫추가19 중13PASS/5제품결함변형/1검수fixtureSQL오타는 구분하고 fixture 기대 유지 수정 후 최종수량 반환 예정.
+- Backend B22-FIX 실제전송 msg_3c75087e6c08: 기존B22 source/state/test/runner·고유FIX인계만, OID/typedidentity 등 충돌없는 근본검증·모든owner/ACL정규화감사·원실패기대baseline·정상경계·journalread전거부 검증. 원SQL1..4/v1/runtime/운영 불변·새Codex창 금지. 수락은 회신 전 미확인.
+- 기존Tester msg_f01c11615d74 실제통지: 고정원후보 검수 마무리·최소재현 Backend 직접인계허용·원기대유지/정상대조/소유정리·고유최종보고만. 새수정본 혼입하지 않음. 공유기존 T122/T137 보존·새미기록인계없음.
+- 예약 실제상태 01:00:01 실행 LastTaskResult0/다음01:30 KST, 현재Master 정기알림 수신과 대조. 별도agent/새창 생성없음. B22수용/v2apply 보류, 관련운영결정 대기와 로컬수정을 분리.
+- 마지막 확인 시각: 2026-11-18 01:01:24 +09:00 (Asia/Seoul).
