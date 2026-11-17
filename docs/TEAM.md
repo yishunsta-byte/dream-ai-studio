@@ -1538,3 +1538,9 @@
 - 독립57843f7 원문 확인. F209-1/P2: 원본제품두탭에서 다른탭 A로그아웃→B로그인뒤이전A계정/로그인정상표시잔류. 새API401 및 B인증·legacy503은정상, 저장소우회로판정하지않음. TEST ONLY nav도구재현과원본재현구분. BFCache복원·자연JWT만료·실Auth는미검증.
 - Front T213우선수정배정. T212진행증거와소유환경은안전정리후보고, 그다음클라이언트세션알림/서버재확인/캐시표시갱신·복귀/오프라인동작보완. 토큰·이메일·UUID브로드캐스트금지·메시지를권한근거로사용금지. resolver/DB/Backend/기존guard변경미허용,필요시최소auth-only/no-store session조회API와명시inventory검증만허용.
 - Tester에게FAIL수신과수정배정전달,고정수정SHA반환후실브라우저독립재검수예정. T211은고정679e703 기존조회UI검수계속,실클라우드개통·배포전이결함수용필요.
+
+### B5-R2 독립 수용 / T211·T212 조회 화면 수용
+- B5-R2 913934d5 보고원문확인, 고정52ea968 로컬합성범위수용. 원33/독립16 모두PASS, F1단일·3단계실제SET/historyDELETE후거부/template/unknowninbound/허용owner와 F2 snapshot/연결결합/옛pool거부/factory무호출/IPv6실접속실패 확인. ownedlifecycle6/typegen/원tsc/lint PASS. 원FAIL보존,managed실접속/실권한/TLS/pooler/운영적용수용아님. Backend에수용및B7기존readonly범위계속전달.
+- T211 fca732d 원문요약/보고 가져옴. 고정679e703 관련442/원TLS PG HTTP14/build/verify/type/lint 및1280·390 정상/빈목록/오류/복구/키보드 독립PASS수용. T202정적menus예외만적용,원FAIL보존. 실제managed/배포미검증.
+- T212 25d3a99 고유보고확인,빈목록과오류구분/재시도복구·양폭검증보완수용. 오류h1부재는T214접근성일관성후속으로Front배정, T213세션보완뒤순차수행. T213우선순위유지.
+- T211 소유임시사본약2.11GB 삭제는자동승인검토거절로잔존,우회없음. 보고서에소유경로/종료증거보존,3013보호.
