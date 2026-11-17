@@ -1880,3 +1880,9 @@
 - B20-R dispatch ctx_a75929128d41에 msg_144639798822 실제 전송: 고유 최종 FAIL 보고·최소 재현 경로·실행근거·정리 상태 마무리, 제품변경 금지. 수정본 재검수는 새 고정SHA 제출 후 배정한다.
 - B21 796cc50 문서 ready_review 수신. Master 원문에서 v1 불변/폐쇄된 schema3·4/전체 원자성/공유락 후 재확인/unknown 거부/target·TLS·pool·비밀 경계와 미실행 행렬 확인. SQL4 hash는 결함 후보값이므로 B20 수정본 기준 갱신 후 검토; runner 구현/SQL4 발행 보류. Backend의 필수 수정 우선, 중복 구현 배정하지 않음.
 - T227 push 도구 자동승인 거절·DEC-SSL-01 사용자 결정 미해소. 본 점검에서 운영 대상 재검사/배포/실DB 변경하지 않음. 턴 밖 자동 점검 미설정.
+### 점검 / B20-FIX 반환·B20-R2 독립 재검수 배정
+- 마지막 확인 시각: 2026-11-18 00:12:34 +09:00 (Asia/Seoul). 사용자 지정 두 wake의 check 실행. B20-FIX eeca88d와 원 B20-R 988da2a 원문/수정 SQL diff/최근 handoffs/Git 확인. 기존 T122/T137 미추적 보존, 새 미기록 보고 없음.
+- 원 B20-R은 정식 FAIL 반환: 원17 PASS·확장25 중22PASS/3FAIL, 3개 소유cluster 종료 확인 보고. 원 FAIL 유지. Backend가 원 독립8 기대값 그대로 baseline22/3을 실제 재현 후 수정했고 최종80PASS/0skip·tsc/lint·cleanup flags를 보고. Master가 전체 실PG 재실행한 결과가 아니며 독립 수용도 아직 아님.
+- 후보 eeca88d0fa71639f3fd99bce184f2f727f62523a / draft LF hash7568cf313b3fb203bda8a8d810b62d8345c0d158931902bef06dffa6703566d4. SQL guard 필수키/JSON형·안전정수 사전검사, deferred positive predicates IS NOT TRUE, boolean coercion 제거를 diff에서 확인. 지정3파일 변경·발행SQL/v1 불변 경계 확인.
+- B20-R2 실제 재배정: dispatch ctx_3e03ef64ee4e / task task_b0ba79569521, receipt ready. 고정후보 새archive/소유실PG에서 원80 및 추가 독립 경계·원3FAIL 해소/회귀/정리 검증, 고유 B20-R2 보고만 제출하도록 지시. 재검수 통과 전 미발행/manifest 제외 유지.
+- Backend B21 문서1개 후보 SHA/hash·거절된 원후보 역사 구분 갱신을 msg_f3c63e4b89c3 전송. 이 전달에 대한 수락은 아직 미확인. 실제 실행기 구현/운영 이관/SSL/Storage/API/배포 미배정. 턴 밖 자동 점검 미설정.
