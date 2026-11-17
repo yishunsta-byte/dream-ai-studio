@@ -1453,3 +1453,8 @@
 - T202: 1343c10의 14개 legacy 페이지와 공용 layout 입구 차단 독립 검수. dispatch ctx_2b375d0167db, task task_f35c6dda3ea7, vtt-review 작업공간, 상태 ready(재개 요청 수신 확인). auth 우선순위·로더 부작용 차단·로컬 대조·실제 HTTP·요청별 cache 검증. 결과 T-202-LEGACY-PAGE-GATE-REVIEW.md.
 - T203: Front에 기존 t162/t166 ZIP 테스트 13건 실패 진단 전달(msg_165fad830b4b). terminal-only mailbox 전달이며 아직 수락 미확인. 원인/이전 기준 대조/최소 수정안 보고 우선, 원본 fixture 및 제품 변경 미배정. 결과 T-203-ZIP-FAILURE-TRIAGE.md.
 - B5 Backend 미커밋 migration 파일 보호. T201 GET API 검수와 B5 migration runner는 기존 배정 유지. 실 클라우드 데이터 개통·새 배포는 아직 미완료.
+
+### T203 진단 수용 / T204 시험 시계 수정 배정
+- T203 d8be9c7 보고서 확인. ZIP 13건 실패는 고정 claim 시각(2026-11-17T10:00Z)과 실제 request 시각 혼용으로 발생. 원본 2d44be0 및 작성 시점 4838017에서도 재현, Date 시계 일치 시 각각 14건 통과했다는 작업자 대조 근거를 수용. 제품 회귀라는 근거 없음.
+- Front에 T204 배정: tests/t162-audio-bundle.test.ts, tests/t166-late-source-change.test.ts의 Date 시계만 통일하고 종료 시 실제 시계 복구. 기대값·fixture·제품 코드는 변경 금지. 두 파일 및 격리 전체 시험/lint/type 결과를 고정 SHA와 반환. 전달 상태는 terminal mailbox 전송 완료이며 수락/완료는 후속 보고 확인 필요.
+- T202 독립 RSC 검수, T201 GET API 검수, B5 migration runner 기존 배정 유지. 실 데이터 개통·배포 상태 변경 없음.
