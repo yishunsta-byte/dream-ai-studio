@@ -1,0 +1,2 @@
+/* T-229-FIX(F234-1): 목록 화면의 개인 관리 링크는 이 화면 전용 규칙으로 누르는 영역 44px 이상(T-230). 관리 화면 .link와 같은 값. */
+.manageLink { display:inline-flex; align-items:center; min-height:44px; padding:0 var(--sp-1); overflow-wrap:anywhere; }

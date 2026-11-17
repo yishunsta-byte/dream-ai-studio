@@ -168,7 +168,12 @@ describe("T-229 정적 경계", () => {
     expect(source.indexOf("await getRenderAuth()")).toBeLessThan(source.indexOf("await readCloudProjects()"));
   });
   it("목록 화면에 개인 관리 링크, (cloud) 레이아웃의 세션 경계 안에 들어감", () => {
-    expect(readFileSync("app/(cloud)/cloud/projects/(list)/page.tsx", "utf8")).toContain('<Link href="/cloud/manage">개인 관리 보기 →</Link>');
+    expect(readFileSync("app/(cloud)/cloud/projects/(list)/page.tsx", "utf8")).toContain('<Link href="/cloud/manage" className={styles.manageLink}>개인 관리 보기 →</Link>');
+    // F234-1: 목록 링크도 누르는 영역 44px 이상(실측 18px 결함 회귀 방지). 실제 크기는 고정 SHA 브라우저 실측으로 확인한다.
+    const listCss = readFileSync("app/(cloud)/cloud/projects/(list)/page.module.css", "utf8");
+    expect(listCss).toMatch(/\.manageLink\s*\{[^}]*display:inline-flex[^}]*min-height:44px/);
+    const manageCss = readFileSync("app/(cloud)/cloud/manage/page.module.css", "utf8");
+    expect(manageCss).toMatch(/\.link\s*\{[^}]*display:inline-flex[^}]*min-height:44px/);
     const layout = readFileSync("app/(cloud)/layout.tsx", "utf8");
     expect(layout).toMatch(/<ProtectedContent>\{children\}<\/ProtectedContent>/);
   });
