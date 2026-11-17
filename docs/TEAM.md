@@ -1959,3 +1959,8 @@
 - Front 보고에 따르면 사용자가 해당Front 대화에서 직접 삭제승인('너가 하면 되잖아 승인할께')하여 kzxq exact확인창 검증 후 프로젝트삭제 실행. Master가 기존 읽기전용배정을 임의확대한 것이 아니라 별도대화 사용자승인에 따른 실행이라는 보고를 기록. Master가그대화원문을직접열람한것으로표현하지 않음.
 - Master 실제 HTTPS 재확인: kzxq/login404 + x-vercel-error DEPLOYMENT_NOT_FOUND, main orpin/login200 및api/projects401. Front 대시보드목록 main만잔존 보고와 일치. Git연결만해제할지 pending했던 DEC-VERCEL-02는 이 후속 사용자선택/삭제결과로 superseded·종결, 동일설정변경을 다시질문/실행하지 않음.
 - 현재주운영주소 유지, 실제계정로그인후/DB·Storage·write개통 검증아님. Backend B22-FIX 계속, 기존Tester원고정검수마무리 계속, 중복배정/새Codex창/배포실행없음. 현재Master 메시지전용예약 유지.
+### 점검 / B22-R ACL-only 변형 확인·기존 FIX 범위 반영
+- 지정 wake msg_c6c6177f56c8 및 Git/최근 handoffs 확인. Tester 원고정853e861 추가최종20 중14PASS/6FAIL, 원owner5 외 실제정상functionowner를유지한 EXECUTE grantee literal $owner 치환도 수용. 6개는동일정규화결함의실SQL변형이며독립6결함으로부풀리지 않음. fixtureSQL오류0·원71별도·reference JSONhash 일치 확인 보고, 최종고유보고는정리중.
+- Tester Backend fullterminal 직접인계 성공보고와 첫shortterminal실패를구분. Master도 기존B22-FIX 범위내 ACL-only 재현·원거부기대유지·owner만보완해누락하지않을것을 Backend에 실제통지. 신규별도수정task/추가수정자 중복배정없음.
+- 현재 state-v2/test WIP는Backend 허용수정으로보존, T122/T137 미추적보존. SQL1~4/v1/runtime/운영불변 게이트·기존Tester최종독립보고계속. 새창/점검agent생성없음. 완료SHA/수정본검수 아직미수신.
+- 마지막 확인 시각: 2026-11-18 01:04:11 +09:00 (Asia/Seoul).
