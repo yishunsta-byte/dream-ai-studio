@@ -1587,3 +1587,9 @@
 - B11 77a1d2a Owner자기행/프로젝트org일치 및20:25:43KST baseline수용. SSL OFF,login200/Auth health200(public anonheader),검증CA/clientTLS 및readonly backendssl=false확인. 실제login/모든client호환성·변경후transport미검증. DEC-SSL-01답변전변경금지유지,완료준비와실행분리.
 - B12 Backend C3첫부분프로젝트생성Postgres서비스/repo 독립구현배정. 새동일이름repo/service/helper/tests/고유보고만,기존SQLite생성계약/PGschema보존·verifiedactor·원자tx·초기종속행/rawhash/감사호환·실합성PG읽기호환/owner/rollback검증. 기존Auth/API/UI/B3-B9/SQL/package불변,운영API쓰기/managed적용미배정. SSL대기중독립개발계속.
 - 턴 밖 자동 점검: 미설정. 실제SSL결정은아직미수신이며침묵승인아님. 사용자재질문중복하지않음.
+
+### 점검 / T213 제출 및 T216 독립 재검수 / T214 진행
+- 마지막 확인 시각: 2026-11-17 20:30:08 +09:00 (Asia/Seoul). 두Orca수신이벤트처리,원보고/새session API코드·Git/최근handoffs확인. 신규T213수신및35260fd 시험수24정정확인(417회귀불변). 기존미추적T122/T137보호,타세션staged보고서는건드리지않음.
+- T213 고정14e3425 ready_review. 계정변경신호→서버판정/전체문서갱신과API/auth-only경계구현,원F209수정자체검증반환. 이메일만숨기고offline/확인불가/15초guard의기존본문잔류는남은한계,아직수용아님.
+- T216 Tester에실브라우저원시나리오·신API인증/CSRF/no-store/민감값·경합·guard/오프라인본문잔류위험독립판정배정. 고유 T-216-CROSS-TAB-SESSION-REVIEW.md. Front는session검수중추가수정보류하고기존T214 cloud오류h1좁은보완진행지시. 두요청실전송,수락은후속확인.
+- Backend B12합성PG생성기능독립개발,DEC-SSL-01 운영변경대기유지. 턴 밖 자동 점검 미설정/스케줄러없음.
