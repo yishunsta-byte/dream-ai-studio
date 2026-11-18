@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
-import styles from "@/components/auth/login.module.css";
 import { AdminLocalNotice } from "@/components/admin/admin-local-notice";
-import admin from "@/components/admin/admin.module.css";
 import { adminNextPath, authMode } from "@/lib/auth/config";
+import styles from "./page.module.css";
 
 // 관리자 로그인(T-243). 기존 이메일·비밀번호 로그인(/api/auth/login)을 그대로 쓰고, 로그인 뒤 /admin으로 간다.
 // 새 계정·새 권한이 아니다: 들어갈 수 있는지는 서버가 getUser + 허용 이메일로 판정한다.
@@ -28,15 +26,30 @@ export default async function AdminLoginPage({ searchParams }: { searchParams: P
   const error = params.error ? ERRORS[params.error] ?? ERRORS.unavailable : undefined;
   const notice = params.notice ? NOTICES[params.notice] : undefined;
   return <main id="main-content" className={styles.page}>
-    <div className={styles.hero}>
-      <span className={styles.badgeIcon} aria-hidden="true">D</span>
-      <span className={styles.eyebrow}>DREAM AI STUDIO · 관리자</span>
-      <h1 className={styles.title}>관리자 로그인</h1>
-      <p className={styles.lead}>운영자 계정(이메일·비밀번호)으로 로그인하면 관리 화면으로 이동해요. 크리에이터 작업실 로그인과 같은 계정 체계를 써요.</p>
-    </div>
-    <div className={styles.panel}>
-      <LoginForm next={adminNextPath(params.next)} initialError={error} initialNotice={notice} loginOnly resetContext="admin" />
-      <p className={styles.note}><Link className={admin.link} href="/">← 공개 메인으로</Link></p>
+    <div className={styles.shell}>
+      <header className={styles.brand}>
+        <span className={styles.mark} aria-hidden="true">✦</span>
+        <span>DREAM <span className={styles.brandAccent}>SCREEN</span></span>
+      </header>
+      <div className={styles.split}>
+        <div className={styles.poster} aria-hidden="true">
+          <div className={styles.posterCopy}>
+            <p className={styles.posterTitle}>NEON<br /><span>AFTER HOURS</span></p>
+            <p className={styles.credit}>DREAM ORIGINALS / MUSIC FILM</p>
+          </div>
+        </div>
+        <section className={styles.login} aria-labelledby="admin-login-title">
+          <div className={styles.intro}>
+            <p className={styles.eyebrow}>DREAM AI STUDIO · 관리자</p>
+            <h1 id="admin-login-title">관리자 로그인</h1>
+            <p className={styles.lead}>운영자 계정으로 로그인해 관리 화면을 열어 주세요.</p>
+          </div>
+          <LoginForm next={adminNextPath(params.next)} initialError={error} initialNotice={notice} loginOnly resetContext="admin" />
+          {/* T-255-F1: 공개 홈은 앱 안 이력 복원 없이 항상 새 문서로 연다(철회 즉시 반영). */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- 의도한 전체 문서 이동 */}
+          <a className={styles.home} href="/">← 공개 메인으로</a>
+        </section>
+      </div>
     </div>
   </main>;
 }

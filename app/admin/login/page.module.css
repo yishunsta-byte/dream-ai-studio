@@ -1,0 +1,126 @@
+.page {
+  min-height: 100dvh;
+  color-scheme: dark;
+  color: #faf5ff;
+  background: #0a0911;
+}
+
+.shell {
+  width: min(100%, 1340px);
+  margin-inline: auto;
+  padding: 22px 35px 35px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+  margin-bottom: 24px;
+  font-weight: 850;
+  letter-spacing: -.03em;
+}
+
+.brandAccent { color: #ff98e1; font-weight: 500; }
+
+.mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #dd3db1, #6236d4);
+  color: white;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  min-height: 620px;
+  border: 1px solid #51415b;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.poster {
+  display: flex;
+  align-items: end;
+  padding: 35px;
+  background: linear-gradient(0deg, #0a0814f6, #0a081455 31%, transparent 65%),
+    url("/showcase/t240/neon-rooftop.png") 62% center / cover;
+}
+
+.posterCopy { min-width: 0; }
+
+.posterTitle {
+  margin: 0;
+  color: #fff5fe;
+  font-size: clamp(42px, 6vw, 84px);
+  font-weight: 850;
+  line-height: .94;
+  letter-spacing: -.07em;
+}
+
+.posterTitle span { color: #ffa8eb; }
+
+.credit {
+  margin: 18px 0 0;
+  color: #f1e2f1;
+  font-size: 13px;
+}
+
+.login {
+  --fg-default: #faf5ff;
+  --fg-strong: #faf5ff;
+  --fg-muted: #cec2d5;
+  --fg-link: #ff98e1;
+  --fg-on-accent: #fff;
+  --bg-surface: #100d17;
+  --bg-sunken: #252032;
+  --line: #51415b;
+  --line-strong: #65516f;
+  --line-focus: #ffc2eb;
+  --focus-ring: 0 0 0 3px #ffc2eb;
+  --accent: #ad167e;
+  --accent-hover: #95136c;
+  --accent-press: #7e125c;
+  --st-danger-fg: #ffc4cc;
+  --st-danger-bg: #3b202e;
+  --st-danger-line: #b8798d;
+  --st-approval-bg: #302544;
+  --st-approval-line: #715d91;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  min-width: 0;
+  padding: 45px clamp(24px, 5vw, 69px);
+  background: linear-gradient(150deg, #22152b, #14111e 60%);
+  color: var(--fg-default);
+}
+
+.intro { display: grid; gap: 9px; }
+.intro h1 { margin: 0; font-size: clamp(31px, 4vw, 48px); line-height: 1.15; letter-spacing: -.055em; }
+.eyebrow { margin: 0; color: var(--fg-link); font-size: 12px; font-weight: 800; letter-spacing: .14em; }
+.lead { margin: 0; color: var(--fg-muted); font-size: 15px; line-height: 1.65; }
+.login input::placeholder { color: #b3a6bb; opacity: 1; }
+
+.home {
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  min-height: var(--touch-min);
+  color: var(--fg-link);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+@media (max-width: 760px) {
+  .shell { padding: 14px 17px 22px; }
+  .brand { margin-bottom: 15px; }
+  .split { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .poster { min-height: 218px; padding: 21px; background-position: 63% center; }
+  .posterTitle { font-size: 45px; }
+  .credit { margin-top: 11px; }
+  .login { padding: 23px; }
+}
