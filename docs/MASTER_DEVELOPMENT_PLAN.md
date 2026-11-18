@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 09:41 KST): B40 883fa8a는 독립b7bf95d source/code/offline-unit PASS 수용(341PASS100skip·독립20PASS/type-lint0). 실제native전체PASS는 아니다. Backend B41 msg_a710c9002619 신규owned-native harness/보고2경로·1회재진단 수락: B39동일recipe/P/526allowlist/none, 작업·소유DB식별자/catalog2b0b9df pin만 명시변경·역치환diff보존. 신규본인PG18.7 UTF8-C loopback cluster에서 다음첫실패 보존→정리→고정반환→Tester검수, 현장제품/query수정·unknown확대·skip/재시도금지. 아직B41결과미확인·B39원FAIL유지. Golden/reference/state/provenance/runtime·운영DB/배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 09:43 KST): B41 최초실패 보고 접수·고정결과전. P/M단일tx COMMIT 후 context/schema/relations rawshape 통과,4번째 columns SELECT에서 실제SQLSTATE22023/check_acl(ACL arrays must be one-dimensional) 발생. 빈ACL fallback 관련성은 source추정으로만관리·추가query/현장수정/skip/retry없음. columns batch없음/후속11미실행/전체hash없음, 작성자 소유정리·OS근거/2경로 고정반환 준비. 결과고정→Tester 독립재현→최소수정별도배정, B40 source/offlinePASS와 전체nativeFAIL 구분. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
