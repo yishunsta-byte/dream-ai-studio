@@ -29,11 +29,12 @@
 .inputIcon { display:grid; place-items:center; color:var(--fg-muted); flex:none; }
 .inputWrap input, .inputWrap input:focus, .inputWrap input:focus-visible { box-shadow:none; outline:none; border:0; border-radius:0; padding:0; }
 .inputWrap input { flex:1; min-width:0; min-height:calc(var(--control-h-lg) - 2px); border:0; outline:none; background:transparent; color:var(--fg-strong); font:inherit; font-size:16px; }
-.reveal { flex:none; min-height:36px; min-width:var(--touch-min); padding:0 var(--sp-2); border:0; border-radius:var(--radius-sm); background:transparent; color:var(--fg-link); font:inherit; font-size:var(--text-sm); cursor:pointer; }
+.reveal { flex:none; min-height:var(--touch-min); min-width:var(--touch-min); padding:0 var(--sp-2); border:0; border-radius:var(--radius-sm); background:transparent; color:var(--fg-link); font:inherit; font-size:var(--text-sm); cursor:pointer; }
 .help { margin:0; color:var(--fg-muted); font-size:var(--text-sm); }
 .error { margin:0; color:var(--st-danger-fg); font-size:var(--text-sm); }
 .linkButton, .textButton { border:0; background:transparent; color:var(--fg-link); font:inherit; font-size:var(--text-sm); font-weight:var(--weight-semibold); cursor:pointer; border-radius:var(--radius-sm); }
-.linkButton { padding:var(--sp-1); }
+/* T-244: 비밀번호 찾기·보기도 다른 버튼처럼 누르는 영역 44px(--touch-min). 동작은 그대로. */
+.linkButton { display:inline-flex; align-items:center; min-height:var(--touch-min); padding:0 var(--sp-1); }
 .textButton { align-self:center; min-height:var(--touch-min); padding:0 var(--sp-2); }
 .subTitle { margin:0 0 var(--sp-1); font-size:var(--text-lg); color:var(--fg-strong); }
 .note { margin:0; color:var(--fg-muted); font-size:var(--text-sm); }

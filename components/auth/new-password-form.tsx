@@ -2,12 +2,13 @@
 
 import { useId, useState, type FormEvent } from "react";
 import { Button, Callout } from "@/components/ui/primitives";
-import { PASSWORD_RULE, passwordProblem } from "@/lib/auth/config";
+import { PASSWORD_RULE, passwordDonePath, passwordProblem, type PasswordContext } from "@/lib/auth/config";
 import { requestLogout } from "@/lib/auth/logout-client";
 import { announceSessionChange } from "@/lib/auth/session-sync";
 import styles from "./login.module.css";
 
-export function NewPasswordForm() {
+// context(T-245): 관리자 재설정이면 끝난 뒤 관리자 로그인으로 돌아간다. 비밀번호 변경·로그아웃 처리는 같다.
+export function NewPasswordForm({ context = null }: { context?: PasswordContext | null }) {
   const base = useId();
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -18,8 +19,8 @@ export function NewPasswordForm() {
   async function finishWithLogout() {
     setBusy(true); setLogoutFailure(null);
     const result = await requestLogout();
-    if (result.state === "ended") { announceSessionChange(); window.location.assign("/login?notice=password"); return; }
-    if (result.state === "partial") { announceSessionChange(); window.location.assign("/login?notice=password-partial"); return; }
+    if (result.state === "ended") { announceSessionChange(); window.location.assign(passwordDonePath(context, "ended")); return; }
+    if (result.state === "partial") { announceSessionChange(); window.location.assign(passwordDonePath(context, "partial")); return; }
     setLogoutFailure(result.message); setBusy(false);
   }
 

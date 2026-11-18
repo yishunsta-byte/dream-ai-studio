@@ -1,0 +1,7 @@
+/* T-243 관리자 화면. 누를 수 있는 링크는 44px 이상. */
+.header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 24px; border-bottom: 1px solid var(--line); }
+.link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.note { margin: 0; color: var(--fg-muted); font-size: var(--text-sm); }
+.unlinkedHead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; }
+@media (max-width: 480px) { .header { padding: 8px 16px; } }

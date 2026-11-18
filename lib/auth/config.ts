@@ -37,9 +37,44 @@ export function isAnonymousPublicPath(pathname: string) {
   return ANONYMOUS_PUBLIC_PATHS.has(pathname);
 }
 
-const PUBLIC_PATHS = new Set(["/login", "/auth/callback", "/api/auth/login", "/api/auth/signup", "/api/auth/reset"]);
+const PUBLIC_PATHS = new Set(["/login", "/admin/login", "/auth/callback", "/api/auth/login", "/api/auth/signup", "/api/auth/reset"]);
 export function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.has(pathname) || ANONYMOUS_PUBLIC_PATHS.has(pathname);
+}
+
+// 관리자 진입(T-243). 새 권한이 아니다: 기존 Supabase 로그인 + 서버 getUser + 허용 이메일(DREAM_ALLOWED_EMAILS)만 그대로 쓴다.
+// "/admin/login"만 공개(위 PUBLIC_PATHS, /login과 같은 설정 확인·세션 갱신)이고 "/admin"과 그 아래는 보호 경로다.
+export const ADMIN_HOME = "/admin";
+export const ADMIN_LOGIN = "/admin/login";
+export function isAdminPath(pathname: string) {
+  return pathname === ADMIN_HOME || pathname.startsWith(`${ADMIN_HOME}/`);
+}
+// 관리자 로그인 뒤 돌아갈 곳: 같은 사이트의 /admin 아래만(로그인 화면 자신은 제외). 그 밖은 /admin.
+export function adminNextPath(next: string | null | undefined) {
+  const safe = safeNextPath(next);
+  const pathname = new URL(safe, PROBE_ORIGIN).pathname;
+  return isAdminPath(pathname) && pathname !== ADMIN_LOGIN && !pathname.startsWith(`${ADMIN_LOGIN}/`) ? safe : ADMIN_HOME;
+}
+export function adminLoginPath(params: { next?: string; error?: "forbidden" | "unavailable" } = {}) {
+  const query = new URLSearchParams();
+  if (params.next) query.set("next", adminNextPath(params.next));
+  if (params.error) query.set("error", params.error);
+  const text = query.toString();
+  return text ? `${ADMIN_LOGIN}?${text}` : ADMIN_LOGIN;
+}
+
+// 비밀번호 재설정의 돌아갈 곳(T-245). 요청·주소에서 받은 값은 정해 둔 이름("admin")일 때만 쓰고, 그 밖은 일반 흐름이다.
+// 임의 URL·next·머리글을 돌아갈 곳으로 믿지 않는다. 경로는 모두 여기서 고정 문자열로 만든다.
+export type PasswordContext = "admin";
+export function passwordContext(value: unknown): PasswordContext | null {
+  return value === "admin" ? "admin" : null;
+}
+export function passwordPagePath(context: PasswordContext | null) {
+  return context === "admin" ? "/account/password?context=admin" : "/account/password";
+}
+export function passwordDonePath(context: PasswordContext | null, state: "ended" | "partial") {
+  const notice = state === "ended" ? "password" : "password-partial";
+  return context === "admin" ? `${ADMIN_LOGIN}?next=%2Fadmin&notice=${notice}` : `/login?notice=${notice}`;
 }
 
 // 비밀번호 규칙(T-184): 8~72자, 영문과 숫자를 함께. 72자는 Supabase(bcrypt) 한도.

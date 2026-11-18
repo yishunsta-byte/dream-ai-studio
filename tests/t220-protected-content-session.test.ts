@@ -59,8 +59,9 @@ describe("연결 inventory(정적)", () => {
     const users = Object.keys(import.meta.glob(["../app/**/*.tsx", "../components/**/*.tsx"]))
       .map((path) => path.replace("../", ""))
       .filter((path) => path !== "components/auth/account-menu.tsx" && /<AccountMenu\b/.test(read(path)));
-    expect(users.sort()).toEqual(["app/(cloud)/layout.tsx", "components/auth/cloud-pending.tsx", "components/studio-shell.tsx"]);
-    for (const path of ["app/(cloud)/layout.tsx", "components/auth/cloud-pending.tsx"]) {
+    // T-243: 관리 허브(app/admin/page.tsx)가 AccountMenu를 새로 그려 목록에 들어온다. 같은 경계·ProtectedContent 조건을 그대로 요구한다.
+    expect(users.sort()).toEqual(["app/(cloud)/layout.tsx", "app/admin/page.tsx", "components/auth/cloud-pending.tsx", "components/studio-shell.tsx"]);
+    for (const path of ["app/(cloud)/layout.tsx", "app/admin/page.tsx", "components/auth/cloud-pending.tsx"]) {
       const source = read(path);
       expect(source, path).toMatch(/<SessionBoundary account=\{account\}>/);
       expect(source, path).toMatch(/<ProtectedContent>/);

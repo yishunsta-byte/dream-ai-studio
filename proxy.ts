@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_MESSAGES, authMode, authReady, isAllowedEmail, isAnonymousPublicPath, isPublicPath, loginPath, supabasePublicConfig } from "@/lib/auth/config";
+import { AUTH_MESSAGES, adminLoginPath, authMode, authReady, isAdminPath, isAllowedEmail, isAnonymousPublicPath, isPublicPath, loginPath, supabasePublicConfig } from "@/lib/auth/config";
 
 function deny(request: NextRequest, status: 401 | 403 | 503, code: string, message: string, carry?: NextResponse) {
   const { pathname, search } = request.nextUrl;
@@ -11,7 +11,12 @@ function deny(request: NextRequest, status: 401 | 403 | 503, code: string, messa
     // proxy는 절대 주소만 받으므로 Next가 만든 요청 주소(nextUrl)에 경로만 바꿔 붙인다.
     // x-forwarded-host로 다른 사이트가 끼어들지 않는지는 실제 서버 시험으로 확인한다(T-182 검수 F182-2).
     const target = request.nextUrl.clone();
-    const login = new URL(status === 401 ? loginPath({ next: `${pathname}${search}` }) : loginPath({ error: "forbidden" }), "http://same-site.invalid");
+    // T-243: /admin 아래는 관리자 로그인 화면으로 보낸다(판정 기준은 같고 목적지만 다름).
+    const admin = isAdminPath(pathname);
+    const path = status === 401
+      ? admin ? adminLoginPath({ next: `${pathname}${search}` }) : loginPath({ next: `${pathname}${search}` })
+      : admin ? adminLoginPath({ error: "forbidden" }) : loginPath({ error: "forbidden" });
+    const login = new URL(path, "http://same-site.invalid");
     target.pathname = login.pathname;
     target.search = login.search;
     target.hash = "";

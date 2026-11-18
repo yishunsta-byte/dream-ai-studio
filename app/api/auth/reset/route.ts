@@ -1,4 +1,4 @@
-import { authMode, authReady, callbackOrigin, isAllowedEmail, readJsonObject, rejectCrossSite, validEmail } from "@/lib/auth/config";
+import { authMode, authReady, callbackOrigin, isAllowedEmail, passwordContext, passwordPagePath, readJsonObject, rejectCrossSite, validEmail } from "@/lib/auth/config";
 import { createSupabaseServer } from "@/lib/auth/server";
 
 const bad = (error: string, code: string, status = 400) => Response.json({ error, code }, { status });
@@ -20,7 +20,8 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServer();
   if (!supabase) return bad("로그인 설정이 아직 끝나지 않았어요.", "AUTH_UNAVAILABLE", 503);
   const callback = new URL("/auth/callback", origin);
-  callback.searchParams.set("next", "/account/password");
+  // T-245: 관리자 로그인에서 요청한 경우(context="admin")만 관리자 쪽 비밀번호 화면으로. 그 밖의 값은 무시하고 기존과 같다.
+  callback.searchParams.set("next", passwordPagePath(passwordContext(body.context)));
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: callback.toString() });
   if (error) {
     if (error.status === 429) return bad("잠시 뒤에 다시 시도해 주세요. 메일을 너무 자주 요청했어요.", "RATE_LIMITED", 429);

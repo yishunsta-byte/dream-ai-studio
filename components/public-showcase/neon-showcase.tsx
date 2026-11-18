@@ -17,6 +17,7 @@ export type NeonShowcaseProps = {
   featuredId?: string;
   collectionIds?: readonly string[];
   loginHref?: string;
+  adminHref?: string;
 };
 
 const FOCUSABLE = "button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex='-1'])";
@@ -32,7 +33,7 @@ function moveTo(id: string) {
   target.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
 }
 
-export function NeonShowcase({ works, status = "ready", onRetry, featuredId, collectionIds, loginHref = "/login" }: NeonShowcaseProps) {
+export function NeonShowcase({ works, status = "ready", onRetry, featuredId, collectionIds, loginHref = "/login", adminHref = "/admin/login" }: NeonShowcaseProps) {
   const uid = useId();
   const ids = { main: `${uid}-main`, browse: `${uid}-browse`, creators: `${uid}-creators`, search: `${uid}-search`, status: `${uid}-status`, detailTitle: `${uid}-detail-title`, hero: `${uid}-hero` };
   const [filter, setFilter] = useState<ShowcaseFilter>("전체");
@@ -224,7 +225,10 @@ export function NeonShowcase({ works, status = "ready", onRetry, featuredId, col
 
         <footer className={styles.footer}>
           <p>DREAM · PUBLIC SHOWCASE{hasSample ? <><br />예시 작품과 크리에이터는 화면 소개용이에요.</> : null}</p>
-          <Link className={styles.link} href={loginHref}>크리에이터 로그인 ↗</Link>
+          <div className={styles.footerLinks}>
+            <Link className={styles.link} href={loginHref}>크리에이터 로그인 ↗</Link>
+            <Link className={`${styles.link} ${styles.adminLink}`} href={adminHref}>관리자 로그인</Link>
+          </div>
         </footer>
       </main>
 

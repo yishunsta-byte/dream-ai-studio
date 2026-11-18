@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState, type ComponentProps, type FormEvent, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Button, Callout } from "@/components/ui/primitives";
-import { PASSWORD_RULE, passwordProblem, validEmail } from "@/lib/auth/config";
+import { PASSWORD_RULE, passwordProblem, validEmail, type PasswordContext } from "@/lib/auth/config";
 import { announceSessionChange } from "@/lib/auth/session-sync";
 import styles from "./login.module.css";
 
@@ -41,7 +41,9 @@ function PasswordInput(props: { id: string; label: string; name: string; autoCom
     trailing={<button type="button" className={styles.reveal} aria-pressed={shown} aria-controls={props.id} aria-label={`${props.label} ${shown ? "숨기기" : "보기"}`} onClick={() => setShown(!shown)}>{shown ? "숨기기" : "보기"}</button>} />;
 }
 
-export function LoginForm({ next, initialError, initialNotice }: { next: string; initialError?: string; initialNotice?: string }) {
+// loginOnly(T-243 관리자 로그인): 회원가입 탭 없이 로그인·비밀번호 찾기만 보인다. 요청·판정은 같은 /api/auth/login이다.
+// resetContext(T-245): 비밀번호 찾기 요청에 정해 둔 이름만 붙인다. 메일 링크 주소는 서버가 이 이름으로 고정 경로를 만든다.
+export function LoginForm({ next, initialError, initialNotice, loginOnly = false, resetContext }: { next: string; initialError?: string; initialNotice?: string; loginOnly?: boolean; resetContext?: PasswordContext }) {
   const base = useId();
   const [mode, setMode] = useState<Mode>("login");
   const [busy, setBusy] = useState(false);
@@ -94,7 +96,7 @@ export function LoginForm({ next, initialError, initialNotice }: { next: string;
         window.location.assign(next);
         return;
       }
-      const result = await post(mode === "signup" ? "/api/auth/signup" : "/api/auth/reset", mode === "signup" ? { email, password } : { email });
+      const result = await post(mode === "signup" ? "/api/auth/signup" : "/api/auth/reset", mode === "signup" ? { email, password } : resetContext ? { email, context: resetContext } : { email });
       setNotice({ tone: "info", title: "메일함을 확인해 주세요", text: `${result.message ?? ""} 메일이 안 보이면 스팸함도 확인해 주세요.` });
       form.reset();
     } catch (error) {
@@ -123,10 +125,10 @@ export function LoginForm({ next, initialError, initialNotice }: { next: string;
   </div>;
 
   return <div className={styles.form}>
-    <div className={styles.tabs} role="tablist" aria-label="로그인 또는 회원가입" onKeyDown={onTabKey}>
+    {!loginOnly && <div className={styles.tabs} role="tablist" aria-label="로그인 또는 회원가입" onKeyDown={onTabKey}>
       {(["login", "signup"] as const).map((key) => <button key={key} ref={(node) => { tabs.current[key] = node; }} type="button" role="tab" id={`${base}-tab-${key}`} aria-selected={mode === key} aria-controls={`${base}-panel`} tabIndex={mode === key ? 0 : -1} className={styles.tab} onClick={() => switchTo(key)}>{key === "login" ? "로그인" : "회원가입"}</button>)}
-    </div>
-    <div role="tabpanel" id={`${base}-panel`} aria-labelledby={`${base}-tab-${mode}`} className={styles.form}>
+    </div>}
+    <div {...(loginOnly ? {} : { role: "tabpanel", id: `${base}-panel`, "aria-labelledby": `${base}-tab-${mode}` })} className={styles.form}>
       {message}
       <form key={mode} className={styles.form} onSubmit={submit} noValidate>
         <TextInput ref={emailRef} id={id("email")} label="이메일 주소" name="email" type="email" inputMode="email" autoComplete={mode === "login" ? "username" : "email"} autoCapitalize="none" spellCheck={false} placeholder="name@example.com" icon={<MailIcon />} error={errors.email} defaultValue={draftEmail} />
