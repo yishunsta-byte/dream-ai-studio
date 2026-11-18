@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 09:10 KST): B38-FIX 고정ee0f691은 F38-1 exact-parent TOAST 컬럼 증거와 F38-2 canonical semantic argumentRefs 보존·descriptor2 보완을 제출, 작성자160catalog 포함331PASS/100skip/fulltype-lint0로 ready_review 접수. Tester B38-R2 msg_6348ea956ffb 수락: 원39ae6af/05f33b1 CHANGES REQUIRED·원red fixture/기대값/로그 보존, 새 필수증거의 파생fixture 정당성과 동일 결함 폐쇄를 독립 검증한다. 실제DB/query syntax/layout/권한/native/reference/capacity는 미확인, Golden/state/runner/provenance/runtime 미실행이다. 독립판정 후 수정 또는 실제projection/native 단계 별도 배정. B37 SOURCE PASS/원SQL1~5 D/P·v1/v2·manifest-v3·adapterDpin 보호·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 09:15 KST): B38-FIX ee0f691은 독립a72d1e5 CODE/UNIT PASS 수용·F38-1/2 폐쇄. 독립331PASS/100skip·반례27PASS/type-lint0, 원FAIL/fixture/기대값 기록 보존. Backend B39는 msg_d29ea91b5460으로 신규 owned-native harness/보고 정확2경로 수락: 본인 임시 loopback PG18.7 UTF8/C dream_test DB에 검증 SQL1~5 P 실제 실행 후 frozen context+14SELECT/decoder none-profile 첫 진단. 첫 실제 실패는 현장 제품수정/whitelist 확대/skip 없이 근거·정리 후 반환, 결과고정→Tester 독립검수. 실제 query/layout/권한/완전성/capacity는 아직 미확인이다. Golden/reference/state/provenance/runtime 및 운영DB 적용은 이번 범위 밖. 원SQL1~5 D/P·v1/v2·manifest-v3·adapterDpin·운영 보호, ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
