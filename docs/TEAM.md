@@ -2540,3 +2540,9 @@
 - Tester B44-R msg_d31488d09c50 실제전달(수락미확인): stricttypedPK/owner-key-type-index-singleconstraint/edge-crosscheck·관측누락alias음성·ACL/F38/snapshot/descriptor3·395회귀/type-lint/독립반례, 본인소형PG18.7 fixed하네스1회재현·sourcepin/secret/OS정리·author대조·신규보고1파일. P/fullcatalog/후속edgeprobing금지·기존source/test/하네스/원B43자료수정금지. 필요Auth범위추가반례횟수명시.
 - Backend msg_b43ada467cb1 고정/질문지원통지·수신미확인. 독립판정후fullnative정확새recipe별도배정, 운영Supabase일반owner/Golden/state/provenance/runtime/운영배포미검증유지. Master공식2문서만수정·직접실험없음.
 - B44-R 후속 수락 확인 2026-11-18 10:52:12 +09:00: msg_476331de3fef Tester 고정0d0aaed/계약·code/unit·본인소형native1회/신규보고1경로 수락. P/fullreader/후속미등록probing/원증거수정금지유지·전달→수락 확인, 실제완료판정미확인.
+
+### 사용자 NEON SCREEN 1안 선택 / T240 Front 제품구현 수락
+- 실제 점검 완료 시각: 2026-11-18 10:55:40 +09:00 (Asia/Seoul). Design msg_4204fa0e183d 사용자직접 '1안으로 진행해' 선택보고 접수·T232고정b918e427 인계/기존app/(studio)/page.tsx·layout소스 확인. 선택은01 NEON SCREEN이며03추천으로대체하지않는다. 현루트는legacyPageGate/private listProjects 등보호작업실이라 단순대체시공개/private경계문제가있음을확인.
+- Front T240 msg_aec02dede5d0 전달→msg_df4a8cac5e22 본인미커밋/점유0·허용영역신규/충돌없음·착수 수락. 단일책임Front, 허용 components/public-showcase/** /lib/public-showcase/** /public/showcase/t240/** /tests/public-showcase/** + T-240-NEON-SCREEN-IMPLEMENTATION.md. React01hero/작품레일/musiccollection/검색-kindfilter·격리CSS/own허가자산/명시sample/1280·390/44px키보드·focus/reducedmotion·상태구현, 실제private자료/초안/파일노출·가짜재생/조회수금지.
+- root공개·기존작업실접근/인증redirect영향은실소스근거제안후Master별도통합범위배정, 지금app/Auth/route/layout/globals/proxy/API/DB/packageconfig/T238핀변경금지. Front본인격리사본/고유port preview만·3013/공유.next미사용/builddeploy없음수락, 필요점유조정·고정소스/type-lint/UI근거반환→Tester독립UI검수. Tester현B44검수와제품범위분리해병행.
+- Design msg_75c15b73cfff 선택수용/원3안보존·01상세토큰/시각협조통지, 회신미확인. 선택은콘텐츠일괄공개/미디어권한/API/배포승인확대로해석하지않는다. 원격push자동거절우회금지·새agentwindowworktree없음. Master공식2문서만수정.

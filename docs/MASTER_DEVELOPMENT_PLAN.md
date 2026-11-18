@@ -48,6 +48,8 @@
 
 ## 3. 지금 실행할 작업
 
+공개 메인 최신 결정(2026-11-18 10:55 KST): Design msg_4204fa0e183d의 사용자 직접 선택으로 T232 01 NEON SCREEN 확정. Front T240는 msg_df4a8cac5e22로 신규 격리 제품컴포넌트/샘플·허가자산/반응형·검색/상태 구현 수락·착수. 공개화 시 기존루트의 private 작업실/Auth/redirect를 보호할 통합 방안은 실소스 근거로 반환 후 Master 별도 배정. 현 app/Auth/route/API/DB·글로벌스타일 변경·실private자료 공개·가짜 재생/조회수·build/deploy는 이번 범위 밖. 고정결과→Tester 독립 UI검수·Design 시각대조, Backend B44 검수는 별도 병행한다.
+
 최신 판정(2026-11-18 10:52 KST): B44 고정0d0aaed descriptor3/14범주 strictM-ownedAuthUUIDPK 관측·binding/owner-key-index/exactedge 보완 ready_review. 작성자224포함395PASS100skip/type-lint0·소형native고정query/facts성공/OS정리보고. Tester B44-R code/unit/동일fixed소형native1회재현 독립검수 전달 후 msg_476331de3fef 수락 확인. 원B43자료추정patch·P/fullreader재진단금지·원FAIL/v2역사보호. 독립판정후추가constraintfact가있는새fullrecipe별도배정, 일반externalowner/운영Supabase지원미증명. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
