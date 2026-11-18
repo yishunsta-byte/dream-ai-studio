@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 09:25 KST): B39 고정afd7972는 실제 native1회 exit1 최초 TOAST notNull=true/false 불일치와 소유정리 증거 제출. P5body/M단일tx COMMIT 후 frozen reader3SELECT 성공·relations decode중단/12미실행/전체hash없음, 실제DB 전체 PASS 아님. Tester B39-R는 msg_6905fb6a7bb2로 frozen harness를 본인 신규 owned PG18.7 cluster에서1회 독립재현·첫실패보존·cleanup검수 수락. 증거수용과 제품FAIL을 구분하고 독립원인확인 뒤 최소제품수정 별도배정, 현재 어떤 nullability 수정도 미배정. B38 CODE/UNIT PASS 유지·native 불일치 미해결. Golden/reference/state/provenance/runtime·운영DB 적용/배포 없음, ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 09:32 KST): B39-R ff65260 独立실제1회 재현·증거/cleanup PASS 수용, 제품native observation FAIL 유지. 같은3SELECT/relations33·32TOAST96attnotnullfalse/후속12미실행·전체hash없음 확인. Backend B40는 msg_298731c9ae47으로 module/test/new보고3경로 private physical TOAST notNull exactfalse 최소보정 수락. author/Tester capturedraw 출처기반 offline회귀·true/missing/nonboolean 거부/기존증거·semantic·descriptor2보호, 일반boolean/coercion/논리column/query/allowlist변경금지. unit/type-lint 고정반환→Tester 독립code검수 후 새native단계별도배정. 이번DB/native/reference 재실행·Golden/state/provenance/runtime·운영적용/배포없음. 원B38/B39 FAIL기록 보존·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
