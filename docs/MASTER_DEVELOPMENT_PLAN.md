@@ -50,7 +50,7 @@
 
 공개 메인 최신 결정(2026-11-18 11:41 KST): T241 실제고정313c16d ready_review접수(Front초기c0a8b77오보고정정/git확인), 공개 /·보호 /studio·정확6asset/메뉴설정격리 구현. Tester T241-R 독립보안route·HTTP/mockAuth/설정회귀검수 전달 후 msg_d882ff10851c 수락 확인, 실제Supabase/운영imagecache等미검증. 원T240-R84083f9FAIL 대비2.916922 유지·FrontT240-FIX 별도보완진행/고정후재검수. actualroute보안PASS와UIFIX수용전배포없음·safeNext/보호API/sourceprivacy·3013.next보호·buildpushdeploy금지.
 
-최신 판정(2026-11-18 11:37 KST): B45-R ee8ce8e evidence/reproductionPASS 수용·제품nativeFAIL(동일dependency multiplicity)유지. Backend B46 msg_b6ec2a5125c9 소형정책/basepg_depend vs fixedquery 원인실험과조건부보완4경로수락: physical이면정확tuple수량보존·descriptor4/다른category중복거부, query복제면collector최소수정·단순dedup금지. 고정근거/소형native·unit·OS정리후Tester독립검수. Tester후속고정대기·FrontUIFIX/T241보안통합우선조정. 원B45자료patch/fullreader재실행금지·Golden/state/runtime/운영배포없음·원FAIL보존.
+최신 판정(2026-11-18 11:46 KST): B46 소형1회native에서 basepg_depend16행=fixedcollector16행/14distinct·both_same동일edge별도physicalctid를확인한작성자보고접수. 소형범위physicalmultiplicity원인확인, 조건부승인내 dependencies만정확native tuple수량보존/명시count1·descriptor4 보완진행, AuthPK1distinctownership·다른category중복/aliasunknown거부유지. 원oldsource실험과최종product미실행범위구분·OS정리/고정4경로반환→Tester검수. P/fullreader/원B45patch금지·FrontT240대비보완/T241보안검수병행. 원FAIL/역사보호·Golden/state/runtime/운영배포없음.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 

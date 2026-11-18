@@ -2607,3 +2607,8 @@
 - B46 msg_74fbf8e67a7b Authproof rawedgecount1과physicalmultiplicity계약충돌 제안접수·msg_b5865364470f 조건부승인: 원인확인후 exactly1 DISTINCT native endpoint+deptype owningedge 요구·sameedge positive수량은canonicalcount/hash보존. 실제indexConstraints1/owner/key/index/관측row/alias거부불변·서로다른constraint/edge/type합치기금지·1→2해시변화검증. 두owner허용/관측삭제아님·원인미확정시수정반환. 수신미확인.
 - Master공식2문서만수정·Front/Backend범위보존·실제배포/원push거절우회없음·새agentwindowworktree없음.
 - T241-R 후속 수락 확인 2026-11-18 11:41:09 +09:00: msg_d882ff10851c Tester fixed313c16d 소스/테스트/브라우저없는독립port HTTP보안검수·신규고유보고/소유scratch 수락. actualSupabase/mock와T240대비FAIL분리·제품수정/공유.next3013금지·필요ego Front와협의확인, 실제완료판정미확인.
+
+### B46 physical multiplicity 원인 확인 보고 / v4 보완 진행
+- 실제 확인 시각: 2026-11-18 11:45:59 +09:00 (Asia/Seoul). msg_b3658d68a24a·Git/status대조. Backend소형1회native exit0/completed-stoppedtrue/oldproduct87c2a8fd불변 보고: basepg_depend정책16행↔fixedcollector동일subset16행 multiset동일/14distinct. USING-only/CHECK-only각actor1, both_same의actor와column같은edge각2/서로다른ctid물리행, both_different는actor/otheractor각1. 해당소형fixture에서query중복아닌physicalmultiplicity 근거접수, 전체B45graph일괄정상판정은아님.
+- olduniquefalse/candidate14group합16 수량보존 보고에따라조건부승인내 dependencies정확native7필드tuple+deptype count/명시1·descriptor4 구현중. AuthPK1distinctinternaledge+positive수량·다른nativeowner거부·indexConstraints1/owner-key-typeproof 유지. 원harness4f8148b2…7653/native원실행source보존·최종제품integration미검증구분.
+- root20b5dfe5… PG77056/port64370/backends51692/79100 cleanupflagsalltrue는작성자보고·최종OS/고정검수전. 허용B46test/harnessWIP와Front대비CSS WIP동시존재·범위분리확인/T122-T137보존. P/fullreader/원B45자료patch없음·최종고정후Tester검수, Master공식2문서만수정.
