@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-공개 메인 최신 결정(2026-11-18 10:55 KST): Design msg_4204fa0e183d의 사용자 직접 선택으로 T232 01 NEON SCREEN 확정. Front T240는 msg_df4a8cac5e22로 신규 격리 제품컴포넌트/샘플·허가자산/반응형·검색/상태 구현 수락·착수. 공개화 시 기존루트의 private 작업실/Auth/redirect를 보호할 통합 방안은 실소스 근거로 반환 후 Master 별도 배정. 현 app/Auth/route/API/DB·글로벌스타일 변경·실private자료 공개·가짜 재생/조회수·build/deploy는 이번 범위 밖. 고정결과→Tester 독립 UI검수·Design 시각대조, Backend B44 검수는 별도 병행한다.
+공개 메인 최신 결정(2026-11-18 11:12 KST): T240 고정9f2c471 NEON UI ready_review·Tester T240-R msg_c72fc4f6201d 고정컴포넌트/UI검수 수락. Front T241 msg_d3e71b2bdb58 공개루트 /·기존private홈 /studio 통합 수락, 정확nav와관련작업실링크/명시기본next정정 허용. root메뉴설정검증은studio-layout으로이동·동등보호, trustedheader분기추가금지. 정확6asset+root만공개/개인정보import·issue누출금지·safeNextPath/보호Auth/APIfailclosed불변. 고정UI검수와다른경로통합병행, actualroute/Auth보안검수는별도후속. sample-only·가짜재생조회수금지·3013/공유.next보호·buildpushdeploy금지. Backend B45고정결과후Tester우선순위조정.
 
 최신 판정(2026-11-18 11:08 KST): B45 1회/P5body M COMMIT/actual527facts·15SQLraw성공 후최종정규화FAIL 보고접수·고정전. AuthPK실수집반영constraints700/deps2996·noSQLSTATE/nohash, lastdispatch원인미확정. 보존batch unmodifiedmoduleFAIL/표시copy offline최초원인·OS정리/2경로고정반환준비, 추가query/제품수정/allowlist확대/입력patch/skipretry금지. 결과고정후Tester독립검수→최소수정별도판정. FrontT240 NEON구현병행·원FAIL/역사보호. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
