@@ -2579,3 +2579,7 @@
 ### T240-R 진행 / B45-R 순차queue 수락
 - 실제 확인 시각: 2026-11-18 11:16:38 +09:00 (Asia/Seoul). msg_452e72e0e909 Tester회신접수: fixed9f2c471 독립archive/본인50937/Ego space42에서1280 DOM확인·관련13/type/scopedlint0 후390/키보드/상태/캡처진행. 현재원route/auth통합PASS아님·UI최종고정판정전이다.
 - T240-R 보고고정·본인server/browser정리후 fixed2a9b75f B45-R 순차착수 수락확인, 지금native시작없음. msg_56be0500ac8a 전달→수락 상태갱신·UI/DB동시중복실행금지유지. MasterTEAM/플랜 수락상태만수정·현재브라우저점유는Tester본인으로기록, Front와필요resource조정·원보호범위유지.
+### T240-R 모바일 실제glyph 대비결함 / T240-FIX 전달
+- 실제 확인 시각: 2026-11-18 11:27:27 +09:00 (Asia/Seoul). msg_826a912a2bef Tester진행결함접수: 원9f2c471 13/type-lint·1280/390/44px/media외부0/키보드상태rail/reducedmotion점검 중390x844 hero10px문구 THE NIGHT IS JUST BEGINNING 실제glyph최소2.9169:1<4.5(P2 F240-1), title5.6375통과. animation정지/동일배경 foreground-vs-heroCopy opacity0 캡처쌍(146,521)분석근거이며ancestor단색계산의한계확인. 최종고정report는아직없어진행결함과최종판정구분.
+- Front T240-FIX msg_d356f01d9e7c 실제전달(수락미확인): CSS/필요최소tsx/관련test+신규FIX보고, 국소불투명textbackplate/충분overlay로실배경4.5이상보장·textshadow만의존금지·1안시각의도/동작보존. 원390동일glyph red→green/1280·다른mobile·상태/reducedmotion/13회귀type-lint·캡처근거·선택고정누적SHA 반환. T241 AuthrouteWIP와분리/전체stage금지·기존보호경계유지.
+- Tester msg_43a8d4a7883d 원FAIL/증거고정보존·원보고/preview-browser정리뒤 B45-R순차유지 통지·Front와브라우저해제시점공유요청. Front현재T241단계/보완순서회신도요청, 수신미확인. 최종고정보고수신뒤원판정확정·수정재검수별도배정. 운영배포/새agentwindowworktree없음·Master공식2문서만수정.
