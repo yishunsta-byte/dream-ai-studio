@@ -48,9 +48,9 @@
 
 ## 3. 지금 실행할 작업
 
-공개 메인 최신 결정(2026-11-18 11:27 KST): T240-R 원9f2c471 최종84083f9 FAIL 수용: 모바일390 hero소문구 actualglyph2.916922:1 대비결함 F240-1 P2. Front T240-FIX CSS/필요최소tsx-test/new보고 국소backplate/overlay4.5이상보완·동일배경실glyph red→green/반응형·unit회귀 실제전달(수락미확인). T241 공개루트/보호studio·Auth통합과분리선택고정, 원FAIL자료보존·독립재검수전배포없음. Tester 원UI보고·preview정리완료 후 B45-R 순차착수, Front브라우저점유해제공유 확인. sample-only·개인자료공개/가짜재생금지·safeNext/보호API·3013공유.next보호·buildpushdeploy금지.
+공개 메인 최신 결정(2026-11-18 11:27 KST): T240-R 원9f2c471 최종84083f9 FAIL 수용: 모바일390 hero소문구 actualglyph2.916922:1 대비결함 F240-1 P2. Front T240-FIX CSS/필요최소tsx-test/new보고 국소backplate/overlay4.5이상보완·동일배경실glyph red→green/반응형·unit회귀 전달 후 msg_974267d4f568 수락 확인. T241 마지막 HTTP/UI 검증·별도선택커밋 뒤 FIX분리커밋 순서로 진행. T241 공개루트/보호studio·Auth통합과분리선택고정, 원FAIL자료보존·독립재검수전배포없음. Tester 원UI보고·preview정리완료 후 B45-R 순차착수, Front브라우저점유해제공유 확인. sample-only·개인자료공개/가짜재생금지·safeNext/보호API·3013공유.next보호·buildpushdeploy금지.
 
-최신 판정(2026-11-18 11:15 KST): B45 고정2a9b75f는527facts/P5bodyM COMMIT/15SQLraw성공 후finalsortedUnique중복거부 증거제출. rawdeps2996/2960unique/36동일pairs·물리USING-CHECK기원은미확정, 원자료dedup/현장제품수정없음. Tester B45-R에현재T240-R UI/서버정리/고정보고후순차검수queue 전달 후 msg_452e72e0e909 수락 확인, frozen1회native/offline최초stack·OS정리검수. FrontT241 publicroot/studio/Auth통합WIP·staged홈이동보존. 독립판정후중복원인실험/최소수정별도배정·원FAIL보호. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 11:37 KST): B45-R ee8ce8e evidence/reproductionPASS 수용·제품nativeFAIL(동일dependency multiplicity)유지. Backend B46 msg_b6ec2a5125c9 소형정책/basepg_depend vs fixedquery 원인실험과조건부보완4경로수락: physical이면정확tuple수량보존·descriptor4/다른category중복거부, query복제면collector최소수정·단순dedup금지. 고정근거/소형native·unit·OS정리후Tester독립검수. Tester후속고정대기·FrontUIFIX/T241보안통합우선조정. 원B45자료patch/fullreader재실행금지·Golden/state/runtime/운영배포없음·원FAIL보존.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 

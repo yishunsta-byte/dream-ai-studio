@@ -2595,3 +2595,9 @@
 - 실제 확인 시각: 2026-11-18 11:31:28 +09:00 (Asia/Seoul). msg_c0c9d464af1a Tester 고정2a9b75f unchangedharness 본인root572ba1b0… native1회실행중·preflightcopy/B44SQL/productpin통과/harnesslint0보고. 실제완료/최종FAIL재현·정리결과아직미확인.
 - 공유whole tsc exit1은Front route이동중기존.next validator의old app/(studio)/page import오류만이라는검토보고, 공유생성물을수정하지않고fixedB45archive copy typecheck분리중. source진짜결함/생성물stale를구분·원실패보존, 무조건전체typePASS로재표기하지않는다.
 - Front msg_48a20d49bd67 실제전달: 공유.next 삭제/재생성금지·T241본인격리clean출력/type-routeHTTP근거보고·본인FIX진행회신요청. 검사중단/중복실행요청아님·수신미확인. MasterTEAM기록만수정·운영/기존프로세스보호.
+### B45-R 수용 / B46 원인실험·Front FIX 순서 수락
+- 실제 점검 완료 시각: 2026-11-18 11:37:08 +09:00 (Asia/Seoul). msg_567aca556339·ee8ce8e 보고/실행·한계대조: fixed2a9b75f native1회/P5bodyM COMMIT/527facts/15SQLraw성공·최종genericFAIL/firstsortedUnique·36pairs 보존재현, 원18파일/입력bytes/querytrace동일·정리4PID58172/29676/34288/61612·port54020/pidfileOSabsent 근거로 evidence/reproductionPASS 수용·제품FAIL유지. sharedtsc stale.next exit1보존/fixedarchive type0·harnesslint0/Frontstage보존구분.
+- Backend B46 msg_93483f26ce6b 전달→msg_b6ec2a5125c9 수락. module/test+신규b46-policy-dependency-native-owned.ts/B46-DEPENDENCY-MULTIPLICITY-CONTRACT.md4경로. 소형ownedPG18.7 정책USING-only/CHECK-only/both동일·상이 대조·basepg_depend tuple/count/ctid진단과fixedprojection같은subset 비교먼저. physical이면dependencies정확nativeendpoint+deptype count보존·descriptor4조건부승인/다른category중복거부·unknownalias거부유지, query복제면collector수정. 원인불확실하면수정없이반환·단순dedup/drop/UNION DISTINCT금지·원B45patch/fullreader재실행금지·OS정리/격리type·고정후독립검수.
+- Tester msg_f200cbd80a8d 후속근거수용/새native-preview착수없음수신확인. Front수정·T241보안통합검수 우선순위Master조정대기·중복과제없음.
+- Front msg_974267d4f568 T240-FIX 수락확인: 허용CSS/필요tsx/test/신규보고·별도선택고정. T241 source/새11시험완료·2055PASS319skip/eslint0·공유stale validator exit1/격리cleantype0·운영유사/설정누락/메뉴손상HTTP검증완료는작성자중간근거, localnormalHTTP/1280-390남음. T241마지막검증→선택커밋/보고→T240-FIX 별도커밋순서수락, 독립통합PASS아님·builddeploy없음.
+- 원자료/SQL/역사/Frontstage·3013공유.next/운영DB보호, Master공식2문서만수정·직접테스트재실행없음.
