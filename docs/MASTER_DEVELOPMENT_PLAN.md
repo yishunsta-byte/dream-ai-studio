@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 10:15 KST): B43 1회 실제 context+14fixedSELECT/raw배치파싱 성공 후 최종crosscategory decode/normalize실패 보고 접수·최종고정전. SQLSTATE없음/15calls/전체관측hash없음, 마지막dispatch memberships를원인으로단정하지않음. 반환batch오프라인최소거부근거·소유OS정리/2경로고정반환 준비, 추가nativequery/제품수정/allowlist확대/skip/retry없음. 결과고정→Tester독립검수→최소수정판정. B42한정nativePASS와전체catalogFAIL 구분·원역사보존. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 10:21 KST): B43 고정cd4fd98 15SQL/rawshape성공·최종정규화FAIL 증거와offline첫미등록AuthPKindex→constraint endpoint분석 제출. 미수집constraint상세를추정생성하지않고 원FAIL/hash없음 유지. Tester B43-R에frozen1회ownednative+offline동일입력/표시copy/소유OS정리독립검수 실제전달(수락미확인), 결과고정후외부prerequisite최소수정별도판정. 추가query/현장allowlist확대/제품수정/skip/retry금지·원역사보호. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
