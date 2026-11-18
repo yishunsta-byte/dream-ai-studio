@@ -2484,3 +2484,7 @@
 - native 새columnattaclNULL, frozen columns query22023·directaclexplode(NULL)0rows/explicitempty22023·oldcoalesce(NULL,empty)와oldempty22023로 인과확인 보고. candidate cardinalityNULL/0→JSON[] 분기는NULL/empty성공, actualgrantoption/PUBLICUPDATE2tuples old/new/generated동일·grantoptionrevoke/전체revoke후NULL+[]·4종default ACL동일/explicitempty미대체/rawNULLflag유지 근거접수. 제품oldpin은실험중불변, P/fullcatalog미실행.
 - 기존 B42 조건부승인 충족 보고에 따라 helper의 effectiveACL NULL/0만 빈JSON 분기/나머지집계식과default·rawNULLflag보존 최소수정·unit/type-lint 진행 중. 별도범위 확대/중복실험 지시없음. 소유root42e39bff… PG45544/port60510/backends56796/63696 absentflags는작성자보고·독립OS검수전이다.
 - 최종4경로 고정반환→Tester code/native-evidence 독립검수 예정. 전체catalog/nativePASS아님, 원B41FAIL/P/역사harness/증거보호·Golden/state/runtime/운영배포미변경. Master공식2문서만수정.
+### B42 実行版と最終再現版の区別 / 검수 근거 보완
+- 실제 확인 시각: 2026-11-18 09:58:47 +09:00 (Asia/Seoul). msg_856d8f0c69f9·Git/status 대조. 기존허용 module WIP수정과신규harness만, 테스트/최종보고미반환·T122/T137보존. 원25probe실행은oldproduct2b0b9df와harnessd9b0a54b…f777, 원실행source scratch보존보고. 이후helper보완product aea12e9f90970637d22421904fa0b861f1dfda28c871c5bfffeca5f712640b1a/최종newpin하네스는native재실행안함을구분한다.
+- msg_2c995c507e78 Backend실제전달: 최종replay는정확known guard1회역치환+oldSQLSHA4d6ff67037656bdd98f2bc896bb13ec99949a75aa20379c6d84d2c3096bb6383 고정대조 후만허용, pin우회/동적학습fallback금지. 원candidate식↔최종generated식 byte동등/차이와원실행본diff/sourcehash를보고서연결, 차이있으면최종제품native검증완료표현금지. 최종고정뒤Tester소형native재현별도배정예정, 이번원실험이최종harness실행증명은아니다.
+- 기존4경로·unit/type-lint·최종고정범위유지, 수신아직미확인. fullcatalog재진단/운영변경없음. Master TEAM기록만수정.
