@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-공개 메인 최신 결정(2026-11-18 11:27 KST): T240-R 원9f2c471 최종84083f9 FAIL 수용: 모바일390 hero소문구 actualglyph2.916922:1 대비결함 F240-1 P2. Front T240-FIX CSS/필요최소tsx-test/new보고 국소backplate/overlay4.5이상보완·동일배경실glyph red→green/반응형·unit회귀 전달 후 msg_974267d4f568 수락 확인. T241 마지막 HTTP/UI 검증·별도선택커밋 뒤 FIX분리커밋 순서로 진행. T241 공개루트/보호studio·Auth통합과분리선택고정, 원FAIL자료보존·독립재검수전배포없음. Tester 원UI보고·preview정리완료 후 B45-R 순차착수, Front브라우저점유해제공유 확인. sample-only·개인자료공개/가짜재생금지·safeNext/보호API·3013공유.next보호·buildpushdeploy금지.
+공개 메인 최신 결정(2026-11-18 11:41 KST): T241 실제고정313c16d ready_review접수(Front초기c0a8b77오보고정정/git확인), 공개 /·보호 /studio·정확6asset/메뉴설정격리 구현. Tester T241-R 독립보안route·HTTP/mockAuth/설정회귀검수 실제전달(수락미확인), 실제Supabase/운영imagecache等미검증. 원T240-R84083f9FAIL 대비2.916922 유지·FrontT240-FIX 별도보완진행/고정후재검수. actualroute보안PASS와UIFIX수용전배포없음·safeNext/보호API/sourceprivacy·3013.next보호·buildpushdeploy금지.
 
 최신 판정(2026-11-18 11:37 KST): B45-R ee8ce8e evidence/reproductionPASS 수용·제품nativeFAIL(동일dependency multiplicity)유지. Backend B46 msg_b6ec2a5125c9 소형정책/basepg_depend vs fixedquery 원인실험과조건부보완4경로수락: physical이면정확tuple수량보존·descriptor4/다른category중복거부, query복제면collector최소수정·단순dedup금지. 고정근거/소형native·unit·OS정리후Tester독립검수. Tester후속고정대기·FrontUIFIX/T241보안통합우선조정. 원B45자료patch/fullreader재실행금지·Golden/state/runtime/운영배포없음·원FAIL보존.
 

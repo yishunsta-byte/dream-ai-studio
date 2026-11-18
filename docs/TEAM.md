@@ -2601,3 +2601,8 @@
 - Tester msg_f200cbd80a8d 후속근거수용/새native-preview착수없음수신확인. Front수정·T241보안통합검수 우선순위Master조정대기·중복과제없음.
 - Front msg_974267d4f568 T240-FIX 수락확인: 허용CSS/필요tsx/test/신규보고·별도선택고정. T241 source/새11시험완료·2055PASS319skip/eslint0·공유stale validator exit1/격리cleantype0·운영유사/설정누락/메뉴손상HTTP검증완료는작성자중간근거, localnormalHTTP/1280-390남음. T241마지막검증→선택커밋/보고→T240-FIX 별도커밋순서수락, 독립통합PASS아님·builddeploy없음.
 - 원자료/SQL/역사/Frontstage·3013공유.next/운영DB보호, Master공식2문서만수정·직접테스트재실행없음.
+### T241 실제고정 접수 / 독립보안통합 검수 전달·B46 proof계약결정
+- 실제 점검 완료 시각: 2026-11-18 11:40:59 +09:00 (Asia/Seoul). msg_303d628f9ced 初커밋c0a8b77오류→msg_ef9b961eaae4 실제313c16d6ad56ae7d3d05171b63d3eb77d63e4631 정정과gitstat대조. c0a8b77 Master문서2파일, 실제T241 19경로/rename본문diff0·publicsample/root/private메뉴검증이동/정확6asset earlyallow·원auth순서보존 소스직접확인. 원23red갱신이유/11새test·2055PASS319skip/lint0·stale공유tsc와격리0/4HTTPstate/1280-390는작성자근거ready_review접수, 실제Supabase·workspace메뉴손상/운영imagecache미검증.
+- Tester T241-R msg_c81da51f173a 실제전달(수락미확인): fixed313c16d publicsample-only/원studio이동/메뉴설정분리/정확allowlist·보호Auth-next-cache-API/sharedconfig회귀·관련unit/격리type/운영유사·missingconfig/menu손상·로컬HTTP독립검수·새보고1경로. 실제사용자미로그인/mock한계/knownT240대비FAIL분리·원source고정/소유server정리/Front브라우저점유협의·공유.next3013/builddeploy금지. Front msg_c1d81a1730c1 실제커밋정정수용/보안검수통지·T240-FIX별도계속지시.
+- B46 msg_74fbf8e67a7b Authproof rawedgecount1과physicalmultiplicity계약충돌 제안접수·msg_b5865364470f 조건부승인: 원인확인후 exactly1 DISTINCT native endpoint+deptype owningedge 요구·sameedge positive수량은canonicalcount/hash보존. 실제indexConstraints1/owner/key/index/관측row/alias거부불변·서로다른constraint/edge/type합치기금지·1→2해시변화검증. 두owner허용/관측삭제아님·원인미확정시수정반환. 수신미확인.
+- Master공식2문서만수정·Front/Backend범위보존·실제배포/원push거절우회없음·새agentwindowworktree없음.
