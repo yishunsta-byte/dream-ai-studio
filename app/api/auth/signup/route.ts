@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServer();
   if (!supabase) return bad("로그인 설정이 아직 끝나지 않았어요.", "AUTH_UNAVAILABLE", 503);
   const callback = new URL("/auth/callback", origin);
-  callback.searchParams.set("next", "/");
+  callback.searchParams.set("next", "/studio");
   const { error } = await supabase.auth.signUp({ email, password: body.password as string, options: { emailRedirectTo: callback.toString() } });
   if (error) {
     if (error.status === 429) return bad("잠시 뒤에 다시 시도해 주세요. 메일을 너무 자주 요청했어요.", "RATE_LIMITED", 429);

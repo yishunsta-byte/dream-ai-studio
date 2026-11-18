@@ -13,7 +13,7 @@ vi.mock("@/lib/auth/render", () => ({
   currentAccountEmail: async () => state.account,
   getRenderAuth: async () => state.account ? { kind: "verified", userId: "00000000-0000-4000-8000-000000000183", email: state.account } : { kind: "local" },
 }));
-vi.mock("@/lib/menus/server", () => ({ getMenuConfig: () => ({ groups: [], menus: [], workspaces: [] }) }));
+vi.mock("@/lib/menus/server", () => ({ getMenuConfig: () => ({ groups: [], menus: [], workspaces: [] }), getMenuConfigState: () => ({ ok: true as const, config: { groups: [], menus: [], workspaces: [] } }) })); // T-241: StudioLayout이 메뉴 검증
 
 const saved = process.env.VERCEL;
 beforeEach(() => { delete process.env.VERCEL; state.canStart = false; state.account = null; });

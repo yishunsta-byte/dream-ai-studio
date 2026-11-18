@@ -18,7 +18,7 @@ const NOTICES: Record<string, string> = {
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string; notice?: string }> }) {
-  if (authMode() === "off") redirect("/");
+  if (authMode() === "off") redirect("/studio");
   const params = await searchParams;
   const error = params.error ? ERRORS[params.error] ?? ERRORS.link : undefined;
   const notice = params.notice ? NOTICES[params.notice] : undefined;

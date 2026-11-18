@@ -102,7 +102,8 @@ describe("T-182 로그인 설정", () => {
   });
   it("로그인 없이 열리는 곳은 로그인 화면·링크 확인·로그인·가입·비밀번호 찾기뿐이다", () => {
     expect(["/login", "/auth/callback", "/api/auth/login", "/api/auth/signup", "/api/auth/reset"].every(isPublicPath)).toBe(true);
-    expect(["/", "/api/jobs", "/api/auth/logout", "/api/auth/password", "/account/password", "/settings", "/login2"].some(isPublicPath)).toBe(false);
+    // T-241: "/"는 공개 메인이 됐다(t241 시험에서 정확 경로만 확인). 보호 화면 예시는 작업실 "/studio".
+    expect(["/studio", "/api/jobs", "/api/auth/logout", "/api/auth/password", "/account/password", "/settings", "/login2"].some(isPublicPath)).toBe(false);
   });
 });
 
@@ -113,7 +114,7 @@ describe("T-182 접속 보호(proxy)", () => {
   });
   it("설정이 빠지면 화면·API 모두 503으로 막는다", async () => {
     process.env.VERCEL = "1";
-    expect((await run("/")).status).toBe(503);
+    expect((await run("/studio")).status).toBe(503); // T-241: 보호 화면 예시를 작업실 /studio로(공개 "/"는 t241에서 따로 확인)
     const api = await run("/api/jobs");
     expect(api.status).toBe(503);
     expect((await api.json()).code).toBe("AUTH_UNAVAILABLE");
@@ -140,7 +141,7 @@ describe("T-182 접속 보호(proxy)", () => {
   it("허용 목록 밖 계정은 화면은 로그인으로, API는 403으로 막는다", async () => {
     ready();
     user.current = { email: "someone@else.com" };
-    const page = await run("/");
+    const page = await run("/studio"); // T-241: 보호 화면 예시를 작업실 /studio로
     const target = new URL(page.headers.get("location")!, "https://studio.test");
     expect(`${target.origin}${target.pathname}${target.search}`).toBe("https://studio.test/login?error=forbidden");
     const api = await run("/api/jobs");
@@ -244,7 +245,7 @@ describe("T-184 이메일·비밀번호 로그인·가입·비밀번호 찾기",
     const link = new URL(calls.signup[0].options.emailRedirectTo);
     expect(link.origin).toBe("http://127.0.0.1:43182");
     expect(link.pathname).toBe("/auth/callback");
-    expect(link.searchParams.get("next")).toBe("/");
+    expect(link.searchParams.get("next")).toBe("/studio"); // T-241: 가입 뒤 기본 도착은 작업실
   });
   it("가입: 허용 밖·이미 가입한 주소도 같은 안내, 허용 밖은 Supabase에 보내지 않는다", async () => {
     ready();

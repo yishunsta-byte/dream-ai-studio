@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { appConfig } from "@/lib/config/app";
-import { getMenuConfigState } from "@/lib/menus/server";
 import localFont from "next/font/local";
 import { ToastProvider } from "@/components/ui/interactive";
 import "./globals.css";
@@ -17,16 +16,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const state = getMenuConfigState();
-  if (!state.ok) {
-    return (
-      <html lang="ko" className={pretendard.variable}><body><main className="content">
-        <h1>메뉴 설정을 확인해 주세요</h1>
-        <p>설정 오류로 작업실을 시작할 수 없습니다. 아래 항목을 수정한 뒤 서버를 다시 시작해 주세요.</p>
-        <ul style={{ overflowWrap: "anywhere" }}>{state.issues.map((issue, index) => <li key={index}><code>{issue.path}</code>: {issue.message}</li>)}</ul>
-      </main></body></html>
-    );
-  }
-  // 저장 폴더 시작 점검은 작업실 화면(StudioLayout)에서 한다. 로그인 화면은 저장소가 필요 없어서 점검하지 않는다(T-183).
+  // 메뉴 설정 검증과 저장 폴더 시작 점검은 작업실 화면(StudioLayout)에서 한다(T-183, T-241).
+  // 루트는 글꼴·알림 provider·본문만 둔다. 공개 메인·로그인 화면에 내부 설정 항목이 나오지 않게 하기 위해서다.
   return <html lang="ko" className={pretendard.variable}><body><ToastProvider>{children}</ToastProvider></body></html>;
 }

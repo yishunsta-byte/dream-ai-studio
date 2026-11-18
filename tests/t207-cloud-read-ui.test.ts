@@ -134,7 +134,7 @@ describe("이 PC(로그인 꺼짐): 안내만, adapter 0", () => {
     // T-217: 로컬 안내도 페이지 제목(h1) 정확히 하나, 기존 작업실 링크 하나만
     expect(h1(list)).toEqual(["내 프로젝트"]);
     expect(h1(detail)).toEqual(["프로젝트 보기"]);
-    for (const markup of [list, detail]) expect([...markup.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/"]);
+    for (const markup of [list, detail]) expect([...markup.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/studio"]); // T-241: 작업실 주소 /studio
     expect(read).not.toHaveBeenCalled();
     expect(state.created).toHaveLength(0);
     expect(state.getUser).not.toHaveBeenCalled();

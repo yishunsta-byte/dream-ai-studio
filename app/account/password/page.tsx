@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "새 비밀번호 · Dream AI Studio"
 
 // 비밀번호 찾기 메일 링크로 들어와 새 비밀번호를 정하는 화면(T-184). 로그인 확인은 proxy가 한다.
 export default async function NewPasswordPage() {
-  if (authMode() === "off") redirect("/");
+  if (authMode() === "off") redirect("/studio");
   const email = await currentAccountEmail();
   return <main id="main-content" className={styles.page}>
     <div className={styles.hero}>

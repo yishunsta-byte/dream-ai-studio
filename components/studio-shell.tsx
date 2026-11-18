@@ -54,15 +54,15 @@ export function StudioShell({ navigation, sampleMode, account = null, children }
     return () => media.removeEventListener("change", close);
   }, []);
   const close = () => drawer.current?.close();
-  const names: Record<string, string> = { "/": "작업실", "/jobs": "작업 대기열", "/library": "자료·캐릭터", "/history": "생성·활동 기록", "/settings": "설정", "/setup": "시작 점검" };
+  const names: Record<string, string> = { "/studio": "작업실", "/jobs": "작업 대기열", "/library": "자료·캐릭터", "/history": "생성·활동 기록", "/settings": "설정", "/setup": "시작 점검" };
   const currentMenu = navigation.menus.find((menu) => pathname.startsWith(`/menus/${menu.id}`));
   const currentWorkspace = navigation.workspaces.find((workspace) => pathname === `/workspaces/${workspace.id}`);
   const title = !confirmed ? "작업실" : breadcrumb?.title ?? currentMenu?.label ?? currentWorkspace?.label ?? names[pathname] ?? "작업실";
   const hasHeaderStatus = sampleMode || !!account || !!(counts && counts.running + counts.queued > 0);
   const navLink = (href: string, label: string, extra?: ReactNode, dim = false, icon?: IconName) => <Link key={href} href={href} onClick={close} className={`${styles.navLink} ${dim ? styles.dim : ""}`} aria-current={pathname === href || (href.startsWith("/menus/") && pathname.startsWith(href + "/")) ? "page" : undefined}>{icon && <Icon name={icon} />}<span>{label}</span>{extra}</Link>;
-  const links = <><Link href="/" className={styles.brand} onClick={close}><span className={styles.mark}>D</span><span><strong>Dream AI Studio</strong><small>나만의 콘텐츠 작업실</small></span></Link>
+  const links = <><Link href="/studio" className={styles.brand} onClick={close}><span className={styles.mark}>D</span><span><strong>Dream AI Studio</strong><small>나만의 콘텐츠 작업실</small></span></Link>
     <nav aria-label="주 메뉴" className={styles.nav}>
-      {navLink("/", "작업실", undefined, false, "home")}{navLink("/jobs", "작업 대기열", counts&&(counts.running+counts.queued>0||counts.failed>0)?<span className={styles.queueNumbers}>{counts.running+counts.queued>0&&<span>{counts.running+counts.queued}</span>}{counts.failed>0&&<span className={styles.failedCount} aria-label={`실패 ${counts.failed}개`}>!{counts.failed}</span>}</span>:undefined, false, "clock")}{navLink("/library", "자료·캐릭터", undefined, false, "folder")}{navLink("/history", "생성·활동 기록", undefined, false, "clock")}
+      {navLink("/studio", "작업실", undefined, false, "home")}{navLink("/jobs", "작업 대기열", counts&&(counts.running+counts.queued>0||counts.failed>0)?<span className={styles.queueNumbers}>{counts.running+counts.queued>0&&<span>{counts.running+counts.queued}</span>}{counts.failed>0&&<span className={styles.failedCount} aria-label={`실패 ${counts.failed}개`}>!{counts.failed}</span>}</span>:undefined, false, "clock")}{navLink("/library", "자료·캐릭터", undefined, false, "folder")}{navLink("/history", "생성·활동 기록", undefined, false, "clock")}
       <div className={styles.divider} />
       {[...navigation.groups].sort((a,b) => a.order-b.order).map((group) => <div key={group.id}><div className={styles.groupLabel}>{group.label}</div>{navigation.menus.filter((menu) => menu.group === group.id).map((menu) => navLink(`/menus/${menu.id}`, menu.label, menu.availability !== "active" ? <PhaseChip phase={Number(menu.phase.slice(1)) as 0|1|2|3|4|5|6|7|8} /> : undefined, menu.availability !== "active"))}</div>)}
       <div className={styles.divider} /><div className={styles.groupLabel}>업무공간 · 별도 개발</div>{navigation.workspaces.map((workspace) => navLink(`/workspaces/${workspace.id}`, workspace.label, <span className={styles.separate}>P8</span>, true, "lock"))}

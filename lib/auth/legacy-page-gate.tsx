@@ -18,7 +18,7 @@ export async function legacyPageDecision(env: Readonly<Record<string, string | u
   const auth = await getRenderAuth();
   if (auth.kind === "denied") {
     // proxy와 같은 의미: 401 로그인으로, 403 허용 안 됨 안내, 503 인증 확인 불가 안내.
-    if (auth.status === 401) return { kind: "redirect", to: loginPath() };
+    if (auth.status === 401) return { kind: "redirect", to: loginPath({ next: "/studio" }) };
     return { kind: "redirect", to: loginPath({ error: auth.status === 403 ? "forbidden" : "unavailable" }) };
   }
   if (!legacyDataAvailable(env)) return { kind: "pending", account: auth.kind === "verified" ? auth.email : null };

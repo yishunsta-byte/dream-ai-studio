@@ -38,6 +38,6 @@ export function CloudReadUnavailable({ retryHref, title, back = false }: { retry
 export function CloudReadLocal({ title }: { title: string }) {
   return <>
     <PageHeader title={title} />
-    <Callout tone="info" title="이 PC에서는 기존 작업실을 써요">클라우드 보기 화면은 로그인한 클라우드 주소에서만 열려요. <Link href="/">작업실로 가기 →</Link></Callout>
+    <Callout tone="info" title="이 PC에서는 기존 작업실을 써요">클라우드 보기 화면은 로그인한 클라우드 주소에서만 열려요. <Link href="/studio">작업실로 가기 →</Link></Callout>
   </>;
 }

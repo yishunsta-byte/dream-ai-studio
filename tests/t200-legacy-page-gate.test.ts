@@ -34,7 +34,8 @@ vi.mock("@/lib/auth/server", () => ({
 }));
 vi.mock("better-sqlite3", () => ({ default: vi.fn(function Database() { state.sqlite(); throw new Error("legacy SQLite must not open"); }) }));
 vi.mock("@/lib/services/startup", () => ({ checkStartup: state.startup, checkStorageStartup: state.startup }));
-vi.mock("@/lib/menus/server", () => ({ getMenuConfig: state.menus }));
+// T-241: 메뉴 설정 검증이 루트에서 StudioLayout으로 옮겨져 레이아웃은 getMenuConfigState를 쓴다(같은 menus 호출로 센다).
+vi.mock("@/lib/menus/server", () => ({ getMenuConfig: state.menus, getMenuConfigState: () => ({ ok: true as const, config: state.menus() }) }));
 for (const name of ["projects", "history", "jobs", "library", "planning", "production", "editing", "review", "exports", "renders", "backups"]) {
   vi.doMock(`@/lib/services/${name}`, async (importOriginal) => state.wrap(name, await importOriginal<Record<string, unknown>>()));
 }
@@ -83,7 +84,7 @@ describe("화면 입구 목록", () => {
     const source = readFileSync("components/studio-layout.tsx", "utf8");
     const gate = source.indexOf("await legacyPageGate()");
     expect(gate).toBeGreaterThan(0);
-    expect(gate).toBeLessThan(source.indexOf("getMenuConfig()"));
+    expect(gate).toBeLessThan(source.indexOf("getMenuConfigState()")); // T-241: 메뉴 검증도 가드 뒤
     expect(gate).toBeLessThan(source.indexOf("checkStartup()"));
   });
 });
@@ -116,7 +117,7 @@ describe("클라우드·postgres·알 수 없는 설정: 페이지만 단독 실
 describe("인증 거절: proxy와 같은 의미로 로그인 화면 이동, 그 전 부작용 0", () => {
   for (const [path, load] of pages) {
     it.each([
-      ["no session", "/login"],
+      ["no session", "/login?next=%2Fstudio"], // T-241: 작업실 입구 기본 next를 /studio로 명시(공개 메인 "/"로 돌아가지 않게)
       ["forbidden", "/login?error=forbidden"],
       ["provider error", "/login?error=unavailable"],
       ["missing config", "/login?error=unavailable"],
@@ -163,7 +164,7 @@ describe("레이아웃 단독", () => {
 // 이 PC 기본(로그인 꺼짐, sqlite 기본): 가드가 통과시키고 예전처럼 각자 로더·이동으로 간다.
 describe("대조군: 이 PC 기본 설정은 기존 입구 동작 유지", () => {
   const expected: Record<string, RegExp | string> = {
-    "(studio)/page.tsx": /projects\.listProjects/,
+    "(studio)/studio/page.tsx": /projects\.listProjects/, // T-241: 작업실 홈 / → /studio 이동
     "(studio)/history/page.tsx": "params",
     "(studio)/jobs/page.tsx": /jobs\.listJobs/,
     "(studio)/library/page.tsx": /library\.readLibrary/,
