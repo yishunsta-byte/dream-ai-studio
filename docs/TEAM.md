@@ -2516,3 +2516,9 @@
 - Tester B43-R msg_eedf8fef4606 실제전달(수락미확인): 본인newPG18.7 UTF8-C loopback cluster frozenharness1회·15SQL/최종FAIL/OS정리재현, 반환batch오프라인원moduleFAIL와표시copy의첫endpoint진단·계측diff/동일입력검수·신규보고1파일만. 실패뒤추가nativequery/현장수정/skip/retry/constraint추정등록/증거보정금지. Backend msg_553395f04747 고정/질문지원통지·회신미확인.
 - 결과고정후외부prerequisite 최소수정범위별도판정, 이번제품/SQL/allowlist/Golden/state/provenance/runtime/운영DB배포/env/packageinstall/새agentwindowworktree없음. Master공식2문서만수정.
 - B43-R 후속 수락 확인 2026-11-18 10:21:49 +09:00: msg_4f07ccae8cb9 Tester 고정cd4fd98/신규보고1파일·본인ownednative1회/동일입력offline분석/첫실패보존·추가query금지/소유OS정리 범위 수락. 전달→수락 확인, 실제재현완료/판정은 아직미확인.
+
+### 10:30 점검 / B43-R 증거 수용·B44 exact Auth PK 보완 전달
+- 실제 점검 완료 시각: 2026-11-18 10:30:47 +09:00 (Asia/Seoul). msg_893b7103e7d1·ced85bf 보고/한계/정리·Git/status/10:21이후수정인계와정기msg_f83e84f0b6f9대조. 신규보고B43-R은기존배정귀속, 별도미등록인계없음. 예약10:30:01/result0/next11:00·현재수신·실제점검구분. T122/T137보존·제품diff없음.
+- B43-R evidence/reproductionPASS 수용·제품nativeFAIL유지: 독립fixedcd4fd98 1회/P5bodyM단일tx/15SQLraw성공·최종generic/noSQLSTATE/nohash, 동일입력원moduleFAIL/표시copy 최초Auth PKindex→미등록constraint16397검증. 원constraint상세는미수집·추정생성없음. 원입력/제품/57보호파일불변·본인PG11360/port56136/backends63656/59272/63916 OSabsent 및author정리대조근거수용. Master직접실행아님.
+- Backend B44 msg_9efc816a53bb 실제전달(수락미확인): module/test+신규b44-auth-prerequisite-native-owned.ts/B44-AUTH-PRIMARY-CONSTRAINT-IDENTITY.md 4경로. 이미허용된auth.users(idUUIDPK)의실제index소유constraint만고정수집/typedidentity·relation/id/PKkind/key/index/owner상호검증·unknown거부/edge보존. 본인소형PG18.7 minimalAuth만생성·실근거수집허용, P/fullcatalog재시도금지. 기존14범주내정확관측/명시binding계약·shape버전영향보고, B36실질확대필요시면저차이/추천반환. 원미수집자료추정patch/일반unknown허용금지.
+- Tester msg_1802f6e10d6b 후속통지·회신미확인. 소형native/unit-negative/shiftedOID/ACL·F38회귀/type-lint/소유OS정리·고정4경로반환→독립검수. 원SQL/P/loader/harness/FAIL자료·Golden/state/provenance/runtime/운영DB배포/env/packagebuildinstall/새agentwindowworktree보호. Master공식2문서만수정.

@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 10:21 KST): B43 고정cd4fd98 15SQL/rawshape성공·최종정규화FAIL 증거와offline첫미등록AuthPKindex→constraint endpoint분석 제출. 미수집constraint상세를추정생성하지않고 원FAIL/hash없음 유지. Tester B43-R에frozen1회ownednative+offline동일입력/표시copy/소유OS정리독립검수 전달 후 msg_4f07ccae8cb9 수락 확인, 결과고정후외부prerequisite최소수정별도판정. 추가query/현장allowlist확대/제품수정/skip/retry금지·원역사보호. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 10:30 KST): B43-R ced85bf evidence/reproductionPASS 수용·전체nativeFAIL유지. AuthPKindex→미수집constraint identity 누락 독립확인. Backend B44 exactAuthPK선행constraint 실제수집/typedidentity·key/index/owner상호검증 보완4경로 실제전달(수락미확인), 본인소형PG18.7 minimalAuth실험만허용/P이관·fullcatalog재시도금지. unknown전체허용/원자료추정patch금지, 기존계약실질확대시면저Master차이반환. 고정소형native/unit회귀·cleanup결과→Tester독립검수. 원FAIL/자료보호·Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
