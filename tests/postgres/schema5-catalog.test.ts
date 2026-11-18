@@ -558,6 +558,64 @@ describe("B38 all14 synthetic observations; NOT native or golden reference", () 
     expect(postgresCatalogQueriesV3.types).not.toContain("t.typrelid=0"); expect(postgresCatalogQueriesV3.triggers).not.toContain("NOT t.tgisinternal");
     expect(postgresCatalogQueriesV3.dependencies).toContain("pg_shdepend");
   });
+  it("integrates exactly the B42 native-tested candidate modulo fixed aliases, parameter binding and cast parentheses", () => {
+    const sql = postgresCatalogQueriesV3.columns;
+    const actual = sql.slice(sql.indexOf("'acl',") + 6, sql.indexOf(") AS catalog_row"))
+      .replace(/\ba[0-9]+\b/g, "a")
+      .replaceAll("coalesce(a.attacl,'{}'::aclitem[])", "coalesce($1::aclitem[],$2::aclitem[])")
+      .replace(/\(a\.(grantor|grantee)\)::text/g, "a.$1::text");
+    // Transcribed from the BEFORE-product-edit native experiment source, not
+    // derived from the new helper. These three textual differences are explicit.
+    const nativeTuple = "pg_catalog.jsonb_build_object('grantor',pg_catalog.jsonb_build_object('principalOid',a.grantor::text),'grantee',pg_catalog.jsonb_build_object('principalOid',a.grantee::text),'privilege',a.privilege_type,'grantable',a.is_grantable)";
+    expect(actual).toBe(`CASE WHEN coalesce(pg_catalog.cardinality(coalesce($1::aclitem[],$2::aclitem[])),0)=0 THEN '[]'::jsonb ELSE (SELECT coalesce(jsonb_agg(${nativeTuple}),'[]'::jsonb) FROM pg_catalog.aclexplode(coalesce($1::aclitem[],$2::aclitem[])) a) END`);
+  });
+  it.each([
+    ["schemas", "coalesce(n.nspacl,pg_catalog.acldefault('n',n.nspowner))"],
+    ["relations", "coalesce(c.relacl,pg_catalog.acldefault('r',c.relowner))"],
+    ["columns", "coalesce(a.attacl,'{}'::aclitem[])"],
+    ["functions", "coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))"],
+    ["domains", "coalesce(t.typacl,pg_catalog.acldefault('T',t.typowner))"],
+    ["types", "coalesce(t.typacl,pg_catalog.acldefault('T',t.typowner))"],
+    ["defaultAcls", "coalesce(d.defaclacl,'{}'::aclitem[])"],
+  ])("keeps %s effective ACL defaults inside its empty guard and complete expansion", (category, effective) => {
+    const sql = postgresCatalogQueriesV3[category as keyof typeof postgresCatalogQueriesV3];
+    expect(sql).toContain(`CASE WHEN coalesce(pg_catalog.cardinality(${effective}),0)=0 THEN '[]'::jsonb ELSE `);
+    expect(sql).toContain(`pg_catalog.aclexplode(${effective})`);
+    if (category === "types" || category === "domains") expect(sql).toContain("'aclIsNull',t.typacl IS NULL");
+  });
+  it.each(["schemas", "relations", "columns", "functions", "domains", "types", "defaultAcls"] as const)("retains empty expanded tuples in %s observations", category => {
+    const f = fixture(), i = category === "functions" ? 2 : 0;
+    row(f, category, i).acl = [];
+    const result = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(result.catalog[category][0]).toBeDefined();
+    expect(result.catalog[category].some(r => r.acl.length === 0)).toBe(true);
+  });
+  it("preserves column ACL native principals/PUBLIC/privilege/grantability without tuple loss", () => {
+    const f = fixture(); row(f, "columns").acl = [
+      { grantor: { principalOid: "11" }, grantee: { principalOid: "12" }, privilege: "SELECT", grantable: true },
+      { grantor: { principalOid: "11" }, grantee: { principalOid: "0" }, privilege: "UPDATE", grantable: false },
+    ];
+    const acl = decodePostgresCatalogObservationV3(f.raw, f.bindings).catalog.columns[0].acl;
+    expect(acl).toHaveLength(2);
+    expect(acl).toContainEqual({ grantor: { kind: "migration-owner" }, grantee: { kind: "reserved-role", name: "dream_api" }, privilege: "SELECT", grantable: true });
+    expect(acl).toContainEqual({ grantor: { kind: "migration-owner" }, grantee: { kind: "public" }, privilege: "UPDATE", grantable: false });
+  });
+  it.each(["public-grantor", "string-grantable", "missing-grantor"])("keeps strict ACL tuple rejection %s", fault => {
+    const f = fixture(), acl = { grantor: { principalOid: "11" }, grantee: { principalOid: "0" }, privilege: "UPDATE", grantable: false } as Row;
+    if (fault === "public-grantor") acl.grantor = { principalOid: "0" };
+    if (fault === "string-grantable") acl.grantable = "false";
+    if (fault === "missing-grantor") delete acl.grantor;
+    row(f, "columns").acl = [acl]; invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
+  });
+  it("retains raw type ACL NULL separately from equal effective tuples and explicit empty", () => {
+    const f = fixture(), original = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    row(f, "types").aclIsNull = false;
+    const notNull = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(notNull.observationSha256).not.toBe(original.observationSha256);
+    expect(notNull.catalog.types[0].acl).toEqual(original.catalog.types[0].acl);
+    row(f, "types").acl = [];
+    expect(decodePostgresCatalogObservationV3(f.raw, f.bindings).observationSha256).not.toBe(notNull.observationSha256);
+  });
   it("closes malformed context/aliases and read-port errors without raw secrets", async () => {
     for (const fault of ["context", "alias"]) {
       const f = fixture(); if (fault === "context") f.raw.types[0].server_major = 17; else Object.assign(f.raw.types[0], { extra_alias: true });

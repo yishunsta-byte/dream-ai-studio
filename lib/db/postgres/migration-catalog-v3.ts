@@ -438,8 +438,8 @@ function constraintSql(expr: string) {
   return `(SELECT ${jsonSql({ nativeOid: `${a}.oid::text`, catalog: "'pg_constraint'", objectKind: `CASE WHEN ${a}.conrelid=0 THEN 'domain' ELSE 'relation' END`, object: `CASE WHEN ${a}.conrelid=0 THEN ${qt(`${a}.contypid`)} ELSE ${qr(`${a}.conrelid`)} END`, name: `${a}.conname` })} FROM pg_catalog.pg_constraint ${a} WHERE ${a}.oid=(${expr}))`;
 }
 function aclSql(expr: string, fallback = "'{}'::aclitem[]") {
-  const a = `a${++alias}`;
-  return `(SELECT coalesce(jsonb_agg(${jsonSql({ grantor: principalSql(`${a}.grantor`), grantee: principalSql(`${a}.grantee`), privilege: `${a}.privilege_type`, grantable: `${a}.is_grantable` })}),'[]'::jsonb) FROM pg_catalog.aclexplode(coalesce(${expr},${fallback})) ${a})`;
+  const a = `a${++alias}`, effective = `coalesce(${expr},${fallback})`;
+  return `CASE WHEN coalesce(pg_catalog.cardinality(${effective}),0)=0 THEN '[]'::jsonb ELSE (SELECT coalesce(jsonb_agg(${jsonSql({ grantor: principalSql(`${a}.grantor`), grantee: principalSql(`${a}.grantee`), privilege: `${a}.privilege_type`, grantable: `${a}.is_grantable` })}),'[]'::jsonb) FROM pg_catalog.aclexplode(${effective}) ${a}) END`;
 }
 function refArray(expr: string, render: (v: string) => string) {
   const a = `v${++alias}`;
