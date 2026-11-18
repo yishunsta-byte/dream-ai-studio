@@ -26,6 +26,7 @@ function fixture(offset = 0, pair = false) {
       ext("pg_class", 301, { kind: "index", relation: { schema: "auth", name: "users" }, name: "users_pkey" }),
       ext("pg_type", 9000, { kind: "type", schema: "pg_catalog", name: "uuid" }), ext("pg_type", 9001, { kind: "type", schema: "pg_catalog", name: "text" }),
       ext("pg_operator", 9010, { kind: "operator", schema: "pg_catalog", name: "=", leftType: { schema: "pg_catalog", name: "uuid" }, rightType: { schema: "pg_catalog", name: "uuid" } }),
+      ...[[9010, "oid"], [9011, "int4"], [9012, "bytea"]].map(([n, name]) => ext("pg_type", Number(n), { kind: "type", schema: "pg_catalog", name })),
       ...[[8000, "fixture_io"], [8101, "RI_FKey_check_ins"], [8102, "RI_FKey_check_upd"], [8103, "RI_FKey_restrict_del"], [8104, "RI_FKey_noaction_upd"]].map(([n, name]) => ext("pg_proc", Number(n), { kind: "function", schema: "pg_catalog", name, argumentTypes: [] })),
     ] };
   const ownerAcl = [{ grantor: p(11), grantee: p(11), privilege: "USAGE", grantable: false }];
@@ -50,7 +51,7 @@ function fixture(offset = 0, pair = false) {
   const data = {
     schemas: ["dream", "dream_reservation", "dream_migrations"].map((name, i) => ({ nativeOid: id(1 + i), name, owner: p(11), acl: [] })),
     relations: [{ nativeOid: id(100), schema: "dream", name: "projects", kind: "r", owner: p(11), rls: true, forceRls: true, persistence: "p", replicaIdentity: "d", isPartition: false,
-      rowType: t(200, "projects"), ofType: null, options: null, acl: [], toastNativeOid: id(400), toast: { nativeOid: id(400), indexOid: id(401), owner: p(11), indexOwner: p(11), namespace: "pg_toast", relationKind: "t", indexKind: "i", unique: true, parents: [id(100)], indexParentOid: id(400) } }],
+      rowType: t(200, "projects"), ofType: null, options: null, acl: [], toastNativeOid: id(400), toast: { nativeOid: id(400), indexOid: id(401), owner: p(11), indexOwner: p(11), namespace: "pg_toast", relationKind: "t", indexKind: "i", unique: true, parents: [id(100)], indexParentOid: id(400), indexKeyCount: 2, indexAttributeCount: 2, indexColumns: [1, 2], columns: [[1, "chunk_id", 9010, "oid"], [2, "chunk_seq", 9011, "int4"], [3, "chunk_data", 9012, "bytea"]].map(([ordinal, name, typeOid, typeName]) => ({ relationNativeOid: id(400), ordinal, name, type: t(Number(typeOid), String(typeName), "pg_catalog"), notNull: true, dropped: false, typeModifier: -1, dimensions: 0 })) } }],
     columns: [{ relation: r(100), ordinal: 1, name: "owner_id", type: "uuid", notNull: true, identity: "", generated: "", dropped: false, defaultNativeOid: id(402), defaultExpression: "'00000000-0000-4000-8000-000000000001'::uuid", collation: null, acl: [] }],
     constraints: [{ ...constraintBase, nativeOid: id(500), identity: con(), kind: "f", supportingIndex: ix, referencedRelation: auth, keyColumns: [1], referencedColumns: [1], updateAction: "a", deleteAction: "r", matchType: "s", fkPrimaryForeignOperators: [eq], fkPrimaryPrimaryOperators: [eq], fkForeignForeignOperators: [eq] },
       { ...constraintBase, nativeOid: id(503), identity: con(503, "guard_123"), kind: "t", deferrable: true, initiallyDeferred: true }],
@@ -121,6 +122,82 @@ describe("B38 all14 synthetic observations; NOT native or golden reference", () 
       else row(f, "functions").argumentTypes = [];
       invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
     }
+  });
+  it("retains unreferenced function semantic arguments and overloads despite identical display text", () => {
+    const f = fixture(), base = structuredClone(f.raw.functions[2]);
+    Object.assign(base.catalog_row, { nativeOid: "6010", name: "unreferenced_probe", identityArgs: "uuid", declaredArgs: "uuid", argumentTypes: ["uuid"], argumentTypeRefs: [structuredClone((row(f, "functions").argumentTypeRefs as Row[])[0])] });
+    f.raw.functions.push(base);
+    const before = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(before.descriptorVersion).toBe(2);
+    expect(before.catalog.functions.find(x => x.name === "unreferenced_probe")!.argumentTypeRefs).toEqual([{ schema: "pg_catalog", name: "uuid" }]);
+    base.catalog_row.argumentTypeRefs = [structuredClone((row(f, "functions").argumentTypeRefs as Row[])[1])];
+    const after = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(after.observationSha256).not.toBe(before.observationSha256);
+    expect(after.catalog.functions.find(x => x.name === "unreferenced_probe")!.argumentTypeRefs).toEqual([{ schema: "pg_catalog", name: "text" }]);
+    const overload = structuredClone(base); overload.catalog_row.nativeOid = "6011";
+    overload.catalog_row.argumentTypeRefs = [structuredClone((row(f, "functions").argumentTypeRefs as Row[])[0])];
+    f.raw.functions.push(overload);
+    expect(decodePostgresCatalogObservationV3(f.raw, f.bindings).catalog.functions.filter(x => x.name === "unreferenced_probe")).toHaveLength(2);
+    overload.catalog_row.argumentTypeRefs = structuredClone(base.catalog_row.argumentTypeRefs);
+    invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
+  });
+  it("keeps argument semantic order distinct while native OID changes alone remain normalized", () => {
+    const f = fixture(), base = structuredClone(f.raw.functions[2]);
+    Object.assign(base.catalog_row, { nativeOid: "6010", name: "ordered_probe", argumentTypes: ["opaque", "opaque"], argumentTypeRefs: structuredClone(row(f, "functions").argumentTypeRefs) });
+    f.raw.functions.push(base);
+    const before = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    (base.catalog_row.argumentTypeRefs as Row[]).reverse();
+    expect(decodePostgresCatalogObservationV3(f.raw, f.bindings).observationSha256).not.toBe(before.observationSha256);
+  });
+  it("normalizes shifted native OIDs for an unreferenced semantic signature", () => {
+    const observe = (offset: number) => {
+      const f = fixture(offset), extra = structuredClone(f.raw.functions[2]);
+      Object.assign(extra.catalog_row, { nativeOid: f.id(6010), name: "unreferenced_probe", argumentTypes: ["uuid", "text"], argumentTypeRefs: structuredClone(row(f, "functions").argumentTypeRefs) });
+      f.raw.functions.push(extra);
+      return decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    };
+    expect(observe(0).canonicalJson).toBe(observe(20000).canonicalJson);
+    expect(observe(0).observationSha256).toBe(observe(20000).observationSha256);
+  });
+  it("rejects the original fixture shape with all new TOAST proof fields absent", () => {
+    const f = fixture(), toast = row(f, "relations").toast as Row;
+    for (const field of ["columns", "indexColumns", "indexKeyCount", "indexAttributeCount"]) delete toast[field];
+    invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
+  });
+  it("represents exact-parent TOAST subcolumn dependencies without adding a business category", () => {
+    const f = fixture(), dependency = structuredClone(f.raw.dependencies.at(-1)!);
+    (dependency.catalog_row.referenced as Row).subId = 1;
+    dependency.catalog_row.dependencyType = "a";
+    f.raw.dependencies.push(dependency);
+    const result = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(result.catalog.dependencies.some(d => d.referenced.includes('"kind":"table-toast-column"') && d.referenced.includes('"name":"chunk_id"'))).toBe(true);
+    expect(Object.keys(result.catalog)).toHaveLength(14);
+    expect(result.catalog.columns).toHaveLength(1);
+    expect(postgresCatalogQueriesV3.relations).toContain("ta.attrelid=tc.oid AND ta.attnum>0");
+    expect(postgresCatalogQueriesV3.functions).toContain("WITH ORDINALITY a(id,ord) ORDER BY a.ord");
+  });
+  it.each(["missing-evidence", "foreign-parent", "duplicate-ordinal", "unknown-ordinal", "wrong-name", "wrong-type", "type-alias", "unproved-type", "dropped", "nullable", "index-link", "index-key", "index-count", "index-attributes", "missing-column"])("rejects TOAST column proof fault %s", fault => {
+    const f = fixture(), toast = row(f, "relations").toast as Row, columns = toast.columns as Row[];
+    if (fault === "missing-evidence") delete toast.columns;
+    if (fault === "foreign-parent") columns[0].relationNativeOid = "100";
+    if (fault === "duplicate-ordinal") columns[1].ordinal = 1;
+    if (fault === "unknown-ordinal") columns[0].ordinal = 4;
+    if (fault === "wrong-name") columns[0].name = "foreign";
+    if (fault === "wrong-type") columns[0].type = structuredClone(columns[1].type);
+    if (fault === "type-alias") (columns[0].type as Row).nativeOid = "9011";
+    if (fault === "unproved-type") (columns[0].type as Row).nativeOid = "99999";
+    if (fault === "dropped") columns[0].dropped = true;
+    if (fault === "nullable") columns[0].notNull = false;
+    if (fault === "index-link") toast.indexParentOid = "100";
+    if (fault === "index-key") toast.indexColumns = [2, 1];
+    if (fault === "index-count") toast.indexKeyCount = 1;
+    if (fault === "index-attributes") toast.indexAttributeCount = 3;
+    if (fault === "missing-column") columns.pop();
+    invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
+  });
+  it("rejects an uncollected TOAST subcolumn rather than inventing an ordinal identity", () => {
+    const f = fixture(); (row(f, "dependencies", 6).referenced as Row).subId = 4;
+    invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
   });
   it.each(["oid-newline", "hash-newline", "hex-newline"])("rejects complete-lexeme %s without coercion", fault => {
     const f = fixture();

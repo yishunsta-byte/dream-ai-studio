@@ -53,7 +53,10 @@ const rawShapes = {
     ofType: typeRef.nullable(), options: stringArray.nullable(), acl, toastNativeOid: oid.nullable(),
     toast: z.strictObject({ nativeOid: oid, indexOid: oid, owner: nativePrincipal, indexOwner: nativePrincipal,
       namespace: z.literal("pg_toast"), relationKind: z.literal("t"), indexKind: z.literal("i"), unique: z.literal(true),
-      parents: z.array(oid).length(1), indexParentOid: oid }).nullable() }),
+      parents: z.array(oid).length(1), indexParentOid: oid,
+      indexKeyCount: z.literal(2), indexAttributeCount: z.literal(2), indexColumns: z.tuple([z.literal(1), z.literal(2)]),
+      columns: z.array(z.strictObject({ relationNativeOid: oid, ordinal: attr, name: identifier, type: typeRef,
+        notNull: z.literal(true), dropped: z.literal(false), typeModifier: z.literal(-1), dimensions: z.literal(0) })).length(3) }).nullable() }),
   columns: z.strictObject({ relation: ownedRelationRef, ordinal: attr, name: identifier, type: text,
     notNull: bool, identity: z.enum(["", "a", "d"]), generated: z.enum(["", "s", "v"]), dropped: bool,
     defaultNativeOid: oid.nullable(), defaultExpression: text.nullable(), collation: text.nullable(), acl }),
@@ -94,7 +97,7 @@ const rawShapes = {
 } as const;
 type RawCatalog = { [K in Category]: z.infer<typeof rawShapes[K]>[] };
 type Principal = Readonly<{ kind: "migration-owner" | "bootstrap" }> | Readonly<{ kind: "reserved-role"; name: "dream_api" | "dream_worker" | "dream_upload_reserver" | "dream_api_login" | "dream_worker_login" }> | Readonly<{ kind: "public" }>;
-type Normalize<T> = T extends { principalOid: string } ? Principal : T extends readonly (infer V)[] ? readonly Normalize<V>[] : T extends object ? { readonly [K in keyof T as K extends "nativeOid" | "catalog" | "defaultNativeOid" | "argumentTypeRefs" | "toast" | "toastNativeOid" ? never : K]: Normalize<T[K]> } : T;
+type Normalize<T> = T extends { principalOid: string } ? Principal : T extends readonly (infer V)[] ? readonly Normalize<V>[] : T extends object ? { readonly [K in keyof T as K extends "nativeOid" | "catalog" | "defaultNativeOid" | "toast" | "toastNativeOid" ? never : K]: Normalize<T[K]> } : T;
 type Q = Readonly<{ schema: string; name: string }>;
 type F = Q & Readonly<{ argumentTypes: readonly Q[] }>;
 type I = Readonly<{ relation: Q; name: string }>;
@@ -102,7 +105,9 @@ type C = Readonly<{ objectKind: "relation" | "domain"; object: Q; name: string }
 type TriggerIdentity = Readonly<{ kind: "named"; relation: Q; name: string }> | Readonly<{ kind: "internal-constraint"; constraint: C; relation: Q; function: F; typeBits: number; constraintRelation: Q | null; constraintIndex: I | null }>;
 type TriggerCommon = Normalize<Omit<RawCatalog["triggers"][number], "nativeOid" | "nativeName" | "parentTriggerOid" | "definition">> & Readonly<{ parentTrigger: TriggerIdentity | null }>;
 export type CatalogTriggerObservationV3 = TriggerCommon & (Readonly<{ identity: Extract<TriggerIdentity,{kind:"named"}>; internal: false; definition: string }> | Readonly<{ identity: Extract<TriggerIdentity,{kind:"internal-constraint"}>; internal: true; constraint: C; structuralVersion: 1; structuralSha256: string }>);
-export type CatalogRowsObservationV3 = { readonly [K in Exclude<Category, "triggers" | "roles" | "dependencies">]: Normalize<RawCatalog[K]> } & Readonly<{
+export type CatalogFunctionObservationV3 = Normalize<RawCatalog["functions"][number]> & Readonly<{ argumentTypeRefs: readonly Q[] }>;
+export type CatalogRowsObservationV3 = { readonly [K in Exclude<Category, "triggers" | "roles" | "dependencies" | "functions">]: Normalize<RawCatalog[K]> } & Readonly<{
+  functions: readonly CatalogFunctionObservationV3[];
   triggers: readonly CatalogTriggerObservationV3[];
   roles: readonly (Normalize<Omit<RawCatalog["roles"][number], "name">> & { readonly principal: Exclude<Principal,{kind:"public"}> })[];
   dependencies: readonly Readonly<{ dependent: string; referenced: string; dependencyType: string }>[];
@@ -126,7 +131,7 @@ const bindingsShape = z.strictObject({ roleProfile: z.enum(["none", "pair"]), mi
   externalFacts: z.array(z.strictObject({ endpoint, identity: externalKey })).max(2000),
 });
 export type CatalogManagementBindingsV3 = z.input<typeof bindingsShape>;
-export type CatalogObservationV3 = Readonly<{ kind: "unvalidated-catalog-observation"; descriptorVersion: 1; serverMajor: 18;
+export type CatalogObservationV3 = Readonly<{ kind: "unvalidated-catalog-observation"; descriptorVersion: 2; serverMajor: 18;
   roleProfile: "none" | "pair"; approval: false; expectedCatalog: false; catalog: CatalogRowsObservationV3; canonicalJson: string; observationSha256: string;
   counts: Readonly<{ namedTriggers: number; internalTriggers: number }> }>;
 export type CatalogReadPortV3 = { query(text: string, values: readonly unknown[]): Promise<{ rows: unknown }> };
@@ -206,6 +211,12 @@ function normalize(raw: RawCatalog, bindings: Bindings): CatalogRowsObservationV
       need(row.toastNativeOid === row.toast.nativeOid && row.toast.owner.principalOid === bindings.migrationOwner.nativeOid && row.toast.indexOwner.principalOid === bindings.migrationOwner.nativeOid && row.toast.parents[0] === row.nativeOid && row.toast.indexParentOid === row.toast.nativeOid);
       register("pg_class", row.toast.nativeOid, { kind: "table-toast", relation: q(row) });
       register("pg_class", row.toast.indexOid, { kind: "table-toast-index", relation: q(row) });
+      const layout = [[1, "chunk_id", "oid"], [2, "chunk_seq", "int4"], [3, "chunk_data", "bytea"]] as const;
+      for (const [ordinal, name, typeName] of layout) {
+        const column = row.toast.columns.find(c => c.ordinal === ordinal);
+        need(column && column.relationNativeOid === row.toast.nativeOid && column.name === name && column.type.schema === "pg_catalog" && column.type.name === typeName);
+        register("pg_class", row.toast.nativeOid, { kind: "table-toast-column", relation: q(row), ordinal, name, type: q(column!.type) }, ordinal);
+      }
     }
   }
   for (const row of [...raw.types, ...raw.domains]) register("pg_type", row.nativeOid, { kind: "type", ...q(row) });
@@ -251,7 +262,7 @@ function normalize(raw: RawCatalog, bindings: Bindings): CatalogRowsObservationV
     const v = value as Record<string, unknown>;
     if (Object.hasOwn(v, "principalOid")) return principal(v.principalOid as string, true);
     if (Object.hasOwn(v, "catalog")) return ref(v);
-    const result = Object.fromEntries(Object.entries(v).filter(([k]) => !["nativeOid", "defaultNativeOid", "argumentTypeRefs", "toast", "toastNativeOid"].includes(k)).map(([k, val]) => [k, walk(val)]));
+    const result = Object.fromEntries(Object.entries(v).filter(([k]) => !["nativeOid", "defaultNativeOid", "toast", "toastNativeOid"].includes(k)).map(([k, val]) => [k, walk(val)]));
     if (Object.hasOwn(v, "acl")) {
       const source = v.acl as z.infer<typeof acl>, items = source.map(a => ({ ...a, grantor: principal(a.grantor.principalOid), grantee: principal(a.grantee.principalOid, true) }));
       result.acl = sortedUnique(items, item => canonical(item));
@@ -266,6 +277,7 @@ function normalize(raw: RawCatalog, bindings: Bindings): CatalogRowsObservationV
     const allCount = f.allArgumentTypes?.length ?? f.argumentTypes.length;
     need(allCount >= f.argumentTypes.length && (f.argumentNames === null || f.argumentNames.length === allCount) && (f.argumentModes === null || f.argumentModes.length === allCount));
   }
+  for (const row of raw.relations) for (const column of row.toast?.columns ?? []) walk(column.type);
   const byType = new Map([...raw.types, ...raw.domains].map(t => [t.nativeOid, t]));
   const byRelation = new Map(raw.relations.map(r => [r.nativeOid, r]));
   for (const row of raw.relations) {
@@ -392,8 +404,8 @@ function checkRoles(raw: RawCatalog, b: Bindings) {
 export function decodePostgresCatalogObservationV3(input: unknown, managementBindings: unknown): CatalogObservationV3 {
   try {
     const b = snapshotBindings(managementBindings), { raw } = decodeRows(input), catalog = normalize(raw, b);
-    const canonicalJson = canonical({ descriptorVersion: 1, serverMajor: 18, roleProfile: b.roleProfile, ...catalog });
-    return frozen({ kind: "unvalidated-catalog-observation", descriptorVersion: 1, serverMajor: 18, roleProfile: b.roleProfile,
+    const canonicalJson = canonical({ descriptorVersion: 2, serverMajor: 18, roleProfile: b.roleProfile, ...catalog });
+    return frozen({ kind: "unvalidated-catalog-observation", descriptorVersion: 2, serverMajor: 18, roleProfile: b.roleProfile,
       approval: false, expectedCatalog: false, catalog, canonicalJson, observationSha256: sha("catalog-observation:v3\n" + canonicalJson),
       counts: { namedTriggers: raw.triggers.filter(t => !t.internal).length, internalTriggers: raw.triggers.filter(t => t.internal).length } });
   } catch { throw new PostgresCatalogObservationErrorV3(); }
@@ -433,7 +445,8 @@ function refArray(expr: string, render: (v: string) => string) {
   const a = `v${++alias}`;
   return `CASE WHEN ${expr} IS NULL THEN NULL ELSE (SELECT coalesce(jsonb_agg(${render(`${a}.id`)} ORDER BY ${a}.ord),'[]'::jsonb) FROM unnest(${expr}) WITH ORDINALITY ${a}(id,ord)) END`;
 }
-const primitiveArgs = (expr: string) => `CASE WHEN ${expr} IS NULL THEN NULL ELSE ARRAY(SELECT pg_catalog.format_type(a,NULL) FROM unnest(${expr}) a) END`;
+// Display text is opaque deparser output, paired by ordinal with semantic refs.
+const primitiveArgs = (expr: string) => `CASE WHEN ${expr} IS NULL THEN NULL ELSE ARRAY(SELECT pg_catalog.format_type(a.id,NULL) FROM unnest(${expr}) WITH ORDINALITY a(id,ord) ORDER BY a.ord) END`;
 // Bind all three immutable OID arrays even for a projection needing no filter.
 const selectSql = (fields: Record<string, string>, from: string) => `SELECT (SELECT current_setting('server_version_num')::integer/10000 WHERE $1::oid[] IS NOT NULL AND $2::oid[] IS NOT NULL AND $3::oid[] IS NOT NULL) AS server_major,current_setting('search_path') AS search_path,current_setting('transaction_isolation') AS isolation,current_setting('transaction_read_only') AS read_only,${jsonSql(fields)} AS catalog_row ${from}`;
 const scopeObjects = `WITH owned_rel AS(SELECT c.* FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ${scopeSql}),
@@ -450,11 +463,13 @@ const typeFields = {
   kind: "t.typtype", category: "t.typcategory", baseType: qt("t.typbasetype"), notNull: "t.typnotnull", defaultExpression: "t.typdefault",
 };
 const endpointSql = (cls: string, obj: string, sub: string) => jsonSql({ class: `(${cls})::regclass::text`, nativeOid: `(${obj})::text`, subId: sub });
+// Exact parent-scoped physical TOAST attributes; no inferred ordinal identities.
+const toastColumnsSql = `(SELECT coalesce(jsonb_agg(${jsonSql({ relationNativeOid: "ta.attrelid::text", ordinal: "ta.attnum", name: "ta.attname", type: qt("ta.atttypid"), notNull: "ta.attnotnull", dropped: "ta.attisdropped", typeModifier: "ta.atttypmod", dimensions: "ta.attndims" })} ORDER BY ta.attnum),'[]'::jsonb) FROM pg_catalog.pg_attribute ta WHERE ta.attrelid=tc.oid AND ta.attnum>0)`;
 export const postgresCatalogQueriesV3 = Object.freeze({
   schemas: selectSql({ nativeOid: "n.oid::text", name: "n.nspname", owner: principalSql("n.nspowner"), acl: aclSql("n.nspacl", "pg_catalog.acldefault('n',n.nspowner)") }, `FROM pg_catalog.pg_namespace n WHERE n.nspname IN ${scopeSql}`),
   relations: selectSql({ nativeOid: "c.oid::text", schema: "n.nspname", name: "c.relname", kind: "c.relkind", owner: principalSql("c.relowner"), rls: "c.relrowsecurity", forceRls: "c.relforcerowsecurity", persistence: "c.relpersistence", replicaIdentity: "c.relreplident", isPartition: "c.relispartition", rowType: qt("c.reltype"), ofType: qt("c.reloftype"), options: "c.reloptions", acl: aclSql("c.relacl", "pg_catalog.acldefault('r',c.relowner)"),
     toastNativeOid: "nullif(c.reltoastrelid,0)::text",
-    toast: `(SELECT ${jsonSql({ nativeOid: "tc.oid::text", indexOid: "ti.indexrelid::text", owner: principalSql("tc.relowner"), indexOwner: principalSql("ic.relowner"), namespace: "tn.nspname", relationKind: "tc.relkind", indexKind: "ic.relkind", unique: "ti.indisunique", parents: "ARRAY(SELECT d.refobjid::text FROM pg_catalog.pg_depend d WHERE d.classid='pg_class'::regclass AND d.objid=tc.oid AND d.refclassid='pg_class'::regclass AND d.deptype='i')", indexParentOid: "ti.indrelid::text" })} FROM pg_catalog.pg_class tc JOIN pg_catalog.pg_namespace tn ON tn.oid=tc.relnamespace JOIN pg_catalog.pg_index ti ON ti.indrelid=tc.oid JOIN pg_catalog.pg_class ic ON ic.oid=ti.indexrelid WHERE tc.oid=c.reltoastrelid)` },
+    toast: `(SELECT ${jsonSql({ nativeOid: "tc.oid::text", indexOid: "ti.indexrelid::text", owner: principalSql("tc.relowner"), indexOwner: principalSql("ic.relowner"), namespace: "tn.nspname", relationKind: "tc.relkind", indexKind: "ic.relkind", unique: "ti.indisunique", parents: "ARRAY(SELECT d.refobjid::text FROM pg_catalog.pg_depend d WHERE d.classid='pg_class'::regclass AND d.objid=tc.oid AND d.refclassid='pg_class'::regclass AND d.deptype='i')", indexParentOid: "ti.indrelid::text", indexKeyCount: "ti.indnkeyatts", indexAttributeCount: "ti.indnatts", indexColumns: "ti.indkey::smallint[]", columns: toastColumnsSql })} FROM pg_catalog.pg_class tc JOIN pg_catalog.pg_namespace tn ON tn.oid=tc.relnamespace JOIN pg_catalog.pg_index ti ON ti.indrelid=tc.oid JOIN pg_catalog.pg_class ic ON ic.oid=ti.indexrelid WHERE tc.oid=c.reltoastrelid)` },
   `FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ${scopeSql} AND c.relkind NOT IN('i','I','t')`),
   columns: selectSql({ relation: qr("a.attrelid"), ordinal: "a.attnum", name: "a.attname", type: "pg_catalog.format_type(a.atttypid,a.atttypmod)", notNull: "a.attnotnull", identity: "a.attidentity", generated: "a.attgenerated", dropped: "a.attisdropped", defaultNativeOid: "d.oid::text", defaultExpression: "pg_catalog.pg_get_expr(d.adbin,d.adrelid,false)", collation: "CASE WHEN a.attcollation=0 THEN NULL ELSE a.attcollation::regcollation::text END", acl: aclSql("a.attacl") },
   `FROM pg_catalog.pg_attribute a JOIN pg_catalog.pg_class c ON c.oid=a.attrelid JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace LEFT JOIN pg_catalog.pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE n.nspname IN ${scopeSql} AND c.relkind NOT IN('i','I','t') AND a.attnum>0`),
