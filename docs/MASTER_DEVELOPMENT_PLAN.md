@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 09:43 KST): B41 최초실패 보고 접수·고정결과전. P/M단일tx COMMIT 후 context/schema/relations rawshape 통과,4번째 columns SELECT에서 실제SQLSTATE22023/check_acl(ACL arrays must be one-dimensional) 발생. 빈ACL fallback 관련성은 source추정으로만관리·추가query/현장수정/skip/retry없음. columns batch없음/후속11미실행/전체hash없음, 작성자 소유정리·OS근거/2경로 고정반환 준비. 결과고정→Tester 독립재현→최소수정별도배정, B40 source/offlinePASS와 전체nativeFAIL 구분. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 09:46 KST): B41 고정22b0d49 실제columns ACL22023 실패증거·소유정리 제출, 제품nativeFAIL·원인fallback추정 유지. Tester B41-R msg_2e1bcee30f5a frozenharness 본인신규owned PG18.7 1회재현 수락: 4attempts/3completed/후속11未실행/publicredaction/전체hash無·OScleanup 검수, 첫실패후추가query/수정/skip/재실행금지. 독립근거확정뒤 최소원인실험/제품수정별도배정. 기존B40 source/offlinePASS는 전체nativePASS가 아니다. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 

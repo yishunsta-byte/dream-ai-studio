@@ -2467,3 +2467,8 @@
 - source442 aclexplode(coalesce(expr,fallback))와474 columns aclSql(a.attacl) 연결은 Master 직접확인. 실제attacl/빈배열차원 원인은 추가native조회 없는 source/offline추정이므로 확정하지 않는다. 원query/decoder/allowlist/현장수정·skip/retry없음 보고, 허용B41harness WIP만신규·T122/T137보존.
 - 작성자 본인root afa366bc… postmaster67828/port61042/backends76608/78012/72016·cleanup-safe absenttrue/4calls/committedtrue 보고, 별도OS검증/정확2경로 고정보고 준비중. MasterOS독립검증/최종수용전이다. msg_fc68675a1858 실제전달: 추정구분·source/querypins/역치환diff/nativeSQLSTATE/redaction/실행범위/OS정리 연결해 고정반환요청, 추가조회/수정/재실행금지·수신미확인.
 - 고정결과 후 Tester 독립재현→최소수정별도판정. Golden/state/runtime/운영DB배포미변경·새agentwindowworktree금지 유지. Master 공식2문서만수정.
+### B41 고정 SQL실패 증거 / B41-R 독립 재현 수락
+- 실제 점검 완료 시각: 2026-11-18 09:46:43 +09:00 (Asia/Seoul). msg_0518250af744·22b0d4904b0c6c07cb9bf3826c6a2b9136cf0891 정확2경로/인계·Git상태 대조. B39복사의 작업/root/role/DB명+승인catalogpin 역치환동일보고·제품query미변경/원harness불변·1회exit1/type-lint0 접수. 작성자P5body단일Mtx COMMIT 후context/schema/relations通過·4columns SQLSTATE22023/check_acl, serverlog와publicredaction/4attempts3completed·후속11未실행/nohash구분.
+- 작성자 relationsraw는기존SHA4aa31bbc…71dc1/96false와동일·columns결과batch없음. 구체attacl/emptyfallback 원인은추정유지·최소실험/현장수정/skip/retry없음. 본인4PID/listener61042/pidfileOSabsent·shutdown근거고정보고접수, 독립검수전이다. T122/T137보존, Master공식2문서만수정.
+- Tester B41-R msg_42068f499b2e 전달→msg_2e1bcee30f5a 수락: frozen22b0d49/newowned signedPG18.7 UTF8-C loopback cluster1회 재현/첫실패후추가query금지·offlineartifact/serverlog검토·소유OScleanup/author대조·신규보고1파일만. 제품/원harness/기대/SQL/allowlist·Golden/state/runtime/env/packagebuildinstall/새agentwindowworktree 보호. Backend msg_bc8486dc8a23 고정/질문지원통지, 회신미확인.
+- 실제B41-R결과미확인. 증거수용과제품nativeFAIL분리, 독립결과뒤최소원인실험/제품수정별도배정. 운영DB/배포없음.
