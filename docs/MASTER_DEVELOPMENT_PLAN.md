@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 09:32 KST): B39-R ff65260 独立실제1회 재현·증거/cleanup PASS 수용, 제품native observation FAIL 유지. 같은3SELECT/relations33·32TOAST96attnotnullfalse/후속12미실행·전체hash없음 확인. Backend B40는 msg_298731c9ae47으로 module/test/new보고3경로 private physical TOAST notNull exactfalse 최소보정 수락. author/Tester capturedraw 출처기반 offline회귀·true/missing/nonboolean 거부/기존증거·semantic·descriptor2보호, 일반boolean/coercion/논리column/query/allowlist변경금지. unit/type-lint 고정반환→Tester 독립code검수 후 새native단계별도배정. 이번DB/native/reference 재실행·Golden/state/provenance/runtime·운영적용/배포없음. 원B38/B39 FAIL기록 보존·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 09:36 KST): B40 고정883fa8a private physical TOAST notNull true→false 정확1줄 보완·captured-native-derived offline 회귀 ready_review 접수. 작성자170포함341PASS/100skip/type-lint0, 실제raw1행 relations단계 통과만 검증하며 전체nativePASS 아님. Tester B40-R msg_b3983ea5a82e 독립code/unit검수 수락: 실제capture대조·기존3call/fixed4call이후의도적실패·음성검사/원역사증거보존. 독립수용 뒤 새native retry별도배정, 이번DB/native/parser/reference재실행없음. B39 실제nativeFAIL/후속12미검증·전체hash없음과 원기록보호. Golden/state/provenance/runtime·운영적용/배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
