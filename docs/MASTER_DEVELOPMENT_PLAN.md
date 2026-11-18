@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 09:21 KST): B39 최초 실제 진단 실패 보고 접수·최종고정/독립검수 전. 검증 SQL1~5 P 실제 단일tx COMMIT 후 context/schema/relations 3SELECT 성공, 실제 TOAST attnotnull false와 frozen true 기대 불일치로 relations decode 중단. SQLSTATE 없음·후속12projection 미실행/전체관측hash 없음. Backend 소유cluster/PID/listener 정리 완료 보고, 현장제품수정/skip/재실행 없이 harness+보고2경로 고정반환 준비 중. 고정근거→Tester 독립검수→최소수정 별도배정, 어떤 nullability 수정도 아직 승인되지 않았다. B38 CODE/UNIT PASS와 실제native 실패를 구분·원FAIL기록 보호. Golden/reference/state/provenance/runtime 및 운영DB 적용 없음, ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 09:25 KST): B39 고정afd7972는 실제 native1회 exit1 최초 TOAST notNull=true/false 불일치와 소유정리 증거 제출. P5body/M단일tx COMMIT 후 frozen reader3SELECT 성공·relations decode중단/12미실행/전체hash없음, 실제DB 전체 PASS 아님. Tester B39-R는 msg_6905fb6a7bb2로 frozen harness를 본인 신규 owned PG18.7 cluster에서1회 독립재현·첫실패보존·cleanup검수 수락. 증거수용과 제품FAIL을 구분하고 독립원인확인 뒤 최소제품수정 별도배정, 현재 어떤 nullability 수정도 미배정. B38 CODE/UNIT PASS 유지·native 불일치 미해결. Golden/reference/state/provenance/runtime·운영DB 적용/배포 없음, ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
