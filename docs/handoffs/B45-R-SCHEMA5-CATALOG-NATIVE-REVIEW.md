@@ -1,0 +1,48 @@
+# B45-R descriptor3 native observation evidence review
+
+2026-11-18 · Codex(Tester) · fixed `2a9b75f4dbbb1e5ca7a854e864a10bcd0cbafffd` · Master queue assignment `msg_56be0500ac8a`. T240-R review/report84083f9 and own browser/server cleanup completed before this native run.
+
+**Evidence/harness review PASS; full product native observation FAIL, independently reproduced.** All15 actual SQL dispatches and raw-batch parsing succeeded, then the original strict decoder rejected at final normalization. No SQLSTATE, full observation, canonical JSON or observation hash was produced. This is neither Golden/reference/state/runtime approval nor a duplicate-semantics fix. Only this new tracked report changes.
+
+## Frozen harness and prerequisite review
+
+`tmp/b45r-review-2a9b75f/preflight.mjs` compares fixed git objects and actual files before/after the run. Removing the marked exact-Auth block, reversing B45/b45→B43/b43 labels and the approved module pin restores the complete B43 LF source byte-for-byte. B45 LF SHA **0221d6a8cf9b19c6807489ad1404e7d2a122ade889f33c3f34f58d77744ad9da**; B43 **7f4270298b831e31b86a41c03c827c2ea5b6a11a041677cc2abaa1616d8d1f8e**. No query execution/error/cleanup control flow changes. The added parameterized discovery SQL is identical to B44, SHA **5acaf54b52182b86e1926b49573f7ff249c20d9e68521a2af675eff37e10c6e0**.
+
+Actual module **87c2a8fd3fab7cec6edd84b4203de87b2580bbad3b43c9ffefdf900b2bc80ae0**, loader **0f6ece37635873b5655ee841e5318e6c9e8bb7cdb580653e8d80e4285a251698**, D **9d347523a99a808240d03498dad24401c2c22d9c92e2479b1f9313eebd418ccb**, published P **f37dc54d88154bd32d57b987415481fdef2c599e41368059036861401a0e5339** all match the fixed commit. Loader verifies all five sources/wrappers; own sources.json actualBodySha equals bodyChecksum for each. P body **15a2bb3c2081a72fb1a9c3e4d50e241eb9d16d409db74566782e6ebdf4d7dfc9**. No D/E substitution or fuse change.
+
+Source review confirms distinct native B/M, M LOGIN/CREATEROLE/NOSUPERUSER/NOBYPASSRLS/NOINHERIT/NOCREATEDB/NOREPLICATION, minimal Auth/journal prerequisite, five bodies/history inserts in one explicit M READ COMMITTED transaction, pg_catalog/trusted settings/shared lock(1725031001,5), actual awaited COMMIT before separate B membership verification. Exact three B-granted M→API/worker/issuer ADMINtrue/INHERITfalse/SETfalse edges. Profile none, null pair logins, exclusive M REPEATABLE READ READ ONLY inspection. Local synthetic secrets stay in ignored owned evidence and are redacted from reported errors; no credentials/DSN/env file/service/PATH modification.
+
+The finite original recipe yields526 facts. The marked B44 collector validates actual prebound Auth relation/index, M owners, id/UUID/attnum/key/PK/ready/live/valid properties and adds exactly one actual constraint fact = **527**. Own auth.users16392, M16389, UUID2950, index16396, actual constraint16397/users_pkey/key[1]. This is new-cluster evidence, not backfill into B43; equal integers across clusters are not provenance proof. No unknown-endpoint whitelist expansion.
+
+## One unchanged owned native execution
+
+Command: `node --conditions=react-server --import tsx tests/b45-schema5-catalog-native-owned.ts --bin .tools/b3-postgres-18.7/pgsql/bin` — **one invocation, exit1, stopped=true**. Root **tmp/b45-native-572ba1b0-ca12-4cda-a96d-30c2a28d5426**. Existing EnterpriseDB postgres/initdb/pg_ctl signatures Valid, actual version18.7; new UTF8/C/template0 dream_test_B45, loopback54020. Original module/harness executed, no diagnostic copy on the native path.
+
+Own first-failure: stage frozen actual catalog reader; category memberships; projectionCalls15; migrationCommittedtrue; lastReturnedRows3; nativeError/decoderError public **CATALOG_OBSERVATION_INVALID**. That public code is not a PostgreSQL SQLSTATE; no native query exception was captured. Memberships is the last dispatched category, not the failure cause. All15 context+14 category requests returned and their raw schemas parsed before final decoder rejection. No undispatched projection remained. final.json/unvalidated-observation.json absent.
+
+Raw row counts, equal to author capture: context1, schemas3, relations33, columns430, **constraints700**, indexes140, policies57, triggers334, functions18, domains3, types69, defaultAcls0, **dependencies2996**, roles5, memberships3. Constraints/dependencies are each one above B43; actual newly collected Auth PK supplies the new constraint row and constraint16397→relation16392/sub1/type a dependency. Counts alone do not establish completeness or native equivalence.
+
+`artifact-check.mjs` validates all18 hashes in the author's offline-input-hashes.json against actual original file bytes, then compares own files: **all18 byte-identical**, including15 projection captures, projection trace, bindings and exact Auth fact. All15 query hashes/counts/JSON-byte trace entries also match. Key actual file SHAs: dependencies **d9fb557963bdccfaf234e81739911f402a19477232d7f543617d9566c643b531**, constraints **5e234d3792b9012d1cc75ac28e631018f782dc8f847f4c5d7b1f2e5b254b7bf7**, bindings **f2d0081e38c25dfba0badb7484254a3a9e909e7a5889cd74d88ca507323f5e51**. Raw equality supports this reproduction only, not accepted expected data.
+
+## Same-input offline first rejection
+
+For both own and author captures, `offline-review.mjs` calls the **unmodified original** decoder on unchanged14 raw batches+527 bindings; both reject publicly without observation. An own exact diagnostic copy changes only utility import relocation and stderr output for the first fail stack/unresolved endpoint. Each replacement is unique and reversing all three yields exact original bytes (`copy-edits.json`). Inputs are hashed before/after; no rewrite, dedup, drop, semantic expectation or healthy hash calculation occurred.
+
+Both copies' first stack: **sortedUnique source402 → normalize397 → decode445**; no unresolved endpoint output. Source402 requires row-key Set size to equal row count, and normalize397 applies it to each category's normalized rows. Same raw dependency **2996 rows/2960 unique complete tuples/36 duplicate groups, every group exactly two** independently confirmed. Actual duplicate full endpoints+dependencyType map to identical stable dependency rows, so source-aligned multiplicity explains this first offline rejection. The original native error remains generic and the stack by itself does not name its category.
+
+Minimum unchanged examples, both occur twice:
+
+- `pg_policy17138/sub0 → pg_proc17136/sub0`, type n.
+- `pg_policy17138/sub0 → pg_class16426/sub1`, type n.
+
+Raw policy17138 is **owner_access on dream.activity_log**, command*/permissivetrue/role17132; both USING and CHECK are `(owner_id = ( SELECT dream.actor_id() AS actor_id))`. Captured function17136 is **dream.actor_id()**, no arguments; column16426/1 **owner_id/uuid**. This is compatible with both expressions depending on that function/column. **Which physical pg_depend row belongs to USING versus CHECK, and whether multiplicity originates in physical rows or query joins, remain unqueried hypotheses.** No source tuple discriminator was collected, no additional native query followed the first failure, and no duplicate was removed to hunt the next failure. Set/multiset semantics requires a separate decision.
+
+Own `offline-summary.json` first used compact reserialization hashes for an author manifest comparison and shows false for that comparison; this was a verification-format mismatch, not input divergence. Separate `artifact-check.json` compares original file bytes, validates every author hash and proves all18 matching own bytes. Both outputs are preserved. Author's minimum proc example and our canonical-key sort's first column example are both actual duplicate tuples; no claim depends on an invented row ordering.
+
+## Cleanup, checks and limits
+
+Original finally only: observer activity witness, awaited rollback/end attempts, PID-file directory/port/PID validation, own pg_ctl fast stop and OS witnesses. cleanup-safe: completedfalse/migrationCommittedtrue/projectionCalls15, postmasterPidAbsent/listenerAbsent/processAbsent alltrue. Independent Windows checks: own postmaster **58172**, B/postgres **29676**, M **34288**, B/observer **61612** all absent; **54020 listener absent; postmaster.pid absent**. No cleanup-failure file, shared PID stopped, additional native experiment or rerun. Harness has no per-client end-ACK ledger; OS absence is separate evidence.
+
+Harness scoped eslint `--max-warnings 0` exit0. Shared whole-project `tsc --noEmit --incremental false` initially exit1 exclusively for stale `.next/{dev/,}types/validator.ts` references to concurrently moved app/(studio)/page and consequent matching-key errors. Those files/Front route work were untouched. Fixed **2a9b75f git archive** in owned `tmp/b45r-review-2a9b75f/typecheck-app` with node_modules junction and no shared generated `.next` ran the same tsc command **exit0**. No build/typegen/install/cache mutation was used to hide the shared failure. Preflight's initial wrong scratch path `postgres/migrations/0005...` gave ENOENT before native; corrected to the actual fixed `postgres/0005...`, with no product change.
+
+Final preflight reverified unchanged harness/module/loader/D/P. Own tools/evidence remain ignored under `tmp/b45r-review-2a9b75f/` and the native root; no expected/Golden/state/runtime artifact generated. Front T241 route/Auth WIP and its existing staged rename, unrelated T122/T137 untracked reports, shared .next/3013 and all protected sources remain untouched. Only this report is selectively committed. No new review defect in the B45 evidence deliverable; the independently reproduced product normalization failure remains open.
