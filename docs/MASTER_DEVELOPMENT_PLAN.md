@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 10:04 KST): B42 고정1fcbf83 helper2행 emptyACL guard·190catalog/361관련PASS100skip/type-lint0 ready_review 접수. 원oldproduct25nativeprobe와 최종newpin27planned未실행 구분. Tester B42-R msg_ca05ffb0f541 code/source검토 및 frozenfinalharness 본인신규소형PG18.7에서27probe/4예상오류·actualgenerated NULL/nonempty·default/grant/revoke/cleanup 독립재현 수락. 원기대·역사자료보호, P/fullcatalog재진단금지. 독립수용뒤 전체catalog native후속별도배정, 아직전체native미검증/B41FAIL유지. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 10:12 KST): B42 1fcbf83는独立facc25c code/unit+boundedfinalsmallnativePASS 수용(최종27probes/4예상오류·actualgeneratedNULL/nonempty·361회귀100skip/독립9/type-lint0). 전체schema5catalog는미검증. Backend B43 msg_0cd6f05ae3dc 신규owned fullreader진단harness/보고2경로·동일P/none526/M-B/승인aea12pin 1회수락, 원B41복사식별자·pin변경만역치환검증. 다음첫실패보존→소유정리→고정결과→Tester검수, 현장수정/skip/unknown확대/재시도금지. 원B39/B41FAIL·실험역사보호, Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
