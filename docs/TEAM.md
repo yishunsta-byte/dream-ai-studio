@@ -2539,3 +2539,4 @@
 - 작성자224catalog포함395PASS100skip/type·3lint0·소형native1회source87c2a8fd…0ae0와fixedharnessdfe21e1…aba2f/constraint-index각1row·exactedge·정리OSabsent보고. 관측raw를명시rekey한synthetic+20000동등/31negative·v2역사/B43미수집자료불변·SQLalias기계적재번호와predicate영향구분 근거접수. 실제전체P/fullreader는未실행·기존526recipe핀미변경.
 - Tester B44-R msg_d31488d09c50 실제전달(수락미확인): stricttypedPK/owner-key-type-index-singleconstraint/edge-crosscheck·관측누락alias음성·ACL/F38/snapshot/descriptor3·395회귀/type-lint/독립반례, 본인소형PG18.7 fixed하네스1회재현·sourcepin/secret/OS정리·author대조·신규보고1파일. P/fullcatalog/후속edgeprobing금지·기존source/test/하네스/원B43자료수정금지. 필요Auth범위추가반례횟수명시.
 - Backend msg_b43ada467cb1 고정/질문지원통지·수신미확인. 독립판정후fullnative정확새recipe별도배정, 운영Supabase일반owner/Golden/state/provenance/runtime/운영배포미검증유지. Master공식2문서만수정·직접실험없음.
+- B44-R 후속 수락 확인 2026-11-18 10:52:12 +09:00: msg_476331de3fef Tester 고정0d0aaed/계약·code/unit·본인소형native1회/신규보고1경로 수락. P/fullreader/후속미등록probing/원증거수정금지유지·전달→수락 확인, 실제완료판정미확인.
