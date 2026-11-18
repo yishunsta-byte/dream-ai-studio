@@ -2560,3 +2560,8 @@
 - Backend B45 msg_8273485e7cb5 실제전달(수락미확인): 신규b45-schema5-catalog-native-owned.ts/B45-SCHEMA5-CATALOG-NATIVE-OBSERVATION.md2경로. B43copy의작업/root/DB명·승인catalog87c2a8fd…0ae0·B44fixedrecipe exactAuthPKconstraintfact exactly1수집만추가하고diff제출, 기존526+정확PK(예상527/실값명시)·nativeowner-key-index근거검증/target학습금지.
 - 본인newPG18.7 UTF8-C loopback dream_test_B45 1회/P5body M단일RC+lock COMMIT/none/RRreadonlydescriptor3 fullreader 별도허용. 다음firstfailurestop·추가query/현장제품수정/skip/retry없음·offline최소분석/원finally정리만. 성공도unvalidated/expectedfalse·Golden/state승격금지, 소유OS정리/secret/type-lint·고정반환→Tester독립검수. Tester msg_3e31d0903c81 통지·수신미확인. Master공식2문서만수정·직접실험/운영배포없음.
 - B45 후속 수락 확인 2026-11-18 11:03:57 +09:00: msg_f97c8989c925 Backend 고정copy·526recipe보존+정확PKfact1·원owner-key-index수집검증/새ownedP5body1회진단/firstfailurestop·소유정리/2경로 반환 수락. FrontWIP/.next3013/역사보호 확인, 실제실행완료미확인.
+
+### B45 15SQL 성공 / 최종정규화 실패 진행 보고
+- 실제 확인 시각: 2026-11-18 11:08:01 +09:00 (Asia/Seoul). msg_bc563beb8bb7·Git/status대조. 작성자1회검증P5body M단일RC COMMIT/actual526+정확AuthPKfact1=527·15SQL/rawparse성공 후finaldecode CATALOG_OBSERVATION_INVALID/noSQLSTATE/nohash 보고. rawconstraints700/deps2996은PK수집반영건수이며complete판정아님, lastdispatchmemberships원인단정금지.
+- 실제AuthPK16397/index16396/users16392/UUID2950/Mowner16389관측교차검증과copylabels/pin/markedB44factblock외동일보고·현장query/제품/allowlist수정skipretry/추가catalogquery없음. rootd2f66bca… PG56868/port57261/backends39680/57768/63392 cleanupflagsalltrue/stoppedtrue·OSabsence/최종고정준비, 독립검수전이다.
+- msg_f7b77fa9e0e5 실제전달: unmodifiedmodule동일rawFAIL보존·본인ignored exactcopy importrelocation/firststack/unresolved표시만추가 offline최초원인분석허용, 원입력hash/제품불변/copydiff·계측영향/원nativegenericthrow구분. 입력patch·후속실패hunt·추가nativequery/현장수정/재실행금지·2경로고정반환후Tester검수. 수신미확인, Front허용WIP/T122/T137보존. Master공식2문서만수정.
