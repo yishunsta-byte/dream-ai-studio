@@ -2492,3 +2492,8 @@
 - 실제 점검 완료 시각: 2026-11-18 10:00:38 +09:00 (Asia/Seoul). msg_50a798ef0615 현재Master수신·Git/status/09:58이후신규수정인계 확인. B42허용module/test WIP수정·신규harness 작성중이며 신규완료보고/인계파일없음, T122/T137보존. 아직고정SHA/최종시험결과미반환이므로ready_review/PASS로승격하지않는다.
 - Windows예약10:00:01/result0/next10:30·실제메시지수신·이번점검구분. 기존B42 인과확인후최소수정/unit-type-lint/원실험↔최종재현본 근거연결 지시가유효하며 차단보고없음, 직전09:58전달사항을중복요청하거나본인테스트를경합실행하지않았다. 결과고정후Tester독립소형native/code검수별도배정.
 - 전체catalog/nativePASS/운영DB배포미검증유지, 임의추가native재실행/새창agentworktree없음. Master TEAM기록만수정, 직전제목의잘못된일본어표기를한국어로정정했다.
+### B42 고정 보완 / B42-R 코드·최종 소형native 검수 수락
+- 실제 점검 완료 시각: 2026-11-18 10:04:34 +09:00 (Asia/Seoul). msg_bbd77763b396·1fcbf8375238f9d71165d9ac36e5f029d34b2956 실제helper2행diff/인계·Git/status 대조. effective기존coalesce+cardinalityNULL/0→[]분기·ELSE원completeaggregation·7ACLprojection/default/rawNULL/decoder14/descriptor2불변 보고 확인. 작성자190포함361PASS100skip/fulltype·3lint0는ready_review접수, Master재실행없음.
+- 원oldproduct2b0b9df/harnessd9b0a54실행25probe(21성공4예상22023)/정리근거와 최종productaea12e9f/finalharnessf1a759e의27planned/작성자未실행을분리. 후보식↔제품식은alias/actualexpr→params/cast괄호3정규화동등unit, 최종oldSQL역치환1guard+고정SHA 검증. 이근거가최종generatednative실행완료증명은아님·원FAIL보존.
+- Tester B42-R msg_052eca05c97e 전달→msg_ca05ffb0f541 수락: code/boundary/secret/pin검토 뒤 frozenfinalharness 본인newPG18.7 소형UTF8-C loopback cluster1회·27probe/4예상오류savepoint대조/실제generated NULL·nonempty 검수 및361회귀/type-lint/소유OScleanup·author대조. 필요추가ACL반례는본인소형DB범위/횟수기록만, P/fullcatalog재이관금지. tracked신규B42-R보고1파일·제품/원테스트하네스변경금지.
+- Backend msg_dfe42e18d67b 고정/질문지원통지·회신미확인. finalgenerated/전체catalog미검증구분·독립판정전ready_review유지, Golden/state/runner/provenance/runtime/운영DB배포·환경packagebuildinstall/새agentwindowworktree금지. Master공식2문서만수정했다.
