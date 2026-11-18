@@ -50,7 +50,7 @@
 
 공개 메인 최신 결정(2026-11-18 11:12 KST): T240 고정9f2c471 NEON UI ready_review·Tester T240-R msg_c72fc4f6201d 고정컴포넌트/UI검수 수락. Front T241 msg_d3e71b2bdb58 공개루트 /·기존private홈 /studio 통합 수락, 정확nav와관련작업실링크/명시기본next정정 허용. root메뉴설정검증은studio-layout으로이동·동등보호, trustedheader분기추가금지. 정확6asset+root만공개/개인정보import·issue누출금지·safeNextPath/보호Auth/APIfailclosed불변. 고정UI검수와다른경로통합병행, actualroute/Auth보안검수는별도후속. sample-only·가짜재생조회수금지·3013/공유.next보호·buildpushdeploy금지. Backend B45고정결과후Tester우선순위조정.
 
-최신 판정(2026-11-18 11:08 KST): B45 1회/P5body M COMMIT/actual527facts·15SQLraw성공 후최종정규화FAIL 보고접수·고정전. AuthPK실수집반영constraints700/deps2996·noSQLSTATE/nohash, lastdispatch원인미확정. 보존batch unmodifiedmoduleFAIL/표시copy offline최초원인·OS정리/2경로고정반환준비, 추가query/제품수정/allowlist확대/입력patch/skipretry금지. 결과고정후Tester독립검수→최소수정별도판정. FrontT240 NEON구현병행·원FAIL/역사보호. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 11:15 KST): B45 고정2a9b75f는527facts/P5bodyM COMMIT/15SQLraw성공 후finalsortedUnique중복거부 증거제출. rawdeps2996/2960unique/36동일pairs·물리USING-CHECK기원은미확정, 원자료dedup/현장제품수정없음. Tester B45-R에현재T240-R UI/서버정리/고정보고후순차검수queue실제전달(수락미확인), frozen1회native/offline최초stack·OS정리검수. FrontT241 publicroot/studio/Auth통합WIP·staged홈이동보존. 독립판정후중복원인실험/최소수정별도배정·원FAIL보호. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
