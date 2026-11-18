@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 09:46 KST): B41 고정22b0d49 실제columns ACL22023 실패증거·소유정리 제출, 제품nativeFAIL·원인fallback추정 유지. Tester B41-R msg_2e1bcee30f5a frozenharness 본인신규owned PG18.7 1회재현 수락: 4attempts/3completed/후속11未실행/publicredaction/전체hash無·OScleanup 검수, 첫실패후추가query/수정/skip/재실행금지. 독립근거확정뒤 최소원인실험/제품수정별도배정. 기존B40 source/offlinePASS는 전체nativePASS가 아니다. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 09:51 KST): B41-R 5f39740 evidence/reproductionPASS 수용·제품nativeFAIL22023 유지. Backend B42에 NULL/empty/nonemptyACL 소형ownedPG18.7 인과실험과 인과확인시 최소전개식수정 조건부배정 실제전달(수락미확인), module/test/신규nativeharness/보고4경로. nonempty권한tuples·다른객체default/rawNULL보존·실제GRANT/REVOKE·오류대조와unit/type/lint·소유정리후고정반환→Tester검수. 원인불확실시제품수정없이반환, 이번fullP/catalog재진단금지·원FAIL보호. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
