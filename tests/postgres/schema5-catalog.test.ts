@@ -196,6 +196,165 @@ const capturedB39HistoryRelation: Batch = {
   }
 };
 
+// B44 newly collected minimal-native input, not old B43 data or a Golden.
+// tmp/b44-native-3e334fc5-08b3-463f-9411-979d47d0efb9 projections:
+// constraints SHA256 46599f73b52546d4b31ac33b7e1cbc22e8e98ac988396f7cea6d76c5270421c9;
+// indexes SHA256 98cc0b4a0ab046c2c7f72e8e12d21b9425ce6a56c18a2f2b83c243544abcd40c.
+// The dedicated regression explicitly rekeys these OIDs into a SYNTHETIC graph.
+const capturedB44Primary = {
+  "constraint": {
+    "kind": "p",
+    "local": true,
+    "scope": "external-prerequisite",
+    "period": false,
+    "enforced": true,
+    "identity": {
+      "name": "users_pkey",
+      "object": {
+        "name": "users",
+        "schema": "auth",
+        "catalog": "pg_class",
+        "nativeOid": "16392"
+      },
+      "catalog": "pg_constraint",
+      "nativeOid": "16397",
+      "objectKind": "relation"
+    },
+    "matchType": " ",
+    "nativeOid": "16397",
+    "noInherit": true,
+    "validated": true,
+    "deferrable": false,
+    "definition": "PRIMARY KEY (id)",
+    "expression": null,
+    "keyColumns": [
+      1
+    ],
+    "deleteAction": " ",
+    "prerequisite": {
+      "index": {
+        "name": "users_pkey",
+        "catalog": "pg_class",
+        "relation": {
+          "name": "users",
+          "schema": "auth",
+          "catalog": "pg_class",
+          "nativeOid": "16392"
+        },
+        "nativeOid": "16396"
+      },
+      "column": {
+        "name": "id",
+        "type": {
+          "name": "uuid",
+          "schema": "pg_catalog",
+          "catalog": "pg_type",
+          "nativeOid": "2950"
+        },
+        "dropped": false,
+        "notNull": true,
+        "ordinal": 1,
+        "relation": {
+          "name": "users",
+          "schema": "auth",
+          "catalog": "pg_class",
+          "nativeOid": "16392"
+        },
+        "dimensions": 0,
+        "typeModifier": -1
+      },
+      "indexOwner": {
+        "principalOid": "16389"
+      },
+      "isPartition": false,
+      "relationKind": "r",
+      "relationOwner": {
+        "principalOid": "16389"
+      },
+      "indexConstraints": [
+        {
+          "name": "users_pkey",
+          "object": {
+            "name": "users",
+            "schema": "auth",
+            "catalog": "pg_class",
+            "nativeOid": "16392"
+          },
+          "catalog": "pg_constraint",
+          "nativeOid": "16397",
+          "objectKind": "relation"
+        }
+      ]
+    },
+    "updateAction": " ",
+    "inheritedCount": 0,
+    "supportingIndex": {
+      "name": "users_pkey",
+      "catalog": "pg_class",
+      "relation": {
+        "name": "users",
+        "schema": "auth",
+        "catalog": "pg_class",
+        "nativeOid": "16392"
+      },
+      "nativeOid": "16396"
+    },
+    "deleteSetColumns": null,
+    "parentConstraint": null,
+    "initiallyDeferred": false,
+    "referencedColumns": null,
+    "exclusionOperators": null,
+    "referencedRelation": null,
+    "fkForeignForeignOperators": null,
+    "fkPrimaryForeignOperators": null,
+    "fkPrimaryPrimaryOperators": null
+  },
+  "index": {
+    "live": true,
+    "name": "users_pkey",
+    "ready": true,
+    "scope": "external-prerequisite",
+    "valid": true,
+    "unique": true,
+    "options": [
+      0
+    ],
+    "primary": true,
+    "relation": {
+      "name": "users",
+      "schema": "auth",
+      "catalog": "pg_class",
+      "nativeOid": "16392"
+    },
+    "immediate": true,
+    "nativeOid": "16396",
+    "opclasses": [
+      "pg_catalog.uuid_ops"
+    ],
+    "predicate": null,
+    "collations": [
+      null
+    ],
+    "definition": "CREATE UNIQUE INDEX users_pkey ON auth.users USING btree (id)",
+    "keyColumns": [
+      1
+    ],
+    "expressions": null,
+    "accessMethod": "btree",
+    "includeColumns": [],
+    "nullsNotDistinct": false
+  },
+  "dependency": {
+    "class": "pg_class",
+    "native_oid": "16396",
+    "objsubid": 0,
+    "referenced_class": "pg_constraint",
+    "referenced_oid": "16397",
+    "refobjsubid": 0,
+    "deptype": "i"
+  }
+};
+
 function fixture(offset = 0, pair = false) {
   const id = (n: number) => String(n + offset), p = (n: number) => ({ principalOid: n === 0 ? "0" : id(n) });
   const r = (n: number, name = "projects", schema = "dream") => ({ nativeOid: id(n), catalog: "pg_class", schema, name });
@@ -204,6 +363,7 @@ function fixture(offset = 0, pair = false) {
   const fn = (n: number, name: string, args: ReturnType<typeof t>[] = [], schema = "pg_catalog") => ({ nativeOid: id(n), catalog: "pg_proc", schema, name, argumentTypes: args });
   const auth = r(900, "users", "auth"), ix = { nativeOid: id(301), catalog: "pg_class", relation: auth, name: "users_pkey" };
   const con = (n = 500, name = "projects_owner_fk") => ({ nativeOid: id(n), catalog: "pg_constraint", objectKind: "relation", object: r(100), name });
+  const authPk = { nativeOid: id(902), catalog: "pg_constraint", objectKind: "relation", object: auth, name: "users_pkey" };
   const eq = { nativeOid: id(9010), catalog: "pg_operator", schema: "pg_catalog", name: "=", leftType: typUuid, rightType: typUuid };
   const ext = (cls: string, n: number, identity: Row, subId = 0) => ({ endpoint: { class: cls, nativeOid: id(n), subId }, identity });
   const bindings = { roleProfile: pair ? "pair" : "none", migrationOwner: { nativeOid: id(11), name: "b38_owner" }, bootstrap: { nativeOid: id(10), name: "b38_bootstrap" },
@@ -214,13 +374,14 @@ function fixture(offset = 0, pair = false) {
       ext("pg_class", 301, { kind: "index", relation: { schema: "auth", name: "users" }, name: "users_pkey" }),
       ext("pg_type", 9000, { kind: "type", schema: "pg_catalog", name: "uuid" }), ext("pg_type", 9001, { kind: "type", schema: "pg_catalog", name: "text" }),
       ext("pg_operator", 9010, { kind: "operator", schema: "pg_catalog", name: "=", leftType: { schema: "pg_catalog", name: "uuid" }, rightType: { schema: "pg_catalog", name: "uuid" } }),
+      ext("pg_constraint", 902, { kind: "constraint", objectKind: "relation", object: { schema: "auth", name: "users" }, name: "users_pkey" }),
       ...[[9010, "oid"], [9011, "int4"], [9012, "bytea"]].map(([n, name]) => ext("pg_type", Number(n), { kind: "type", schema: "pg_catalog", name })),
       ...[[8000, "fixture_io"], [8101, "RI_FKey_check_ins"], [8102, "RI_FKey_check_upd"], [8103, "RI_FKey_restrict_del"], [8104, "RI_FKey_noaction_upd"]].map(([n, name]) => ext("pg_proc", Number(n), { kind: "function", schema: "pg_catalog", name, argumentTypes: [] })),
     ] };
   const ownerAcl = [{ grantor: p(11), grantee: p(11), privilege: "USAGE", grantable: false }];
   const typeProps = { owner: p(11), defined: true, preferred: false, length: -1, byValue: false, delimiter: ",", alignment: "i", storage: "x", typeModifier: -1,
     dimensions: 0, collation: null, aclIsNull: true, acl: ownerAcl, input: fn(8000, "fixture_io"), output: fn(8000, "fixture_io"), receive: null, send: null, modifierInput: null, modifierOutput: null, analyze: null, subscript: null };
-  const constraintBase = { deferrable: false, initiallyDeferred: false, enforced: true, validated: true, local: true, inheritedCount: 0, noInherit: true, period: false,
+  const constraintBase = { scope: "owned", prerequisite: null, deferrable: false, initiallyDeferred: false, enforced: true, validated: true, local: true, inheritedCount: 0, noInherit: true, period: false,
     parentConstraint: null, supportingIndex: null, referencedRelation: null, keyColumns: null, referencedColumns: null, updateAction: " ", deleteAction: " ", matchType: " ", deleteSetColumns: null,
     fkPrimaryForeignOperators: null, fkPrimaryPrimaryOperators: null, fkForeignForeignOperators: null, exclusionOperators: null, expression: null, definition: "fixture constraint" };
   const indexBase = { unique: true, primary: true, valid: true, ready: true, live: true, immediate: true, nullsNotDistinct: false, accessMethod: "btree", keyColumns: [1], includeColumns: [], opclasses: ["pg_catalog.uuid_ops"], collations: [null], options: [0], expressions: null, predicate: null, definition: "CREATE UNIQUE INDEX fixture" };
@@ -242,7 +403,10 @@ function fixture(offset = 0, pair = false) {
       rowType: t(200, "projects"), ofType: null, options: null, acl: [], toastNativeOid: id(400), toast: { nativeOid: id(400), indexOid: id(401), owner: p(11), indexOwner: p(11), namespace: "pg_toast", relationKind: "t", indexKind: "i", unique: true, parents: [id(100)], indexParentOid: id(400), indexKeyCount: 2, indexAttributeCount: 2, indexColumns: [1, 2], columns: [[1, "chunk_id", 9010, "oid"], [2, "chunk_seq", 9011, "int4"], [3, "chunk_data", 9012, "bytea"]].map(([ordinal, name, typeOid, typeName]) => ({ relationNativeOid: id(400), ordinal, name, type: t(Number(typeOid), String(typeName), "pg_catalog"), notNull: false, dropped: false, typeModifier: -1, dimensions: 0 })) } }],
     columns: [{ relation: r(100), ordinal: 1, name: "owner_id", type: "uuid", notNull: true, identity: "", generated: "", dropped: false, defaultNativeOid: id(402), defaultExpression: "'00000000-0000-4000-8000-000000000001'::uuid", collation: null, acl: [] }],
     constraints: [{ ...constraintBase, nativeOid: id(500), identity: con(), kind: "f", supportingIndex: ix, referencedRelation: auth, keyColumns: [1], referencedColumns: [1], updateAction: "a", deleteAction: "r", matchType: "s", fkPrimaryForeignOperators: [eq], fkPrimaryPrimaryOperators: [eq], fkForeignForeignOperators: [eq] },
-      { ...constraintBase, nativeOid: id(503), identity: con(503, "guard_123"), kind: "t", deferrable: true, initiallyDeferred: true }],
+      { ...constraintBase, nativeOid: id(503), identity: con(503, "guard_123"), kind: "t", deferrable: true, initiallyDeferred: true },
+      { ...constraintBase, scope: "external-prerequisite", nativeOid: id(902), identity: authPk, kind: "p", keyColumns: [1], supportingIndex: ix,
+        prerequisite: { relationOwner: p(11), indexOwner: p(11), relationKind: "r", isPartition: false,
+          column: { relation: auth, ordinal: 1, name: "id", type: typUuid, notNull: true, dropped: false, typeModifier: -1, dimensions: 0 }, index: ix, indexConstraints: [authPk] } }],
     indexes: [{ ...indexBase, nativeOid: id(301), relation: auth, scope: "external-prerequisite", name: "users_pkey" }],
     policies: [{ nativeOid: id(550), relation: r(100), name: "policy_read", permissive: true, command: "r", roles: [p(12), p(0)], usingExpression: "true", checkExpression: null }],
     triggers: [trigger(701, 8101, "RI_FKey_check_ins", r(100), auth, 5), trigger(702, 8102, "RI_FKey_check_upd", r(100), auth, 17), trigger(703, 8103, "RI_FKey_restrict_del", auth, r(100), 9), trigger(704, 8104, "RI_FKey_noaction_upd", auth, r(100), 17),
@@ -253,7 +417,7 @@ function fixture(offset = 0, pair = false) {
       { nativeOid: id(201), schema: "dream", name: "_projects", ...typeProps, form: "generated-array", kind: "b", category: "A", relation: null, element: t(200, "projects"), baseType: null, notNull: false, defaultExpression: null, arrayType: null },
       { nativeOid: id(203), schema: "dream", name: "_safe_uint", ...typeProps, form: "generated-array", kind: "b", category: "A", relation: null, element: t(202, "safe_uint"), baseType: null, notNull: false, defaultExpression: null, arrayType: null }],
     defaultAcls: [{ nativeOid: id(800), owner: p(11), schema: "dream", objectKind: "T", acl: ownerAcl }],
-    dependencies: [dep("pg_class", 100, "pg_namespace", 1), dep("pg_type", 200, "pg_class", 100), dep("pg_type", 201, "pg_type", 200), dep("pg_trigger", 701, "pg_constraint", 500), dep("pg_attrdef", 402, "pg_class", 100, 1), dep("pg_class", 400, "pg_class", 100), dep("pg_class", 401, "pg_class", 400)],
+    dependencies: [dep("pg_class", 100, "pg_namespace", 1), dep("pg_type", 200, "pg_class", 100), dep("pg_type", 201, "pg_type", 200), dep("pg_trigger", 701, "pg_constraint", 500), dep("pg_attrdef", 402, "pg_class", 100, 1), dep("pg_class", 400, "pg_class", 100), dep("pg_class", 401, "pg_class", 400), { ...dep("pg_class", 301, "pg_constraint", 902), dependencyType: "i" }],
     roles: [{ ...role(10, "b38_bootstrap", true), superuser: true, bypassRls: true, inherit: true, createRole: true, createDb: true, replication: true }, { ...role(11, "b38_owner", true), createRole: true }, role(12, "dream_api"), role(13, "dream_worker"), role(14, "dream_upload_reserver"), ...(pair ? [role(15, "dream_api_login", true), role(16, "dream_worker_login", true)] : [])],
     memberships: [edge(1001, 11, 12), edge(1002, 11, 13), edge(1003, 11, 14), ...(pair ? [edge(1004, 15, 12, false, true), edge(1005, 16, 13, false, true)] : [])],
   };
@@ -316,7 +480,7 @@ describe("B38 all14 synthetic observations; NOT native or golden reference", () 
     Object.assign(base.catalog_row, { nativeOid: "6010", name: "unreferenced_probe", identityArgs: "uuid", declaredArgs: "uuid", argumentTypes: ["uuid"], argumentTypeRefs: [structuredClone((row(f, "functions").argumentTypeRefs as Row[])[0])] });
     f.raw.functions.push(base);
     const before = decodePostgresCatalogObservationV3(f.raw, f.bindings);
-    expect(before.descriptorVersion).toBe(2);
+    expect(before.descriptorVersion).toBe(3);
     expect(before.catalog.functions.find(x => x.name === "unreferenced_probe")!.argumentTypeRefs).toEqual([{ schema: "pg_catalog", name: "uuid" }]);
     base.catalog_row.argumentTypeRefs = [structuredClone((row(f, "functions").argumentTypeRefs as Row[])[1])];
     const after = decodePostgresCatalogObservationV3(f.raw, f.bindings);
@@ -353,7 +517,7 @@ describe("B38 all14 synthetic observations; NOT native or golden reference", () 
     invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
   });
   it("represents exact-parent TOAST subcolumn dependencies without adding a business category", () => {
-    const f = fixture(), dependency = structuredClone(f.raw.dependencies.at(-1)!);
+    const f = fixture(), dependency = structuredClone(f.raw.dependencies[6]);
     (dependency.catalog_row.referenced as Row).subId = 1;
     dependency.catalog_row.dependencyType = "a";
     f.raw.dependencies.push(dependency);
@@ -615,6 +779,85 @@ describe("B38 all14 synthetic observations; NOT native or golden reference", () 
     expect(notNull.catalog.types[0].acl).toEqual(original.catalog.types[0].acl);
     row(f, "types").acl = [];
     expect(decodePostgresCatalogObservationV3(f.raw, f.bindings).observationSha256).not.toBe(notNull.observationSha256);
+  });
+  it("observes only the exact M-owned Auth UUID primary prerequisite and preserves its dependency", () => {
+    const f = fixture(), observed = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    const primary = observed.catalog.constraints.find(c => c.scope === "external-prerequisite")!;
+    expect(observed.descriptorVersion).toBe(3); expect(Object.keys(observed.catalog)).toHaveLength(14);
+    expect(primary).toMatchObject({ scope: "external-prerequisite", kind: "p", identity: { objectKind: "relation", object: { schema: "auth", name: "users" }, name: "users_pkey" }, keyColumns: [1],
+      prerequisite: { relationOwner: { kind: "migration-owner" }, indexOwner: { kind: "migration-owner" }, column: { ordinal: 1, name: "id", type: { schema: "pg_catalog", name: "uuid" } } } });
+    expect(observed.catalog.dependencies).toContainEqual({ dependencyType: "i", dependent: '{"kind":"index","name":"users_pkey","relation":{"name":"users","schema":"auth"}}', referenced: '{"kind":"constraint","name":"users_pkey","object":{"name":"users","schema":"auth"},"objectKind":"relation"}' });
+    expect(observed.canonicalJson).not.toContain("nativeOid"); expect(observed.approval).toBe(false); expect(observed.expectedCatalog).toBe(false);
+  });
+  it("normalizes Auth prerequisite constraint/index/UUID native OID shifts without losing semantics", () => {
+    const a = fixture(), b = fixture(20000);
+    const first = decodePostgresCatalogObservationV3(a.raw, a.bindings), second = decodePostgresCatalogObservationV3(b.raw, b.bindings);
+    expect(second.catalog.constraints).toEqual(first.catalog.constraints); expect(second.observationSha256).toBe(first.observationSha256);
+    row(a, "constraints", 2).definition = "changed but unvalidated actual definition";
+    const changed = decodePostgresCatalogObservationV3(a.raw, a.bindings);
+    expect(changed.observationSha256).not.toBe(first.observationSha256); expect(changed.expectedCatalog).toBe(false);
+  });
+  it("integrates newly captured B44 prerequisite facts only after explicit OID rekeying into a synthetic graph", () => {
+    const observe = (offset: number) => {
+      const f = fixture(offset);
+      const ids: Record<string, string> = { "16389": f.id(11), "16392": f.id(900), "16396": f.id(301), "16397": f.id(902), "2950": f.id(9000) };
+      const rekey = (value: unknown): unknown => {
+        if (Array.isArray(value)) return value.map(rekey);
+        if (value === null || typeof value !== "object") return value;
+        return Object.fromEntries(Object.entries(value).map(([key, item]) => {
+          if (key === "nativeOid" || key === "principalOid") {
+            if (typeof item !== "string" || !ids[item]) throw Error("Unmapped captured native OID");
+            return [key, ids[item]];
+          }
+          return [key, rekey(item)];
+        }));
+      };
+      f.raw.constraints[2].catalog_row = rekey(capturedB44Primary.constraint) as Row;
+      f.raw.indexes[0].catalog_row = rekey(capturedB44Primary.index) as Row;
+      const edge = capturedB44Primary.dependency;
+      f.raw.dependencies[7].catalog_row = { dependent: { class: edge.class, nativeOid: ids[edge.native_oid], subId: edge.objsubid }, referenced: { class: edge.referenced_class, nativeOid: ids[edge.referenced_oid], subId: edge.refobjsubid }, dependencyType: edge.deptype };
+      return decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    };
+    const first = observe(0), shifted = observe(20000);
+    expect(first.catalog.constraints.find(c => c.scope === "external-prerequisite")!.definition).toBe("PRIMARY KEY (id)");
+    expect(shifted.canonicalJson).toBe(first.canonicalJson); expect(shifted.observationSha256).toBe(first.observationSha256);
+    expect(first.approval).toBe(false); expect(first.expectedCatalog).toBe(false);
+    // This is a mixed synthetic graph, not a decoder PASS on a native schema5 batch.
+  });
+  it.each(["missing-observation", "missing-binding", "duplicate-row", "duplicate-semantic", "foreign-parent", "wrong-kind", "wrong-key", "wrong-index-key", "relation-owner", "index-owner", "index-foreign", "missing-index", "not-primary", "not-unique", "not-valid", "not-ready", "not-live", "deferred", "wrong-opclass", "wrong-type", "type-alias", "nullable-id", "dropped-id", "wrong-ordinal", "wrong-name", "missing-proof", "multiple-owners", "owner-link", "missing-edge", "wrong-edge", "foreign-binding"])("rejects unsupported or unproved Auth primary prerequisite %s", fault => {
+    const f = fixture(), c = row(f, "constraints", 2), proof = c.prerequisite as Row, column = proof.column as Row, index = row(f, "indexes");
+    if (fault === "missing-observation") f.raw.constraints.pop();
+    if (fault === "missing-binding") f.bindings.externalFacts = f.bindings.externalFacts.filter(x => x.identity.kind !== "constraint");
+    if (fault === "duplicate-row") f.raw.constraints.push(structuredClone(f.raw.constraints[2]));
+    if (fault === "duplicate-semantic") { const extra = structuredClone(f.raw.constraints[2]); extra.catalog_row.nativeOid = "903"; (extra.catalog_row.identity as Row).nativeOid = "903"; f.raw.constraints.push(extra); }
+    if (fault === "foreign-parent") ((c.identity as Row).object as Row).name = "other_users";
+    if (fault === "wrong-kind") c.kind = "u";
+    if (fault === "wrong-key") c.keyColumns = [2];
+    if (fault === "wrong-index-key") index.keyColumns = [2];
+    if (fault === "relation-owner") proof.relationOwner = { principalOid: "10" };
+    if (fault === "index-owner") proof.indexOwner = { principalOid: "14" };
+    if (fault === "index-foreign") ((proof.index as Row).relation as Row).schema = "foreign";
+    if (fault === "missing-index") f.raw.indexes = [];
+    if (fault === "not-primary") index.primary = false;
+    if (fault === "not-unique") index.unique = false;
+    if (fault === "not-valid") index.valid = false;
+    if (fault === "not-ready") index.ready = false;
+    if (fault === "not-live") index.live = false;
+    if (fault === "deferred") index.immediate = false;
+    if (fault === "wrong-opclass") index.opclasses = ["pg_catalog.text_ops"];
+    if (fault === "wrong-type") (column.type as Row).name = "text";
+    if (fault === "type-alias") (column.type as Row).nativeOid = "9001";
+    if (fault === "nullable-id") column.notNull = false;
+    if (fault === "dropped-id") column.dropped = true;
+    if (fault === "wrong-ordinal") column.ordinal = 2;
+    if (fault === "wrong-name") column.name = "other_id";
+    if (fault === "missing-proof") c.prerequisite = null;
+    if (fault === "multiple-owners") (proof.indexConstraints as unknown[]).push(structuredClone((proof.indexConstraints as unknown[])[0]));
+    if (fault === "owner-link") (proof.indexConstraints as Row[])[0].name = "other_constraint";
+    if (fault === "missing-edge") f.raw.dependencies.pop();
+    if (fault === "wrong-edge") row(f, "dependencies", 7).dependencyType = "n";
+    if (fault === "foreign-binding") f.bindings.externalFacts.find(x => x.identity.kind === "constraint")!.identity.object = { schema: "foreign", name: "users" };
+    invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
   });
   it("closes malformed context/aliases and read-port errors without raw secrets", async () => {
     for (const fault of ["context", "alias"]) {

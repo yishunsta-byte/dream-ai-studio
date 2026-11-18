@@ -46,6 +46,22 @@ const triggerProperties = {
   whenExpression: text.nullable(), oldTransitionTable: identifier.nullable(), newTransitionTable: identifier.nullable(),
 };
 const endpoint = z.strictObject({ class: z.enum(["pg_namespace", "pg_class", "pg_type", "pg_proc", "pg_constraint", "pg_trigger", "pg_policy", "pg_default_acl", "pg_attrdef", "pg_authid", "pg_language", "pg_collation", "pg_operator", "pg_opclass"]), nativeOid: oid, subId: count });
+const authQ = z.strictObject({ schema: z.literal("auth"), name: z.literal("users") });
+const authRelationRef = relationRef.extend({ schema: z.literal("auth"), name: z.literal("users") });
+const authConstraintRef = constraintRef.extend({ objectKind: z.literal("relation"), object: authRelationRef });
+const authPrimaryProof = z.strictObject({
+  relationOwner: nativePrincipal, indexOwner: nativePrincipal, relationKind: z.literal("r"), isPartition: z.literal(false),
+  column: z.strictObject({ relation: authRelationRef, ordinal: z.literal(1), name: z.literal("id"),
+    type: typeRef.extend({ schema: z.literal("pg_catalog"), name: z.literal("uuid") }), notNull: z.literal(true), dropped: z.literal(false), typeModifier: z.literal(-1), dimensions: z.literal(0) }),
+  index: indexRef.extend({ relation: authRelationRef }), indexConstraints: z.array(authConstraintRef).length(1),
+});
+const ownedConstraintShape = z.strictObject({ nativeOid: oid, identity: constraintRef, kind: z.enum(["p", "u", "f", "c", "n", "t"]),
+    deferrable: bool, initiallyDeferred: bool, enforced: bool, validated: bool, local: bool, inheritedCount: count, noInherit: bool, period: bool,
+    parentConstraint: constraintRef.nullable(), supportingIndex: indexRef.nullable(), referencedRelation: relationRef.nullable(),
+    keyColumns: attrs.nullable(), referencedColumns: attrs.nullable(), updateAction: z.enum([" ", "a", "r", "c", "n", "d"]),
+    deleteAction: z.enum([" ", "a", "r", "c", "n", "d"]), matchType: z.enum([" ", "f", "p", "s"]), deleteSetColumns: attrs.nullable(),
+    fkPrimaryForeignOperators: z.array(operatorRef).nullable(), fkPrimaryPrimaryOperators: z.array(operatorRef).nullable(),
+    fkForeignForeignOperators: z.array(operatorRef).nullable(), exclusionOperators: z.array(operatorRef).nullable(), expression: text.nullable(), definition: text });
 const rawShapes = {
   schemas: z.strictObject({ nativeOid: oid, name: z.enum(namespaces), owner: nativePrincipal, acl }),
   relations: z.strictObject({ ...key, kind: z.literal("r"), owner: nativePrincipal, rls: bool, forceRls: bool,
@@ -60,13 +76,11 @@ const rawShapes = {
   columns: z.strictObject({ relation: ownedRelationRef, ordinal: attr, name: identifier, type: text,
     notNull: bool, identity: z.enum(["", "a", "d"]), generated: z.enum(["", "s", "v"]), dropped: bool,
     defaultNativeOid: oid.nullable(), defaultExpression: text.nullable(), collation: text.nullable(), acl }),
-  constraints: z.strictObject({ nativeOid: oid, identity: constraintRef, kind: z.enum(["p", "u", "f", "c", "n", "t"]),
-    deferrable: bool, initiallyDeferred: bool, enforced: bool, validated: bool, local: bool, inheritedCount: count, noInherit: bool, period: bool,
-    parentConstraint: constraintRef.nullable(), supportingIndex: indexRef.nullable(), referencedRelation: relationRef.nullable(),
-    keyColumns: attrs.nullable(), referencedColumns: attrs.nullable(), updateAction: z.enum([" ", "a", "r", "c", "n", "d"]),
-    deleteAction: z.enum([" ", "a", "r", "c", "n", "d"]), matchType: z.enum([" ", "f", "p", "s"]), deleteSetColumns: attrs.nullable(),
-    fkPrimaryForeignOperators: z.array(operatorRef).nullable(), fkPrimaryPrimaryOperators: z.array(operatorRef).nullable(),
-    fkForeignForeignOperators: z.array(operatorRef).nullable(), exclusionOperators: z.array(operatorRef).nullable(), expression: text.nullable(), definition: text }),
+  constraints: z.discriminatedUnion("scope", [
+    ownedConstraintShape.extend({ scope: z.literal("owned"), prerequisite: z.null() }),
+    ownedConstraintShape.extend({ scope: z.literal("external-prerequisite"), identity: authConstraintRef,
+      kind: z.literal("p"), parentConstraint: z.null(), prerequisite: authPrimaryProof }),
+  ]),
   indexes: z.strictObject({ nativeOid: oid, relation: relationRef, scope: z.enum(["owned", "external-prerequisite"]), name: identifier,
     unique: bool, primary: bool, valid: bool, ready: bool, live: bool, immediate: bool, nullsNotDistinct: bool, accessMethod: identifier,
     keyColumns: z.array(integer.min(0).max(32767)), includeColumns: attrs, opclasses: stringArray, collations: z.array(text.nullable()), options: z.array(integer),
@@ -114,13 +128,13 @@ export type CatalogRowsObservationV3 = { readonly [K in Exclude<Category, "trigg
 }>;
 const binding = z.strictObject({ nativeOid: oid, name: identifier });
 const externalQ = z.strictObject({ schema: z.literal("pg_catalog"), name: identifier });
-const authQ = z.strictObject({ schema: z.literal("auth"), name: z.literal("users") });
 const externalKey = z.discriminatedUnion("kind", [
   externalQ.extend({ kind: z.literal("type") }), externalQ.extend({ kind: z.literal("collation") }), externalQ.extend({ kind: z.literal("opclass") }),
   externalQ.extend({ kind: z.literal("function"), argumentTypes: z.array(externalQ) }),
   externalQ.extend({ kind: z.literal("operator"), leftType: externalQ.nullable(), rightType: externalQ.nullable() }),
   authQ.extend({ kind: z.literal("relation") }), z.strictObject({ kind: z.literal("index"), relation: authQ, name: identifier }),
-  z.strictObject({ kind: z.literal("column"), relation: authQ, ordinal: attr, name: z.literal("id") }),
+  z.strictObject({ kind: z.literal("column"), relation: authQ, ordinal: z.literal(1), name: z.literal("id") }),
+  z.strictObject({ kind: z.literal("constraint"), objectKind: z.literal("relation"), object: authQ, name: identifier }),
   z.strictObject({ kind: z.literal("language"), name: z.enum(["sql", "plpgsql", "internal", "c"]) }),
   z.strictObject({ kind: z.literal("schema"), name: z.enum(["pg_catalog", "auth"]) }),
 ]);
@@ -131,7 +145,7 @@ const bindingsShape = z.strictObject({ roleProfile: z.enum(["none", "pair"]), mi
   externalFacts: z.array(z.strictObject({ endpoint, identity: externalKey })).max(2000),
 });
 export type CatalogManagementBindingsV3 = z.input<typeof bindingsShape>;
-export type CatalogObservationV3 = Readonly<{ kind: "unvalidated-catalog-observation"; descriptorVersion: 2; serverMajor: 18;
+export type CatalogObservationV3 = Readonly<{ kind: "unvalidated-catalog-observation"; descriptorVersion: 3; serverMajor: 18;
   roleProfile: "none" | "pair"; approval: false; expectedCatalog: false; catalog: CatalogRowsObservationV3; canonicalJson: string; observationSha256: string;
   counts: Readonly<{ namedTriggers: number; internalTriggers: number }> }>;
 export type CatalogReadPortV3 = { query(text: string, values: readonly unknown[]): Promise<{ rows: unknown }> };
@@ -145,7 +159,7 @@ function canonical(value: unknown): string {
 }
 type Bindings = z.infer<typeof bindingsShape>;
 const slots = ["migrationOwner", "bootstrap", "api", "worker", "issuer", "apiLogin", "workerLogin"] as const;
-const kindClass = { schema: "pg_namespace", type: "pg_type", collation: "pg_collation", function: "pg_proc", operator: "pg_operator", opclass: "pg_opclass", relation: "pg_class", index: "pg_class", column: "pg_class", language: "pg_language" } as const;
+const kindClass = { schema: "pg_namespace", type: "pg_type", collation: "pg_collation", function: "pg_proc", operator: "pg_operator", opclass: "pg_opclass", relation: "pg_class", index: "pg_class", column: "pg_class", constraint: "pg_constraint", language: "pg_language" } as const;
 function snapshotBindings(input: unknown): Bindings {
   assertPlainData(input); const b = bindingsShape.parse(input);
   need((b.roleProfile === "none" && b.apiLogin === null && b.workerLogin === null) || (b.roleProfile === "pair" && b.apiLogin !== null && b.workerLogin !== null));
@@ -158,6 +172,8 @@ function snapshotBindings(input: unknown): Bindings {
     need(fact.identity.kind === "column" ? fact.endpoint.subId === fact.identity.ordinal : fact.endpoint.subId === 0);
     seen.add(k); identities.add(canonical(fact.identity));
   }
+  // One explicitly bound Auth UUID primary prerequisite, never arbitrary keys.
+  for (const kind of ["relation", "column", "index", "constraint"] as const) need(b.externalFacts.filter(f => f.identity.kind === kind).length === 1);
   return frozen(b);
 }
 const nk = (cls: string, id: string, sub = 0) => `${cls}:${id}:${sub}`;
@@ -278,6 +294,29 @@ function normalize(raw: RawCatalog, bindings: Bindings): CatalogRowsObservationV
     need(allCount >= f.argumentTypes.length && (f.argumentNames === null || f.argumentNames.length === allCount) && (f.argumentModes === null || f.argumentModes.length === allCount));
   }
   for (const row of raw.relations) for (const column of row.toast?.columns ?? []) walk(column.type);
+  const authConstraints = raw.constraints.filter(c => c.scope === "external-prerequisite");
+  need(authConstraints.length === 1 && raw.indexes.filter(i => i.scope === "external-prerequisite").length === 1);
+  for (const c of authConstraints) {
+    const proof = c.prerequisite;
+    const fact = bindings.externalFacts.find(f => f.identity.kind === "constraint")!;
+    const relationFact = bindings.externalFacts.find(f => f.identity.kind === "relation")!;
+    const columnFact = bindings.externalFacts.find(f => f.identity.kind === "column")!;
+    const indexFact = bindings.externalFacts.find(f => f.identity.kind === "index")!;
+    const index = raw.indexes.find(i => i.nativeOid === indexFact.endpoint.nativeOid);
+    need(c.nativeOid === fact.endpoint.nativeOid && c.identity.object.nativeOid === relationFact.endpoint.nativeOid);
+    need(proof.relationOwner.principalOid === bindings.migrationOwner.nativeOid && proof.indexOwner.principalOid === bindings.migrationOwner.nativeOid);
+    need(canonical(proof.column.relation) === canonical(c.identity.object) && columnFact.endpoint.nativeOid === proof.column.relation.nativeOid && columnFact.endpoint.subId === proof.column.ordinal);
+    need(c.supportingIndex && canonical(c.supportingIndex) === canonical(proof.index) && proof.index.nativeOid === indexFact.endpoint.nativeOid);
+    need(canonical(proof.indexConstraints[0]) === canonical(c.identity) && canonical(proof.index.relation) === canonical(c.identity.object));
+    need(index && index.scope === "external-prerequisite" && canonical(index.relation) === canonical(c.identity.object) && index.name === proof.index.name);
+    need(index!.primary && index!.unique && index!.valid && index!.ready && index!.live && index!.immediate && !index!.nullsNotDistinct && index!.accessMethod === "btree");
+    need(canonical(c.keyColumns) === "[1]" && canonical(index!.keyColumns) === "[1]" && index!.includeColumns.length === 0 && index!.expressions === null && index!.predicate === null);
+    need(canonical(index!.opclasses) === '["pg_catalog.uuid_ops"]' && canonical(index!.collations) === "[null]" && canonical(index!.options) === "[0]");
+    need(!c.deferrable && !c.initiallyDeferred && c.enforced && c.validated && c.local && c.inheritedCount === 0 && !c.period && c.referencedRelation === null && c.referencedColumns === null);
+    need(c.deleteSetColumns === null && c.fkPrimaryForeignOperators === null && c.fkPrimaryPrimaryOperators === null && c.fkForeignForeignOperators === null && c.exclusionOperators === null && c.expression === null);
+    need(raw.dependencies.filter(d => d.dependencyType === "i" && d.dependent.class === "pg_class" && d.dependent.nativeOid === index!.nativeOid && d.dependent.subId === 0 && d.referenced.class === "pg_constraint" && d.referenced.nativeOid === c.nativeOid && d.referenced.subId === 0).length === 1);
+    walk(proof); // Validate all qualified native column/index/constraint references.
+  }
   const byType = new Map([...raw.types, ...raw.domains].map(t => [t.nativeOid, t]));
   const byRelation = new Map(raw.relations.map(r => [r.nativeOid, r]));
   for (const row of raw.relations) {
@@ -404,8 +443,8 @@ function checkRoles(raw: RawCatalog, b: Bindings) {
 export function decodePostgresCatalogObservationV3(input: unknown, managementBindings: unknown): CatalogObservationV3 {
   try {
     const b = snapshotBindings(managementBindings), { raw } = decodeRows(input), catalog = normalize(raw, b);
-    const canonicalJson = canonical({ descriptorVersion: 2, serverMajor: 18, roleProfile: b.roleProfile, ...catalog });
-    return frozen({ kind: "unvalidated-catalog-observation", descriptorVersion: 2, serverMajor: 18, roleProfile: b.roleProfile,
+    const canonicalJson = canonical({ descriptorVersion: 3, serverMajor: 18, roleProfile: b.roleProfile, ...catalog });
+    return frozen({ kind: "unvalidated-catalog-observation", descriptorVersion: 3, serverMajor: 18, roleProfile: b.roleProfile,
       approval: false, expectedCatalog: false, catalog, canonicalJson, observationSha256: sha("catalog-observation:v3\n" + canonicalJson),
       counts: { namedTriggers: raw.triggers.filter(t => !t.internal).length, internalTriggers: raw.triggers.filter(t => t.internal).length } });
   } catch { throw new PostgresCatalogObservationErrorV3(); }
@@ -465,6 +504,11 @@ const typeFields = {
 const endpointSql = (cls: string, obj: string, sub: string) => jsonSql({ class: `(${cls})::regclass::text`, nativeOid: `(${obj})::text`, subId: sub });
 // Exact parent-scoped physical TOAST attributes; no inferred ordinal identities.
 const toastColumnsSql = `(SELECT coalesce(jsonb_agg(${jsonSql({ relationNativeOid: "ta.attrelid::text", ordinal: "ta.attnum", name: "ta.attname", type: qt("ta.atttypid"), notNull: "ta.attnotnull", dropped: "ta.attisdropped", typeModifier: "ta.atttypmod", dimensions: "ta.attndims" })} ORDER BY ta.attnum),'[]'::jsonb) FROM pg_catalog.pg_attribute ta WHERE ta.attrelid=tc.oid AND ta.attnum>0)`;
+// Exact Auth prerequisite proof, rooted only in the explicitly bound index/relation.
+const authPrimaryProofSql = `(SELECT ${jsonSql({ relationOwner: principalSql("ar.relowner"), indexOwner: principalSql("ai.relowner"), relationKind: "ar.relkind", isPartition: "ar.relispartition",
+  column: jsonSql({ relation: qr("aa.attrelid"), ordinal: "aa.attnum", name: "aa.attname", type: qt("aa.atttypid"), notNull: "aa.attnotnull", dropped: "aa.attisdropped", typeModifier: "aa.atttypmod", dimensions: "aa.attndims" }),
+  index: indexSql("ax.indexrelid"), indexConstraints: refArray("ARRAY(SELECT ak.oid FROM pg_catalog.pg_constraint ak WHERE ak.conindid=ax.indexrelid AND ak.conrelid=ar.oid)", constraintSql) })}
+  FROM pg_catalog.pg_class ar JOIN pg_catalog.pg_index ax ON ax.indrelid=ar.oid AND ax.indexrelid=k.conindid JOIN pg_catalog.pg_class ai ON ai.oid=ax.indexrelid JOIN pg_catalog.pg_attribute aa ON aa.attrelid=ar.oid AND aa.attnum=1 WHERE ar.oid=k.conrelid)`;
 export const postgresCatalogQueriesV3 = Object.freeze({
   schemas: selectSql({ nativeOid: "n.oid::text", name: "n.nspname", owner: principalSql("n.nspowner"), acl: aclSql("n.nspacl", "pg_catalog.acldefault('n',n.nspowner)") }, `FROM pg_catalog.pg_namespace n WHERE n.nspname IN ${scopeSql}`),
   relations: selectSql({ nativeOid: "c.oid::text", schema: "n.nspname", name: "c.relname", kind: "c.relkind", owner: principalSql("c.relowner"), rls: "c.relrowsecurity", forceRls: "c.relforcerowsecurity", persistence: "c.relpersistence", replicaIdentity: "c.relreplident", isPartition: "c.relispartition", rowType: qt("c.reltype"), ofType: qt("c.reloftype"), options: "c.reloptions", acl: aclSql("c.relacl", "pg_catalog.acldefault('r',c.relowner)"),
@@ -473,8 +517,8 @@ export const postgresCatalogQueriesV3 = Object.freeze({
   `FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ${scopeSql} AND c.relkind NOT IN('i','I','t')`),
   columns: selectSql({ relation: qr("a.attrelid"), ordinal: "a.attnum", name: "a.attname", type: "pg_catalog.format_type(a.atttypid,a.atttypmod)", notNull: "a.attnotnull", identity: "a.attidentity", generated: "a.attgenerated", dropped: "a.attisdropped", defaultNativeOid: "d.oid::text", defaultExpression: "pg_catalog.pg_get_expr(d.adbin,d.adrelid,false)", collation: "CASE WHEN a.attcollation=0 THEN NULL ELSE a.attcollation::regcollation::text END", acl: aclSql("a.attacl") },
   `FROM pg_catalog.pg_attribute a JOIN pg_catalog.pg_class c ON c.oid=a.attrelid JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace LEFT JOIN pg_catalog.pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE n.nspname IN ${scopeSql} AND c.relkind NOT IN('i','I','t') AND a.attnum>0`),
-  constraints: selectSql({ nativeOid: "k.oid::text", identity: constraintSql("k.oid"), kind: "k.contype", deferrable: "k.condeferrable", initiallyDeferred: "k.condeferred", enforced: "k.conenforced", validated: "k.convalidated", local: "k.conislocal", inheritedCount: "k.coninhcount", noInherit: "k.connoinherit", period: "k.conperiod", parentConstraint: constraintSql("k.conparentid"), supportingIndex: indexSql("k.conindid"), referencedRelation: qr("k.confrelid"), keyColumns: "k.conkey", referencedColumns: "k.confkey", updateAction: "k.confupdtype", deleteAction: "k.confdeltype", matchType: "k.confmatchtype", deleteSetColumns: "k.confdelsetcols", fkPrimaryForeignOperators: refArray("k.conpfeqop", operatorSql), fkPrimaryPrimaryOperators: refArray("k.conppeqop", operatorSql), fkForeignForeignOperators: refArray("k.conffeqop", operatorSql), exclusionOperators: refArray("k.conexclop", operatorSql), expression: "pg_catalog.pg_get_expr(k.conbin,k.conrelid,false)", definition: "pg_catalog.pg_get_constraintdef(k.oid,false)" },
-  `FROM pg_catalog.pg_constraint k JOIN pg_catalog.pg_namespace n ON n.oid=k.connamespace WHERE n.nspname IN ${scopeSql}`),
+  constraints: selectSql({ scope: `CASE WHEN n.nspname IN ${scopeSql} THEN 'owned' ELSE 'external-prerequisite' END`, prerequisite: `CASE WHEN n.nspname IN ${scopeSql} THEN NULL ELSE ${authPrimaryProofSql} END`, nativeOid: "k.oid::text", identity: constraintSql("k.oid"), kind: "k.contype", deferrable: "k.condeferrable", initiallyDeferred: "k.condeferred", enforced: "k.conenforced", validated: "k.convalidated", local: "k.conislocal", inheritedCount: "k.coninhcount", noInherit: "k.connoinherit", period: "k.conperiod", parentConstraint: constraintSql("k.conparentid"), supportingIndex: indexSql("k.conindid"), referencedRelation: qr("k.confrelid"), keyColumns: "k.conkey", referencedColumns: "k.confkey", updateAction: "k.confupdtype", deleteAction: "k.confdeltype", matchType: "k.confmatchtype", deleteSetColumns: "k.confdelsetcols", fkPrimaryForeignOperators: refArray("k.conpfeqop", operatorSql), fkPrimaryPrimaryOperators: refArray("k.conppeqop", operatorSql), fkForeignForeignOperators: refArray("k.conffeqop", operatorSql), exclusionOperators: refArray("k.conexclop", operatorSql), expression: "pg_catalog.pg_get_expr(k.conbin,k.conrelid,false)", definition: "pg_catalog.pg_get_constraintdef(k.oid,false)" },
+  `FROM pg_catalog.pg_constraint k JOIN pg_catalog.pg_namespace n ON n.oid=k.connamespace WHERE n.nspname IN ${scopeSql} OR (k.conrelid=ANY($2::oid[]) AND k.conindid=ANY($3::oid[]))`),
   indexes: selectSql({ nativeOid: "i.oid::text", relation: qr("x.indrelid"), scope: `CASE WHEN n.nspname IN ${scopeSql} THEN 'owned' ELSE 'external-prerequisite' END`, name: "i.relname", unique: "x.indisunique", primary: "x.indisprimary", valid: "x.indisvalid", ready: "x.indisready", live: "x.indislive", immediate: "x.indimmediate", nullsNotDistinct: "x.indnullsnotdistinct", accessMethod: "am.amname", keyColumns: "ARRAY(SELECT k.id FROM unnest(x.indkey::smallint[]) WITH ORDINALITY k(id,ord) WHERE k.ord<=x.indnkeyatts ORDER BY k.ord)", includeColumns: "ARRAY(SELECT k.id FROM unnest(x.indkey::smallint[]) WITH ORDINALITY k(id,ord) WHERE k.ord>x.indnkeyatts ORDER BY k.ord)", opclasses: "ARRAY(SELECT ns.nspname||'.'||o.opcname FROM unnest(x.indclass::oid[]) WITH ORDINALITY k(id,ord) JOIN pg_catalog.pg_opclass o ON o.oid=k.id JOIN pg_catalog.pg_namespace ns ON ns.oid=o.opcnamespace ORDER BY k.ord)", collations: "ARRAY(SELECT CASE WHEN k.id=0 THEN NULL ELSE k.id::regcollation::text END FROM unnest(x.indcollation::oid[]) WITH ORDINALITY k(id,ord) ORDER BY k.ord)", options: "x.indoption::smallint[]", expressions: "pg_catalog.pg_get_expr(x.indexprs,x.indrelid,false)", predicate: "pg_catalog.pg_get_expr(x.indpred,x.indrelid,false)", definition: "pg_catalog.pg_get_indexdef(i.oid,0,false)" },
   `FROM (${scopeObjects} SELECT * FROM scoped_indexes) x JOIN pg_catalog.pg_class i ON i.oid=x.indexrelid JOIN pg_catalog.pg_class c ON c.oid=x.indrelid JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace JOIN pg_catalog.pg_am am ON am.oid=i.relam`),
   policies: selectSql({ nativeOid: "p.oid::text", relation: qr("p.polrelid"), name: "p.polname", permissive: "p.polpermissive", command: "p.polcmd", roles: `(SELECT jsonb_agg(${principalSql("r.id")}) FROM unnest(p.polroles) r(id))`, usingExpression: "pg_catalog.pg_get_expr(p.polqual,p.polrelid,false)", checkExpression: "pg_catalog.pg_get_expr(p.polwithcheck,p.polrelid,false)" },
@@ -497,6 +541,7 @@ export const postgresCatalogQueriesV3 = Object.freeze({
     UNION SELECT 'pg_class'::regclass,indexrelid FROM scoped_indexes
     UNION SELECT 'pg_type'::regclass,t.oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ${scopeSql}
     UNION SELECT 'pg_proc'::regclass,p.oid FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ${scopeSql}
+    UNION SELECT 'pg_constraint'::regclass,ak.oid FROM pg_catalog.pg_constraint ak WHERE ak.conrelid=ANY($2::oid[]) AND ak.conindid=ANY($3::oid[])
     UNION SELECT 'pg_constraint'::regclass,oid FROM owned_con UNION SELECT 'pg_trigger'::regclass,oid FROM scoped_triggers
     UNION SELECT 'pg_policy'::regclass,p.oid FROM pg_catalog.pg_policy p WHERE p.polrelid IN(SELECT oid FROM owned_rel)
     UNION SELECT 'pg_attrdef'::regclass,a.oid FROM pg_catalog.pg_attrdef a WHERE a.adrelid IN(SELECT oid FROM owned_rel)
