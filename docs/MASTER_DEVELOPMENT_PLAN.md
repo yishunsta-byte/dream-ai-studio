@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-최신 판정(2026-11-18 10:32 KST): Backend B44 msg_d27e049f8059 수락·계약차이보고. Master14범주내 strict externalAuth users/idUUID PKconstraint 관측variant/실제relation-index owner증거·descriptor3 명시변경 승인. 현재ownedPG18.7만 prerequisite owner=M native검증·일반externalrole/Principal확대금지/다른owner unsupported거부·가상constraintowner창작금지. fixed수집과binding exactPK-link 교차검증/음성·shiftedOID/unit/type-lint/소형native정리후고정4경로반환→Tester검수. P/fullcatalog재진단금지·운영Supabase지원증명아님. 원FAIL/v2역사보호·Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
+최신 판정(2026-11-18 10:52 KST): B44 고정0d0aaed descriptor3/14범주 strictM-ownedAuthUUIDPK 관측·binding/owner-key-index/exactedge 보완 ready_review. 작성자224포함395PASS100skip/type-lint0·소형native고정query/facts성공/OS정리보고. Tester B44-R code/unit/동일fixed소형native1회재현 독립검수 실제전달(수락미확인). 원B43자료추정patch·P/fullreader재진단금지·원FAIL/v2역사보호. 독립판정후추가constraintfact가있는새fullrecipe별도배정, 일반externalowner/운영Supabase지원미증명. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
 최신 판정(2026-11-18 03:42 KST): T236 고정 ebe84ea 제품 독립 PASS 수용, T237 f38d170 시험하네스 보완 수용(작성자 실행). Front는 T238 정확한 ebe84ea 배포 준비만 진행하며 push/publish 전이다. Backend B27 dfb521c 오프라인 SQL5 초안 반환 후 Tester B27-R 독립 소스 검토 수락·진행 중이다. 어떤 DB에도 SQL5 실행하지 않는다. 아래 과거 배정 설명보다 이 판정과 TEAM 최신 기록을 우선한다.
 
