@@ -127,6 +127,21 @@ describe("T-240 소스 경계", () => {
     expect(css).toMatch(/\.root a \{ color: inherit/);
   });
 
+  it("T-240-FIX: 사진 위 작은 문구는 불투명한 어두운 바탕 위에서 4.5:1 이상", () => {
+    // F240-1: 390px에서 10px 문구가 밝은 건물 위에 걸려 실제 글자 대비 2.92:1이었다. 그림자가 아닌 불투명 바탕으로 보장한다.
+    const rule = css.match(/\.heroCopy \.eyebrow \{([^}]*)\}/)![1];
+    const color = rule.match(/(?:^|;)\s*color: (#[0-9a-f]{6})/i)?.[1];
+    const background = rule.match(/background: (#[0-9a-f]{6})\s*;/i)?.[1];
+    expect(color, "글자색").toBeTruthy();
+    expect(background, "6자리 불투명 바탕색").toBeTruthy();
+    expect(rule).toMatch(/display: inline-block/);
+    const lum = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)).reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+    const [a, b] = [lum(color!), lum(background!)];
+    expect((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)).toBeGreaterThanOrEqual(4.5);
+    // 모바일 규칙이 바탕을 지우거나 투명하게 바꾸지 않는다.
+    for (const [, body] of css.matchAll(/\.heroCopy \.eyebrow \{([^}]*)\}/g)) expect(body).not.toMatch(/background[^;]*(transparent|none|rgba)/);
+  });
+
   it("누를 수 있는 요소는 44px 이상", () => {
     for (const rule of [/\.btn \{[^}]*min-height: 48px/, /\.link \{[^}]*min-height: 44px/, /\.iconBtn \{[^}]*width: 44px; height: 44px/, /\.filters button \{[^}]*min-height: 44px/, /\.nav a \{[^}]*min-height: 44px; min-width: 44px/, /\.brand \{[^}]*min-height: 44px/, /\.search input \{[^}]*height: 46px/, /\.skip \{[^}]*min-height: 44px/]) expect(css).toMatch(rule);
   });

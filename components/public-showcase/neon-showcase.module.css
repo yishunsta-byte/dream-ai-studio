@@ -50,7 +50,8 @@
 .heroEmpty { min-height: 300px; padding: 52px; border-radius: 20px; background: linear-gradient(120deg, #261435, #15232d); display: grid; align-content: center; gap: 16px; }
 .heroEmpty h1 { font-size: clamp(40px, 6vw, 72px); }
 .heroCopy { max-width: 650px; }
-.heroCopy .eyebrow { color: #ffb5ed; margin-bottom: 20px; }
+/* T-240-FIX F240-1: 사진 위 작은 문구는 밝은 부분에 걸려도 읽히도록 불투명한 어두운 바탕을 깐다(글자 그림자에 기대지 않음). */
+.heroCopy .eyebrow { display: inline-block; color: #ffb5ed; background: #0c0814; padding: 4px 8px; border-radius: 4px; margin-bottom: 20px; }
 .heroCopy h1 { font-size: clamp(48px, 6.3vw, 90px); line-height: 0.98; letter-spacing: -0.055em; font-weight: 850; overflow-wrap: anywhere; }
 .heroCopy p { max-width: 380px; font-size: 16px; color: #e2d8e7; margin: 23px 0 27px; }
 .byline { margin-bottom: 18px; font-size: 12px; letter-spacing: 0.1em; color: #e1cfe4; }
