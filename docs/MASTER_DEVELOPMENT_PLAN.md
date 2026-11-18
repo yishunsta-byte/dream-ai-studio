@@ -48,7 +48,7 @@
 
 ## 3. 지금 실행할 작업
 
-공개 메인 최신 결정(2026-11-18 11:27 KST): T240-R 원9f2c471 모바일390 hero소문구 actualglyph2.9169:1 대비결함 F240-1 P2진행보고접수·최종report전. Front T240-FIX CSS/필요최소tsx-test/new보고 국소backplate/overlay4.5이상보완·동일배경실glyph red→green/반응형·unit회귀 실제전달(수락미확인). T241 공개루트/보호studio·Auth통합과분리선택고정, 원FAIL자료보존·독립재검수전배포없음. Tester원UI보고/preview정리뒤 B45-R순차유지·Front브라우저점유조정. sample-only·개인자료공개/가짜재생금지·safeNext/보호API·3013공유.next보호·buildpushdeploy금지.
+공개 메인 최신 결정(2026-11-18 11:27 KST): T240-R 원9f2c471 최종84083f9 FAIL 수용: 모바일390 hero소문구 actualglyph2.916922:1 대비결함 F240-1 P2. Front T240-FIX CSS/필요최소tsx-test/new보고 국소backplate/overlay4.5이상보완·동일배경실glyph red→green/반응형·unit회귀 실제전달(수락미확인). T241 공개루트/보호studio·Auth통합과분리선택고정, 원FAIL자료보존·독립재검수전배포없음. Tester 원UI보고·preview정리완료 후 B45-R 순차착수, Front브라우저점유해제공유 확인. sample-only·개인자료공개/가짜재생금지·safeNext/보호API·3013공유.next보호·buildpushdeploy금지.
 
 최신 판정(2026-11-18 11:15 KST): B45 고정2a9b75f는527facts/P5bodyM COMMIT/15SQLraw성공 후finalsortedUnique중복거부 증거제출. rawdeps2996/2960unique/36동일pairs·물리USING-CHECK기원은미확정, 원자료dedup/현장제품수정없음. Tester B45-R에현재T240-R UI/서버정리/고정보고후순차검수queue 전달 후 msg_452e72e0e909 수락 확인, frozen1회native/offline최초stack·OS정리검수. FrontT241 publicroot/studio/Auth통합WIP·staged홈이동보존. 독립판정후중복원인실험/최소수정별도배정·원FAIL보호. Golden/reference/state/provenance/runtime·운영DB배포없음·ebe84ea 미배포 조건 유지. 이 최신 판정이 아래 과거 상태보다 우선한다.
 
