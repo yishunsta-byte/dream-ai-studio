@@ -2478,3 +2478,9 @@
 - complete nonempty grantor/grantee/privilege/grantability·PUBLIC·다른객체acldefault/rawNULL 의미보존, genericcoercion/행숨김/decoder완화/unknown확대금지. 기존원보고/harness/FAIL근거보호, source red→green/소형native회귀/관련unit-type-lint·영향query범위/OS정리·고정반환→Tester독립검수. Tester msg_6ed84cde051a 후속통지·수신미확인.
 - B42전달을착수/완료로단정하지않는다. Golden/reference/state/runner/provenance/runtime·운영DB/환경packageconfig/builddeploy/install/새agentwindowworktree금지. Master공식2문서만수정·직접native실행없음.
 - 후속 수락 확인 2026-11-18 09:51:10 +09:00: msg_3329b8cb04e6 Backend B42 소형owned 인과실험 우선·원인확인 후에만 최소helper수정/default·rawNULL·권한tuples회귀/4경로·원harness/fullcatalog재시도금지·소유정리범위 수락. 전달→수락 확인, 실제완료는미확인.
+
+### B42 소형 원인실험 완료 보고 / 조건부 최소수정 진행
+- 실제 확인 시각: 2026-11-18 09:57:02 +09:00 (Asia/Seoul). msg_497244ad27e1·Git/status 대조. 신규b42harness WIP만·현재tracked productdiff없음, T122/T137보존. Backend 소형1회 exit0/25probes/4예상22023·소유정리완료 보고, 최종고정/독립검수전이며 Master 직접native실행아님.
+- native 새columnattaclNULL, frozen columns query22023·directaclexplode(NULL)0rows/explicitempty22023·oldcoalesce(NULL,empty)와oldempty22023로 인과확인 보고. candidate cardinalityNULL/0→JSON[] 분기는NULL/empty성공, actualgrantoption/PUBLICUPDATE2tuples old/new/generated동일·grantoptionrevoke/전체revoke후NULL+[]·4종default ACL동일/explicitempty미대체/rawNULLflag유지 근거접수. 제품oldpin은실험중불변, P/fullcatalog미실행.
+- 기존 B42 조건부승인 충족 보고에 따라 helper의 effectiveACL NULL/0만 빈JSON 분기/나머지집계식과default·rawNULLflag보존 최소수정·unit/type-lint 진행 중. 별도범위 확대/중복실험 지시없음. 소유root42e39bff… PG45544/port60510/backends56796/63696 absentflags는작성자보고·독립OS검수전이다.
+- 최종4경로 고정반환→Tester code/native-evidence 독립검수 예정. 전체catalog/nativePASS아님, 원B41FAIL/P/역사harness/증거보호·Golden/state/runtime/운영배포미변경. Master공식2문서만수정.
