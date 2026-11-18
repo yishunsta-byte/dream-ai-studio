@@ -56,7 +56,7 @@ const rawShapes = {
       parents: z.array(oid).length(1), indexParentOid: oid,
       indexKeyCount: z.literal(2), indexAttributeCount: z.literal(2), indexColumns: z.tuple([z.literal(1), z.literal(2)]),
       columns: z.array(z.strictObject({ relationNativeOid: oid, ordinal: attr, name: identifier, type: typeRef,
-        notNull: z.literal(true), dropped: z.literal(false), typeModifier: z.literal(-1), dimensions: z.literal(0) })).length(3) }).nullable() }),
+        notNull: z.literal(false), dropped: z.literal(false), typeModifier: z.literal(-1), dimensions: z.literal(0) })).length(3) }).nullable() }),
   columns: z.strictObject({ relation: ownedRelationRef, ordinal: attr, name: identifier, type: text,
     notNull: bool, identity: z.enum(["", "a", "d"]), generated: z.enum(["", "s", "v"]), dropped: bool,
     defaultNativeOid: oid.nullable(), defaultExpression: text.nullable(), collation: text.nullable(), acl }),

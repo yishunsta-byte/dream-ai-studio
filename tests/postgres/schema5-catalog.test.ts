@@ -8,6 +8,194 @@ const cats = ["schemas", "relations", "columns", "constraints", "indexes", "poli
 type Row = Record<string, unknown>;
 type Batch = { server_major: number; search_path: string; isolation: string; read_only: string; catalog_row: Row };
 type Raw = Record<string, Batch[]>;
+// B40 captured-native-derived input, NOT a Golden or full-catalog fixture.
+// Author B39 a6c48bc1 and independent Tester B39 f25ab90b captured this same
+// history relation row. Both projection-relations.json files have byte SHA256
+// 4aa31bbc9be7d35875795dc9212a3a702c647bcdb8defe80f78b872e97971dc1.
+// Full roots/provenance are recorded in B40 handoff; no scratch/runtime I/O.
+const capturedB39HistoryRelation: Batch = {
+  "server_major": 18,
+  "search_path": "pg_catalog",
+  "isolation": "repeatable read",
+  "read_only": "on",
+  "catalog_row": {
+    "acl": [
+      {
+        "grantee": {
+          "principalOid": "16389"
+        },
+        "grantor": {
+          "principalOid": "16389"
+        },
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": {
+          "principalOid": "16389"
+        },
+        "grantor": {
+          "principalOid": "16389"
+        },
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": {
+          "principalOid": "16389"
+        },
+        "grantor": {
+          "principalOid": "16389"
+        },
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": {
+          "principalOid": "16389"
+        },
+        "grantor": {
+          "principalOid": "16389"
+        },
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": {
+          "principalOid": "16389"
+        },
+        "grantor": {
+          "principalOid": "16389"
+        },
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": {
+          "principalOid": "16389"
+        },
+        "grantor": {
+          "principalOid": "16389"
+        },
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": {
+          "principalOid": "16389"
+        },
+        "grantor": {
+          "principalOid": "16389"
+        },
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": {
+          "principalOid": "16389"
+        },
+        "grantor": {
+          "principalOid": "16389"
+        },
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      }
+    ],
+    "rls": false,
+    "kind": "r",
+    "name": "history",
+    "owner": {
+      "principalOid": "16389"
+    },
+    "toast": {
+      "owner": {
+        "principalOid": "16389"
+      },
+      "unique": true,
+      "columns": [
+        {
+          "name": "chunk_id",
+          "type": {
+            "name": "oid",
+            "schema": "pg_catalog",
+            "catalog": "pg_type",
+            "nativeOid": "26"
+          },
+          "dropped": false,
+          "notNull": false,
+          "ordinal": 1,
+          "dimensions": 0,
+          "typeModifier": -1,
+          "relationNativeOid": "16409"
+        },
+        {
+          "name": "chunk_seq",
+          "type": {
+            "name": "int4",
+            "schema": "pg_catalog",
+            "catalog": "pg_type",
+            "nativeOid": "23"
+          },
+          "dropped": false,
+          "notNull": false,
+          "ordinal": 2,
+          "dimensions": 0,
+          "typeModifier": -1,
+          "relationNativeOid": "16409"
+        },
+        {
+          "name": "chunk_data",
+          "type": {
+            "name": "bytea",
+            "schema": "pg_catalog",
+            "catalog": "pg_type",
+            "nativeOid": "17"
+          },
+          "dropped": false,
+          "notNull": false,
+          "ordinal": 3,
+          "dimensions": 0,
+          "typeModifier": -1,
+          "relationNativeOid": "16409"
+        }
+      ],
+      "parents": [
+        "16399"
+      ],
+      "indexOid": "16410",
+      "indexKind": "i",
+      "namespace": "pg_toast",
+      "nativeOid": "16409",
+      "indexOwner": {
+        "principalOid": "16389"
+      },
+      "indexColumns": [
+        1,
+        2
+      ],
+      "relationKind": "t",
+      "indexKeyCount": 2,
+      "indexParentOid": "16409",
+      "indexAttributeCount": 2
+    },
+    "ofType": null,
+    "schema": "dream_migrations",
+    "options": null,
+    "rowType": {
+      "name": "history",
+      "schema": "dream_migrations",
+      "catalog": "pg_type",
+      "nativeOid": "16401"
+    },
+    "forceRls": false,
+    "nativeOid": "16399",
+    "isPartition": false,
+    "persistence": "p",
+    "toastNativeOid": "16409",
+    "replicaIdentity": "d"
+  }
+};
+
 function fixture(offset = 0, pair = false) {
   const id = (n: number) => String(n + offset), p = (n: number) => ({ principalOid: n === 0 ? "0" : id(n) });
   const r = (n: number, name = "projects", schema = "dream") => ({ nativeOid: id(n), catalog: "pg_class", schema, name });
@@ -51,7 +239,7 @@ function fixture(offset = 0, pair = false) {
   const data = {
     schemas: ["dream", "dream_reservation", "dream_migrations"].map((name, i) => ({ nativeOid: id(1 + i), name, owner: p(11), acl: [] })),
     relations: [{ nativeOid: id(100), schema: "dream", name: "projects", kind: "r", owner: p(11), rls: true, forceRls: true, persistence: "p", replicaIdentity: "d", isPartition: false,
-      rowType: t(200, "projects"), ofType: null, options: null, acl: [], toastNativeOid: id(400), toast: { nativeOid: id(400), indexOid: id(401), owner: p(11), indexOwner: p(11), namespace: "pg_toast", relationKind: "t", indexKind: "i", unique: true, parents: [id(100)], indexParentOid: id(400), indexKeyCount: 2, indexAttributeCount: 2, indexColumns: [1, 2], columns: [[1, "chunk_id", 9010, "oid"], [2, "chunk_seq", 9011, "int4"], [3, "chunk_data", 9012, "bytea"]].map(([ordinal, name, typeOid, typeName]) => ({ relationNativeOid: id(400), ordinal, name, type: t(Number(typeOid), String(typeName), "pg_catalog"), notNull: true, dropped: false, typeModifier: -1, dimensions: 0 })) } }],
+      rowType: t(200, "projects"), ofType: null, options: null, acl: [], toastNativeOid: id(400), toast: { nativeOid: id(400), indexOid: id(401), owner: p(11), indexOwner: p(11), namespace: "pg_toast", relationKind: "t", indexKind: "i", unique: true, parents: [id(100)], indexParentOid: id(400), indexKeyCount: 2, indexAttributeCount: 2, indexColumns: [1, 2], columns: [[1, "chunk_id", 9010, "oid"], [2, "chunk_seq", 9011, "int4"], [3, "chunk_data", 9012, "bytea"]].map(([ordinal, name, typeOid, typeName]) => ({ relationNativeOid: id(400), ordinal, name, type: t(Number(typeOid), String(typeName), "pg_catalog"), notNull: false, dropped: false, typeModifier: -1, dimensions: 0 })) } }],
     columns: [{ relation: r(100), ordinal: 1, name: "owner_id", type: "uuid", notNull: true, identity: "", generated: "", dropped: false, defaultNativeOid: id(402), defaultExpression: "'00000000-0000-4000-8000-000000000001'::uuid", collation: null, acl: [] }],
     constraints: [{ ...constraintBase, nativeOid: id(500), identity: con(), kind: "f", supportingIndex: ix, referencedRelation: auth, keyColumns: [1], referencedColumns: [1], updateAction: "a", deleteAction: "r", matchType: "s", fkPrimaryForeignOperators: [eq], fkPrimaryPrimaryOperators: [eq], fkForeignForeignOperators: [eq] },
       { ...constraintBase, nativeOid: id(503), identity: con(503, "guard_123"), kind: "t", deferrable: true, initiallyDeferred: true }],
@@ -176,7 +364,7 @@ describe("B38 all14 synthetic observations; NOT native or golden reference", () 
     expect(postgresCatalogQueriesV3.relations).toContain("ta.attrelid=tc.oid AND ta.attnum>0");
     expect(postgresCatalogQueriesV3.functions).toContain("WITH ORDINALITY a(id,ord) ORDER BY a.ord");
   });
-  it.each(["missing-evidence", "foreign-parent", "duplicate-ordinal", "unknown-ordinal", "wrong-name", "wrong-type", "type-alias", "unproved-type", "dropped", "nullable", "index-link", "index-key", "index-count", "index-attributes", "missing-column"])("rejects TOAST column proof fault %s", fault => {
+  it.each(["missing-evidence", "foreign-parent", "duplicate-ordinal", "unknown-ordinal", "wrong-name", "wrong-type", "type-alias", "unproved-type", "dropped", "unexpected-not-null", "index-link", "index-key", "index-count", "index-attributes", "missing-column"])("rejects TOAST column proof fault %s", fault => {
     const f = fixture(), toast = row(f, "relations").toast as Row, columns = toast.columns as Row[];
     if (fault === "missing-evidence") delete toast.columns;
     if (fault === "foreign-parent") columns[0].relationNativeOid = "100";
@@ -187,13 +375,50 @@ describe("B38 all14 synthetic observations; NOT native or golden reference", () 
     if (fault === "type-alias") (columns[0].type as Row).nativeOid = "9011";
     if (fault === "unproved-type") (columns[0].type as Row).nativeOid = "99999";
     if (fault === "dropped") columns[0].dropped = true;
-    if (fault === "nullable") columns[0].notNull = false;
+    if (fault === "unexpected-not-null") columns[0].notNull = true;
     if (fault === "index-link") toast.indexParentOid = "100";
     if (fault === "index-key") toast.indexColumns = [2, 1];
     if (fault === "index-count") toast.indexKeyCount = 1;
     if (fault === "index-attributes") toast.indexAttributeCount = 3;
     if (fault === "missing-column") columns.pop();
     invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
+  });
+  // Deliberately stop at columns: these tests establish only the raw relations
+  // shape boundary. Other category inputs/bindings are synthetic, not native.
+  async function rawRelationStage(input: Batch) {
+    const f = fixture(); let calls = 0;
+    const query = vi.fn(async () => {
+      calls++;
+      if (calls === 1) return { rows: [{ server_version: "180007", search_path: "pg_catalog", isolation: "repeatable read", read_only: "on" }] };
+      if (calls === 2) return { rows: f.raw.schemas };
+      if (calls === 3) return { rows: [input] };
+      throw Error("B40 deliberate stop before columns; not full observation");
+    });
+    await expect(readPostgresCatalogV3({ query }, f.bindings)).rejects.toMatchObject({ code: "CATALOG_OBSERVATION_INVALID" });
+    return calls;
+  }
+  it("accepts the independently corroborated captured-native false metadata through raw relations only", async () => {
+    const input = structuredClone(capturedB39HistoryRelation);
+    expect((input.catalog_row.toast as Row).columns).toEqual(expect.arrayContaining([expect.objectContaining({ ordinal: 1, notNull: false }), expect.objectContaining({ ordinal: 2, notNull: false }), expect.objectContaining({ ordinal: 3, notNull: false })]));
+    expect(await rawRelationStage(input)).toBe(4);
+  });
+  it.each([0, 1, 2])("rejects captured TOAST column %s when changed to true", async ordinal => {
+    const input = structuredClone(capturedB39HistoryRelation);
+    ((input.catalog_row.toast as Row).columns as Row[])[ordinal].notNull = true;
+    expect(await rawRelationStage(input)).toBe(3);
+  });
+  it.each([["missing", undefined], ["null", null], ["number", 0], ["string", "false"], ["object", {}]])("rejects missing/nonboolean captured TOAST notNull %s", async (kind, value) => {
+    const input = structuredClone(capturedB39HistoryRelation), column = ((input.catalog_row.toast as Row).columns as Row[])[0];
+    if (kind === "missing") delete column.notNull; else column.notNull = value;
+    expect(await rawRelationStage(input)).toBe(3);
+  });
+  it("retains logical business-column nullability as explicit canonical metadata", () => {
+    const f = fixture(), before = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(before.catalog.columns[0].notNull).toBe(true);
+    row(f, "columns").notNull = false;
+    const after = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(after.catalog.columns[0].notNull).toBe(false);
+    expect(after.observationSha256).not.toBe(before.observationSha256);
   });
   it("rejects an uncollected TOAST subcolumn rather than inventing an ordinal identity", () => {
     const f = fixture(); (row(f, "dependencies", 6).referenced as Row).subId = 4;
