@@ -2515,3 +2515,4 @@
 - 원raw+bindings에unmodifiedmodule도FAIL·허용표시copy 최초 미등록 pg_class16396→pg_constraint16397 deptypei·externalauth.users PKindex는수집/constraint상세미수집을구분, 입력hash/copydiff/원publicerror유지·소유4PID/listener/pidfile OSabsent 작성자증거접수. unknownidentity현장등록/후속실패probing없음, 독립검수전이다.
 - Tester B43-R msg_eedf8fef4606 실제전달(수락미확인): 본인newPG18.7 UTF8-C loopback cluster frozenharness1회·15SQL/최종FAIL/OS정리재현, 반환batch오프라인원moduleFAIL와표시copy의첫endpoint진단·계측diff/동일입력검수·신규보고1파일만. 실패뒤추가nativequery/현장수정/skip/retry/constraint추정등록/증거보정금지. Backend msg_553395f04747 고정/질문지원통지·회신미확인.
 - 결과고정후외부prerequisite 최소수정범위별도판정, 이번제품/SQL/allowlist/Golden/state/provenance/runtime/운영DB배포/env/packageinstall/새agentwindowworktree없음. Master공식2문서만수정.
+- B43-R 후속 수락 확인 2026-11-18 10:21:49 +09:00: msg_4f07ccae8cb9 Tester 고정cd4fd98/신규보고1파일·본인ownednative1회/동일입력offline분석/첫실패보존·추가query금지/소유OS정리 범위 수락. 전달→수락 확인, 실제재현완료/판정은 아직미확인.
