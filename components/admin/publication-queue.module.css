@@ -1,0 +1,19 @@
+/* T289 관리자 게시 큐. 누를 수 있는 것은 44px 이상, 좁은 화면에서 줄바꿈. */
+.head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.head h2 { margin: 0; }
+.reload { min-height: 44px; }
+.note { margin: 0; color: var(--fg-muted); font-size: var(--text-sm); }
+.list { display: flex; flex-direction: column; gap: var(--sp-3); margin: 0; padding: 0; list-style: none; }
+.title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; font-size: var(--text-md); overflow-wrap: anywhere; }
+.meta { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin: 0; overflow-wrap: anywhere; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--sp-2); margin: 0; }
+.facts dt { color: var(--fg-muted); font-size: var(--text-sm); }
+.facts dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.check { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+.check input { width: 22px; height: 22px; flex: none; }
+.actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.actions button { min-height: 44px; }
+.success, .warning, .danger { margin: 0; font-size: var(--text-sm); font-weight: 700; }
+.success { color: var(--st-success-fg); }
+.warning { color: var(--st-warning-fg); }
+.danger { color: var(--st-danger-fg); }

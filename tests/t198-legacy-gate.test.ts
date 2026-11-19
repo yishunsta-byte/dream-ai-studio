@@ -91,9 +91,14 @@ const methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 type Handler = (request: Request, context: { params: Promise<{ id: string }> }) => Promise<Response>;
 // 인증 전용(업무 데이터 미사용) 또는 자체 인증·공개 인증 경로. 나머지는 모두 legacy-data여야 한다.
 const authRoutes = ["auth/login", "auth/signup", "auth/reset", "auth/password", "auth/logout", "auth/session"].map((r) => `../app/api/${r}/route.ts`);
-// Backend의 새 Postgres 조회 GET(B4-G)은 legacy 차단을 부르지 않는다(getUser 중복 금지). 같은 파일의 다른 메서드는 legacy다.
-const NEW_READ: Record<string, string[]> = { "../app/api/projects/route.ts": ["GET"], "../app/api/projects/[id]/route.ts": ["GET"] };
-const legacyMethods = (path: string, loaded: Record<string, unknown>) => methods.filter((m) => typeof loaded[m] === "function" && !(NEW_READ[path] ?? []).includes(m));
+// 클라우드 전용 메서드는 legacy 차단을 부르지 않는다(getUser 중복 금지). 정확한 경로·메서드만 적고, 같은 파일의 다른 메서드는 legacy다.
+// - Backend의 새 Postgres 조회 GET(B4-G)
+// - T297 관리자 게시 GET·POST, T296 참고 분석 POST: 직접 권한·no-store·POST 동일 출처·미연결 실패는 tests/api-auth.test.ts가 검증
+const CLOUD_ONLY: Record<string, string[]> = {
+  "../app/api/projects/route.ts": ["GET"], "../app/api/projects/[id]/route.ts": ["GET"],
+  "../app/api/admin/publications/route.ts": ["GET", "POST"],
+};
+const legacyMethods = (path: string, loaded: Record<string, unknown>) => methods.filter((m) => typeof loaded[m] === "function" && !(CLOUD_ONLY[path] ?? []).includes(m));
 const legacyRoutes = Object.entries(routeModules).filter(([path]) => !authRoutes.includes(path));
 
 function trapRequest(method: string) {
@@ -104,6 +109,14 @@ function trapRequest(method: string) {
 }
 
 describe("기존 업무 API 전체: 클라우드에서 인증 뒤 503, 본문·params·SQLite·파일 미접근", () => {
+  it("클라우드 전용 예외는 실제 있는 경로·메서드만 정확히 적는다", async () => {
+    for (const [path, listed] of Object.entries(CLOUD_ONLY)) {
+      const load = routeModules[path];
+      expect(load, path).toBeTypeOf("function");
+      const loaded = await load();
+      for (const method of listed) expect(typeof loaded[method], `${path} ${method}`).toBe("function");
+    }
+  });
   it("업무 라우트 목록이 비어 있지 않고, 새 조회 GET만 있는 파일이 아니면 모두 기본 legacy 가드를 쓴다", async () => {
     expect(legacyRoutes.length).toBeGreaterThanOrEqual(19);
     for (const [path, load] of legacyRoutes) {

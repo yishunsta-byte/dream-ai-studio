@@ -123,6 +123,7 @@ const routeModules = import.meta.glob<Record<string, unknown>>("../app/api/**/ro
 const publicAuthRoutes = ["auth/login", "auth/signup", "auth/reset"];
 const selfAuthenticatedRoutes = ["auth/password"];
 const guardedRoutes = [
+  "admin/publications",
   "assets/[id]", "assets/link", "assets/upload", "auth/logout", "auth/session",
   "backups/configuration", "backups", "characters", "exports/[id]", "jobs",
   "library/archive", "projects/[id]/finishing", "projects/[id]/production",
@@ -245,5 +246,45 @@ describe("password change independently authenticates its session", () => {
     expect(state.getUser).toHaveBeenCalledOnce();
     expect(state.updateUser).toHaveBeenCalledExactlyOnceWith({ password: "SyntheticPassword123!" });
     expect(state.listJobs).not.toHaveBeenCalled();
+  });
+});
+
+// T297: 관리자 게시 API는 허용 계정만, 쓰기는 이 사이트 화면에서 보낸 JSON만 받는다. 운영 기본값은 저장소 미연결.
+describe("admin publications route (T297) same-origin and unlinked default", () => {
+  const allowed = { id: "00000000-0000-4000-8000-000000000297", email: "owner@example.invalid" };
+  const send = async (headers: Record<string, string>) => {
+    const { POST } = await import("@/app/api/admin/publications/route");
+    const request = new Request("http://127.0.0.1:3000/api/admin/publications", { method: "POST", body: "{}", headers: { host: "127.0.0.1:3000", ...headers } });
+    const readBody = vi.spyOn(request, "json");
+    const response = await POST(request);
+    return { response, readBody, bodyUsed: request.bodyUsed };
+  };
+  it("allowed account from another site or without Origin is rejected before the body", async () => {
+    state.user = allowed;
+    for (const headers of [{ origin: "https://evil.example", "content-type": "application/json" }, { "content-type": "application/json" }] as Record<string, string>[]) {
+      const { response, readBody, bodyUsed } = await send(headers);
+      expect(response.status).toBe(403);
+      expect(await response.json()).toMatchObject({ code: "AUTH_ORIGIN_REJECTED" });
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(readBody).not.toHaveBeenCalled();
+      expect(bodyUsed).toBe(false);
+    }
+    expect(state.getUser).toHaveBeenCalledTimes(2);
+  });
+  it("same-site JSON write without a production store is 503 unlinked and never reads the body", async () => {
+    state.user = allowed;
+    const { response, bodyUsed } = await send({ origin: "http://127.0.0.1:3000", "sec-fetch-site": "same-origin", "content-type": "application/json" });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ code: "PUBLICATION_UNLINKED" });
+    expect(bodyUsed).toBe(false);
+  });
+  it("allowed GET returns the closed queue with no-store", async () => {
+    state.user = allowed;
+    const { GET } = await import("@/app/api/admin/publications/route");
+    const response = await GET();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toEqual({ kind: "closed" });
+    expect(state.getUser).toHaveBeenCalledOnce();
   });
 });
