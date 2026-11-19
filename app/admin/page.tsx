@@ -30,14 +30,20 @@ export default async function AdminPage() {
   // T297: 같은 인증 판정(getRenderAuth 캐시) 뒤에만 게시 큐 첫 목록을 읽는다. 운영 저장소가 없으면 closed(미연결 안내).
   const publications = await createAdminPublicationHttp({ resolveAuth: getRenderAuth }).list();
   return <SessionBoundary account={account}>
-    <header className={styles.header}>
-      <strong><Link className={styles.link} href="/admin">Dream AI Studio <span className="muted">· 관리</span></Link></strong>
-      <AccountMenu email={account} />
-    </header>
-    <main id="main-content" className="content">
-      <ProtectedContent>
-        <AdminHub email={account} projects={projects} review={<PublicationHttpQueue initial={publications} />} />
-      </ProtectedContent>
-    </main>
+    <div className={styles.console}>
+      <header className={styles.header}>
+        <Link className={styles.brand} href="/admin" aria-label="DREAM SCREEN 운영 관리자">
+          <span className={styles.brandMark} aria-hidden="true">✦</span>
+          <span>DREAM <em>SCREEN</em></span>
+          <span className={styles.brandScope}>운영 관리자</span>
+        </Link>
+        <AccountMenu email={account} />
+      </header>
+      <main id="main-content" className="content">
+        <ProtectedContent>
+          <AdminHub email={account} projects={projects} review={<PublicationHttpQueue initial={publications} />} />
+        </ProtectedContent>
+      </main>
+    </div>
   </SessionBoundary>;
 }

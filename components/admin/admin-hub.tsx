@@ -1,16 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Icon, type IconName } from "@/components/ui/Icon";
+import { Icon } from "@/components/ui/Icon";
 import { Card, PageHeader, StatusPill } from "@/components/ui/primitives";
 import { AdminProjectsSection, type AdminProjects } from "./admin-projects";
+import { AdminNavigation } from "./admin-navigation";
 import styles from "./admin.module.css";
-
-const sections = [
-  { id: "admin-overview", label: "개요", icon: "home" },
-  { id: "admin-project-list", label: "내 프로젝트", icon: "folder" },
-  { id: "admin-review", label: "완성본 검수·게시", icon: "check" },
-  { id: "admin-account", label: "계정 설정", icon: "settings" },
-] as const satisfies readonly { id: string; label: string; icon: IconName }[];
 
 const unavailable = [
   { title: "작업 대기열", detail: "대기·실행·실패 상태와 취소·재시도" },
@@ -22,58 +16,46 @@ const unavailable = [
 ] as const;
 
 export function AdminHub({ email, projects, review }: { email: string; projects: AdminProjects; review: ReactNode }) {
-  return <div className={styles.hub}>
-    <PageHeader title="관리 화면" />
-    <div className={styles.workspace}>
-      <nav className={styles.navigation} aria-label="관리 메뉴">
-        <ul>
-          {sections.map(({ id, label, icon }) => <li key={id}>
-            <a href={`#${id}`}><Icon name={icon} />{label}</a>
-          </li>)}
-        </ul>
-      </nav>
-      <div className={styles.sections}>
-        <section id="admin-overview" tabIndex={-1} aria-labelledby="admin-overview-title" className={`${styles.target} ${styles.overview}`}>
-          <div>
-            <h2 id="admin-overview-title">개요</h2>
-            <p>내 계정의 프로젝트를 보고, 완성본의 검수·게시 상태를 확인해요.</p>
-          </div>
-          <div className={styles.overviewLinks}>
-            <Link className={styles.link} href="/cloud/manage">클라우드 개인 관리 <Icon name="arrow" /></Link>
-            {(projects.kind === "unlinked" || projects.kind === "failed") &&
-              <Link className={styles.link} href="/cloud/projects">내 프로젝트 전체 화면 <Icon name="arrow" /></Link>}
-          </div>
-        </section>
-
-        <div id="admin-project-list" role="group" aria-label="내 프로젝트" className={styles.target} tabIndex={-1}>
-          <AdminProjectsSection state={projects} />
+  return <div className={styles.workspace}>
+    <AdminNavigation />
+    <div className={styles.sections}>
+      <section id="admin-overview" tabIndex={-1} aria-label="개요" className={`${styles.target} ${styles.overview}`}>
+        <PageHeader title="관리 화면" description="내 계정의 프로젝트를 보고, 완성본의 검수·게시 상태를 확인해요." />
+        <div className={styles.overviewLinks}>
+          <Link className={styles.link} href="/cloud/manage">클라우드 개인 관리 <Icon name="arrow" /></Link>
+          {(projects.kind === "unlinked" || projects.kind === "failed") &&
+            <Link className={styles.link} href="/cloud/projects">내 프로젝트 전체 화면 <Icon name="arrow" /></Link>}
         </div>
-        <div id="admin-review" role="group" aria-label="완성본 검수·게시" className={styles.target} tabIndex={-1}>
-          {review}
-        </div>
+      </section>
 
-        <section id="admin-account" tabIndex={-1} aria-labelledby="admin-menu" className={`${styles.target} ${styles.section}`}>
-          <h2 id="admin-menu">계정 설정</h2>
-          <Card className={styles.accountCard}>
-            <p className={styles.note}>로그인 계정 <strong>{email}</strong></p>
-            <Link className={styles.link} href="/account/password">비밀번호 바꾸기 <Icon name="arrow" /></Link>
-          </Card>
-        </section>
-
-        <section aria-labelledby="admin-unlinked" className={styles.section}>
-          <h2 id="admin-unlinked">운영 연결 범위</h2>
-          <p className={styles.note}>현재 이 화면에서 제공하지 않는 운영 기능이에요.</p>
-          <Card padding="none">
-            <ul className={styles.unavailableList}>
-              {unavailable.map(({ title, detail }) => <li key={title}>
-                <h3>{title}</h3>
-                <StatusPill status="locked">미연결</StatusPill>
-                <p>{detail}</p>
-              </li>)}
-            </ul>
-          </Card>
-        </section>
+      <div id="admin-project-list" role="group" aria-label="내 프로젝트" className={styles.target} tabIndex={-1}>
+        <AdminProjectsSection state={projects} />
       </div>
+      <div id="admin-review" role="group" aria-label="완성본 검수·게시" className={styles.target} tabIndex={-1}>
+        {review}
+      </div>
+
+      <section id="admin-account" tabIndex={-1} aria-labelledby="admin-menu" className={`${styles.target} ${styles.section}`}>
+        <h2 id="admin-menu">계정 설정</h2>
+        <Card className={styles.accountCard}>
+          <p className={styles.note}>로그인 계정 <strong>{email}</strong></p>
+          <Link className={styles.link} href="/account/password">비밀번호 바꾸기 <Icon name="arrow" /></Link>
+        </Card>
+      </section>
+
+      <section aria-labelledby="admin-unlinked" className={styles.section}>
+        <h2 id="admin-unlinked">운영 연결 범위</h2>
+        <p className={styles.note}>현재 이 화면에서 제공하지 않는 운영 기능이에요.</p>
+        <Card padding="none">
+          <ul className={styles.unavailableList}>
+            {unavailable.map(({ title, detail }) => <li key={title}>
+              <h3>{title}</h3>
+              <StatusPill status="locked">미연결</StatusPill>
+              <p>{detail}</p>
+            </li>)}
+          </ul>
+        </Card>
+      </section>
     </div>
   </div>;
 }

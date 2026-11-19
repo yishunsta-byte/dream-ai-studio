@@ -21,6 +21,8 @@ describe("admin hub information architecture", () => {
     expect(nav).toBeDefined();
     const targets = ["admin-overview", "admin-project-list", "admin-review", "admin-account"];
     expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(targets);
+    expect(nav).toMatch(/href="#admin-overview" aria-current="location"/);
+    expect(nav!.match(/aria-current=/g)).toHaveLength(1);
     for (const id of targets) {
       expect(html.match(new RegExp(`\\bid="${id}"`, "g"))).toHaveLength(1);
       expect(html).toMatch(new RegExp(`<[^>]+id="${id}"[^>]*tabindex="-1"`));
