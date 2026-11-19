@@ -123,7 +123,7 @@ const routeModules = import.meta.glob<Record<string, unknown>>("../app/api/**/ro
 const publicAuthRoutes = ["auth/login", "auth/signup", "auth/reset"];
 const selfAuthenticatedRoutes = ["auth/password"];
 const guardedRoutes = [
-  "admin/publications",
+  "admin/publications", "admin/render-queue",
   "assets/[id]", "assets/link", "assets/upload", "auth/logout", "auth/session",
   "backups/configuration", "backups", "characters", "exports/[id]", "jobs",
   "library/archive", "projects/[id]/finishing", "projects/[id]/production",

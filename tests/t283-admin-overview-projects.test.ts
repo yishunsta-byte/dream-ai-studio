@@ -80,9 +80,11 @@ describe("T283 허용 관리자 개요의 내 프로젝트 상태 4가지", () =
     const markup = html(await page());
     const t = text(markup);
     expect(t).toContain("프로젝트 목록 미연결");
-    expect(t).toContain("클라우드 프로젝트 읽기가 연결되어 있지 않아요");
-    expect(t).not.toMatch(/불러오지 못했어요|표시 목록|프로젝트가 없어요/);
-    expect(markup).not.toContain('href="/admin">다시 불러오기');
+    expect(t).toContain("이 환경에서 내 프로젝트를 조회하려면 운영 담당자의 연결 확인이 필요해요.");
+    // 명세: 카드 안에서 펼치는 네이티브 도움말, 조회 시각·건수·다시 불러오기는 없다
+    expect(markup).toMatch(/<details[^>]*><summary>연결 상태 도움말<\/summary>/);
+    expect(t).toContain("운영 담당자에게 ‘관리자 화면의 내 프로젝트 목록 연결을 확인해 주세요’라고 알려 주세요.");
+    expect(t).not.toMatch(/불러오지 못했어요|조회 시각|내 프로젝트가 0개|내 프로젝트 \d+개|다시 불러오기/);
     expect(state.created).toBe(0);
   });
   it("실패: 설정됐지만 읽기 503이면 실패 안내와 다시 불러오기(같은 주소 링크), 0건·조회 시각을 만들지 않는다", async () => {
@@ -91,18 +93,30 @@ describe("T283 허용 관리자 개요의 내 프로젝트 상태 4가지", () =
     const markup = html(await page());
     const t = text(markup);
     expect(t).toContain("프로젝트 목록을 불러오지 못했어요");
-    expect(markup).toMatch(/<a [^>]*href="\/admin"[^>]*>다시 불러오기<\/a>/);
-    expect(t).not.toMatch(/프로젝트 목록 미연결|표시 목록|조회 시각|프로젝트가 없어요/);
+    expect(t).toContain("잠시 뒤 다시 불러와 주세요.");
+    // 명세: 다시 불러오기는 카드 안 한 곳, 불러온 뒤 '내 프로젝트' 영역으로 돌아온다
+    expect(markup.match(/다시 불러오기<\/a>/g)).toHaveLength(1);
+    // 검수 4d416a6: 매 렌더 다른 reload 값이 붙어 같은 주소의 '#' 이동이 아니라 실제 문서 요청이 된다.
+    expect(markup).toMatch(/<a [^>]*href="\/admin\?reload=[a-z0-9]+#admin-project-list"[^>]*>다시 불러오기<\/a>/);
+    expect(markup).toMatch(/<summary>연결 상태 도움말<\/summary>/);
+    expect(t).toContain("다시 불러와도 같은 문구가 보이면 ‘내 프로젝트’, 오류 문구, 발생 시각을 운영 담당자에게 알려 주세요.");
+    expect(t).not.toMatch(/프로젝트 목록 미연결|조회 시각|내 프로젝트가 0개|내 프로젝트 \d+개/);
     expect(state.list).toHaveBeenCalledTimes(1);
+    const second = html(await page());
+    const token = (source: string) => source.match(/href="\/admin\?reload=([a-z0-9]+)#admin-project-list"/)?.[1];
+    expect(token(second)).toBeDefined();
+    expect(token(second)).not.toBe(token(markup));
+    expect(state.list).toHaveBeenCalledTimes(2);
   });
   it("결과 없음: 읽기 성공 0건은 0개·조회 시각·없음 안내(미연결·실패와 구분)", async () => {
     admin(OWNER, "postgres");
     state.list.mockResolvedValue(ok([]));
     const t = text(html(await page()));
-    expect(t).toContain("표시 목록 0개");
-    expect(t).toContain("조회 시각");
-    expect(t).toContain("이번에 불러온 목록에 프로젝트가 없어요");
-    expect(t).not.toMatch(/불러오지 못했어요|프로젝트 목록 미연결/);
+    expect(t).toContain("내 프로젝트가 0개예요");
+    expect(t).toContain("현재 로그인한 계정으로 조회한 결과예요.");
+    expect(t).toMatch(/조회 시각 .+\(한국시간\)/);
+    expect(t.match(/다시 불러오기/g)).toHaveLength(1);
+    expect(t).not.toMatch(/불러오지 못했어요|프로젝트 목록 미연결|연결 상태 도움말/);
   });
   it("목록: 자기 계정 프로젝트의 제목·상태·다음 단계·상세 이동 링크만, 원본 행·owner·입력값은 그리지 않는다", async () => {
     admin(OWNER, "postgres");
@@ -112,8 +126,11 @@ describe("T283 허용 관리자 개요의 내 프로젝트 상태 4가지", () =
     ]));
     const markup = html(await page());
     const t = text(markup);
-    expect(t).toContain("표시 목록 2개");
-    for (const id of ["21", "22"]) expect(markup).toContain(`href="/cloud/projects/00000000-0000-4000-8000-0000000000${id}"`);
+    expect(t).toContain("내 프로젝트 2개");
+    expect(t).toMatch(/조회 시각 .+\(한국시간\)/);
+    expect(t.match(/다시 불러오기/g)).toHaveLength(1);
+    expect(t).not.toMatch(/연결 상태 도움말|불러오지 못했어요/);
+    for (const id of ["21", "22"]) expect(markup).toContain(`href="/cloud/projects/00000000-0000-4000-8000-0000000000${id}#admin-project-heading"`);
     expect(t).toContain("합성 프로젝트 하나 상세 보기");
     expect(t).toContain("만드는 중");
     expect(t).toContain("승인 대기");
@@ -121,10 +138,14 @@ describe("T283 허용 관리자 개요의 내 프로젝트 상태 4가지", () =
     expect(t).toContain("쇼핑숏츠 · 9:16 · 15초");
     expect(markup).toContain('href="/cloud/projects"');
     expect(markup).not.toMatch(/should-not-render|INPUT-SECRET-283|shopping-shorts|ownerId|삭제|전체 사용자|회원 수|정상 작동/);
-    // 내 프로젝트 영역에는 조작 요소가 없다(계정 메뉴의 로그아웃 버튼은 기존 머리글 소속).
+    // Search and status filtering apply to the already owned rows.
     const section = markup.slice(markup.indexOf('aria-labelledby="admin-projects"'), markup.indexOf('aria-labelledby="admin-menu"'));
     expect(section.length).toBeGreaterThan(100);
-    expect(section).not.toMatch(/<form|<input|<button|<select|<textarea/);
+    expect(section).toContain('type="search"');
+    expect(section).toContain("<select");
+    expect(section).not.toMatch(/<form|<button|<textarea/);
+    expect(text(section)).toContain("내용 버전 확인 불가");
+    expect(text(section)).toContain("출력 파일 확인 불가");
     expect(state.list).toHaveBeenCalledTimes(1);
     // 기존 관리 메뉴·미연결 범위는 유지
     for (const href of ["/cloud/manage", "/account/password"]) expect(markup).toContain(`href="${href}"`);

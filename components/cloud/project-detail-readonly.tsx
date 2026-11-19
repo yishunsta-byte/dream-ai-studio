@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, PageHeader, StatusPill } from "@/components/ui/primitives";
 import { STAGE_STATUS, type CloudProjectDetail } from "@/lib/cloud/project-read-page";
+import { AdminProjectHeadingFocus } from "./admin-project-heading-focus";
 import { CloudReadOnlyNote } from "./project-list-readonly";
 
 // 클라우드 읽기 전용 단건 개요(T-207). 단계 화면·편집·영상 만들기로 가는 링크는 두지 않는다.
@@ -9,7 +10,10 @@ const time = (iso: string) => new Intl.DateTimeFormat("ko-KR", { dateStyle: "med
 export function ProjectDetailReadonly({ project }: { project: CloudProjectDetail }) {
   return <>
     <p><Link href="/cloud/projects">← 내 프로젝트</Link></p>
-    <PageHeader title={project.title} description={<CloudReadOnlyNote />} />
+    <div id="admin-project-heading">
+      <PageHeader title={project.title} description={<CloudReadOnlyNote />} />
+      <AdminProjectHeadingFocus title={project.title} />
+    </div>
     <Card>
       <h2>기본 정보</h2>
       <dl className="stack">
