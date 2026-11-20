@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { isAnonymousPublicPath } from "../../lib/auth/config";
 import { createAdminReferenceHttp } from "../../lib/reference-analysis/admin-reference-http";
-import { MediaUrlError } from "../../lib/reference-analysis/media-url-error";
+import { AnalysisStageError, MediaUrlError } from "../../lib/reference-analysis/media-url-error";
 
 vi.mock("server-only", () => ({}));
 
@@ -49,7 +49,50 @@ describe("관리자 콘텐츠 분석 및 결과 공개 경계", () => {
     const unsupported = await admin.analyze(request("POST", { url, authorized: true }));
     expect(unsupported.status).toBe(422);
     expect(await unsupported.json()).toEqual({ error: "unsupported_origin" });
-    expect(analyze).toHaveBeenCalledWith(url, undefined, expect.any(AbortSignal));
+    // 요청 취소 신호는 분석에 넘기지 않는다(운영 라우트에서 일찍 끝나 정상 분석을 끊던 원인 후보).
+    expect(analyze).toHaveBeenCalledWith(url, undefined, undefined);
+  });
+
+  it("본문을 읽은 뒤 요청 신호가 일찍 끝나도 분석은 끊기지 않고 진단 헤더로만 알린다", async () => {
+    const ready = { schemaVersion: 1 as const, status: "ready" as const, sourceUrl: "https://x", sha256: "0".repeat(64), sizeBytes: 1, media: "image" as const,
+      proposals: [{ media: "image" as const, selectionId: "image-1", observations: [{ kind: "observation" as const, findingId: "region-1", measure: "region_color_luminance" as const,
+        location: { kind: "region" as const, x: 0, y: 0, width: 1, height: 1 }, alphaCoverage: 1, palette: [{ bucket: "#3366cc", visibleShare: 0.6 }],
+        luminanceShares: [0.25, 0.25, 0.25, 0.25], luminanceEdges: [0, 0.25, 0.5, 0.75, 1] }],
+        draft: { kind: "creative_proposal" as const, target: "image" as const, prompt: "푸른 장면" } }] };
+    const controller = new AbortController();
+    const seen: Array<AbortSignal | undefined> = [];
+    const analyze = vi.fn(async (_url: string, _origin?: string, signal?: AbortSignal) => { seen.push(signal); controller.abort(); return ready as never; });
+    const admin = createAdminReferenceHttp({ authenticate: async () => actor, env: { DREAM_SITE_URL: origin }, analyze });
+    const live = new Request(`${origin}/api/admin/reference-analysis`, { method: "POST", signal: controller.signal,
+      headers: { host: "studio.example.com", origin, "content-type": "application/json" }, body: JSON.stringify({ url: "https://mdn.github.io/a.png", authorized: true }) });
+    const response = await admin.analyze(live);
+    expect(response.status).toBe(200);
+    expect(seen).toEqual([undefined]);
+    expect(response.headers.get("x-dream-request-signal")).toBe("aborted");
+    const body = await response.json();
+    expect(Object.keys(body)).toEqual(["result"]);
+    expect(Object.keys(body.result).sort()).toEqual(["media", "proposals", "schemaVersion", "status"]);
+  });
+
+  it("분석 실패는 단계·오류 이름만 진단으로 돌려주고 URL·서버 문장은 숨긴다", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const url = "https://interactive-examples.mdn.mozilla.net/media/secret-name.jpg";
+    const cases: Array<[unknown, Record<string, unknown>]> = [
+      [new AnalysisStageError("fetch", "AbortError"), { stage: "fetch", detail: "AbortError" }],
+      [new AnalysisStageError("inspect", "unverified_analysis"), { stage: "inspect", detail: "unverified_analysis" }],
+      [Object.assign(new Error("/tmp/private path " + url), { name: "TypeError" }), { stage: "result", detail: "TypeError" }],
+    ];
+    for (const [thrown, expected] of cases) {
+      const admin = createAdminReferenceHttp({ authenticate: async () => actor, env: { DREAM_SITE_URL: origin }, analyze: vi.fn(async () => { throw thrown; }) });
+      const response = await admin.analyze(request("POST", { url, authorized: true }));
+      expect(response.status).toBe(422);
+      const body = await response.json();
+      expect(body).toEqual({ error: "analysis_failed", ...expected, requestAborted: false });
+      expect(response.headers.get("x-dream-request-signal")).toBe("live");
+      expect(JSON.stringify(body)).not.toMatch(/secret-name|tmp|private/);
+    }
+    expect(JSON.stringify(error.mock.calls)).not.toMatch(/secret-name|tmp|private/);
+    error.mockRestore();
   });
 
   it("공개·철회는 인증 계정과 명시 승인만 사용하며 같은 요청 ID를 돌려준다", async () => {

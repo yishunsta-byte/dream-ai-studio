@@ -5,7 +5,7 @@ import { resolveServerAuth } from "../auth/resolve";
 import { readLimitedText, rejectForeignWrite } from "../public-showcase/admin-publication-http";
 import { openReferencePublicationStore, publishReferenceAnalysisSchema, revokeReferenceAnalysisSchema } from "./admin-reference-publications";
 import type { analyzeLocalMediaUrl } from "./local-media-url";
-import { MediaUrlError } from "./media-url-error";
+import { AnalysisStageError, MediaUrlError, errorKind } from "./media-url-error";
 import { studioAnalysisResultSchema } from "./studio-analysis-result-dto";
 
 const inputSchema = z.strictObject({ url: z.string().trim().min(1).max(4096), authorized: z.literal(true) });
@@ -59,10 +59,23 @@ export function createAdminReferenceHttp(overrides: Partial<typeof defaults> = {
       analyzing = true;
       try {
         if (!deps.analyze) return json({ error: "unavailable" }, 503);
-        const { schemaVersion, status, media, proposals } = await deps.analyze(parsed.data.url, undefined, request.signal);
-        return json({ result: studioAnalysisResultSchema.parse({ schemaVersion, status, media, proposals }) });
+        // 요청 취소 신호(request.signal)는 넘기지 않는다. 운영 라우트에서 본문을 읽은 뒤 일찍 끝나 정상 분석까지 끊을 수 있다.
+        // 분석은 자체 30초 시한과 라우트 maxDuration으로 제한된다.
+        const { schemaVersion, status, media, proposals } = await deps.analyze(parsed.data.url, undefined, undefined);
+        const ready = json({ result: studioAnalysisResultSchema.parse({ schemaVersion, status, media, proposals }) });
+        // 진단 헤더: 분석이 끝난 시점에 요청 신호가 이미 끝나 있었는지(원인 실측용, 값은 aborted|live만).
+        ready.headers.set("x-dream-request-signal", request.signal.aborted ? "aborted" : "live");
+        return ready;
       } catch (error) {
-        return json({ error: error instanceof MediaUrlError ? error.code : "analysis_failed" }, 422);
+        if (error instanceof MediaUrlError) return json({ error: error.code }, 422);
+        // 진단: 단계·오류 이름과 그 순간 요청 신호 상태만 남긴다(URL·경로·서버 메시지 없음).
+        const stage = error instanceof AnalysisStageError ? error.stage : "result";
+        const detail = error instanceof AnalysisStageError ? error.detail : errorKind(error);
+        const requestAborted = request.signal.aborted;
+        console.error("[admin-reference-analysis] analysis_failed", JSON.stringify({ stage, detail, requestAborted }));
+        const failed = json({ error: "analysis_failed", stage, detail, requestAborted }, 422);
+        failed.headers.set("x-dream-request-signal", requestAborted ? "aborted" : "live");
+        return failed;
       } finally { analyzing = false; }
     });
   }

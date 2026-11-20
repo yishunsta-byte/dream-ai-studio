@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
 import { analyzeRegisteredReferenceSnapshot } from "./registered-snapshot";
 import { referenceFileByteLimit, referenceFileFormat } from "./input";
-import { MediaUrlError } from "./media-url-error";
+import { AnalysisStageError, MediaUrlError, errorKind } from "./media-url-error";
 import { proposalsForLocalReference } from "./project-preview";
 
 // Additional origins are supplied only by the local operator CLI; the web action always uses the fixed origins.
@@ -28,14 +28,16 @@ export async function analyzeLocalMediaUrl(input: string, operatorOrigin?: strin
 
   const deadline = AbortSignal.timeout(30_000);
   const signal = requestSignal ? AbortSignal.any([deadline, requestSignal]) : deadline;
-  const response = await fetch(url, { redirect: "error", credentials: "omit", cache: "no-store", signal });
+  let response: Response;
+  try { response = await fetch(url, { redirect: "error", credentials: "omit", cache: "no-store", signal }); }
+  catch (error) { throw new AnalysisStageError("fetch", errorKind(error)); }
   if (Number(response.headers.get("content-length")) > referenceFileByteLimit) {
     await response.body?.cancel();
     throw new MediaUrlError("too_large", "파일 크기 한도를 초과했습니다.");
   }
   if (response.status !== 200 || !response.body) {
     await response.body?.cancel();
-    throw new Error("전체 파일을 가져올 수 없습니다.");
+    throw new AnalysisStageError("fetch", `status_${response.status}`);
   }
 
   const root = await realpath(await mkdtemp(join(tmpdir(), "dream-rea-url-")));
@@ -51,13 +53,14 @@ export async function analyzeLocalMediaUrl(input: string, operatorOrigin?: strin
         yield chunk;
       }
     }
-    await writeFile(path, chunks(), { flag: "wx", signal });
+    try { await writeFile(path, chunks(), { flag: "wx", signal }); }
+    catch (error) { throw error instanceof MediaUrlError ? error : new AnalysisStageError("download", errorKind(error)); }
     const sha256 = hash.digest("hex");
     const analyzed = await analyzeRegisteredReferenceSnapshot(path, { kind: "file", name, sizeBytes, permission: "authorized" },
       { sha256, sourceGeneration: sha256 }, { managedRoot: root, signal });
-    if (analyzed.status !== "bound") throw new Error("미디어 분석을 완료하지 못했습니다 (" + analyzed.reason + ").");
+    if (analyzed.status !== "bound") throw new AnalysisStageError("inspect", analyzed.reason);
     const proposals = proposalsForLocalReference(analyzed.analysis);
-    if (!proposals.length) throw new Error("측정 근거가 있는 프롬프트를 만들 수 없습니다.");
+    if (!proposals.length) throw new AnalysisStageError("proposals", "empty");
     return { schemaVersion: 1 as const, status: "ready" as const, sourceUrl: url.href, sha256, sizeBytes,
       media: analyzed.analysis.media, proposals };
   } finally {
