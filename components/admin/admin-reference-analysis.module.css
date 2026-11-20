@@ -58,12 +58,17 @@
 .field textarea { resize: vertical; line-height: 1.5; }
 .surface .field :is(input, select, textarea) { background: var(--lab-inset); color: #edfdf8; border-color: var(--lab-line); }
 .field input[type="file"] { overflow: hidden; text-overflow: ellipsis; }
+.drop { padding: 10px; border: 1px dashed #78d9c5; border-radius: 8px; background: var(--lab-inset); cursor: pointer; }
+.drop:focus-within { border-style: solid; }
 .field input[type="file"]::file-selector-button {
   margin-right: 6px; background: #163b3a; color: var(--lab-mint); border: 1px solid var(--lab-line);
   border-radius: 4px; font: inherit; padding: 3px 8px;
 }
 .field [aria-invalid="true"] { border-color: var(--st-danger-fg); }
 .surface .field [aria-invalid="true"] { border-color: #ff9db0; }
+.preview > div { display: grid; gap: 8px; min-width: 0; }
+.preview :is(img, audio, video) { display: block; width: 100%; max-width: 100%; border-radius: 7px; }
+.preview :is(img, video) { max-height: 16rem; object-fit: contain; background: var(--lab-inset); }
 .count { color: var(--fg-muted); font-weight: 400; }
 .check { display: flex; align-items: flex-start; gap: 8px; min-height: 44px; padding-top: 10px; box-sizing: border-box; cursor: pointer; overflow-wrap: anywhere; }
 .check input { width: 22px; height: 22px; flex: none; margin: 0; }

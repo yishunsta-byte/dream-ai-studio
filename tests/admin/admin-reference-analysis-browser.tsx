@@ -19,11 +19,15 @@ let ids = 0;
 (window as unknown as { __fixture: unknown }).__fixture = {
   requests: () => requests.map(({ uri, method, headers, body, aborted, done }) => ({ uri, method, headers, body, aborted, done })),
   reply: (index: number, status: number, body?: unknown) => requests[index].respond(status, body),
-  selectFile: (name: string, size: number) => {
+  selectFile: (name: string, size: number, drop = false) => {
     const input = document.querySelector<HTMLInputElement>("input[type=file]");
     if (!input) throw new Error("Missing fixture file input");
     const files = new DataTransfer();
     files.items.add(new File([new Uint8Array(size)], name));
+    if (drop) {
+      input.closest("label")?.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: files }));
+      return;
+    }
     input.files = files.files;
     input.dispatchEvent(new Event("change", { bubbles: true }));
   },

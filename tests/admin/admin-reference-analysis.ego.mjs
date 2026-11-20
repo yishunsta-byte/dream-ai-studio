@@ -83,7 +83,7 @@ try {
     await until(() => document.querySelector("main").innerText.includes("추정 템포 120 BPM"), "music result");
     r.steps.music = await state();
     check(await fx(() => [...document.querySelectorAll('main h2, form h3, section[aria-labelledby$="-results"] h3')].every(
-      (heading) => getComputedStyle(heading).color === 'rgb(237, 253, 248)')), `lab heading contrast ${width}`);
+      (heading) => window.getComputedStyle(heading).color === 'rgb(237, 253, 248)')), `lab heading contrast ${width}`);
     if (globalThis.FIXTURE_SCREENSHOT_DIR) {
       await page.screenshot({ path: `${globalThis.FIXTURE_SCREENSHOT_DIR}/spectrum-${width}.png`, fullPage: true });
     }
@@ -184,7 +184,9 @@ try {
     await until(() => document.querySelector("main").innerText.includes("업로드는 4 MiB까지 가능해요"), "large file");
     check((await requests()).length === 13 && await fx(() => document.querySelector("form button[type=submit]").disabled &&
       !document.querySelector("form:has(input[type=checkbox])")), `large file and previous result cleared ${width}`);
-    await fx(() => window.__fixture.selectFile("검수 사진.jpg", 32));
+    await fx(() => window.__fixture.selectFile("검수 사진.jpg", 32, true));
+    await page.click("loc=css:form:has(input[type=file]) details:first-of-type summary");
+    await until(() => document.querySelector('form:has(input[type=file]) img[src^="blob:"]'), "local file preview");
     await submitAnalysis();
     await untilRequests(14, "raw file");
     const fileRequest = (await requests())[13];

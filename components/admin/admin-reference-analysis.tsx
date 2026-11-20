@@ -39,6 +39,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   const [media, setMedia] = useState<AnalysisMedia>("image");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File>();
+  const [multipleFiles, setMultipleFiles] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisView>({ kind: "idle" });
   const analysisSeq = useRef(0);
   const analysisAbort = useRef<AbortController | null>(null);
@@ -50,7 +51,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   const source: AnalysisSource | undefined = sourceKind === "url"
     ? (url.trim() ? { kind: "url", url: url.trim(), media } : undefined)
     : (file ? { kind: "file", file, media } : undefined);
-  const issue = source && analysisInputIssue(source);
+  const issue = multipleFiles ? "한 번에 파일 하나를 선택해 주세요." : source && analysisInputIssue(source);
 
   async function runAnalysis() {
     if (!source || issue || analysisAbort.current || blocked) return;
@@ -66,6 +67,13 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
     else if (!block(outcome)) setAnalysis({ kind: "failed", message: failureMessage(outcome) });
   }
   function editInput(next: () => void) { cancelAnalysis(); next(); setAnalysis({ kind: "idle" }); }
+  function chooseFiles(files: FileList | null) {
+    const multiple = !!files && files.length > 1;
+    editInput(() => {
+      setMultipleFiles(multiple);
+      setFile(multiple ? undefined : files?.[0]);
+    });
+  }
 
   // 실행 버튼은 분석 중 비활성이라 초점을 잃는다. 폼 안에서 시작했으면 바로 '분석 취소'로 옮긴다.
   useLayoutEffect(() => {
@@ -141,7 +149,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
           <div className={styles.options}>
             {(["url", "file"] as const).map((kind) => <label key={kind}>
               <input type="radio" name={`${id}-source-kind`} value={kind} checked={sourceKind === kind}
-                onChange={() => editInput(() => { setSourceKind(kind); setFile(undefined); })} />
+                onChange={() => editInput(() => { setSourceKind(kind); setFile(undefined); setMultipleFiles(false); })} />
               {kind === "url" ? "직접 URL" : "파일"}
             </label>)}
           </div>
@@ -151,7 +159,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
           <div className={styles.options}>
             {SUPPORTED_FORMATS.map(({ media: option }) => <label key={option}>
               <input type="radio" name={`${id}-media`} value={option} checked={media === option}
-                onChange={() => editInput(() => { setMedia(option); setFile(undefined); })} />
+                onChange={() => editInput(() => { setMedia(option); setFile(undefined); setMultipleFiles(false); })} />
               {MEDIA_LABEL[option]}
             </label>)}
           </div>
@@ -161,15 +169,28 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
           <input id={`${id}-url`} type="url" inputMode="url" autoComplete="off" spellCheck={false} required value={url} disabled={running}
             placeholder={`https://…/파일.${extensions[0]}`} aria-invalid={!!issue} aria-describedby={`${id}-input-help${issue ? ` ${id}-input-error` : ""}`}
             onChange={(event) => editInput(() => setUrl(event.target.value))} />
-        </label> : <label className={styles.field} htmlFor={`${id}-file`}>
+        </label> : <label className={`${styles.field} ${styles.drop}`} htmlFor={`${id}-file`}
+          onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = running ? "none" : "copy"; }}
+          onDrop={(event) => {
+            event.preventDefault();
+            const { files } = event.dataTransfer;
+            if (running || !files.length) return;
+            const input = event.currentTarget.querySelector("input");
+            if (input && files.length === 1) input.files = files;
+            else if (input) input.value = "";
+            chooseFiles(files);
+          }}>
           미디어 파일
+          <span className={styles.note}>파일을 이곳에 놓거나 파일 선택을 누르세요.</span>
           <input key={media} id={`${id}-file`} type="file" accept={extensions.map((extension) => `.${extension}`).join(",")} disabled={running}
             aria-invalid={!!issue} aria-describedby={`${id}-input-help${issue ? ` ${id}-input-error` : ""}`}
-            onChange={(event) => editInput(() => setFile(event.target.files?.[0]))} />
+            onChange={(event) => chooseFiles(event.target.files)} />
         </label>}
         <p id={`${id}-input-help`} className={styles.note}>{sourceKind === "url" ? "지원 원본의 직접 HTTPS 파일 주소를 입력하세요."
           : `${extensions.join(" · ").toUpperCase()} · 최대 ${UPLOAD_SIZE_LIMIT_LABEL}`}</p>
         {issue && <p id={`${id}-input-error`} className={styles.error} role="status">{issue}</p>}
+        {source && !issue && (source.kind === "file" || analysis.kind === "ready") && <SourcePreview
+          key={source.kind === "url" ? source.url : "local-file"} source={source} />}
 
         <details className={styles.support}>
           <summary>지원 원본·형식 보기</summary>
@@ -209,6 +230,34 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
 
     <PublicationList list={list} client={client} onBlocked={block} reload={refreshList} />
   </section>;
+}
+
+function SourcePreview({ source }: { source: AnalysisSource }) {
+  const [open, setOpen] = useState(false);
+  const preview = useRef<HTMLDivElement>(null);
+  const file = source.kind === "file" ? source.file : undefined;
+  const url = source.kind === "url" ? source.url : undefined;
+  useEffect(() => {
+    if (!open || !file) return;
+    const element = preview.current?.querySelector("img, audio, video");
+    if (!element) return;
+    const objectUrl = URL.createObjectURL(file);
+    element.setAttribute("src", objectUrl);
+    return () => { element.removeAttribute("src"); URL.revokeObjectURL(objectUrl); };
+  }, [file, open, source.media]);
+
+  return <details className={`${styles.support} ${styles.preview}`} onToggle={(event) => setOpen(event.currentTarget.open)}>
+    <summary>원본 미리보기</summary>
+    {open && <div ref={preview}>
+      {file && <p className={styles.note}>{file.name}</p>}
+      {source.media === "music" && <audio src={url} crossOrigin={url ? "anonymous" : undefined} controls preload="none" aria-label="원본 음악" />}
+      {source.media === "video" && <video src={url} crossOrigin={url ? "anonymous" : undefined} controls preload="none" aria-label="원본 영상" />}
+      {source.media === "image" && (
+        // eslint-disable-next-line @next/next/no-img-element -- A selected local file has a browser-owned blob URL, not an optimizable asset.
+        <img src={url} alt="선택한 원본 이미지" referrerPolicy="no-referrer" />
+      )}
+    </div>}
+  </details>;
 }
 
 function PublishForm({ result, client, newRequestId, onBlocked, onPublished }: {
