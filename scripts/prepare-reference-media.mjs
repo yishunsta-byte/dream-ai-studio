@@ -25,6 +25,7 @@ if (process.env.VERCEL) {
     await writeFile(downloaded, archive);
     await mkdir(root, { recursive: true });
     execFileSync("tar", ["-xJf", downloaded, "-C", root, "--strip-components=1", `${base}/bin/ffmpeg`, `${base}/bin/ffprobe`, `${base}/lib`]);
+    await rm(join(root, "lib", "pkgconfig"), { recursive: true, force: true });
     for (const name of ["ffmpeg", "ffprobe"]) {
       const bin = join(root, "bin", name);
       await rename(bin, `${bin}.bin`);

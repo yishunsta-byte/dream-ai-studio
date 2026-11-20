@@ -147,6 +147,7 @@ export function NeonShowcase({ works, status = "ready", onRetry, featuredId, col
           <a href={`#${ids.main}`} aria-current="page" onClick={(event) => { event.preventDefault(); moveTo(ids.main); }}>발견</a>
           <a href={`#${ids.browse}`} onClick={(event) => { event.preventDefault(); moveTo(ids.browse); }}>작품</a>
           <a href={`#${ids.creators}`} onClick={(event) => { event.preventDefault(); moveTo(ids.creators); }}>크리에이터</a>
+          <a href="/analysis-results">분석 결과</a>
         </nav>
         <div className={styles.search}>
           <label className={styles.srOnly} htmlFor={ids.search}>공개 작품 또는 크리에이터 검색</label>

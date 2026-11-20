@@ -152,3 +152,7 @@ describe("T-240 소스 경계", () => {
     expect(component).toMatch(/onClose=\{onDialogClose\}/);
   });
 });
+
+it("links to approved content analysis results from the public home", () => {
+  expect(render({ works: [] })).toContain('<a href="/analysis-results">분석 결과</a>');
+});

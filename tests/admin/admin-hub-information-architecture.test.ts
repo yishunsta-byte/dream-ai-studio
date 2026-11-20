@@ -19,7 +19,7 @@ describe("admin hub information architecture", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
     const nav = html.match(/<nav\b[^>]*aria-label="관리 메뉴"[\s\S]*?<\/nav>/)?.[0];
     expect(nav).toBeDefined();
-    const targets = ["admin-overview", "admin-project-list", "admin-review", "admin-render-queue", "admin-account"];
+    const targets = ["admin-overview", "admin-project-list", "admin-review", "admin-reference-analysis", "admin-render-queue", "admin-account"];
     expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(targets);
     expect(nav).toMatch(/href="#admin-project-list" aria-current="location"/);
     expect(nav!.match(/aria-current=/g)).toHaveLength(1);
