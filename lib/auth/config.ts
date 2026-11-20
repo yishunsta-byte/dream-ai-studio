@@ -32,7 +32,7 @@ export function authReady(env: Env = process.env) {
 // 공개 메인(T-241): 정확한 루트 "/"와 T-240 고정 이미지 6개만. 하위 폴더 전체(prefix)는 열지 않는다.
 // 로그인 설정이 빠져 있거나 익명이어도 보여야 하므로 proxy가 인증 확인보다 먼저 통과시킨다(세션 갱신 없음).
 export const PUBLIC_SHOWCASE_ASSETS: readonly string[] = Object.freeze(["neon-rooftop", "desert-motion", "wild-coast", "orchid", "celestial", "sunflower"].map((name) => `/showcase/t240/${name}.png`));
-const ANONYMOUS_PUBLIC_PATHS = new Set(["/", ...PUBLIC_SHOWCASE_ASSETS]);
+const ANONYMOUS_PUBLIC_PATHS = new Set(["/", "/analysis-results", ...PUBLIC_SHOWCASE_ASSETS]);
 export function isAnonymousPublicPath(pathname: string) {
   return ANONYMOUS_PUBLIC_PATHS.has(pathname);
 }

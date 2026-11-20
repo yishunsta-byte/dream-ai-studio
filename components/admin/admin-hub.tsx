@@ -4,6 +4,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Card, StatusPill } from "@/components/ui/primitives";
 import { AdminProjectsSection, type AdminProjects } from "./admin-projects";
 import { AdminNavigation } from "./admin-navigation";
+import { AdminReferenceAnalysis } from "./admin-reference-analysis";
 import { AdminRenderQueue } from "./admin-render-queue";
 import styles from "./admin.module.css";
 
@@ -35,6 +36,9 @@ export function AdminHub({ email, projects, review }: { email: string; projects:
       </div>
       <div id="admin-review" role="group" aria-label="완성본 검수·게시" className={styles.target} tabIndex={-1}>
         {review}
+      </div>
+      <div id="admin-reference-analysis" role="group" aria-label="콘텐츠 분석·공개" className={`${styles.target} ${styles.section}`} tabIndex={-1}>
+        <AdminReferenceAnalysis />
       </div>
 
       <section id="admin-render-queue" tabIndex={-1} aria-labelledby="admin-render-queue-heading" className={`${styles.target} ${styles.section}`}>

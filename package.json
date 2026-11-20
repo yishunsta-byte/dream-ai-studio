@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
+    "prebuild": "node scripts/prepare-reference-media.mjs",
     "build": "next build && node scripts/verify-build.mjs",
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint . --max-warnings 0",

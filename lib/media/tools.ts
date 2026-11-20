@@ -15,6 +15,8 @@ export function mediaBinary(name:"ffmpeg"|"ffprobe") {
  const configured=process.env[name==="ffmpeg"?"FFMPEG_PATH":"FFPROBE_PATH"];
  if(configured)return configured;
  const local=join(mediaToolsFolder(),`${name}${process.platform==="win32"?".exe":""}`);
- return existsSync(local)?local:name;
+ if(existsSync(local))return local;
+ const bundled=join(appRoot(),"node_modules",".dream-reference-media","bin",name);
+ return process.env.VERCEL && existsSync(bundled)?bundled:name;
 }
 export const runMedia=promisify(execFile);

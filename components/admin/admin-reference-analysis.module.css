@@ -1,0 +1,40 @@
+/* 관리자 콘텐츠 분석·공개. 누를 수 있는 것은 44px 이상, 390px에서 가로 넘침 없이 줄바꿈. */
+.panel { display: grid; gap: var(--sp-4); min-width: 0; }
+.panel h2, .panel h3, .panel h4 { margin: 0; overflow-wrap: anywhere; }
+.head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; }
+.link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; }
+.note { margin: 0; color: var(--fg-muted); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.status:empty { display: none; }
+.status { margin: 0; color: var(--fg-muted); font-size: var(--text-sm); }
+.support > summary { display: flex; align-items: center; min-height: 44px; font-weight: 700; color: var(--accent); cursor: pointer; }
+.supportBody { display: grid; gap: var(--sp-2); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.supportBody p, .supportBody ul { margin: 0; }
+.supportBody code { word-break: break-all; }
+.form, .publish { display: grid; gap: var(--sp-3); min-width: 0; }
+.publish { padding-top: var(--sp-4); border-top: 1px solid var(--line); }
+.field { display: grid; gap: var(--sp-1); min-width: 0; font-size: var(--text-sm); font-weight: 600; }
+.field > span { display: flex; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; }
+.field :is(input, select, textarea) {
+  min-height: 44px; width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid var(--line-strong); border-radius: var(--radius-md);
+  padding: 8px 10px; background: var(--bg-app); color: var(--fg-default); font: inherit; font-weight: 400;
+}
+.field textarea { resize: vertical; line-height: 1.5; }
+.field [aria-invalid="true"] { border-color: var(--st-danger-fg); }
+.count { color: var(--fg-muted); font-weight: 400; }
+.check { display: flex; align-items: flex-start; gap: 8px; min-height: 44px; padding-top: 10px; box-sizing: border-box; cursor: pointer; overflow-wrap: anywhere; }
+.check input { width: 22px; height: 22px; flex: none; margin: 0; }
+.actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.actions button { min-height: 44px; }
+.result { display: grid; gap: var(--sp-3); min-width: 0; }
+.result h3:focus { outline: none; }
+.result h3:focus-visible { outline: 2px solid var(--line-focus); outline-offset: 3px; }
+.success, .error { margin: 0; font-size: var(--text-sm); font-weight: 700; overflow-wrap: anywhere; }
+.success { color: var(--st-success-fg); }
+.error { color: var(--st-danger-fg); }
+.listSection { display: grid; gap: var(--sp-3); min-width: 0; padding-top: var(--sp-4); border-top: 1px solid var(--line); }
+.items { display: grid; gap: var(--sp-3); margin: 0; padding: 0; list-style: none; }
+.item { display: grid; gap: var(--sp-2); min-width: 0; }
+.itemHead { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; }
+.itemHead h4 { font-size: var(--text-md); }
+.plain { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.promptBox > summary { display: flex; align-items: center; min-height: 44px; font-weight: 700; color: var(--accent); cursor: pointer; }

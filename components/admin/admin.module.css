@@ -58,6 +58,7 @@
 .workspace:has([id="admin-overview"]:target) .navigation a[href="#admin-overview"],
 .workspace:has([id="admin-project-list"]:target) .navigation a[href="#admin-project-list"],
 .workspace:has([id="admin-review"]:target) .navigation a[href="#admin-review"],
+.workspace:has([id="admin-reference-analysis"]:target) .navigation a[href="#admin-reference-analysis"],
 .workspace:has([id="admin-render-queue"]:target) .navigation a[href="#admin-render-queue"],
 .workspace:has([id="admin-account"]:target) .navigation a[href="#admin-account"] {
   background: var(--bg-accent-soft);

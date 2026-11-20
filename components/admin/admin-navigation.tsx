@@ -8,6 +8,7 @@ const sections = [
   { id: "admin-overview", label: "개요", icon: "home" },
   { id: "admin-project-list", label: "내 프로젝트", icon: "folder" },
   { id: "admin-review", label: "완성본 검수·게시", icon: "check" },
+  { id: "admin-reference-analysis", label: "콘텐츠 분석·공개", icon: "flask" },
   { id: "admin-render-queue", label: "렌더 대기열", icon: "clock" },
   { id: "admin-account", label: "계정 설정", icon: "settings" },
 ] as const satisfies readonly { id: string; label: string; icon: IconName }[];
