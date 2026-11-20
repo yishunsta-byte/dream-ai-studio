@@ -8,6 +8,7 @@ import {
 import { shortsPublicationDraft } from "./admin-analysis-publication-draft";
 import type { PublicationDraft } from "./admin-reference-analysis-model";
 import styles from "./admin-reference-analysis.module.css";
+import { ShortsReport, ShortsSteps } from "./admin-shorts-report";
 
 const errors: Record<string, string> = {
   invalid_input: "공개 YouTube 쇼츠 또는 시청 주소를 확인해 주세요.",
@@ -29,7 +30,8 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare }: {
   const [consent, setConsent] = useState(false);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState("");
-  const [result, setResult] = useState<ShortsAnalysisResult>();
+  // 결과와 그 결과를 낸 영상 ID를 함께 둔다(주소를 바꾸면 둘 다 비운다).
+  const [result, setResult] = useState<{ value: ShortsAnalysisResult; videoId: string }>();
   const [availability, setAvailability] = useState<Availability>({ kind: "checking" });
   const [statusAttempt, setStatusAttempt] = useState(0);
   useEffect(() => () => active.current?.abort(), []);
@@ -82,6 +84,7 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare }: {
       urlField.current?.focus();
       return;
     }
+    const videoId = youtubeVideoId(url.trim())!;
     setNotice("");
     setResult(undefined);
     const controller = new AbortController();
@@ -116,7 +119,7 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare }: {
       }
       const parsed = shortsAnalysisResultSchema.safeParse(body.result);
       if (parsed.success) {
-        setResult(parsed.data);
+        setResult({ value: parsed.data, videoId });
         setNotice("쇼츠 분석을 완료했어요.");
       } else setNotice(errors.invalid_response);
     } catch {
@@ -129,11 +132,11 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare }: {
     }
   }
 
-  const findings = result?.findings;
   return <section className={styles.panel} data-appearance={appearance} aria-labelledby={`${id}-title`}>
     <div className={styles.surface}>
       <form className={styles.form} onSubmit={event => { event.preventDefault(); void analyze(); }}>
         <h3 id={`${id}-title`}>YouTube 쇼츠 분석</h3>
+        <ShortsSteps current={result ? 1 : 0} />
         {availability.kind !== "configured" && <div className={styles.promptEditor}>
           <p className={styles.status} role="status">
             {availability.kind === "checking" ? "쇼츠 모델 설정을 확인하는 중이에요."
@@ -169,23 +172,10 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare }: {
         </div>
         <p className={styles.status} role="status">{running ? "공개 영상 분석 중" : notice}</p>
       </form>
-      {findings && <div className={styles.inference}>
+      {result && <div className={styles.inference}>
         <h4>Gemini 영상 분석 제안</h4>
-        <p className={styles.note}>모델이 영상에서 찾은 내용이에요. 공개하기 전에 원본과 대조하세요.</p>
-        <p>{findings.summary}</p>
-        <p><strong>첫 장면</strong> {findings.hook ?? "미확인"}</p>
-        <p><strong>화면 구성</strong> {findings.composition ?? "미확인"}</p>
-        <p><strong>소리</strong> {findings.sound ?? "미확인"}</p>
-        {findings.segments.length > 0 && <ol className={styles.observations} aria-label="시간대별 근거">
-          {findings.segments.map((segment, index) => <li key={`${segment.timestamp}-${index}`}>
-            <span className={styles.measureRange}>{segment.timestamp}</span>
-            <p>{segment.evidence}</p>
-          </li>)}
-        </ol>}
-        {findings.draftPrompt && <><h5>새 영상 연출 초안</h5><p>{findings.draftPrompt}</p></>}
-        {onPrepare && <div className={styles.actions}>
-          <Button type="button" variant="secondary" onClick={() => onPrepare(shortsPublicationDraft(findings))}>공개 준비</Button>
-        </div>}
+        <ShortsReport result={result.value} videoId={result.videoId}
+          onPrepare={onPrepare && (() => onPrepare(shortsPublicationDraft(result.value.findings)))} />
       </div>}
     </div>
   </section>;
