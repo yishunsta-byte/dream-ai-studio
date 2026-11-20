@@ -2,6 +2,10 @@ import { z } from "zod";
 
 export const SHORTS_ANALYSIS_URI = "/api/admin/shorts-analysis";
 
+export const shortsAnalysisAvailabilitySchema = z.strictObject({
+  semantic: z.strictObject({ shorts: z.enum(["configured", "not_configured"]) }),
+});
+
 const videoId = /^[A-Za-z0-9_-]{11}$/;
 
 export function youtubeVideoId(value: string): string | null {
