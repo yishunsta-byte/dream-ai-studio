@@ -93,34 +93,51 @@ function MusicFileAnalysis({ file, client, disabled, onPrepare }: Props & { file
   </>;
 }
 
+// Audio Analyzer v1.01 MusicReportView 순서(장르·스타일 → BPM·템포 → Suno 프롬프트 → 곡 구조)로, 지금 서버가 주는
+// 다섯 값만 보여 준다. 조성·박자·코드·스템·가사처럼 서버가 주지 않는 칸은 만들지 않는다.
 function MusicReport({ result, onPrepare }: { result: MusicSemanticResult; onPrepare?: Props["onPrepare"] }) {
-  const [copy, setCopy] = useState("");
-  const prompt = useRef<HTMLTextAreaElement>(null);
   if (result.status === "unavailable") return <p role="status">{unavailableMessage[result.reason]}</p>;
   const { genre, instruments, tempoBpm, structure, sunoPrompt } = result.report;
-  async function copyPrompt() {
-    if (!sunoPrompt) return;
-    try { await navigator.clipboard.writeText(sunoPrompt); setCopy("Suno 프롬프트를 복사했어요."); }
-    catch { prompt.current?.focus(); prompt.current?.select(); setCopy("선택된 프롬프트를 직접 복사해 주세요."); }
-  }
-
   return <div className={styles.report}>
     <h4>음악 의미 분석 결과</h4>
     <p>Gemini 추정 · {result.status === "partial" ? "일부 항목만 확인" : "제공된 음악 파일 기준"}</p>
     <dl className={styles.details}>
-      <div><dt>장르</dt><dd>{genre ?? unknown}</dd></div>
-      <div><dt>악기</dt><dd>{instruments?.join(" · ") ?? unknown}</dd></div>
-      <div><dt>추정 템포</dt><dd>{tempoBpm === null ? unknown : `${tempoBpm} BPM`}</dd></div>
+      <div className={styles.tile}><dt>장르 · 악기</dt><dd>
+        <strong className={styles.big}>{genre ?? unknown}</strong>
+        {instruments ? <ul className={styles.chips} aria-label="악기">{instruments.map((item, index) => <li key={index}>{item}</li>)}</ul> : <span>악기 {unknown}</span>}
+      </dd></div>
+      <div className={styles.tile}><dt>추정 템포</dt><dd>
+        {tempoBpm === null ? unknown : <><strong className={styles.big}>{tempoBpm}</strong> BPM</>}
+      </dd></div>
     </dl>
-    <h5>구간 구조</h5>
-    {structure ? <ol>{structure.map(({ label, description }, index) => <li key={index}><strong>{label}</strong> · {description}</li>)}</ol>
-      : <p>{unknown}</p>}
     <h5>Suno용 프롬프트 제안</h5>
-    {sunoPrompt ? <>
-      <textarea ref={prompt} className={styles.prompt} aria-label="Suno용 프롬프트 제안" readOnly value={sunoPrompt} />
-      <Button type="button" variant="secondary" onClick={copyPrompt}>Suno 프롬프트 복사</Button>
-      <p role="status">{copy}</p>
-    </> : <p>{unknown}</p>}
+    {sunoPrompt ? <SunoPrompt original={sunoPrompt} /> : <p>{unknown}</p>}
+    <h5>구간 구조</h5>
+    {structure ? <ol className={styles.structure}>{structure.map(({ label, description }, index) => <li key={index}>
+      <span className={styles.step}>{index + 1}</span><div><strong>{label}</strong><p>{description}</p></div>
+    </li>)}</ol> : <p>{unknown}</p>}
     {onPrepare && <Button type="button" variant="secondary" onClick={() => onPrepare(musicPublicationDraft(result.report))}>공개 준비</Button>}
   </div>;
+}
+
+// 화면 안에서 고쳐 복사할 수 있다. 공개 준비에는 Gemini 제안 원문이 들어간다(기존 동작 유지).
+function SunoPrompt({ original }: { original: string }) {
+  const [draft, setDraft] = useState(original);
+  const [copy, setCopy] = useState("");
+  const prompt = useRef<HTMLTextAreaElement>(null);
+  const edited = draft !== original;
+  async function copyPrompt() {
+    try { await navigator.clipboard.writeText(draft); setCopy("Suno 프롬프트를 복사했어요."); }
+    catch { prompt.current?.focus(); prompt.current?.select(); setCopy("선택된 프롬프트를 직접 복사해 주세요."); }
+  }
+  return <>
+    <textarea ref={prompt} className={styles.prompt} aria-label="Suno용 프롬프트 제안" value={draft}
+      onChange={event => { setDraft(event.target.value); setCopy(""); }} />
+    <div className={styles.actions}>
+      <Button type="button" variant="secondary" onClick={copyPrompt}>Suno 프롬프트 복사</Button>
+      {edited && <Button type="button" variant="ghost" onClick={() => { setDraft(original); setCopy("제안된 프롬프트로 되돌렸어요."); }}>원래대로</Button>}
+    </div>
+    <p className={styles.hint}>{edited ? "고친 내용은 이 화면에서만 써요. 공개 준비에는 Gemini 제안 원문이 들어가요." : "고쳐서 복사할 수 있어요."}</p>
+    <p role="status">{copy}</p>
+  </>;
 }

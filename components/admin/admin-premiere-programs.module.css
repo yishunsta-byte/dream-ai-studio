@@ -169,3 +169,6 @@
 @media (max-width: 860px) {
   .resultsDesk:has(> :nth-child(2)) { grid-template-columns: minmax(0, 1fr); }
 }
+.dropzone { display: grid; gap: var(--sp-2); padding: var(--sp-3); border: 1px dashed var(--line-strong); border-radius: var(--radius-md); }
+.dropzone[data-dragging] { border-color: var(--accent); background: var(--bg-accent-soft); }
+.picked { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }

@@ -11,6 +11,7 @@ import { imagePublicationDraft } from "./admin-analysis-publication-draft";
 import { StyleDnaReport } from "./admin-style-dna-report";
 import type { StyleDna } from "./admin-style-dna-extension";
 import { AdminMusicSemantic } from "./admin-music-semantic";
+import { AudioWaveform } from "./admin-audio-waveform";
 import { PasteUrlField } from "./admin-paste-url";
 import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
 import {
@@ -246,29 +247,49 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   </div>;
 }
 
+const megabytes = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(bytes < 1024 * 1024 ? 2 : 1)} MB`;
+
+// Audio Analyzer v1.01 업로드 화면처럼 끌어다 놓기·교체·해제를 지원한다. 끌어다 놓은 파일도 같은 형식·크기 검사를 거친다.
 function MusicWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   const [file, setFile] = useState<File>();
+  const [dragging, setDragging] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
   const issue = file && analysisInputIssue({ kind: "file", media: "music", file });
   const selected = issue ? undefined : file;
+  const replace = (next?: File) => {
+    if (input.current && next !== input.current.files?.[0]) input.current.value = "";
+    setFile(next);
+  };
   return <div className={styles.workbench}>
     <div className={styles.desk}>
       <section className={styles.control}>
         <h3>음악 파일</h3>
-        <label className={styles.field}>파일 선택
-          <input type="file" accept=".mp3,.wav,.m4a" aria-invalid={!!issue}
-            onChange={(event) => setFile(event.target.files?.[0])} />
-        </label>
-        <p className={styles.note}>MP3 · WAV · M4A · 최대 {UPLOAD_SIZE_LIMIT_LABEL}</p>
+        <div className={styles.dropzone} data-dragging={dragging || undefined}
+          onDragOver={event => { if (event.dataTransfer.types.includes("Files")) { event.preventDefault(); setDragging(true); } }}
+          onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
+          onDrop={event => { event.preventDefault(); setDragging(false); const dropped = event.dataTransfer.files[0];
+            // 파일 칸에도 같은 파일을 넣어 '선택된 파일 없음'으로 보이지 않게 한다(지원하지 않는 브라우저는 이름 줄로 안내).
+            if (dropped && input.current) { try { input.current.files = event.dataTransfer.files; } catch { /* 읽기 전용 */ } }
+            if (dropped) replace(dropped); }}>
+          <label className={styles.field}>{file ? "다른 파일로 교체" : "파일 선택"}
+            <input ref={input} type="file" accept=".mp3,.wav,.m4a" aria-invalid={!!issue}
+              onChange={(event) => replace(event.target.files?.[0])} />
+          </label>
+          <p className={styles.note}>음악 파일을 여기로 끌어다 놓아도 돼요. MP3 · WAV · M4A · 최대 {UPLOAD_SIZE_LIMIT_LABEL}</p>
+        </div>
+        {file && <div className={styles.picked}>
+          <p className={styles.note}>선택한 파일 · {file.name} · {megabytes(file.size)}</p>
+          <Button type="button" variant="secondary" size="sm" onClick={() => { replace(undefined); input.current?.focus(); }}>선택 해제</Button>
+        </div>}
         {issue && <p role="status">{issue}</p>}
         <AdminMusicSemantic file={selected} onPrepare={onPrepare} />
       </section>
     </div>
     <Preview title="오디오 프리뷰">
-      <div className={styles.previewMessage}>
+      {selected ? <AudioWaveform file={selected} /> : <div className={styles.previewMessage}>
         <span className={styles.soundIcon} aria-hidden="true">≋</span>
-        <p>{selected ? selected.name : "음악 파일을 선택하면 여기에서 재생할 수 있어요."}</p>
-      </div>
-      {selected && <LocalMedia file={selected} kind="music" />}
+        <p>음악 파일을 선택하면 파형을 보고 여기에서 재생할 수 있어요.</p>
+      </div>}
     </Preview>
   </div>;
 }
