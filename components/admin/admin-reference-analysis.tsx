@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Button, Callout, Card, StatusPill } from "@/components/ui/primitives";
 import type { ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
 import { ImageSemanticAction } from "./admin-image-semantic";
+import { AdminMusicSemantic } from "./admin-music-semantic";
+import { AdminShortsAnalysis } from "./admin-shorts-analysis";
 import { SpectrumResults } from "./admin-reference-analysis-spectrum";
 import {
   LIMITS, MEDIA_LABEL, URL_SIZE_LIMIT_LABEL, UPLOAD_SIZE_LIMIT_LABEL, SUPPORTED_FORMATS, SUPPORTED_ORIGINS,
@@ -300,6 +302,9 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
         {ready && <SpectrumResults key={ready.revision} result={ready.result} semantic={ready.semantic} />}
       </section>
     </div>
+
+    {media === "music" && <AdminMusicSemantic file={source?.kind === "file" && !issue ? source.file : undefined} disabled={running} />}
+    {media === "video" && <AdminShortsAnalysis />}
 
     {ready && <div className={styles.surface}>
       <PublishForm key={ready.revision} result={ready.result} client={client}

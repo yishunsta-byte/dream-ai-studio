@@ -122,7 +122,7 @@ const routeModules = import.meta.glob<Record<string, unknown>>("../app/api/**/ro
 // inheriting a public exemption or disappearing from the authentication tests.
 const publicAuthRoutes = ["auth/login", "auth/signup", "auth/reset"];
 const selfAuthenticatedRoutes = ["auth/password"];
-const referenceRoutes = ["admin/reference-analysis", "admin/reference-publications", "admin/music-semantic"];
+const referenceRoutes = ["admin/reference-analysis", "admin/reference-publications", "admin/music-semantic", "admin/shorts-analysis"];
 const guardedRoutes = [
   "admin/publications", "admin/render-queue", ...referenceRoutes,
   "assets/[id]", "assets/link", "assets/upload", "auth/logout", "auth/session",

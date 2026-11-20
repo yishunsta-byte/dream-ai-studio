@@ -27,6 +27,7 @@ export function AdminAnalysisGuide() {
           <li><strong>소스 선택</strong><p>URL 주소 또는 파일 업로드를 선택한 뒤 이미지, 음악, 영상 중 하나를 고르세요.</p></li>
           <li><strong>권리 확인하고 분석</strong><p>분석할 권리가 있는 자료를 넣고 버튼을 누르세요. 파일은 {referenceUploadByteLimit / MiB} MiB까지 업로드할 수 있어요.</p></li>
           <li><strong>결과 확인</strong><p>분석 근거와 생성 프롬프트를 확인하세요. 공개가 필요하면 결과를 골라 제목·요약·프롬프트를 공개할 수 있어요.</p></li>
+          <li><strong>의미 분석</strong><p>이미지는 Style DNA로 분석하고, 음악은 파일 업로드 후 음악 의미 분석을 실행하세요. 영상에서는 공개 YouTube 주소로 쇼츠를 분석할 수 있어요. 각 기능은 화면에서 안내한 자료를 Gemini로 보내요.</p></li>
         </ol>
         <h3>지원 형식</h3>
         <dl className={styles.guideFormats}>
@@ -109,7 +110,7 @@ export function AdminApiIntegrations() {
     </div>
     <Card className={styles.apiCard}>
       <div className={styles.apiIntro}>
-        <div><h3>콘텐츠 분석 API</h3><p className={styles.note}>기본 분석과 공개 기능은 관리자 로그인으로 사용해요. 이미지 Style DNA는 Gemini 서버 설정이 필요해요.</p></div>
+        <div><h3>콘텐츠 분석 API</h3><p className={styles.note}>기본 분석과 공개 기능은 관리자 로그인으로 사용해요. 이미지 기본 분석에는 별도 API 키는 필요 없어요. 이미지·음악·쇼츠 의미 분석은 Gemini 서버 설정을 사용해요.</p></div>
         <Button variant="secondary" loading={checking} loadingLabel="응답 확인 중" onClick={() => void checkApis()}>API 응답 확인</Button>
       </div>
       <ul className={styles.apiRoutes}>
