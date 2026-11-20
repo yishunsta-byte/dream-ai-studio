@@ -56,7 +56,7 @@ Threads 등 다른 게시물 주소는 지원하지 않아요. 권한이 있는 
 
 ## API 연동
 
-**계정설정 및 API 연동**의 **API연동** → **분석기 연결 설정**에서 **서버 설정 확인**을 누르면 세 분석기의 Gemini 서버 설정이 있는지 한 번에 조회해요. 상태는 **설정 확인됨**, **서버 설정 필요**, **관리자 로그인 필요**, **관리자 권한 필요**, **설정을 확인하지 못했어요** 중 하나예요. **설정 확인됨**은 키와 모델 설정이 있다는 뜻이지, 실제 Gemini 연결이 된다는 뜻은 아니에요. 키가 유효한지와 모델 응답은 각 분석 화면에서 분석을 실행할 때 확인돼요. 카드에는 제공사(Google Gemini)와 서버 모델 변수 이름만 보이고 키 값은 보이지 않으며, 이 화면에서 키를 입력할 수도 없어요.
+**계정설정 및 API 연동**의 **API연동** → **Gemini 설정**에서 이미지·쇼츠용 키와 음악용 키, 분석기별 모델 ID를 넣고 **저장**을 눌러요. 저장할 때 Gemini에서 키와 모델 정보를 확인하고(분석 호출은 하지 않아요), 확인되면 서버에 저장해요. 처음 저장할 때는 키가 꼭 필요하고, 이후 모델만 바꿀 때는 키를 비워 두면 저장된 키를 그대로 써요. 저장한 키는 다시 보이지 않으며 바꿀 때는 **키 교체**를 눌러요. 상태는 **키 저장됨**, **서버 환경 변수 키 사용 중**, **미등록** 중 하나예요. 서버 키 저장소가 연결되지 않은 배포에서는 저장할 수 없고 환경 변수 설정을 써요. 실제 분석 결과는 각 분석기에서 실행해 확인해요.
 
 Gemini를 연결하려면 Google AI Studio에서 Gemini API 키를 준비하고, Vercel 프로젝트 환경 변수에 아래 이름으로 키와 모델 ID를 넣은 뒤 새로 배포해요. 키 값은 서버 환경 변수에만 두고 화면·문서·저장소에 적지 않아요.
 
@@ -69,6 +69,8 @@ Gemini를 연결하려면 Google AI Studio에서 Gemini API 키를 준비하고,
 | 작업 | 메서드와 경로 | 요청 |
 | --- | --- | --- |
 | 설정 확인 | `GET /api/admin/reference-analysis`, `GET /api/admin/music-semantic`, `GET /api/admin/shorts-analysis` | 관리자 세션. 응답 `{ "semantic": { "image" \| "music" \| "shorts": "configured" \| "not_configured" } }` |
+| Gemini 설정 읽기 | `GET /api/admin/analysis-credentials` | 관리자 세션. 응답 `storage`, 묶음별 `version`·`updatedAt`, 분석기별 `configured`·`source`·`modelId`. 키 값·힌트는 없어요. |
+| Gemini 설정 저장 | `PUT /api/admin/analysis-credentials` | 같은 출처 JSON `{ "group": "reference" \| "music", "expectedVersion", "apiKey"?, "models" }`. 처음 저장에만 `apiKey` 필수. `409 stale`은 최신 설정을 다시 읽은 뒤 저장해요. |
 | 이미지 분석 URL | `POST /api/admin/reference-analysis` | JSON `{ "url": "…", "authorized": true, "media": "image", "semantic": "image" }` |
 | 이미지 분석 파일 | `POST /api/admin/reference-analysis` | `application/octet-stream` 본문, `x-dream-media: image`, `x-dream-semantic: image`, `x-dream-filename: encodeURIComponent(file.name)` 헤더 |
 | 음악 분석 | `POST /api/admin/music-semantic` | `application/octet-stream` 본문, `x-dream-filename`, `x-dream-music-external-consent: true` 헤더 |

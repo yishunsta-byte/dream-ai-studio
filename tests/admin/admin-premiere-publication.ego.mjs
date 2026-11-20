@@ -190,20 +190,11 @@ try{
   await page.keyboard.press("Enter");
   focus.push(await view(apiId));
   await text(settingsId,"비밀번호 바꾸기");
-  await text(apiId,"서버 설정 확인");
-  assert.equal(await page.evaluate(id=>document.getElementById(id).querySelectorAll("input").length,apiId),0);
-  const settingsReads=async()=>(await inspect()).filter(request=>request.method==="GET"&&["/api/admin/reference-analysis","/api/admin/music-semantic","/api/admin/shorts-analysis"].includes(request.path)).length;
-  const readsBeforeCheck=await settingsReads();
-  await press('loc=role:button[name="서버 설정 확인"]');
-  await text(apiId,"설정 확인됨");
-  assert.equal(await settingsReads(),readsBeforeCheck+3);
-  assert.equal(await page.evaluate(id=>/연결됨/.test(document.getElementById(id).innerText),apiId),false);
-  await page.evaluate(()=>{window.__premiere.statuses.music="not_configured";});
-  await press('loc=role:button[name="다시 확인"]');
-  await text(apiId,"서버 설정 필요");
-  assert.deepEqual(await page.evaluate(id=>[...document.getElementById(id).querySelectorAll("[role=status]")].map(node=>node.textContent),apiId),["설정 확인됨","서버 설정 필요","설정 확인됨"]);
-  assert.equal(await page.evaluate(id=>document.getElementById(id).querySelector('a[href="#admin-manual"]')?.textContent.trim(),apiId),"서버 설정 필요: 키와 모델 설정 방법");
-  await page.evaluate(()=>{window.__premiere.statuses.music="configured";});
+  // Gemini 설정 카드: 저장 상태만 읽고(GET 1회) 쓰기는 없으며, 원시 API 경로를 보여 주지 않는다. 등록 동작은 admin-gemini-settings.ego.mjs.
+  await text(apiId,"Gemini 설정");
+  await text(apiId,"이미지·쇼츠 공용 API 키"); await text(apiId,"연결 시험");
+  assert.equal((await inspect()).filter(request=>request.path==="/api/admin/analysis-credentials"&&request.method!=="GET").length,0);
+  assert.equal(await page.evaluate(id=>/\/api\/|GET |연결됨/.test(document.getElementById(id).innerText),apiId),false);
   await page.evaluate(()=>history.back());
   focus.push(await view(imageId));
   const readsBeforeDraft=(await listReads()).length;

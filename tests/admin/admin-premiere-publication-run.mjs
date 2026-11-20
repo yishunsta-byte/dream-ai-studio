@@ -31,6 +31,10 @@ const requests:RequestRow[]=[];
 const fixture={
   statuses:{image:"configured",music:"configured",shorts:"configured"} as Record<string,string>,
   hold:"", publicationFault:"",
+  credentials:{storage:"ready",groups:{reference:{version:0,updatedAt:null},music:{version:0,updatedAt:null}},
+    programs:{image:{configured:false,source:"none",modelId:null,lastTest:null},shorts:{configured:false,source:"none",modelId:null,lastTest:null},music:{configured:false,source:"none",modelId:null,lastTest:null}}} as {storage:string;groups:Record<string,{version:number;updatedAt:string|null}>;programs:Record<string,{configured:boolean;source:string;modelId:string|null;lastTest:unknown}>},
+  testOutcome:{status:"verified",code:null} as {status:string;code:string|null},
+  credentialFaults:[] as {status:number;body:unknown}[],
   requests:()=>requests.map(({path,method,headers,body,aborted})=>({path,method,headers,body,aborted})),
   release:()=>requests.forEach(row=>row.resolve?.()),
 };
@@ -63,6 +67,38 @@ window.fetch=async(raw,init)=>{
     if (method==="POST" && program==="image") return response({result:basicImage,semantic:imageMeaning});
     if (method==="POST" && program==="music") return response(musicMeaning);
     if (method==="POST" && program==="shorts") return response(shortsMeaning);
+  }
+  if(path==="/api/admin/analysis-credentials/test"&&method==="POST"){
+    // 합성 연결 시험(Backend 계약 msg_cb4ee4e63485): 저장된 버전만, 버전이 다르면 409.
+    if (fixture.hold==="credential-test") await new Promise<void>(resolve=>{row.resolve=resolve;});
+    if (init?.signal?.aborted) throw new DOMException("aborted","AbortError");
+    const fault=fixture.credentialFaults.shift();
+    if (fault) return response(fault.body,fault.status);
+    const test=body as {program:string;group:string;version:number};
+    const group=fixture.credentials.groups[test.group];
+    if (!group || test.version<1) return response({code:"invalid_input",error:"invalid"},400);
+    if (test.version!==group.version) return response({code:"stale",error:"stale"},409);
+    const result={version:test.version,status:fixture.testOutcome.status,code:fixture.testOutcome.code,checkedAt:new Date().toISOString()};
+    fixture.credentials.programs[test.program].lastTest=result;
+    return response({program:test.program,...result});
+  }
+  if(path==="/api/admin/analysis-credentials"){
+    // 합성 키 저장 경로(Backend 계약 msg_bb18c2ae5fd0): 다음 응답 오류를 credentialFaults로 주입하고, PUT은 버전·출처를 갱신한다.
+    if (fixture.hold==="credentials" && method==="PUT") await new Promise<void>(resolve=>{row.resolve=resolve;});
+    if (init?.signal?.aborted) throw new DOMException("aborted","AbortError");
+    const fault=fixture.credentialFaults.shift();
+    if (fault) return response(fault.body,fault.status);
+    if (method==="PUT") {
+      const save=body as {group:string;expectedVersion:number;apiKey?:string;models:Record<string,string>};
+      const group=fixture.credentials.groups[save.group];
+      if (save.expectedVersion!==group.version) return response({code:"stale",error:"stale"},409);
+      group.version+=1; group.updatedAt=new Date().toISOString();
+      for (const [program,modelId] of Object.entries(save.models)) {
+        const item=fixture.credentials.programs[program];
+        item.modelId=modelId; item.lastTest=null; if (save.apiKey) item.source="stored"; item.configured=item.source!=="none";
+      }
+    }
+    return response(fixture.credentials);
   }
   if(path==="/api/admin/render-queue"&&method==="GET") return response({jobs:[]});
   return response({},404);

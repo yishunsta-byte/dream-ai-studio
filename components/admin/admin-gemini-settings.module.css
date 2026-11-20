@@ -1,0 +1,49 @@
+/* P0 Gemini 설정 카드. 새 작업실 톤(Design msg_72dad930c7d0)을 이 카드 안에서만 먼저 쓴다.
+   전체 화면 교체 때 같은 값을 공용 토큰으로 옮긴다. 다크 모드 공용 값이 정해지기 전까지 카드 색은 밝은 톤으로 고정한다. */
+.card {
+  --studio-bg: #FAF8F3; --studio-ink: #243B53; --studio-mint: #0E9F94; --studio-action: #08756C;
+  --studio-surface: #FFFFFF; --studio-muted: #52616D; --studio-line: #D9DED9;
+  display: grid; gap: var(--sp-5, 20px); min-width: 0;
+  background: var(--studio-bg); color: var(--studio-ink); border-color: var(--studio-line);
+}
+.card :is(h4, h5, p, dl, dd, ul) { margin: 0; }
+.card :is(h4, h5, legend) { color: var(--studio-ink); }
+.card :is(button[type="submit"]) { background: var(--studio-action); border-color: var(--studio-action); color: #FFFFFF; }
+.card :is(input, button, a):focus-visible { outline: 3px solid var(--studio-action); outline-offset: 2px; box-shadow: none; }
+.head { display: grid; gap: var(--sp-1, 4px); border-left: 4px solid var(--studio-mint); padding-left: var(--sp-3, 12px); }
+.help { color: var(--studio-muted); font-size: var(--text-sm); }
+.error { color: var(--st-danger-fg); font-size: var(--text-sm); }
+.link { color: var(--studio-action); text-decoration: underline; text-underline-offset: 3px; }
+.status { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--sp-2, 8px); }
+.status > div { display: grid; gap: 2px; padding: var(--sp-3, 12px); border: 1px solid var(--studio-line); border-radius: var(--radius-md); background: var(--studio-surface); min-width: 0; }
+.status dt { color: var(--studio-muted); font-size: var(--text-sm); }
+.status dd { font-weight: var(--weight-semibold); overflow-wrap: anywhere; }
+.form, .tests { display: grid; gap: var(--sp-4, 16px); min-width: 0; padding: var(--sp-4, 16px); border: 1px solid var(--studio-line); border-radius: var(--radius-md); background: var(--studio-surface); }
+.fieldset { display: grid; gap: var(--sp-3, 12px); min-width: 0; margin: 0; padding: 0; border: 0; }
+.fieldset legend { padding: 0; margin-bottom: var(--sp-2, 8px); font-weight: var(--weight-semibold); }
+/* 데스크톱: 왼쪽 키 2종, 오른쪽 모델 ID 3종(Design README P0). 좁은 화면은 키 → 모델 한 줄. */
+.columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4, 16px) var(--sp-6, 24px); align-items: start; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3, 12px); }
+.field { display: grid; gap: var(--sp-1, 4px); align-content: start; justify-items: start; min-width: 0; }
+.field label { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--studio-ink); }
+.field input { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #8A969E; border-radius: var(--radius-md); padding: 6px 10px; background: var(--studio-surface); color: var(--studio-ink); font: inherit; font-size: 16px; }
+.field input[aria-invalid="true"] { border-color: var(--st-danger-line); }
+.keyStored { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 8px); }
+.notice:empty { display: none; }
+.state, .notice, .status dd[data-tone] { border-radius: var(--radius-md); }
+.state, .notice:not(:empty) { padding: var(--sp-1, 4px) var(--sp-2, 8px); font-size: var(--text-sm); background: #EEF1EF; color: var(--studio-ink); }
+:is(.state, .notice)[data-tone="success"] { background: #E3F4F1; color: #0B5F57; }
+:is(.state, .notice)[data-tone="warning"] { background: var(--st-warning-bg); color: var(--st-warning-fg); }
+:is(.state, .notice)[data-tone="danger"] { background: var(--st-danger-bg); color: var(--st-danger-fg); }
+.status dd[data-tone="success"] { color: #0B5F57; }
+.status dd[data-tone="warning"] { color: var(--st-warning-fg); }
+.tests ul { display: grid; gap: var(--sp-2, 8px); padding: 0; list-style: none; }
+.tests li { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(0, 2fr) auto; align-items: center; gap: var(--sp-2, 8px) var(--sp-3, 12px); padding-block: var(--sp-2, 8px); border-top: 1px solid var(--studio-line); }
+.tests li > div { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.unavailable { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 8px) var(--sp-3, 12px); }
+.unavailable .notice { flex: 1 1 100%; }
+.failed { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 8px) var(--sp-3, 12px); }
+@media (max-width: 720px) {
+  .columns { grid-template-columns: minmax(0, 1fr); }
+  .tests li { grid-template-columns: minmax(0, 1fr); justify-items: start; }
+}
