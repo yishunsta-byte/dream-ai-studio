@@ -47,7 +47,9 @@
 .help > p { margin-top: var(--sp-2); }
 .lead { margin: 0 0 var(--sp-3); }
 .workspace { --admin-nav-offset: calc(var(--admin-nav-height, 0px) + 24px); display: grid; gap: var(--sp-4); }
-.programNavigation { min-width: 0; scroll-margin-top: var(--admin-nav-offset); }
+/* 전역 [id] 스크롤 여백(app/globals.css)과 우선순위가 같으면 CSS 싣는 순서에 따라 고정 메뉴 높이가 빠진다. 한 단계 높여 순서와 상관없게 한다. */
+.programNavigation { min-width: 0; }
+.workspace > .programNavigation { scroll-margin-top: var(--admin-nav-offset); }
 .navigation { padding: var(--sp-1); background: #100e19; border: 1px solid var(--line); border-radius: var(--radius-lg); }
 .navigation[data-sticky="true"] { position: sticky; top: 0; z-index: 2; }
 .navigation ul { display: flex; flex-wrap: wrap; gap: var(--sp-1); padding: 0; margin: 0; list-style: none; }
