@@ -168,12 +168,15 @@ describe("T-243 공용 로그인 폼·공개 메인 진입", () => {
     expect(markup).toContain('role="tablist"');
     expect(markup).toContain("회원가입");
   });
-  it("공개 메인에 크리에이터 로그인과 따로 관리자 로그인 링크(44px .link)가 있다", async () => {
+  it("공개 메인 상단의 로그인은 관리자 화면으로, 하단의 크리에이터 로그인은 작업실로 연결한다", async () => {
     const { NeonShowcase } = await import("@/components/public-showcase/neon-showcase");
     const { SAMPLE_WORKS } = await import("@/lib/public-showcase/works");
     const markup = renderToStaticMarkup(createElement(NeonShowcase, { works: SAMPLE_WORKS, loginHref: "/login?next=%2Fstudio" }));
-    expect(markup).toMatch(/href="\/admin\/login"[^>]*>관리자 로그인</);
-    expect(markup).toContain('href="/login?next=%2Fstudio"');
+    const header = markup.match(/<header\b[^>]*>[\s\S]*?<\/header>/)?.[0];
+    const footer = markup.match(/<footer\b[^>]*>[\s\S]*?<\/footer>/)?.[0];
+    expect(header).toMatch(/href="\/admin\/login"[^>]*>관리자 로그인</);
+    expect(header).not.toContain('href="/login?next=%2Fstudio"');
+    expect(footer).toContain('href="/login?next=%2Fstudio"');
     expect(readFileSync("components/public-showcase/neon-showcase.module.css", "utf8")).toMatch(/\.link \{[^}]*min-height: 44px/);
   });
 });

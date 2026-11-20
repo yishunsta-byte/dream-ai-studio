@@ -154,7 +154,7 @@ export function NeonShowcase({ works, status = "ready", onRetry, featuredId, col
           <span aria-hidden="true">⌕</span>
           <input ref={searchRef} id={ids.search} type="search" placeholder="작품, 종류, 크리에이터 검색" autoComplete="off" value={query} onChange={(event) => setQuery(event.target.value)} aria-controls={ids.browse} />
         </div>
-        <Link className={`${styles.btn} ${styles.primary}`} href={loginHref}>크리에이터 로그인</Link>
+        <Link className={`${styles.btn} ${styles.primary}`} href={adminHref}>관리자 로그인</Link>
       </header>
       {hasSample ? <p className={styles.notice}>지금 보이는 작품과 크리에이터는 화면을 소개하는 예시예요. 영상·음악은 아직 재생되지 않아요.</p> : null}
 
