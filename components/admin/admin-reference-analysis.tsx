@@ -32,12 +32,19 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   const client = useMemo(() => given ?? createAdminReferenceAnalysisClient(), [given]);
   const id = useId();
   const [blocked, setBlocked] = useState<Failure | null>(null);
-  const block = useCallback((failure: Failure) => { if (isAuthFailure(failure)) { setBlocked(failure); return true; } return false; }, []);
+  const pasteSeq = useRef(0);
+  const block = useCallback((failure: Failure) => {
+    if (!isAuthFailure(failure)) return false;
+    pasteSeq.current++;
+    setBlocked(failure);
+    return true;
+  }, []);
 
   // ── 분석 ──
   const [sourceKind, setSourceKind] = useState<AnalysisSource["kind"]>("url");
   const [media, setMedia] = useState<AnalysisMedia>("image");
   const [url, setUrl] = useState("");
+  const [pasteNotice, setPasteNotice] = useState("");
   const [file, setFile] = useState<File>();
   const [multipleFiles, setMultipleFiles] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisView>({ kind: "idle" });
@@ -45,9 +52,10 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   const analysisAbort = useRef<AbortController | null>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const form = useRef<HTMLFormElement>(null);
+  const urlInput = useRef<HTMLInputElement>(null);
   const restoreExecuteFocus = useRef(false);
   const cancelAnalysis = () => { analysisSeq.current++; analysisAbort.current?.abort(); analysisAbort.current = null; };
-  useEffect(() => () => { analysisAbort.current?.abort(); }, []);
+  useEffect(() => () => { analysisAbort.current?.abort(); pasteSeq.current++; }, []);
   const source: AnalysisSource | undefined = sourceKind === "url"
     ? (url.trim() ? { kind: "url", url: url.trim(), media } : undefined)
     : (file ? { kind: "file", file, media } : undefined);
@@ -55,6 +63,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
 
   async function runAnalysis() {
     if (!source || issue || analysisAbort.current || blocked) return;
+    clearPaste();
     const mine = ++analysisSeq.current;
     const controller = new AbortController();
     analysisAbort.current = controller;
@@ -66,7 +75,26 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
     else if (outcome.kind === "unavailable") setAnalysis({ kind: "unavailable", message: unavailableMessage(outcome.reason) });
     else if (!block(outcome)) setAnalysis({ kind: "failed", message: failureMessage(outcome) });
   }
-  function editInput(next: () => void) { cancelAnalysis(); next(); setAnalysis({ kind: "idle" }); }
+  function clearPaste() { pasteSeq.current++; setPasteNotice(""); }
+  function editInput(next: () => void) { clearPaste(); cancelAnalysis(); next(); setAnalysis({ kind: "idle" }); }
+
+  async function pasteUrl() {
+    const mine = ++pasteSeq.current;
+    setPasteNotice("");
+    let text: string;
+    try { text = (await navigator.clipboard.readText()).trim(); }
+    catch {
+      if (mine !== pasteSeq.current) return;
+      setPasteNotice("자동으로 붙여넣을 수 없어요. URL 칸에서 Ctrl+V 또는 ⌘V를 누르세요.");
+      urlInput.current?.focus();
+      return;
+    }
+    if (mine !== pasteSeq.current) return;
+    if (!text) setPasteNotice("클립보드에 붙여넣을 텍스트가 없어요.");
+    else if (text !== url.trim()) editInput(() => setUrl(text));
+    urlInput.current?.focus();
+  }
+
   function chooseFiles(files: FileList | null) {
     const multiple = !!files && files.length > 1;
     editInput(() => {
@@ -164,12 +192,17 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
             </label>)}
           </div>
         </fieldset>
-        {sourceKind === "url" ? <label className={styles.field} htmlFor={`${id}-url`}>
-          미디어 파일 URL
-          <input id={`${id}-url`} type="url" inputMode="url" autoComplete="off" spellCheck={false} required value={url} disabled={running}
-            placeholder={`https://…/파일.${extensions[0]}`} aria-invalid={!!issue} aria-describedby={`${id}-input-help${issue ? ` ${id}-input-error` : ""}`}
-            onChange={(event) => editInput(() => setUrl(event.target.value))} />
-        </label> : <label className={`${styles.field} ${styles.drop}`} htmlFor={`${id}-file`}
+        {sourceKind === "url" ? <div className={styles.field}>
+          <label htmlFor={`${id}-url`}>미디어 파일 URL</label>
+          <div className={styles.urlInputRow}>
+            <input ref={urlInput} id={`${id}-url`} type="url" inputMode="url" autoComplete="off" spellCheck={false} required value={url} disabled={running}
+              placeholder={`https://…/파일.${extensions[0]}`} aria-invalid={!!issue}
+              aria-describedby={`${id}-input-help${issue ? ` ${id}-input-error` : ""}${pasteNotice ? ` ${id}-paste-notice` : ""}`}
+              onChange={(event) => editInput(() => setUrl(event.target.value))} />
+            <Button type="button" variant="secondary" disabled={running} onClick={pasteUrl}>붙여넣기</Button>
+          </div>
+          <p id={`${id}-paste-notice`} className={styles.status} role="status">{pasteNotice}</p>
+        </div> : <label className={`${styles.field} ${styles.drop}`} htmlFor={`${id}-file`}
           onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = running ? "none" : "copy"; }}
           onDrop={(event) => {
             event.preventDefault();

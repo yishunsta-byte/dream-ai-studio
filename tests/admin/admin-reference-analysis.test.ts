@@ -155,6 +155,7 @@ describe("화면", () => {
     expect(html).toContain("스펙트럼 랩");
     expect(html).toContain("URL 주소");
     expect(html).toContain("파일 업로드");
+    expect(html).toMatch(/<button[^>]*type="button"[^>]*>붙여넣기<\/button>/);
     expect(html).toContain("https://tonejs.github.io");
     expect(html).toContain("MP4 · MOV · WEBM");
     expect(html).toContain("분석할 권리가 있는 자료만 실행하세요.");

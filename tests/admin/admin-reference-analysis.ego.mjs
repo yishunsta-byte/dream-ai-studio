@@ -1,4 +1,4 @@
-/* global taskSpace, fetch, document, window, setTimeout, console */
+/* global taskSpace, fetch, document, window, navigator, setTimeout, console */
 // 관리자 콘텐츠 분석·공개 화면 · 합성 응답 대역, 폭 390·1440, 키보드 흐름
 //  1 첫 목록 빈 상태 → 2 음악 분석(키보드) → 결과·근거·프롬프트, 결과 제목 초점 → 3 공개: 첫 응답 실패 → 같은 id 재시도 → 성공·목록 갱신
 //  4 철회 확인 → DELETE {id} → 목록 '철회됨' → 5 이미지·영상(결과 2개) 분석 → 5b 영상 공개 409 충돌이면 안내·동의 해제, 다시 동의하면 새 id
@@ -59,6 +59,11 @@ async function analyze(url, media) {
   await submitAnalysis();
 }
 
+async function pasteWithKeyboard() {
+  await page.focus("loc=css:form:has(input[type=url]) button[type=button]");
+  await page.keyboard.press("Enter");
+}
+
 const out = { widths: [] };
 try {
   for (const width of [390, 1440]) {
@@ -70,10 +75,38 @@ try {
     await reply(0, 200, { items: [] });
     await until(() => document.querySelector("main").innerText.includes("아직 공개한 분석 결과가 없어요"), "empty list");
     r.steps.empty = await state();
-    await page.fill("loc=css:main input[type=url]", "https://www.threads.com/@fixture/post/123");
+    await fx(() => {
+      const fixture = { reads: 0, mode: "text", text: "  https://www.threads.com/@fixture/post/123  ", resolve: null };
+      Object.defineProperty(navigator, "clipboard", { configurable: true, value: { readText: async () => {
+        fixture.reads++;
+        if (fixture.mode === "denied") throw new Error("Clipboard permission denied");
+        if (fixture.mode === "delay") return new Promise((resolve) => { fixture.resolve = resolve; });
+        return fixture.text;
+      } } });
+      window.__pasteFixture = fixture;
+    });
+    check(await fx(() => window.__pasteFixture.reads === 0), `clipboard read only on action ${width}`);
+    await pasteWithKeyboard();
+    await until(() => document.querySelector("input[type=url]").value === "https://www.threads.com/@fixture/post/123", "paste text");
     check(await fx(() => document.querySelector("input[type=url]").getAttribute("aria-invalid") === "true" &&
       document.querySelector("form button[type=submit]").disabled && document.querySelector("main").innerText.includes("Threads 게시물 링크") &&
-      !document.querySelector("input[type=checkbox]")), `initial rights and URL guidance ${width}`);
+      !document.querySelector("input[type=checkbox]") && window.__pasteFixture.reads === 1), `paste retains unsupported URL and rights guidance ${width}`);
+
+    await fx(() => { window.__pasteFixture.mode = "denied"; });
+    await pasteWithKeyboard();
+    await until(() => document.querySelector("main").innerText.includes("Ctrl+V"), "paste fallback");
+    check(await fx(() => document.activeElement === document.querySelector("input[type=url]") &&
+      document.activeElement.value === "https://www.threads.com/@fixture/post/123" &&
+      document.activeElement.getAttribute("aria-describedby").includes("-paste-notice")), `paste denial keeps input and restores focus ${width}`);
+
+    await fx(() => { window.__pasteFixture.mode = "delay"; });
+    await pasteWithKeyboard();
+    await until(() => typeof window.__pasteFixture.resolve === "function", "pending clipboard read");
+    await page.fill("loc=css:main input[type=url]", "https://mdn.github.io/manual.jpg");
+    await fx(() => window.__pasteFixture.resolve("https://mdn.github.io/late.jpg"));
+    check(await fx(() => document.querySelector("input[type=url]").value === "https://mdn.github.io/manual.jpg" &&
+      !document.querySelector("form button[type=submit]").disabled), `late clipboard preserves newer input ${width}`);
+    check((await requests()).length === 1, `pasting and typing do not send analysis or publication ${width}`);
 
     // 2 음악 분석
     await analyze("https://tonejs.github.io/audio/loop.mp3", "music");
@@ -91,6 +124,13 @@ try {
       && (await requests())[1].body?.media === "music" && r.steps.music.text.includes("0, 500, 1000, 1500, 2000 ms")
       && r.steps.running.text.includes("서버에서 분석하고 있어요") && r.steps.running.focus.includes("분석 취소") && r.steps.music.focus.startsWith("H3:") && r.steps.music.title === "음악 분석 결과"
       && r.steps.music.prompt === "120 BPM의 경쾌한 배경 음악" && r.steps.music.overflow <= 0, `music analysis ${width}`);
+    await fx(() => {
+      window.__pasteFixture.mode = "text";
+      window.__pasteFixture.text = "https://tonejs.github.io/audio/loop.mp3";
+    });
+    await pasteWithKeyboard();
+    await until(() => document.activeElement === document.querySelector("input[type=url]"), "same URL paste");
+    check((await state()).title === "음악 분석 결과" && (await requests()).length === 2, `same URL keeps result and does not submit ${width}`);
 
     // 3 공개: 실패 → 같은 id 재시도 → 성공
     await page.focus("loc=css:form:has(input[type=checkbox]) input:not([type])");

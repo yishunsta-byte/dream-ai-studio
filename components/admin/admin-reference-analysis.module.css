@@ -50,6 +50,8 @@
 .actions .run { background: linear-gradient(105deg, #a6f8dd, #65d7c6); color: #072926; border-color: transparent; }
 .actions .run:not(:disabled):hover { filter: brightness(1.1); }
 .field { display: grid; gap: var(--sp-1); min-width: 0; font-size: var(--text-sm); font-weight: 600; }
+.urlInputRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; min-width: 0; }
+.urlInputRow button { min-height: 44px; white-space: nowrap; }
 .field > span { display: flex; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; }
 .field :is(input, select, textarea) {
   min-height: 44px; width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid var(--line-strong); border-radius: var(--radius-md);
