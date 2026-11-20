@@ -2,11 +2,9 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
-  ANALYSIS_URI, PUBLICATIONS_URI, analysisInputIssue, createAdminReferenceAnalysisClient, draftFromResult, failureMessage, unavailableMessage, validateDraft,
+  ANALYSIS_URI, PUBLICATIONS_URI, analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, unavailableMessage, validateDraft,
   type AdminTransport, type AnalysisMedia, type AnalysisSource, type ReadyResult,
 } from "@/components/admin/admin-reference-analysis-model";
-import { AdminReferenceAnalysis } from "@/components/admin/admin-reference-analysis";
-import { SpectrumResults } from "@/components/admin/admin-reference-analysis-spectrum";
 import { PublishedAnalysisResults } from "@/components/reference-analysis/published-analysis-results";
 
 // 관리자 콘텐츠 분석·공개 화면 계약(합성 응답만). 서버 저장·권한 판정은 서버 시험 범위다.
@@ -166,43 +164,12 @@ describe("공개·철회", () => {
     expect(sent.slice(2).map(({ method, body }) => [method, body])).toEqual([["DELETE", { id: ID }], ["DELETE", { id: ID }], ["DELETE", { id: ID }]]);
   });
 
-  it("초안은 고른 결과의 생성 프롬프트로 채우고, 길이 한도를 지킨다", () => {
-    expect(draftFromResult(READY.music, 0)).toEqual({ title: "음악 분석 결과", summary: "음악 소스에서 추정 템포 120 BPM를 측정했어요.", prompt: "120 BPM의 경쾌한 배경 음악", media: "music" });
-    expect(draftFromResult(READY.video, 1).prompt).toBe("두 번째 컷");
-    expect(draftFromResult(READY.image, 0).summary).toBe("이미지 소스에서 관찰 근거 1개를 측정했어요.");
+  it("공개 초안이 필수 입력과 길이 한도를 지키는지 확인한다", () => {
     expect(validateDraft({ title: " ", summary: "a".repeat(601), prompt: "ok", media: "image" })).toEqual({ title: "제목을 입력하세요.", summary: "요약은 600자 이하로 줄여 주세요." });
   });
 });
 
-describe("화면", () => {
-  it("소스·매체와 단일 권리 확인 동작을 표시하고, 분석 전에는 예시 결과를 표시하지 않는다", () => {
-    const html = renderToStaticMarkup(createElement(AdminReferenceAnalysis, { client: createAdminReferenceAnalysisClient(transportOf().transport) }));
-    expect(html).toContain("콘텐츠 프롬프트 분석기");
-    expect(html).toContain("스펙트럼 랩");
-    expect(html).toContain("URL 주소");
-    expect(html).toContain("파일 업로드");
-    expect(html).toMatch(/<button[^>]*type="button"[^>]*>붙여넣기<\/button>/);
-    expect(html).toContain("https://tonejs.github.io");
-    expect(html).toContain("MP4 · MOV · WEBM");
-    expect(html).toContain("분석할 권리가 있는 자료만 실행하세요.");
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>[^<]*권리 확인하고 분석/);
-    expect(html).not.toMatch(/type="checkbox"|예시 결과|<meter|공개 준비/);
-    expect(html).toContain("공개 목록을 불러오고 있어요.");
-    expect(html).toContain('href="/analysis-results"');
-  });
-
-  it("관찰 화면에는 응답의 시간, 색상, 비중과 추정 값을 그대로 표시한다", () => {
-    const render = (media: AnalysisMedia) => renderToStaticMarkup(createElement(SpectrumResults, { result: READY[media] }));
-    const music = render("music");
-    expect(music).toContain("0, 500, 1000, 1500, 2000");
-    expect(music).toContain("추정 템포 120 BPM");
-    expect(music).toContain("관련 관찰 근거 1번");
-    expect(render("image")).toContain("#3366cc");
-    expect(render("image")).toContain("60%");
-    expect(render("video")).toContain("원본 프레임 표시 시각 125 ms");
-    expect(render("video")).toContain("500 ms");
-  });
-
+describe("공개 화면", () => {
   it("공개 페이지는 승인 필드만 평문으로 그리고, 3종·빈 목록·장애를 구분한다", () => {
     const items = (["image", "music", "video"] as const).map((media, index) => ({ id: `10000000-0000-4000-8000-00000000001${index}`, media,
       title: `${media} <script>alert(1)</script>`, summary: "줄1\n줄2", prompt: "<a href=x>링크</a>", publishedAt: "2026-11-20T03:00:00.000Z" }));

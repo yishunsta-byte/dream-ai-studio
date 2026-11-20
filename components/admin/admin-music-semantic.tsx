@@ -3,7 +3,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/primitives";
 import type { MusicSemanticResult } from "@/lib/reference-analysis/music-semantic-contract";
-import { analysisInputIssue } from "./admin-reference-analysis-model";
+import { musicPublicationDraft } from "./admin-analysis-publication-draft";
+import { analysisInputIssue, type PublicationDraft } from "./admin-reference-analysis-model";
 import { createAdminMusicSemanticClient, type AdminMusicSemanticClient } from "./admin-music-semantic-client";
 import styles from "./admin-music-semantic.module.css";
 import analysisStyles from "./admin-reference-analysis.module.css";
@@ -17,21 +18,21 @@ const unavailableMessage = {
   timed_out: "응답 시간이 길어졌어요. 더 짧은 파일로 다시 시도해 주세요.",
 } as const;
 
-type Props = { file?: File; client?: AdminMusicSemanticClient; disabled?: boolean };
+type Props = { file?: File; client?: AdminMusicSemanticClient; disabled?: boolean; onPrepare?: (draft: PublicationDraft) => void };
 
 /** Pass the currently selected music file from the existing analyzer. */
-export function AdminMusicSemantic({ file, client = defaultClient, disabled }: Props) {
+export function AdminMusicSemantic({ file, client = defaultClient, disabled, onPrepare }: Props) {
   const [selection, setSelection] = useState({ file, version: 0 });
   if (selection.file !== file) setSelection({ file, version: selection.version + 1 });
   const id = useId();
   return <section className={styles.panel} aria-labelledby={id}>
     <h3 id={id}>음악 의미 분석</h3>
-    {file ? <MusicFileAnalysis key={selection.version} file={file} client={client} disabled={disabled} />
+    {file ? <MusicFileAnalysis key={selection.version} file={file} client={client} disabled={disabled} onPrepare={onPrepare} />
       : <p>음악 파일을 선택하면 의미 분석을 실행할 수 있어요.</p>}
   </section>;
 }
 
-function MusicFileAnalysis({ file, client, disabled }: { file: File; client: AdminMusicSemanticClient; disabled?: boolean }) {
+function MusicFileAnalysis({ file, client, disabled, onPrepare }: Props & { file: File; client: AdminMusicSemanticClient }) {
   const [consent, setConsent] = useState(false);
   const [result, setResult] = useState<MusicSemanticResult>();
   const [error, setError] = useState("");
@@ -88,11 +89,11 @@ function MusicFileAnalysis({ file, client, disabled }: { file: File; client: Adm
     </>}
     {busy && <p role="status">장르, 악기, 템포와 구간 구조를 분석하는 중이에요.</p>}
     {error && <p role="alert">{error}</p>}
-    {result && <MusicReport result={result} />}
+    {result && <MusicReport result={result} onPrepare={onPrepare} />}
   </>;
 }
 
-function MusicReport({ result }: { result: MusicSemanticResult }) {
+function MusicReport({ result, onPrepare }: { result: MusicSemanticResult; onPrepare?: Props["onPrepare"] }) {
   const [copy, setCopy] = useState("");
   const prompt = useRef<HTMLTextAreaElement>(null);
   if (result.status === "unavailable") return <p role="status">{unavailableMessage[result.reason]}</p>;
@@ -120,5 +121,6 @@ function MusicReport({ result }: { result: MusicSemanticResult }) {
       <Button type="button" variant="secondary" onClick={copyPrompt}>Suno 프롬프트 복사</Button>
       <p role="status">{copy}</p>
     </> : <p>{unknown}</p>}
+    {onPrepare && <Button type="button" variant="secondary" onClick={() => onPrepare(musicPublicationDraft(result.report))}>공개 준비</Button>}
   </div>;
 }

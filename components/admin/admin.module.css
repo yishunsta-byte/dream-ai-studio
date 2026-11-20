@@ -77,7 +77,9 @@
 .section h2, .overview h2 { margin: 0; }
 .target { display: none; min-width: 0; scroll-margin-top: var(--admin-nav-offset); }
 .target :is(h2, :focus) { scroll-margin-top: var(--admin-nav-offset); }
-.sections:not(:has(.target:target, [data-program-active="true"])) .defaultPanel, .target:target, .target[data-program-active="true"] { display: grid; }
+.workspace:not([data-admin-ready]) .sections:not(:has(.target:target)) .defaultPanel,
+.workspace:not([data-admin-ready]) .target:target,
+.target[data-active-section="true"] { display: grid; }
 .apiCard, .apiRoutes { display: grid; gap: var(--sp-4); }
 .apiIntro, .apiRoutes li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: var(--sp-2) var(--sp-4); }
 .apiCard :is(h3, h4, p) { margin: 0; }

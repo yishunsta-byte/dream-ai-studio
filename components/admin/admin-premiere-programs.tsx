@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/primitives";
 import type { ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
 import { youtubeVideoId } from "@/lib/reference-analysis/shorts-analysis-contract";
 import { readAnalysisSettings, settingsMessage, type AnalysisSettings } from "./admin-analysis-tools";
+import { analysisResultsSection, AdminAnalysisResults, type PreparedPublication } from "./admin-analysis-results";
+import { imagePublicationDraft } from "./admin-analysis-publication-draft";
 import { ImageSemanticReport } from "./admin-image-semantic";
 import { AdminMusicSemantic } from "./admin-music-semantic";
-import { analysisPrograms, useAdminSection } from "./admin-navigation";
+import { analysisPrograms, navigateAdminSection, useAdminSection } from "./admin-navigation";
 import {
   analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, SUPPORTED_ORIGINS,
-  unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource,
+  unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource, type PublicationDraft,
 } from "./admin-reference-analysis-model";
 import { AdminShortsAnalysis } from "./admin-shorts-analysis";
 import hub from "./admin.module.css";
@@ -62,7 +64,24 @@ function SourceGuide({ detail }: { detail: string }) {
   </details>;
 }
 
-function StyleDnaWorkspace() {
+type ProgramWorkspaceProps = { onPrepare: (draft: PublicationDraft) => void };
+
+function DnaPublicDraft({ result, onPrepare }: ProgramWorkspaceProps & {
+  result: Exclude<ImageSemanticResult, { status: "unavailable" }>;
+}) {
+  const [preferred, setPreferred] = useState<"ko" | "en">("ko");
+  const selected = result.prompts[preferred] ? preferred : result.prompts.ko ? "ko" : "en";
+  return <div className={styles.publishEntry}>
+    {result.prompts.ko && result.prompts.en && <label className={styles.field}>공개 프롬프트 언어
+      <select value={selected} onChange={event => setPreferred(event.target.value === "en" ? "en" : "ko")}>
+        <option value="ko">한국어</option><option value="en">영어</option>
+      </select>
+    </label>}
+    <Button type="button" variant="secondary" onClick={() => onPrepare(imagePublicationDraft(result, selected))}>공개 준비</Button>
+  </div>;
+}
+
+function StyleDnaWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   const [kind, setKind] = useState<AnalysisSource["kind"]>("url");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File>();
@@ -194,6 +213,7 @@ function StyleDnaWorkspace() {
       <section className={styles.control} aria-label="Style DNA 결과">
         <h3>스타일 리포트</h3>
         {report ? <ImageSemanticReport semantic={report} /> : <p className={styles.note}>분석이 완료되면 스타일 근거와 한영 프롬프트를 확인할 수 있어요.</p>}
+        {report && report.status !== "unavailable" && <DnaPublicDraft result={report} onPrepare={onPrepare} />}
       </section>
       <SourceGuide detail={copy[0].guide} />
     </div>
@@ -211,7 +231,7 @@ function StyleDnaWorkspace() {
   </div>;
 }
 
-function MusicWorkspace() {
+function MusicWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   const [file, setFile] = useState<File>();
   const issue = file && analysisInputIssue({ kind: "file", media: "music", file });
   const selected = issue ? undefined : file;
@@ -225,7 +245,7 @@ function MusicWorkspace() {
         </label>
         <p className={styles.note}>MP3 · WAV · M4A · 최대 {UPLOAD_SIZE_LIMIT_LABEL}</p>
         {issue && <p role="status">{issue}</p>}
-        <AdminMusicSemantic file={selected} />
+        <AdminMusicSemantic file={selected} onPrepare={onPrepare} />
       </section>
       <SourceGuide detail={copy[1].guide} />
     </div>
@@ -239,12 +259,12 @@ function MusicWorkspace() {
   </div>;
 }
 
-function ShortsWorkspace() {
+function ShortsWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   const [url, setUrl] = useState("");
   const id = youtubeVideoId(url.trim());
   return <div className={styles.workbench}>
     <div className={styles.desk}>
-      <div className={styles.control}><AdminShortsAnalysis onSourceChange={setUrl} appearance="premiere" /></div>
+      <div className={styles.control}><AdminShortsAnalysis onSourceChange={setUrl} onPrepare={onPrepare} appearance="premiere" /></div>
       <SourceGuide detail={copy[2].guide} />
     </div>
     <Preview title="세로 영상 프리뷰">
@@ -261,6 +281,25 @@ const workspaces = [StyleDnaWorkspace, MusicWorkspace, ShortsWorkspace] as const
 
 export function AdminPremierePrograms() {
   const current = useAdminSection();
+  const [prepared, setPrepared] = useState<PreparedPublication>();
+  const [publishing, setPublishing] = useState(false);
+  const [selectionMessage, setSelectionMessage] = useState("");
+
+  function prepare(draft: PublicationDraft) {
+    if (publishing) {
+      setSelectionMessage("이미 진행 중인 공개 상태를 확인한 뒤 새 결과의 공개를 준비하세요.");
+      navigateAdminSection(analysisResultsSection);
+      return;
+    }
+    setSelectionMessage("");
+    setPrepared(previous => {
+      if (previous?.draft.media === draft.media && previous.draft.title === draft.title &&
+          previous.draft.summary === draft.summary && previous.draft.prompt === draft.prompt) return previous;
+      return { draft, revision: (previous?.revision ?? 0) + 1 };
+    });
+    navigateAdminSection(analysisResultsSection);
+  }
+
   return <>{analysisPrograms.map(({ id, label, icon }, index) => {
     const active = current === id;
     const { kind, description, caption } = copy[index];
@@ -272,8 +311,9 @@ export function AdminPremierePrograms() {
           <div><h2 id={`${id}-title`} tabIndex={-1}>{label}</h2><p>{description}</p></div>
           <div className={styles.cover} aria-hidden="true"><Icon name={icon} /><span>{caption}</span></div>
         </header>
-        <Workspace />
+        <Workspace onPrepare={prepare} />
       </>}
     </section>;
-  })}</>;
+  })}<AdminAnalysisResults prepared={prepared} selectionMessage={selectionMessage}
+    onSendingChange={sending => { setPublishing(sending); if (!sending) setSelectionMessage(""); }} /></>;
 }

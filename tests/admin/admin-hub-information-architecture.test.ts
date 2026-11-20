@@ -19,7 +19,7 @@ describe("admin hub information architecture", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
     const nav = html.match(/<nav\b[^>]*aria-label="관리 메뉴"[\s\S]*?<\/nav>/)?.[0];
     expect(nav).toBeDefined();
-    const targets = ["admin-style-dna", "admin-music-analysis", "admin-shorts-analysis", "admin-overview", "admin-project-list", "admin-review", "admin-api-integrations", "admin-render-queue", "admin-account"];
+    const targets = ["admin-style-dna", "admin-music-analysis", "admin-shorts-analysis", "admin-overview", "admin-project-list", "admin-review", "admin-analysis-results", "admin-api-integrations", "admin-render-queue", "admin-account"];
     expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(targets);
     expect(nav).toMatch(/href="#admin-project-list" aria-current="location"/);
     expect(nav!.match(/aria-current=/g)).toHaveLength(1);
@@ -43,6 +43,7 @@ describe("admin hub information architecture", () => {
     expect(html).toContain('<h2 id="admin-api-integrations-title" tabindex="-1">API연동</h2>');
     expect(html).not.toMatch(/콘텐츠 분석·공개|공개 준비|id="admin-reference-analysis"/);
     expect(html).toContain("완성본 검수·게시");
+    expect(html).toContain("분석 결과 관리");
   });
 
 

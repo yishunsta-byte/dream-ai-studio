@@ -1,5 +1,3 @@
-import { useId } from "react";
-import { Button } from "@/components/ui/primitives";
 import type { ImageSemanticCategory, ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
 import styles from "./admin-reference-analysis.module.css";
 
@@ -19,18 +17,6 @@ const notes: Record<Extract<ImageSemanticResult, { status: "unavailable" }>["rea
   invalid_response: "Gemini에서 사용할 수 있는 분석 결과를 받지 못했어요.",
   timed_out: "Gemini 분석 시간이 초과됐어요. 잠시 뒤 다시 실행해 주세요.",
 };
-
-export function ImageSemanticAction({ disabled, running, onClick }: { disabled: boolean; running: boolean; onClick: () => void }) {
-  const helpId = useId();
-  return <div className={styles.promptEditor}>
-    <p id={helpId} className={styles.note}>Style DNA로 분석하면 권리를 확인한 이미지가 분석용으로 Gemini에 전송돼요.</p>
-    <div className={styles.actions}>
-      <Button type="button" variant="secondary" aria-describedby={helpId} disabled={disabled || running} onClick={onClick}>
-        Style DNA로 분석
-      </Button>
-    </div>
-  </div>;
-}
 
 export function ImageSemanticReport({ semantic }: { semantic: ImageSemanticResult }) {
   if (semantic.status === "unavailable") return <div className={styles.promptEditor}>

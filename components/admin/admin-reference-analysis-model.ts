@@ -20,11 +20,6 @@ export type AnalysisSource = { media: AnalysisMedia } & ({ kind: "url"; url: str
 
 // 지원 안내(기존 local-media-url의 고정 원본·형식·한도와 같다).
 export const SUPPORTED_ORIGINS = ["https://interactive-examples.mdn.mozilla.net", "https://mdn.github.io", "https://tonejs.github.io"] as const;
-export const SUPPORTED_FORMATS = [
-  { media: "image", extensions: ["png", "jpg", "jpeg", "webp"], limit: "" },
-  { media: "music", extensions: ["mp3", "wav", "m4a"], limit: "24초까지" },
-  { media: "video", extensions: ["mp4", "mov", "webm"], limit: "20초 · 240프레임까지" },
-] as const;
 export const URL_SIZE_LIMIT_LABEL = "64 MiB";
 export const UPLOAD_SIZE_LIMIT_LABEL = "4 MiB";
 const uploadByteLimit = 4 * 1024 * 1024;
@@ -146,32 +141,16 @@ export function createAdminReferenceAnalysisClient(transport: AdminTransport = b
       return parsed.success ? { kind: "ok", items: parsed.data.items } : undefined;
     }),
     // requestId는 화면이 만든 UUID다. 같은 공개 의도의 재시도에는 같은 값을 다시 보낸다(중복 공개 방지).
-    publish: (requestId: string, draft: PublicationDraft): Promise<PublishOutcome> => call(transport, PUBLICATIONS_URI,
-      json("POST", { id: requestId, ...trimmedDraft(draft), authorized: true }), (body) => {
+    publish: (requestId: string, draft: PublicationDraft, signal?: AbortSignal): Promise<PublishOutcome> => call(transport, PUBLICATIONS_URI,
+      json("POST", { id: requestId, ...trimmedDraft(draft), authorized: true }, signal), (body) => {
       const parsed = z.object({ item: publicationSchema }).safeParse(body);
       return parsed.success && parsed.data.item.status === "published" && parsed.data.item.id === requestId ? { kind: "ok", item: parsed.data.item } : undefined;
     }),
-    revoke: (id: string): Promise<RevokeOutcome> => call(transport, PUBLICATIONS_URI, json("DELETE", { id }), (body) =>
+    revoke: (id: string, signal?: AbortSignal): Promise<RevokeOutcome> => call(transport, PUBLICATIONS_URI, json("DELETE", { id }, signal), (body) =>
       z.object({ ok: z.literal(true) }).safeParse(body).success ? { kind: "ok" } : undefined),
   };
 }
 export type AdminReferenceAnalysisClient = ReturnType<typeof createAdminReferenceAnalysisClient>;
-
-// 분석 결과 한 개에서 공개 초안을 만든다. 측정 원값은 넣지 않고, 관리자가 읽고 고칠 평문만 채운다.
-export function draftFromResult(result: ReadyResult, index: number): PublicationDraft {
-  const proposal = result.proposals[index] ?? result.proposals[0];
-  const inference = proposal.inference;
-  const label = MEDIA_LABEL[result.media];
-  const found = inference?.measure === "estimated_bpm" ? `추정 템포 ${inference.bpm} BPM`
-    : inference?.measure === "candidate_cut" ? "장면 전환 후보"
-      : `관찰 근거 ${proposal.observations.length}개`;
-  return {
-    title: `${label} 분석 결과`.slice(0, LIMITS.title),
-    summary: `${label} 소스에서 ${found}를 측정했어요.`.slice(0, LIMITS.summary),
-    prompt: proposal.draft.prompt.slice(0, LIMITS.prompt),
-    media: result.media,
-  };
-}
 
 export type DraftErrors = Partial<Record<"title" | "summary" | "prompt", string>>;
 export function validateDraft(draft: PublicationDraft): DraftErrors {
@@ -220,8 +199,6 @@ export function failureMessage(failure: Failure): string {
     case "failed": return "서버 응답을 받지 못했어요. 잠시 뒤 다시 시도해 주세요.";
   }
 }
-// 권한이 끝난 응답이면 이 화면의 조작을 멈추고 로그인·권한 안내만 남긴다.
-export const isAuthFailure = (failure: Failure) => failure.kind === "login" || failure.kind === "forbidden";
 
 export function formatPublishedAt(iso: string) {
   const date = new Date(iso);

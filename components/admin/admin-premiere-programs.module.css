@@ -131,7 +131,7 @@
 .sourceOptions label, .consent { display: flex; align-items: flex-start; gap: var(--sp-2); }
 .sourceOptions input, .consent input { accent-color: var(--fg-accent); margin: .3em 0 0; flex: 0 0 auto; }
 .field { display: grid; gap: var(--sp-1); font-size: var(--text-sm); font-weight: 700; }
-.field input {
+.field :is(input, select) {
   min-width: 0;
   width: 100%;
   min-height: 44px;
@@ -157,4 +157,15 @@
   .cover { min-height: 66px; padding: var(--sp-3); }
   .cover svg { width: 35px; height: 35px; padding: 6px; }
   .workbench { grid-template-columns: minmax(0, 1fr); grid-template-areas: "desk" "preview"; }
+}
+
+.publishEntry { display: grid; justify-items: start; gap: var(--sp-2); margin-top: var(--sp-3); }
+.resultsDesk { display: grid; gap: var(--sp-4); min-width: 0; --studio-light: #f4acd8; }
+.resultsDesk:has(> :nth-child(2)) { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+.resultsDesk .control :is(h3, h4, h5) { margin-block: 0; }
+.publicPreview { display: grid; gap: var(--sp-2); padding: var(--sp-3); border: 1px solid #77568e; border-radius: 12px; background: #241735; }
+.publicPreview p { margin: 0; overflow-wrap: anywhere; }
+.publicPreview > p:first-of-type { color: var(--fg-muted); font-size: var(--text-sm); }
+@media (max-width: 860px) {
+  .resultsDesk:has(> :nth-child(2)) { grid-template-columns: minmax(0, 1fr); }
 }

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/primitives";
 import {
   SHORTS_ANALYSIS_URI, shortsAnalysisAvailabilitySchema, shortsAnalysisResultSchema, youtubeVideoId, type ShortsAnalysisResult,
 } from "@/lib/reference-analysis/shorts-analysis-contract";
+import { shortsPublicationDraft } from "./admin-analysis-publication-draft";
+import type { PublicationDraft } from "./admin-reference-analysis-model";
 import styles from "./admin-reference-analysis.module.css";
 
 const errors: Record<string, string> = {
@@ -18,7 +20,7 @@ const errors: Record<string, string> = {
 type Availability = { kind: "checking" } | { kind: "configured" } | { kind: "not_configured" }
   | { kind: "failed"; message: string };
 
-export function AdminShortsAnalysis({ onSourceChange, appearance }: { onSourceChange?: (url: string) => void; appearance?: "premiere" } = {}) {
+export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare }: { onSourceChange?: (url: string) => void; appearance?: "premiere"; onPrepare?: (draft: PublicationDraft) => void } = {}) {
   const id = useId();
   const retryStatusId = `${id}-retry-status`;
   const urlField = useRef<HTMLInputElement>(null);
@@ -181,6 +183,9 @@ export function AdminShortsAnalysis({ onSourceChange, appearance }: { onSourceCh
           </li>)}
         </ol>}
         {findings.draftPrompt && <><h5>새 영상 연출 초안</h5><p>{findings.draftPrompt}</p></>}
+        {onPrepare && <div className={styles.actions}>
+          <Button type="button" variant="secondary" onClick={() => onPrepare(shortsPublicationDraft(findings))}>공개 준비</Button>
+        </div>}
       </div>}
     </div>
   </section>;
