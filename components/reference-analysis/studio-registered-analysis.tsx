@@ -59,7 +59,7 @@ function describeObservation(observation: Proposal["observations"][number]) {
   }
 }
 
-function DraftEditor({ prompt, onEdit, id, label = "프롬프트 편집" }: { prompt: string; onEdit: (prompt: string) => void; id: string; label?: string }) {
+function DraftEditor({ prompt, isEdited, onEdit, id }: { prompt: string; isEdited: boolean; onEdit: (prompt: string) => void; id: string }) {
   const [message, setMessage] = useState("");
   const clipboardAttempt = useRef(0);
   const draftRef = useRef<HTMLTextAreaElement>(null);
@@ -71,7 +71,7 @@ function DraftEditor({ prompt, onEdit, id, label = "프롬프트 편집" }: { pr
     setMessage("");
     try {
       await navigator.clipboard.writeText(prompt);
-      if (clipboardAttempt.current === attempt) setMessage("창작 초안을 복사했어요.");
+      if (clipboardAttempt.current === attempt) setMessage(isEdited ? "수정본을 복사했어요." : "창작 초안을 복사했어요.");
     } catch {
       if (clipboardAttempt.current === attempt) {
         draftRef.current?.focus();
@@ -82,14 +82,14 @@ function DraftEditor({ prompt, onEdit, id, label = "프롬프트 편집" }: { pr
   }
 
   return <>
-    <label className={styles.label} htmlFor={id}>{label}</label>
+    <label className={styles.label} htmlFor={id}>내 수정본</label>
     <textarea className={styles.field} id={id} ref={draftRef} rows={5} value={prompt} onChange={(event) => {
       clipboardAttempt.current++;
       setMessage("");
       onEdit(event.target.value);
     }} />
     <div className={styles.actions}>
-      <button className={styles.button} type="button" disabled={!prompt.trim()} onClick={copyDraft}>초안 복사</button>
+      <button className={styles.button} type="button" disabled={!prompt.trim()} onClick={copyDraft}>{isEdited ? "수정본 복사" : "초안 복사"}</button>
       <span className={styles.muted} role="status">{message}</span>
     </div>
   </>;
@@ -102,6 +102,7 @@ export function RegisteredAnalysisResults({ result, sourceUrl }: { result: Ready
   const proposal = result.proposals[index];
   if (!proposal) return <p className={styles.muted}>표시할 분석 결과가 없어요.</p>;
   const { observations, inference, draft, sourceSeek } = proposal;
+  const edited = drafts[index] ?? draft.prompt;
   const evidenceNumbers = inference?.evidenceIds.map((finding) => observations.findIndex(({ findingId }) => findingId === finding) + 1).filter(Boolean);
 
   return <>
@@ -139,8 +140,8 @@ export function RegisteredAnalysisResults({ result, sourceUrl }: { result: Ready
     <section className={styles.draft} aria-labelledby={`${id}-draft`}>
       <h4 id={`${id}-draft`}>창작 초안</h4>
       {draft.target === "cut" && draft.editGridApproximation && <p className={styles.muted}>편집 그리드 기준 약 {draft.editGridApproximation.frame}프레임 · {draft.editGridApproximation.fps} fps</p>}
-      <DraftEditor key={index} id={`${id}-prompt`} label={sourceUrl ? "내 수정본" : undefined} prompt={drafts[index] ?? draft.prompt} onEdit={(prompt) => setDrafts((previous) => ({ ...previous, [index]: prompt }))} />
-      {sourceUrl && <PromptComparison original={draft.prompt} edited={drafts[index] ?? draft.prompt} />}
+      <DraftEditor key={index} id={`${id}-prompt`} prompt={edited} isEdited={edited !== draft.prompt} onEdit={(prompt) => setDrafts((previous) => ({ ...previous, [index]: prompt }))} />
+      <PromptComparison original={draft.prompt} edited={edited} />
     </section>
     </div>
   </>;

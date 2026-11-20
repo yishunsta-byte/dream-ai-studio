@@ -3,13 +3,13 @@ import { studioAnalysisResultSchema, type StudioAnalysisResult } from "@/lib/ref
 
 // 관리자 콘텐츠 분석·공개 화면 계약(브라우저 안전). 서버 경로·저장·권한 판정은 Master 점유 서버가 맡는다.
 // - POST /api/admin/reference-analysis {url, authorized:true} → 200 {result: StudioAnalysisResult}
-// - GET  /api/admin/reference-analysis/publications → 200 {items: PublishedReferenceAnalysis[]}
+// - GET  /api/admin/reference-publications → 200 {items: PublishedReferenceAnalysis[]}
 // - POST 같은 경로 {id, title, summary, prompt, media, authorized:true} → 200 {item}  (명시 공개, 재시도는 같은 id)
 // - DELETE 같은 경로 {id} → 200 {ok: true}  (철회, 이미 철회돼 있어도 ok)
 // 401·403은 본문 없이 상태로 판정한다. 400·404·409·422 본문의 error 코드만 읽고, 서버 문장은 화면에 쓰지 않는다.
 
 export const ANALYSIS_URI = "/api/admin/reference-analysis";
-export const PUBLICATIONS_URI = "/api/admin/reference-analysis/publications";
+export const PUBLICATIONS_URI = "/api/admin/reference-publications";
 export const LIMITS = { title: 80, summary: 600, prompt: 2000 } as const;
 
 export type AnalysisMedia = "image" | "music" | "video";
@@ -152,9 +152,9 @@ const REJECTED: Record<ErrorCode, string> = {
   rights_required: "자료를 분석할 권리 확인이 필요해요.",
   analysis_failed: "이 파일은 지금 분석할 수 없어요. 다른 파일이나 형식으로 시도해 주세요.",
   invalid_publication: "공개 내용을 확인해 주세요. 제목·요약·프롬프트가 한도 안에 있어야 해요.",
-  publication_conflict: "같은 공개 요청이 다른 내용으로 이미 처리됐어요. 공개 목록을 새로 불러왔으니 확인한 뒤 다시 공개해 주세요.",
-  not_found: "이미 없어진 공개 결과예요. 목록을 새로 불러왔어요.",
-  already_revoked: "이미 철회된 결과예요. 목록을 새로 불러왔어요.",
+  publication_conflict: "같은 공개 요청이 다른 내용으로 이미 처리됐어요. 아래 공개 목록을 확인한 뒤 다시 동의하고 공개해 주세요.",
+  not_found: "이미 없어진 공개 결과예요. 아래 공개 목록을 확인해 주세요.",
+  already_revoked: "이미 철회된 결과예요. 아래 공개 목록을 확인해 주세요.",
 };
 export function failureMessage(failure: Failure): string {
   switch (failure.kind) {

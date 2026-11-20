@@ -76,6 +76,6 @@ describe("관리자 콘텐츠 분석 및 결과 공개 경계", () => {
   it("웹에서 읽기 공개되는 경로를 결과 목록 하나로 제한한다", () => {
     expect(isAnonymousPublicPath("/analysis-results")).toBe(true);
     expect(isAnonymousPublicPath("/analysis-results/arbitrary")).toBe(false);
-    expect(isAnonymousPublicPath("/api/admin/reference-analysis/publications")).toBe(false);
+    expect(isAnonymousPublicPath("/api/admin/reference-publications")).toBe(false);
   });
 });

@@ -88,7 +88,9 @@ describe("공개·철회", () => {
     // 같은 id에 다른 내용이면 서버가 409 publication_conflict로 확정한다. 미확정(failed)이 아니라 거절로 분류해 새 요청을 요구한다.
     const conflict = createAdminReferenceAnalysisClient(transportOf({ status: 409, body: { error: "publication_conflict" } }).transport);
     expect(await conflict.publish(ID, draft)).toEqual({ kind: "rejected", code: "publication_conflict" });
-    expect(failureMessage({ kind: "rejected", code: "publication_conflict" })).toContain("다시 공개해 주세요");
+    expect(failureMessage({ kind: "rejected", code: "publication_conflict" })).toContain("공개 목록을 확인한 뒤 다시 동의하고 공개해 주세요");
+    // 목록 다시 읽기의 성공 여부를 모르는 시점의 문구라, 이미 불러왔다고 단정하지 않는다(목록 결과는 목록 영역이 따로 알린다).
+    for (const code of ["publication_conflict", "not_found", "already_revoked"] as const) expect(failureMessage({ kind: "rejected", code })).not.toContain("불러왔");
   });
 
   it("목록은 형식이 맞을 때만 받고, 철회는 id만 보낸다", async () => {
