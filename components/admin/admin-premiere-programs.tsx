@@ -9,6 +9,7 @@ import { readAnalysisSettings, settingsMessage, type AnalysisSettings } from "./
 import { AdminAnalysisResults, type PreparedPublication } from "./admin-analysis-results";
 import { imagePublicationDraft } from "./admin-analysis-publication-draft";
 import { StyleDnaReport } from "./admin-style-dna-report";
+import type { StyleDna } from "./admin-style-dna-extension";
 import { AdminMusicSemantic } from "./admin-music-semantic";
 import { PasteUrlField } from "./admin-paste-url";
 import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
@@ -93,6 +94,9 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   const [running, setRunning] = useState(false);
   const [report, setReport] = useState<ImageSemanticResult>();
   const [measured, setMeasured] = useState<ReadyResult>();
+  const [styleDna, setStyleDna] = useState<StyleDna>();
+  // 분석이 끝날 때마다 늘려 리포트를 새로 그린다(같은 원본·같은 제안이어도 이전 편집이 새 결과에 남지 않게).
+  const [reportRun, setReportRun] = useState(0);
   const [size, setSize] = useState<Size>();
   const id = useId();
   const sourceInput = useRef<HTMLInputElement>(null);
@@ -128,6 +132,7 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
     setConsent(false);
     setReport(undefined);
     setMeasured(undefined);
+    setStyleDna(undefined);
     setSize(undefined);
     setMarker("");
     setPreviewOpen(false);
@@ -148,6 +153,7 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
     setMarker("");
     setReport(undefined);
     setMeasured(undefined);
+    setStyleDna(undefined);
     const outcome = await imageClient.analyze(source, controller.signal, { imageSemantic: true });
     if (controller.signal.aborted || analysisRequest.current !== controller) return;
     analysisRequest.current = null;
@@ -155,6 +161,8 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
     if (outcome.kind === "ready") {
       setReport(outcome.semantic);
       setMeasured(outcome.result);
+      setStyleDna(outcome.styleDna);
+      setReportRun(value => value + 1);
       if (outcome.semantic?.status === "unavailable" && outcome.semantic.reason === "not_configured") {
         setSettings({ kind: "not_configured" });
         setConsent(false);
@@ -219,7 +227,7 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
       </section>
       <section className={styles.control} aria-label="이미지 분석 결과">
         <h3>스타일 리포트</h3>
-        {report || measured ? <StyleDnaReport semantic={report} result={measured} size={size} /> : <p className={styles.note}>분석이 완료되면 스타일 근거와 한영 프롬프트를 확인할 수 있어요.</p>}
+        {report || measured ? <StyleDnaReport key={reportRun} semantic={report} result={measured} size={size} styleDna={styleDna} /> : <p className={styles.note}>분석이 완료되면 스타일 근거와 한영 프롬프트를 확인할 수 있어요.</p>}
         {report && report.status !== "unavailable" && <ImagePublicDraft result={report} onPrepare={onPrepare} />}
       </section>
     </div>

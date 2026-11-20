@@ -31,6 +31,8 @@ const requests:RequestRow[]=[];
 const fixture={
   statuses:{image:"configured",music:"configured",shorts:"configured"} as Record<string,string>,
   hold:"", publicationFault:"",
+  // 이미지 분석 응답의 선택 형제 필드(예: Backend 제안 styleDna). 비워 두면 지금 응답 그대로.
+  imageExtra:undefined as Record<string,unknown>|undefined,
   credentials:{storage:"ready",groups:{reference:{version:0,updatedAt:null},music:{version:0,updatedAt:null}},
     programs:{image:{configured:false,source:"none",modelId:null,lastTest:null},shorts:{configured:false,source:"none",modelId:null,lastTest:null},music:{configured:false,source:"none",modelId:null,lastTest:null}}} as {storage:string;groups:Record<string,{version:number;updatedAt:string|null}>;programs:Record<string,{configured:boolean;source:string;modelId:string|null;lastTest:unknown}>},
   testOutcome:{status:"verified",code:null} as {status:string;code:string|null},
@@ -64,7 +66,7 @@ window.fetch=async(raw,init)=>{
     if (method==="GET" && fixture.statuses[program]==="login") return response({},401);
     if (method==="GET") return response({semantic:{[program]:fixture.statuses[program]}});
     if (method==="POST" && fixture.hold===program) await new Promise<void>(resolve=>{row.resolve=resolve;});
-    if (method==="POST" && program==="image") return response({result:basicImage,semantic:imageMeaning});
+    if (method==="POST" && program==="image") return response({result:basicImage,semantic:imageMeaning,...fixture.imageExtra});
     if (method==="POST" && program==="music") return response(musicMeaning);
     if (method==="POST" && program==="shorts") return response(shortsMeaning);
   }

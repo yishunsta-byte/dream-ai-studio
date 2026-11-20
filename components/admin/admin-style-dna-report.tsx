@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/primitives";
 import type { ImageSemanticCategory, ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
 import type { ReadyResult } from "./admin-reference-analysis-model";
 import { ImageSemanticReport } from "./admin-image-semantic";
+import { cameraKeys, lightingKeys, type StyleDna, type StyleDnaCell } from "./admin-style-dna-extension";
 import styles from "./admin-style-dna-report.module.css";
 
 // Style DNA Analyzer v1.01 결과 화면(StudioReportView·StudioPalette·StudioCameraLighting)의 순서를
@@ -52,6 +53,34 @@ const cardOrder: { category: ImageSemanticCategory; title: string }[] = [
   { category: "context", title: "맥락" },
 ];
 
+const cameraLabels: Record<typeof cameraKeys[number], string> = {
+  angle: "앵글", shotType: "샷 크기", lens: "렌즈", focusDistance: "초점 거리", depthOfField: "피사계 심도",
+};
+const lightingLabels: Record<typeof lightingKeys[number], string> = {
+  timeOfDay: "시간대", direction: "빛 방향", altitude: "광원 높이", contrast: "대비", shadows: "그림자",
+};
+
+function CellGrid<K extends string>({ title, keys, labels, cells }: {
+  title: string; keys: readonly K[]; labels: Record<K, string>; cells?: Partial<Record<K, StyleDnaCell>>;
+}) {
+  if (!cells || !keys.some(key => cells[key])) return null;
+  return <section className={styles.measured} aria-label={title}>
+    <h5>{title} <span className={styles.tag} data-certainty="estimated">Gemini 추정</span></h5>
+    <dl className={styles.cells}>
+      {keys.map(key => {
+        const cell = cells[key];
+        if (!cell) return null;
+        return <div key={key}>
+          <dt>{labels[key]}</dt>
+          {cell.certainty === "estimated"
+            ? <dd>{cell.description}<span className={styles.note}>시각 단서 · {cell.basis}</span></dd>
+            : <dd className={styles.note}>이미지에서 확인할 수 없었어요.</dd>}
+        </div>;
+      })}
+    </dl>
+  </section>;
+}
+
 function PromptCard({ language, original }: { language: "en" | "ko"; original?: string }) {
   const id = useId();
   const [draft, setDraft] = useState(original ?? "");
@@ -85,15 +114,26 @@ function PromptCard({ language, original }: { language: "en" | "ko"; original?: 
   </section>;
 }
 
-export function StyleDnaReport({ semantic, result, size }: {
-  semantic?: ImageSemanticResult; result?: ReadyResult; size?: { width: number; height: number };
+export function StyleDnaReport({ semantic, result, size, styleDna }: {
+  semantic?: ImageSemanticResult; result?: ReadyResult; size?: { width: number; height: number }; styleDna?: StyleDna;
 }) {
   const measure = wholeImageMeasure(result);
-  const ratio = size && nearestAspectRatio(size.width, size.height);
+  // 서버가 원본을 디코딩해 잰 크기가 있으면 그것을, 없으면 미리보기 이미지 크기를 쓴다.
+  const serverSize = styleDna?.dimensions;
+  const shownSize = serverSize ?? size;
+  const ratio = serverSize ? styleDna?.aspectRatio ?? nearestAspectRatio(serverSize.width, serverSize.height) : size && nearestAspectRatio(size.width, size.height);
+  const titles = styleDna?.titles;
   return <div className={styles.report}>
-    {(measure || ratio) && <section className={styles.measured} aria-label="픽셀 측정">
+    {(titles?.en || titles?.ko) && <header className={styles.titles} aria-label="분석 제목">
+      {titles.en && <p lang="en"><span>EN</span> {titles.en}</p>}
+      {titles.ko && <p><span>KO</span> {titles.ko}</p>}
+    </header>}
+    {(measure || shownSize) && <section className={styles.measured} aria-label="픽셀 측정">
       <h5>미학적 팔레트 <span className={styles.tag}>픽셀 측정</span></h5>
-      {ratio && size && <p className={styles.ratio}>원본 비율 <strong>{ratio}</strong> <span className={styles.note}>({size.width}×{size.height}px, 브라우저 측정)</span></p>}
+      {shownSize && <dl className={styles.ratio}>
+        <div><dt>원본 크기</dt><dd><strong>{shownSize.width}×{shownSize.height}px</strong> <span className={styles.note}>{serverSize ? "서버가 원본을 열어 잰 값" : "브라우저 미리보기에서 잰 값"}</span></dd></div>
+        {ratio && <div><dt>가장 가까운 지원 비율</dt><dd><strong>{ratio}</strong> <span className={styles.note}>생성 도구가 지원하는 12개 비율 중 선택{serverSize && styleDna?.aspectRatio ? "(서버 계산)" : ""}</span></dd></div>}
+      </dl>}
       {measure && <>
         <ul className={styles.palette} aria-label="대표 색상">
           {measure.palette.map(color => <li key={color.bucket}>
@@ -124,6 +164,21 @@ export function StyleDnaReport({ semantic, result, size }: {
           </li>;
         })}
       </ul>
+      <CellGrid title="카메라" keys={cameraKeys} labels={cameraLabels} cells={styleDna?.camera} />
+      <CellGrid title="조명 설계" keys={lightingKeys} labels={lightingLabels} cells={styleDna?.lighting} />
+      {!!styleDna?.style?.length && <section className={styles.measured} aria-label="스타일 분석">
+        <h5>스타일 분석 <span className={styles.tag} data-certainty="estimated">Gemini 추정</span></h5>
+        <ul className={styles.plainList}>{styleDna.style.map((item, index) => <li key={index}>
+          <strong>{item.label}</strong> {item.description}<span className={styles.note}>시각 단서 · {item.basis}</span>
+        </li>)}</ul>
+      </section>}
+      {!!styleDna?.tips?.length && <section className={styles.measured} aria-label="활용 팁">
+        <h5>활용 팁</h5>
+        <ul className={styles.plainList}>{styleDna.tips.map((tip, index) => <li key={index}>{tip}</li>)}</ul>
+      </section>}
+      {!!styleDna?.keywords?.length && <ul className={styles.keywords} aria-label="키워드">
+        {styleDna.keywords.map((keyword, index) => <li key={index}>{keyword}</li>)}
+      </ul>}
       <h4 className={styles.promptTitle}>이미지 생성 프롬프트</h4>
       <PromptCard key={`en:${semantic.prompts.en ?? ""}`} language="en" original={semantic.prompts.en} />
       <PromptCard key={`ko:${semantic.prompts.ko ?? ""}`} language="ko" original={semantic.prompts.ko} />

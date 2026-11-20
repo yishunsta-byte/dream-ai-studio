@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { nearestAspectRatio, wholeImageMeasure } from "@/components/admin/admin-style-dna-report";
 import type { ReadyResult } from "@/components/admin/admin-reference-analysis-model";
+import { parseStyleDna } from "@/components/admin/admin-style-dna-extension";
 
 const observation = (x: number, width: number, bucket: string) => ({
   kind: "observation" as const, findingId: `f-${x}`, measure: "region_color_luminance" as const,
@@ -25,5 +26,23 @@ describe("Style DNA 리포트 측정값", () => {
     expect(wholeImageMeasure(result)?.palette[0].bucket).toBe("#222222");
     expect(wholeImageMeasure({ ...result, proposals: [result.proposals[0]] })).toBeUndefined();
     expect(wholeImageMeasure(undefined)).toBeUndefined();
+  });
+});
+
+describe("styleDna 선택 응답 읽기", () => {
+  const valid = {
+    schemaVersion: 1, titles: { ko: "제목" }, dimensions: { width: 10, height: 20 }, aspectRatio: "9:16",
+    camera: { angle: { certainty: "estimated", description: "눈높이", basis: "수평선" }, lens: { certainty: "unconfirmed" } },
+    lighting: { shadows: { certainty: "unconfirmed" } }, keywords: ["a"],
+  };
+  it("없으면 비우고, 맞으면 그대로 읽는다", () => {
+    expect(parseStyleDna(undefined)).toBeUndefined();
+    expect(parseStyleDna(valid)?.camera?.angle).toEqual({ certainty: "estimated", description: "눈높이", basis: "수평선" });
+  });
+  it("형식이 틀리면 통째로 무시한다(기존 리포트만 표시)", () => {
+    for (const broken of [{ ...valid, schemaVersion: 2 }, { ...valid, camera: { angle: { certainty: "estimated" } } },
+      { ...valid, dimensions: { width: 0, height: 5 } }, { ...valid, keywords: [""] }, "x", null]) {
+      expect(parseStyleDna(broken)).toBeUndefined();
+    }
   });
 });

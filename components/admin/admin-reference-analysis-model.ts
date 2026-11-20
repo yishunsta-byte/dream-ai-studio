@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { imageSemanticResultSchema, type ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
+import { parseStyleDna, type StyleDna } from "./admin-style-dna-extension";
 import { referenceFileFormat } from "@/lib/reference-analysis/input";
 import { studioAnalysisResultSchema, type StudioAnalysisResult } from "@/lib/reference-analysis/studio-analysis-result-dto";
 
@@ -72,7 +73,7 @@ export type Failure =
   | Readonly<{ kind: "rejected"; code: ErrorCode }>
   | Readonly<{ kind: "failed" }>;
 
-export type AnalyzeOutcome = Readonly<{ kind: "ready"; result: ReadyResult; semantic?: ImageSemanticResult }> | Readonly<{ kind: "unavailable"; reason: string }> | Failure;
+export type AnalyzeOutcome = Readonly<{ kind: "ready"; result: ReadyResult; semantic?: ImageSemanticResult; styleDna?: StyleDna }> | Readonly<{ kind: "unavailable"; reason: string }> | Failure;
 export type ListOutcome = Readonly<{ kind: "ok"; items: readonly PublishedReferenceAnalysis[] }> | Failure;
 export type PublishOutcome = Readonly<{ kind: "ok"; item: PublishedReferenceAnalysis }> | Failure;
 export type RevokeOutcome = Readonly<{ kind: "ok" }> | Failure;
@@ -123,14 +124,15 @@ export function createAdminReferenceAnalysisClient(transport: AdminTransport = b
             ...(imageSemantic && { "x-dream-semantic": "image" }),
           },
         }, (body) => {
-          const parsed = z.object({ result: studioAnalysisResultSchema, semantic: z.unknown().optional() }).safeParse(body);
+          const parsed = z.object({ result: studioAnalysisResultSchema, semantic: z.unknown().optional(), styleDna: z.unknown().optional() }).safeParse(body);
           if (!parsed.success) return undefined;
           const result = parsed.data.result;
           if (result.status === "unavailable") return { kind: "unavailable", reason: result.reason };
           if (result.media !== source.media) return undefined;
           if (!imageSemantic) return { kind: "ready", result };
           const semantic = imageSemanticResultSchema.safeParse(parsed.data.semantic);
-          return { kind: "ready", result, semantic: semantic.data ?? { status: "unavailable", reason: "invalid_response" } };
+          const styleDna = semantic.success ? parseStyleDna(parsed.data.styleDna) : undefined;
+          return { kind: "ready", result, semantic: semantic.data ?? { status: "unavailable", reason: "invalid_response" }, ...(styleDna && { styleDna }) };
         }, (status, body) => {
           const stopped = status === 422 ? stoppedAnalysis.safeParse(body) : undefined;
           return stopped?.success ? { kind: "unavailable", reason: stopped.data.detail } : undefined;
