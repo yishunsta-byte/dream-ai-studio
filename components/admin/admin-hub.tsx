@@ -4,7 +4,8 @@ import { Icon } from "@/components/ui/Icon";
 import { Card, StatusPill } from "@/components/ui/primitives";
 import { AdminApiIntegrations } from "./admin-analysis-tools";
 import { AdminProjectsSection, type AdminProjects } from "./admin-projects";
-import { AdminNavigation } from "./admin-navigation";
+import { AdminManual } from "./admin-manual";
+import { AdminNavigation, AdminProgramNavigation } from "./admin-navigation";
 import { AdminPremierePrograms } from "./admin-premiere-programs";
 import { AdminRenderQueue } from "./admin-render-queue";
 import styles from "./admin.module.css";
@@ -21,7 +22,10 @@ const unavailable = [
 export function AdminHub({ email, projects, review }: { email: string; projects: AdminProjects; review: ReactNode }) {
   return <div className={styles.workspace}>
     <AdminNavigation />
-    <h1 className={styles.consoleTitle}>관리 화면</h1>
+    <div className={styles.workspaceIntro}>
+      <h1 id="admin-workspace-heading" className={styles.consoleTitle}>관리 화면</h1>
+      <AdminProgramNavigation />
+    </div>
     <div className={styles.sections}>
       <section id="admin-overview" tabIndex={-1} aria-label="개요" className={`${styles.target} ${styles.overview}`}>
         <h2 tabIndex={-1}>개요</h2>
@@ -40,26 +44,23 @@ export function AdminHub({ email, projects, review }: { email: string; projects:
         {review}
       </div>
 
-      <section id="admin-api-integrations" tabIndex={-1} aria-labelledby="admin-api-integrations-title" className={`${styles.target} ${styles.section}`}>
-        <AdminApiIntegrations />
-      </section>
-
       <section id="admin-render-queue" tabIndex={-1} aria-labelledby="admin-render-queue-heading" className={`${styles.target} ${styles.section}`}>
         <AdminRenderQueue />
       </section>
 
       <section id="admin-account" tabIndex={-1} aria-labelledby="admin-menu" className={`${styles.target} ${styles.section}`}>
-        <h2 id="admin-menu" tabIndex={-1}>계정 설정</h2>
+        <h2 id="admin-menu" tabIndex={-1}>계정설정 및 API 연동</h2>
         <Card className={styles.accountCard}>
           <p className={styles.note}>로그인 계정 <strong>{email}</strong></p>
           <Link className={styles.link} href="/account/password">비밀번호 바꾸기 <Icon name="arrow" /></Link>
         </Card>
+        <section id="admin-api-integrations" tabIndex={-1} aria-labelledby="admin-api-integrations-title" className={`${styles.section} ${styles.subsection}`}>
+          <AdminApiIntegrations />
+        </section>
       </section>
 
-      {/* 디자인 75657a7: 미연결 부가 기능은 접힌 한 묶음으로 둔다(기본 details/summary, Enter·Space 뒤 초점 유지).
-          개수는 실제 목록 길이이고, 0개면 영역을 생략한다. 프로젝트·게시 카드의 상태와 복구 조작은 위에 그대로 있다. */}
-      {unavailable.length > 0 && <section aria-labelledby="admin-unlinked" className={styles.section}>
-        <h2 id="admin-unlinked">운영 연결 범위</h2>
+      <section id="admin-operations-availability" tabIndex={-1} aria-labelledby="admin-unlinked" className={`${styles.target} ${styles.section}`}>
+        <h2 id="admin-unlinked" tabIndex={-1}>운영 연결 범위</h2>
         <p className={styles.note}>현재 이 화면에서 제공하지 않는 운영 기능이에요.</p>
         <details className={styles.unlinkedGroup}>
           <summary>
@@ -76,7 +77,8 @@ export function AdminHub({ email, projects, review }: { email: string; projects:
             </ul>
           </Card>
         </details>
-      </section>}
+      </section>
+      <AdminManual />
     </div>
   </div>;
 }

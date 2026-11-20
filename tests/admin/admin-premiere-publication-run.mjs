@@ -57,6 +57,7 @@ window.fetch=async(raw,init)=>{
   const key:Record<string,string>={"/api/admin/reference-analysis":"image","/api/admin/music-semantic":"music","/api/admin/shorts-analysis":"shorts"};
   const program=key[path];
   if(program){
+    if (method==="GET" && fixture.statuses[program]==="login") return response({},401);
     if (method==="GET") return response({semantic:{[program]:fixture.statuses[program]}});
     if (method==="POST" && fixture.hold===program) await new Promise<void>(resolve=>{row.resolve=resolve;});
     if (method==="POST" && program==="image") return response({result:basicImage,semantic:imageMeaning});

@@ -50,6 +50,8 @@ describe("T-243 경로 판정", () => {
 
   it("로그인 뒤 돌아갈 곳은 같은 사이트 /admin 아래만, 나머지는 /admin", () => {
     expect(adminNextPath("/admin/x?tab=1")).toBe("/admin/x?tab=1");
+    expect(adminNextPath("/admin#admin-style-dna")).toBe("/admin#admin-style-dna");
+    expect(adminNextPath("/admin#admin-api-integrations")).toBe("/admin#admin-api-integrations");
     for (const bad of [undefined, "", "//evil.test", "https://evil.test/admin", "/\t/evil.test", "/\\evil.test", "/studio", "/adminx", "/admin/login", "/admin/login?next=/admin", "/login"]) expect(adminNextPath(bad), String(bad)).toBe(ADMIN_HOME);
     expect(adminLoginPath({ next: "//evil.test" })).toBe("/admin/login?next=%2Fadmin");
     expect(adminLoginPath({ error: "forbidden" })).toBe("/admin/login?error=forbidden");

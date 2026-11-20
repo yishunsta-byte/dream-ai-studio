@@ -14,7 +14,7 @@ export function imagePublicationDraft(result: Exclude<ImageSemanticResult, { sta
     const detail = proposal(finding.description);
     return detail ? [`추정 ${finding.category === "composition" ? "구도" : "조명"} — ${detail}`] : [];
   });
-  return { media: "image", title: "Style DNA 분석 결과", summary: summary.join("\n"), prompt: proposal(result.prompts[language]) };
+  return { media: "image", title: "이미지 분석 결과", summary: summary.join("\n"), prompt: proposal(result.prompts[language]) };
 }
 
 export function musicPublicationDraft(report: MusicSemanticReport): PublicationDraft {
