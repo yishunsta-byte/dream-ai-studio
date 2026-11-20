@@ -38,6 +38,7 @@ export function analysisInputIssue(source: AnalysisSource): string | undefined {
     let url: URL;
     try { url = new URL(source.url); }
     catch { return "https://로 시작하는 직접 파일 주소를 입력하세요."; }
+    if (url.protocol === "blob:") return "이 주소는 원본 화면에서만 열려요. 원본 파일을 저장한 뒤 파일 업로드에서 선택하세요.";
     if (/(^|\.)threads\.(com|net)$/.test(url.hostname)) return "Threads 게시물 링크는 분석할 수 없어요. 미디어 파일의 직접 HTTPS 주소를 입력하세요.";
     if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || url.port) {
       return "쿼리나 로그인 정보가 없는 직접 HTTPS 파일 주소를 입력하세요.";

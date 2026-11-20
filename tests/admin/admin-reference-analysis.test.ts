@@ -77,6 +77,7 @@ describe("분석 요청", () => {
     expect(analysisInputIssue({ kind: "file", file: oversized, media: "image" })).toContain("4 MiB");
     expect(analysisInputIssue({ kind: "file", file: new File([], "photo.jpg"), media: "image" })).toContain("내용이 있는");
     expect(analysisInputIssue(urlSource("https://www.threads.com/@demo/post/a"))).toContain("직접 HTTPS");
+    expect(analysisInputIssue(urlSource("blob:https://example.invalid/fixture"))).toContain("원본 파일을 저장한 뒤 파일 업로드에서 선택하세요.");
     expect(analysisInputIssue(urlSource("https://mdn.github.io/a.jpg?token=secret"))).toContain("쿼리");
     expect(analysisInputIssue(urlSource("https://mdn.github.io/a.mp4"))).toContain("‘영상’");
   });

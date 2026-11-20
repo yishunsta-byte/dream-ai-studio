@@ -99,6 +99,23 @@ try {
       document.activeElement.value === "https://www.threads.com/@fixture/post/123" &&
       document.activeElement.getAttribute("aria-describedby").includes("-paste-notice")), `paste denial keeps input and restores focus ${width}`);
 
+    const blobUrl = "blob:https://example.invalid/fixture";
+    const blobGuidance = () => fx((value) => {
+      const input = document.querySelector("input[type=url]");
+      const error = document.getElementById(input.getAttribute("aria-describedby").split(" ").find((id) => id.endsWith("-input-error")));
+      return input.value === value && input.getAttribute("aria-invalid") === "true" && error?.getAttribute("role") === "status" &&
+        error.textContent.includes("원본 파일을 저장한 뒤 파일 업로드에서 선택하세요.") &&
+        document.querySelector("form button[type=submit]").disabled && !document.querySelector('main img[src^="blob:"]');
+    }, blobUrl);
+    await page.fill("loc=css:main input[type=url]", blobUrl);
+    check(await blobGuidance(), `typed blob URL preserves value and shows upload guidance ${width}`);
+    await page.fill("loc=css:main input[type=url]", "");
+    await fx((value) => { window.__pasteFixture.mode = "text"; window.__pasteFixture.text = value; }, blobUrl);
+    await pasteWithKeyboard();
+    await until(() => document.querySelector("input[type=url]").value.startsWith("blob:"), "blob URL pasted");
+    check(await blobGuidance(), `pasted blob URL shows the same upload guidance ${width}`);
+    check((await requests()).length === 1, `blob input sends no analysis or publication ${width}`);
+
     await fx(() => { window.__pasteFixture.mode = "delay"; });
     await pasteWithKeyboard();
     await until(() => typeof window.__pasteFixture.resolve === "function", "pending clipboard read");
