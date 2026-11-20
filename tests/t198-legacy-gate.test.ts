@@ -95,6 +95,7 @@ const authRoutes = ["auth/login", "auth/signup", "auth/reset", "auth/password", 
 // - Backend의 새 Postgres 조회 GET(B4-G)
 // - T297 관리자 게시 GET·POST, T296 참고 분석 POST: 직접 권한·no-store·POST 동일 출처·미연결 실패는 tests/api-auth.test.ts가 검증
 const CLOUD_ONLY: Record<string, string[]> = {
+  "../app/api/admin/music-semantic/route.ts": ["GET", "POST"],
   "../app/api/admin/render-queue/route.ts": ["GET"],
   "../app/api/projects/route.ts": ["GET"], "../app/api/projects/[id]/route.ts": ["GET"],
   "../app/api/admin/publications/route.ts": ["GET", "POST"],
