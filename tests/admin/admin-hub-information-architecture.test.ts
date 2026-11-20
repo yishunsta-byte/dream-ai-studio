@@ -19,7 +19,7 @@ describe("admin hub information architecture", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
     const nav = html.match(/<nav\b[^>]*aria-label="관리 메뉴"[\s\S]*?<\/nav>/)?.[0];
     expect(nav).toBeDefined();
-    const targets = ["admin-overview", "admin-project-list", "admin-review", "admin-reference-analysis", "admin-api-integrations", "admin-render-queue", "admin-account"];
+    const targets = ["admin-style-dna", "admin-music-analysis", "admin-shorts-analysis", "admin-overview", "admin-project-list", "admin-review", "admin-api-integrations", "admin-render-queue", "admin-account"];
     expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(targets);
     expect(nav).toMatch(/href="#admin-project-list" aria-current="location"/);
     expect(nav!.match(/aria-current=/g)).toHaveLength(1);
@@ -28,25 +28,23 @@ describe("admin hub information architecture", () => {
       expect(html).toMatch(new RegExp(`<[^>]+id="${id}"[^>]*tabindex="-1"`));
     }
     for (const href of ["/cloud/manage", "/cloud/projects", "/account/password"]) expect(html).toContain(`href="${href}"`);
-    expect(html.indexOf('id="admin-project-list"')).toBeLessThan(html.indexOf('id="admin-reference-analysis"'));
-    expect(html.indexOf('id="admin-reference-analysis"')).toBeLessThan(html.indexOf('id="admin-review"'));
+    expect(html.indexOf('id="admin-project-list"')).toBeLessThan(html.indexOf('id="admin-style-dna"'));
+    expect(html.indexOf('id="admin-style-dna"')).toBeLessThan(html.indexOf('id="admin-review"'));
     expect(html.indexOf('id="admin-review"')).toBeLessThan(html.indexOf('id="admin-account"'));
   });
 
-  it("places the analysis guide and real admin API methods near the shared analyzer", () => {
+  it("renders dedicated program destinations and retires the legacy analysis and publication form", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
-    expect(html).toMatch(/<summary>.*사용 매뉴얼<\/summary>/);
-    expect(html).toContain("파일은 4 MiB까지");
-    expect(html).toMatch(/<dt>이미지<\/dt><dd>PNG · JPG/);
-    expect(html).toContain("<code>mdn.github.io</code>");
-    expect(html).toContain("API 응답 확인");
-    expect(html).toContain("별도 API 키는 필요 없어요.");
-    expect(html).toContain("<code>/api/admin/reference-analysis</code>");
-    expect(html).toMatch(/<h4>Gemini · 음악 의미 분석<\/h4><p[^>]*><strong>GET<\/strong> <code>\/api\/admin\/music-semantic<\/code>/);
-    expect(html).toMatch(/<h4>Gemini · YouTube Shorts 분석<\/h4><p[^>]*><strong>GET<\/strong> <code>\/api\/admin\/shorts-analysis<\/code>/);
-    expect(html).toContain("<code>/api/admin/reference-publications</code>");
-    expect(html).toContain("GET·OPTIONS로 내부 API와 서버 설정 상태만 조회해요. 실제 모델 응답은 각 분석 화면에서 확인할 수 있어요.");
+    expect(html).toContain('aria-label="분석 프로그램"');
+    expect(html).toContain('aria-label="운영 메뉴"');
+    expect(html).toContain("Style DNA");
+    expect(html).toContain("음악 분석");
+    expect(html).toContain("쇼츠 분석");
+    expect(html).toContain('<h2 id="admin-api-integrations-title" tabindex="-1">API연동</h2>');
+    expect(html).not.toMatch(/콘텐츠 분석·공개|공개 준비|id="admin-reference-analysis"/);
+    expect(html).toContain("완성본 검수·게시");
   });
+
 
   it("keeps missing operational suppliers as text with no actions or placeholder metrics", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });

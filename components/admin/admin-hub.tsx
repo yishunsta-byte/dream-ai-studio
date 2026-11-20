@@ -2,10 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Card, StatusPill } from "@/components/ui/primitives";
-import { AdminAnalysisGuide, AdminApiIntegrations } from "./admin-analysis-tools";
+import { AdminApiIntegrations } from "./admin-analysis-tools";
 import { AdminProjectsSection, type AdminProjects } from "./admin-projects";
 import { AdminNavigation } from "./admin-navigation";
-import { AdminReferenceAnalysis } from "./admin-reference-analysis";
+import { AdminPremierePrograms } from "./admin-premiere-programs";
 import { AdminRenderQueue } from "./admin-render-queue";
 import styles from "./admin.module.css";
 
@@ -35,10 +35,7 @@ export function AdminHub({ email, projects, review }: { email: string; projects:
       <div id="admin-project-list" role="group" aria-label="내 프로젝트" className={`${styles.target} ${styles.defaultPanel}`} tabIndex={-1}>
         <AdminProjectsSection state={projects} />
       </div>
-      <div id="admin-reference-analysis" role="group" aria-label="콘텐츠 프롬프트 분석기" className={`${styles.target} ${styles.analysisDeck}`} tabIndex={-1}>
-        <div className={styles.analysisMain}><AdminReferenceAnalysis /></div>
-        <AdminAnalysisGuide />
-      </div>
+      <AdminPremierePrograms />
       <div id="admin-review" role="group" aria-label="완성본 검수·게시" className={styles.target} tabIndex={-1}>
         {review}
       </div>

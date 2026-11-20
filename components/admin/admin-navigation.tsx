@@ -4,15 +4,23 @@ import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react"
 import { Icon, type IconName } from "@/components/ui/Icon";
 import styles from "./admin.module.css";
 
-const sections = [
+export const analysisPrograms = [
+  { id: "admin-style-dna", label: "Style DNA", detail: "이미지 스타일", icon: "flask" },
+  { id: "admin-music-analysis", label: "음악 분석", detail: "장르·템포·구간", icon: "clock" },
+  { id: "admin-shorts-analysis", label: "쇼츠 분석", detail: "YouTube 영상", icon: "play" },
+] as const satisfies readonly { id: string; label: string; detail: string; icon: IconName }[];
+
+const legacyAnalysisHash = "#admin-reference-analysis";
+const operations = [
   { id: "admin-overview", label: "개요", icon: "home" },
   { id: "admin-project-list", label: "내 프로젝트", icon: "folder" },
   { id: "admin-review", label: "완성본 검수·게시", icon: "check" },
-  { id: "admin-reference-analysis", label: "콘텐츠 분석·공개", icon: "flask" },
-  { id: "admin-api-integrations", label: "API 연동", icon: "settings" },
+  { id: "admin-api-integrations", label: "API연동", icon: "settings" },
   { id: "admin-render-queue", label: "렌더 대기열", icon: "clock" },
   { id: "admin-account", label: "계정 설정", icon: "settings" },
 ] as const satisfies readonly { id: string; label: string; icon: IconName }[];
+
+const sections = [...analysisPrograms, ...operations];
 
 function subscribeLocation(onChange: () => void) {
   window.addEventListener("hashchange", onChange);
@@ -28,6 +36,7 @@ const defaultSection = () => "admin-project-list" as const;
 function currentSection() {
   try {
     const id = decodeURIComponent(window.location.hash.slice(1));
+    if (`#${id}` === legacyAnalysisHash) return analysisPrograms[0].id;
     return sections.find((section) => section.id === id)?.id ?? defaultSection();
   } catch {
     return defaultSection();
@@ -104,15 +113,29 @@ export function AdminNavigation() {
   }, []);
 
   useEffect(() => {
-    if (!window.location.hash || !sections.some(section => window.location.hash === "#" + section.id)) return;
+    if (window.location.hash === legacyAnalysisHash) {
+      history.replaceState(history.state, "", `#${analysisPrograms[0].id}`);
+    }
+    if (!sections.some(section => window.location.hash === `#${section.id}`)) return;
     const frame = requestAnimationFrame(() => focusSection(current));
     return () => cancelAnimationFrame(frame);
   }, [current]);
+
   return <nav ref={navigation} className={styles.navigation} aria-label="관리 메뉴">
-    <ul>
-      {sections.map(({ id, label, icon }) => <li key={id}>
+    <ul className={styles.programLinks} aria-label="분석 프로그램">
+      {analysisPrograms.map(({ id, label, detail, icon }) => <li key={id}>
         <a href={`#${id}`} aria-current={id === current ? "location" : undefined}
-          onClick={() => { if (window.location.hash === "#" + id) requestAnimationFrame(() => focusSection(id)); }}><Icon name={icon} />{label}</a>
+          onClick={() => { if (window.location.hash === `#${id}`) requestAnimationFrame(() => focusSection(id)); }}>
+          <Icon name={icon} /><span><strong>{label}</strong><small>{detail}</small></span>
+        </a>
+      </li>)}
+    </ul>
+    <ul className={styles.operationLinks} aria-label="운영 메뉴">
+      {operations.map(({ id, label, icon }) => <li key={id}>
+        <a href={`#${id}`} aria-current={id === current ? "location" : undefined}
+          onClick={() => { if (window.location.hash === `#${id}`) requestAnimationFrame(() => focusSection(id)); }}>
+          <Icon name={icon} />{label}
+        </a>
       </li>)}
     </ul>
   </nav>;

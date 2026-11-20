@@ -107,3 +107,18 @@
 .itemHead h4 { font-size: var(--text-md); }
 .plain { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .promptBox > summary { display: flex; align-items: center; min-height: 44px; font-weight: 700; color: var(--accent); cursor: pointer; }
+
+.panel[data-appearance="premiere"] {
+  --lab-mint: #cdd7ff;
+  --lab-muted: #cec9de;
+  --lab-line: #52476e;
+  --lab-inset: #171328;
+}
+.panel[data-appearance="premiere"] .surface {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.panel[data-appearance="premiere"] .options label:has(:checked),
+.panel[data-appearance="premiere"] .inference { background: #302449; border-color: var(--lab-mint); }
+.panel[data-appearance="premiere"] .actions .run { background: linear-gradient(105deg, #d3c6f9, #9eafe8); color: #171127; }

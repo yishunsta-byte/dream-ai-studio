@@ -13,7 +13,7 @@ const labels: Record<ImageSemanticCategory, string> = {
 };
 
 const notes: Record<Extract<ImageSemanticResult, { status: "unavailable" }>["reason"], string> = {
-  not_configured: "Gemini 설정이 필요해요. API 연동 메뉴에서 상태를 확인하세요.",
+  not_configured: "Gemini 설정이 필요해요. API연동 메뉴에서 상태를 확인하세요.",
   image_preparation_failed: "모델에 보낼 이미지를 준비하지 못했어요.",
   provider_error: "Gemini가 요청을 처리하지 못했어요. 잠시 뒤 다시 실행해 주세요.",
   invalid_response: "Gemini에서 사용할 수 있는 분석 결과를 받지 못했어요.",
@@ -36,7 +36,7 @@ export function ImageSemanticReport({ semantic }: { semantic: ImageSemanticResul
   if (semantic.status === "unavailable") return <div className={styles.promptEditor}>
     <p className={styles.error}>이미지 의미 분석을 완료하지 못했어요.</p>
     <p className={styles.note}>{notes[semantic.reason]}</p>
-    {semantic.reason === "not_configured" && <a className={styles.link} href="#admin-api-integrations">API 연동 보기</a>}
+    {semantic.reason === "not_configured" && <a className={styles.link} href="#admin-api-integrations">API연동 보기</a>}
   </div>;
 
   return <div className={styles.promptEditor}>

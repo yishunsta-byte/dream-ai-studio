@@ -18,7 +18,7 @@ const errors: Record<string, string> = {
 type Availability = { kind: "checking" } | { kind: "configured" } | { kind: "not_configured" }
   | { kind: "failed"; message: string };
 
-export function AdminShortsAnalysis() {
+export function AdminShortsAnalysis({ onSourceChange, appearance }: { onSourceChange?: (url: string) => void; appearance?: "premiere" } = {}) {
   const id = useId();
   const retryStatusId = `${id}-retry-status`;
   const urlField = useRef<HTMLInputElement>(null);
@@ -128,7 +128,7 @@ export function AdminShortsAnalysis() {
   }
 
   const findings = result?.findings;
-  return <section className={styles.panel} aria-labelledby={`${id}-title`}>
+  return <section className={styles.panel} data-appearance={appearance} aria-labelledby={`${id}-title`}>
     <div className={styles.surface}>
       <form className={styles.form} onSubmit={event => { event.preventDefault(); void analyze(); }}>
         <h3 id={`${id}-title`}>YouTube 쇼츠 분석</h3>
@@ -138,7 +138,7 @@ export function AdminShortsAnalysis() {
               : availability.kind === "not_configured" ? errors.not_configured : availability.message}
           </p>
           {(availability.kind !== "checking" || statusAttempt > 0) && <div className={styles.actions}>
-            <a className={styles.link} href="#admin-api-integrations">API 연동 보기</a>
+            <a className={styles.link} href="#admin-api-integrations">API연동 보기</a>
             <Button id={retryStatusId} type="button" variant="secondary" aria-disabled={availability.kind === "checking"}
               onClick={() => {
                 if (availability.kind === "checking") return;
@@ -151,7 +151,7 @@ export function AdminShortsAnalysis() {
           공개 YouTube 영상 주소
           <input ref={urlField} id={`${id}-url`} inputMode="url" autoComplete="off" spellCheck={false}
             maxLength={2048} value={url} aria-describedby={`${id}-help`}
-            onChange={event => { reset(); setUrl(event.target.value); setConsent(false); }} />
+            onChange={event => { reset(); setUrl(event.target.value); setConsent(false); onSourceChange?.(event.target.value); }} />
         </label>
         <p className={styles.note} id={`${id}-help`}>공개 쇼츠 주소나 YouTube 시청 주소를 입력하세요.</p>
         <div className={styles.options}>

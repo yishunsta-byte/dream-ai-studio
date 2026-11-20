@@ -76,7 +76,7 @@ function MusicFileAnalysis({ file, client, disabled }: { file: File; client: Adm
     </div>}
     {availability?.kind === "ok" && !configured && <>
       <p role="status">{unavailableMessage.not_configured}</p>
-      <a href="#admin-api-integrations" className={analysisStyles.link}>API 연동 보기</a>
+      <a href="#admin-api-integrations" className={analysisStyles.link}>API연동 보기</a>
     </>}
     {fileIssue && <p role="status">{fileIssue}</p>}
     {configured && <>
