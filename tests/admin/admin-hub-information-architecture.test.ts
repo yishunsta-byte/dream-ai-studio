@@ -19,11 +19,19 @@ describe("admin hub information architecture", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
     const nav = html.match(/<nav\b[^>]*aria-label="관리 메뉴"[\s\S]*?<\/nav>/)?.[0];
     expect(nav).toBeDefined();
-    const targets = ["admin-style-dna", "admin-music-analysis", "admin-shorts-analysis", "admin-overview", "admin-project-list", "admin-review", "admin-analysis-results", "admin-api-integrations", "admin-render-queue", "admin-account"];
-    expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(targets);
+    const programs = html.match(/<nav\b[^>]*aria-label="분석 프로그램"[\s\S]*?<\/nav>/)?.[0];
+    expect(programs).toBeDefined();
+    const operations = ["admin-overview", "admin-project-list", "admin-review", "admin-analysis-results", "admin-render-queue", "admin-account", "admin-operations-availability", "admin-manual"];
+    const analyzers = ["admin-style-dna", "admin-music-analysis", "admin-shorts-analysis"];
+    expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(operations);
+    expect([...programs!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(analyzers);
+    const titlePosition = html.indexOf('id="admin-workspace-heading"');
+    expect(html.indexOf(nav!)).toBeLessThan(titlePosition);
+    expect(titlePosition).toBeLessThan(html.indexOf(programs!));
+    expect(html.indexOf(programs!)).toBeLessThan(html.indexOf('id="admin-style-dna"'));
     expect(nav).toMatch(/href="#admin-project-list" aria-current="location"/);
     expect(nav!.match(/aria-current=/g)).toHaveLength(1);
-    for (const id of targets) {
+    for (const id of [...operations, ...analyzers, "admin-api-integrations"]) {
       expect(html.match(new RegExp(`\\bid="${id}"`, "g"))).toHaveLength(1);
       expect(html).toMatch(new RegExp(`<[^>]+id="${id}"[^>]*tabindex="-1"`));
     }
@@ -37,19 +45,25 @@ describe("admin hub information architecture", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
     expect(html).toContain('aria-label="분석 프로그램"');
     expect(html).toContain('aria-label="운영 메뉴"');
-    expect(html).toContain("Style DNA");
+    expect(html).toContain("<strong>이미지 분석</strong>");
+    expect(html).toContain("색감·조명·구도 분석과 한영 프롬프트");
+    expect(html).toContain("장르·악기·템포 분석과 Suno 프롬프트");
+    expect(html).toContain("첫 장면·영상 구성 분석과 연출 프롬프트");
     expect(html).toContain("음악 분석");
     expect(html).toContain("쇼츠 분석");
-    expect(html).toContain('<h2 id="admin-api-integrations-title" tabindex="-1">API연동</h2>');
-    expect(html).not.toMatch(/콘텐츠 분석·공개|공개 준비|id="admin-reference-analysis"/);
+    expect(html).toMatch(/id="admin-account"[^>]*>[\s\S]*?<h2 id="admin-menu" tabindex="-1">계정설정 및 API 연동<\/h2>[\s\S]*?비밀번호 바꾸기[\s\S]*?<section id="admin-api-integrations"[^>]*><h3 id="admin-api-integrations-title" tabindex="-1">API연동<\/h3>/);
+    expect(html).not.toMatch(/Style DNA|콘텐츠 분석·공개|>공개 준비<\/button>|id="admin-reference-analysis"/);
     expect(html).toContain("완성본 검수·게시");
     expect(html).toContain("분석 결과 관리");
+    expect(html).toContain('<h2 id="admin-manual-heading" tabindex="-1">사용매뉴얼</h2>');
+    expect(html).toContain("Gemini API연동");
+    expect(html).toContain("플랫폼 이용 방법");
   });
 
 
   it("keeps missing operational suppliers as text with no actions or placeholder metrics", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
-    const level = html.match(/<section\b[^>]*aria-labelledby="admin-unlinked"[\s\S]*?<\/section>/)?.[0];
+    const level = html.match(/<section\b[^>]*id="admin-operations-availability"[\s\S]*?<\/section>/)?.[0];
     expect(level).toBeDefined();
     for (const label of ["작업 대기열", "자료 관리", "백업·복원", "운영 로그", "회원 관리", "서비스 상태"]) {
       expect(level).toContain(label);
@@ -63,7 +77,7 @@ describe("admin hub information architecture", () => {
     expect(summary).toMatch(/<span[^>]*>미연결 기능 6개 접기<\/span>/);
     const body = group!.slice(group!.indexOf("</summary>"));
     expect(body.match(/미연결/g)).toHaveLength(6);
-    expect(level).not.toMatch(/href=|<button|tabindex|\d+건|정상 작동/);
+    expect(level).not.toMatch(/href=|<button|\d+건|정상 작동/);
     expect(level!.replace(summary, "")).not.toMatch(/\d+개/);
     expect(html).toContain("이 환경에서 내 프로젝트를 조회하려면 운영 담당자의 연결 확인이 필요해요.");
     expect(html).toContain("관리자 게시·철회 서버 기능이 아직 연결되지 않았어요");

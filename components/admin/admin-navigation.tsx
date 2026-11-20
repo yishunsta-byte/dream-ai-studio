@@ -5,20 +5,23 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import styles from "./admin.module.css";
 
 export const analysisPrograms = [
-  { id: "admin-style-dna", label: "Style DNA", detail: "이미지 스타일", icon: "flask" },
-  { id: "admin-music-analysis", label: "음악 분석", detail: "장르·템포·구간", icon: "clock" },
-  { id: "admin-shorts-analysis", label: "쇼츠 분석", detail: "YouTube 영상", icon: "play" },
+  { id: "admin-style-dna", label: "이미지 분석", detail: "색감·조명·구도 분석과 한영 프롬프트", icon: "flask" },
+  { id: "admin-music-analysis", label: "음악 분석", detail: "장르·악기·템포 분석과 Suno 프롬프트", icon: "clock" },
+  { id: "admin-shorts-analysis", label: "쇼츠 분석", detail: "첫 장면·영상 구성 분석과 연출 프롬프트", icon: "play" },
 ] as const satisfies readonly { id: string; label: string; detail: string; icon: IconName }[];
 
 const legacyAnalysisHash = "#admin-reference-analysis";
+export const accountSettingsId = "admin-account";
+const apiIntegrationsId = "admin-api-integrations";
 const operations = [
   { id: "admin-overview", label: "개요", icon: "home" },
   { id: "admin-project-list", label: "내 프로젝트", icon: "folder" },
   { id: "admin-review", label: "완성본 검수·게시", icon: "check" },
   { id: "admin-analysis-results", label: "분석 결과 관리", icon: "check" },
-  { id: "admin-api-integrations", label: "API연동", icon: "settings" },
   { id: "admin-render-queue", label: "렌더 대기열", icon: "clock" },
-  { id: "admin-account", label: "계정 설정", icon: "settings" },
+  { id: accountSettingsId, label: "계정설정 및 API 연동", icon: "settings" },
+  { id: "admin-operations-availability", label: "운영 연결 범위", icon: "lock" },
+  { id: "admin-manual", label: "사용매뉴얼", icon: "info" },
 ] as const satisfies readonly { id: string; label: string; icon: IconName }[];
 
 const sections = [...analysisPrograms, ...operations];
@@ -41,6 +44,7 @@ function sectionFromHash(hash: string) {
   try {
     const id = decodeURIComponent(hash.slice(1));
     if (`#${id}` === legacyAnalysisHash) return analysisPrograms[0].id;
+    if (id === apiIntegrationsId) return accountSettingsId;
     return sections.find((section) => section.id === id)?.id ?? defaultSection();
   } catch {
     return defaultSection();
@@ -49,10 +53,23 @@ function sectionFromHash(hash: string) {
 
 function focusSection(id: string) {
   const section = document.getElementById(id);
-  const heading = section?.querySelector<HTMLElement>("h2") ?? section;
+  const heading = section?.querySelector<HTMLElement>("h2, h3") ?? section;
   if (!heading) return;
   heading.tabIndex = -1;
   heading.focus({ preventScroll: true });
+  const intro = analysisPrograms.some(program => program.id === id)
+    ? document.getElementById("admin-workspace-heading")?.parentElement
+    : null;
+  if (intro) {
+    const top = intro.getBoundingClientRect().top;
+    const bottom = heading.getBoundingClientRect().bottom;
+    const offset = parseFloat(getComputedStyle(intro).scrollMarginTop) || 0;
+    const height = Math.min(window.innerHeight, window.visualViewport?.height ?? window.innerHeight);
+    if (bottom - top + offset <= height) {
+      if (top < offset || bottom > height) intro.scrollIntoView({ block: "start" });
+      return;
+    }
+  }
   heading.scrollIntoView({ block: "start" });
 }
 
@@ -69,6 +86,19 @@ export function navigateAdminSection(id: string) {
 
 export function useAdminSection() {
   return sectionFromHash(useSyncExternalStore(subscribeLocation, browserHash, serverHash));
+}
+
+export function AdminProgramNavigation() {
+  const current = useAdminSection();
+  return <nav className={styles.programNavigation} aria-label="분석 프로그램">
+    <ul className={styles.programLinks}>
+      {analysisPrograms.map(({ id, label, detail, icon }) => <li key={id}>
+        <a href={`#${id}`} aria-current={id === current ? "location" : undefined}>
+          <Icon name={icon} /><span><strong>{label}</strong><small>{detail}</small></span>
+        </a>
+      </li>)}
+    </ul>
+  </nav>;
 }
 
 export function AdminNavigation() {
@@ -122,7 +152,7 @@ export function AdminNavigation() {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
       const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
       const id = link?.hash.slice(1);
-      if (!id || !sections.some(section => section.id === id)) return;
+      if (!id || (id !== apiIntegrationsId && !sections.some(section => section.id === id))) return;
       event.preventDefault();
       navigateAdminSection(id);
     };
@@ -152,23 +182,17 @@ export function AdminNavigation() {
     if (window.location.hash === legacyAnalysisHash) {
       history.replaceState(history.state, "", `#${analysisPrograms[0].id}`);
     }
-    if (hash && window.location.hash !== `#${current}`) return;
+    const destination = hash === `#${apiIntegrationsId}` ? apiIntegrationsId : current;
+    if (hash && window.location.hash !== `#${destination}`) return;
     if (!hash && !visitedSection.current) return;
     visitedSection.current = true;
     let frame = requestAnimationFrame(() => {
-      frame = requestAnimationFrame(() => focusSection(current));
+      frame = requestAnimationFrame(() => focusSection(destination));
     });
     return () => cancelAnimationFrame(frame);
   }, [current, hash]);
 
   return <nav ref={navigation} className={styles.navigation} aria-label="관리 메뉴">
-    <ul className={styles.programLinks} aria-label="분석 프로그램">
-      {analysisPrograms.map(({ id, label, detail, icon }) => <li key={id}>
-        <a href={`#${id}`} aria-current={id === current ? "location" : undefined}>
-          <Icon name={icon} /><span><strong>{label}</strong><small>{detail}</small></span>
-        </a>
-      </li>)}
-    </ul>
     <ul className={styles.operationLinks} aria-label="운영 메뉴">
       {operations.map(({ id, label, icon }) => <li key={id}>
         <a href={`#${id}`} aria-current={id === current ? "location" : undefined}>

@@ -5,12 +5,12 @@ import { Icon } from "@/components/ui/Icon";
 import { Button, Card } from "@/components/ui/primitives";
 import { MUSIC_SEMANTIC_URI } from "@/lib/reference-analysis/music-semantic-contract";
 import { SHORTS_ANALYSIS_URI } from "@/lib/reference-analysis/shorts-analysis-contract";
-import { analysisPrograms, useAdminSection } from "./admin-navigation";
+import { accountSettingsId, analysisPrograms, useAdminSection } from "./admin-navigation";
 import { ANALYSIS_URI } from "./admin-reference-analysis-model";
 import styles from "./admin.module.css";
 
 const checks = [
-  { program: "image", path: ANALYSIS_URI, description: "이미지 Style DNA 모델 설정" },
+  { program: "image", path: ANALYSIS_URI, description: "이미지 분석 모델 설정" },
   { program: "music", path: MUSIC_SEMANTIC_URI, description: "음악 의미 분석 모델 설정" },
   { program: "shorts", path: SHORTS_ANALYSIS_URI, description: "YouTube Shorts 분석 모델 설정" },
 ] as const;
@@ -70,7 +70,7 @@ function ApiSettingsCard() {
 
   return <Card className={styles.apiCard}>
     <div className={styles.apiIntro}>
-      <div><h3>분석기 서버 설정</h3><p className={styles.note}>각 프로그램의 Gemini 설정 상태를 조회해요. 모델 응답은 분석 화면에서 확인해요.</p></div>
+      <div><h4>분석기 서버 설정</h4><p className={styles.note}>각 프로그램의 Gemini 설정 상태를 조회해요. 모델 응답은 분석 화면에서 확인해요.</p></div>
       <Button type="button" variant="secondary" aria-disabled={checking} onClick={() => void checkApis()}>
         {checking ? "응답 확인 중" : "API 응답 확인"}
       </Button>
@@ -82,7 +82,7 @@ function ApiSettingsCard() {
         const tone = result?.kind === "configured" ? "success" : result?.kind === "failed" ? "danger" : result && "warning";
         return <li key={program}>
           <div>
-            <h4><a className={styles.link} href={`#${id}`}>{label} <Icon name="arrow" /></a></h4>
+            <h5><a className={styles.link} href={`#${id}`}>{label} <Icon name="arrow" /></a></h5>
             <p className={styles.apiMethod}><strong>GET</strong> <code>{path}</code></p>
             <p className={styles.note}>{description}</p>
           </div>
@@ -98,7 +98,7 @@ function ApiSettingsCard() {
 export function AdminApiIntegrations() {
   const current = useAdminSection();
   return <>
-    <h2 id="admin-api-integrations-title" tabIndex={-1}>API연동</h2>
-    {current === "admin-api-integrations" && <ApiSettingsCard />}
+    <h3 id="admin-api-integrations-title" tabIndex={-1}>API연동</h3>
+    {current === accountSettingsId && <ApiSettingsCard />}
   </>;
 }

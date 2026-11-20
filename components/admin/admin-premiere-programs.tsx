@@ -24,9 +24,9 @@ const apiLink = "#admin-api-integrations";
 const loginLink = "/admin/login?next=%2Fadmin%23admin-style-dna";
 
 const copy = [
-  { kind: "image", description: "이미지의 조명, 구도와 스타일을 읽고 한영 프롬프트를 얻어요.", caption: "컬러·구도·조명", guide: "지원하는 직접 URL이나 이미지 파일을 선택한 뒤 Gemini 전송에 동의하세요. Style DNA의 추정은 원본과 대조하세요." },
-  { kind: "music", description: "음악의 장르, 악기, 추정 템포와 구간 구조를 살펴봐요.", caption: "장르·악기·템포", guide: "MP3·WAV·M4A 파일을 올리세요. 모델이 준비되면 음악 원본 전송에 동의한 뒤 Suno용 프롬프트를 만들 수 있어요." },
-  { kind: "shorts", description: "YouTube 쇼츠의 첫 장면과 시간대별 근거를 확인해요.", caption: "첫 장면·시간대별 근거", guide: "공개 YouTube 쇼츠 또는 시청 주소를 입력하세요. 모델이 준비되면 공개 영상 주소 전송에 동의하고 분석하세요." },
+  { kind: "image", description: "이미지의 색감·조명·구도를 분석해 한국어와 영어로 이미지 생성 프롬프트를 만들어요.", caption: "컬러·구도·조명" },
+  { kind: "music", description: "음악의 장르, 악기, 추정 템포와 구간 구조를 살펴봐요.", caption: "장르·악기·템포" },
+  { kind: "shorts", description: "YouTube 쇼츠의 첫 장면과 시간대별 근거를 확인해요.", caption: "첫 장면·시간대별 근거" },
 ] as const;
 
 function LocalMedia({ file, kind }: { file: File; kind: "image" | "music" }) {
@@ -57,16 +57,9 @@ function Preview({ title, children }: { title: string; children: ReactNode }) {
   </section>;
 }
 
-function SourceGuide({ detail }: { detail: string }) {
-  return <details className={styles.guide}>
-    <summary>사용 매뉴얼</summary>
-    <p>{detail}</p>
-  </details>;
-}
-
 type ProgramWorkspaceProps = { onPrepare: (draft: PublicationDraft) => void };
 
-function DnaPublicDraft({ result, onPrepare }: ProgramWorkspaceProps & {
+function ImagePublicDraft({ result, onPrepare }: ProgramWorkspaceProps & {
   result: Exclude<ImageSemanticResult, { status: "unavailable" }>;
 }) {
   const [preferred, setPreferred] = useState<"ko" | "en">("ko");
@@ -81,7 +74,7 @@ function DnaPublicDraft({ result, onPrepare }: ProgramWorkspaceProps & {
   </div>;
 }
 
-function StyleDnaWorkspace({ onPrepare }: ProgramWorkspaceProps) {
+function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   const [kind, setKind] = useState<AnalysisSource["kind"]>("url");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File>();
@@ -191,7 +184,7 @@ function StyleDnaWorkspace({ onPrepare }: ProgramWorkspaceProps) {
             <ul>{SUPPORTED_ORIGINS.map(origin => <li key={origin}>{new URL(origin).hostname}</li>)}</ul>
           </details>}
           {checking || settings?.kind !== "configured" ? <div className={styles.settings}>
-            <p role="status">{checking ? "Style DNA 모델 설정을 확인하는 중이에요." : settings && settingsMessage(settings)}</p>
+            <p role="status">{checking ? "이미지 분석 모델 설정을 확인하는 중이에요." : settings && settingsMessage(settings)}</p>
             {settings?.kind === "login" && <a className={hub.link} href={loginLink}>관리자 로그인</a>}
             {settings && settings.kind !== "login" && settings.kind !== "forbidden" && <Button
               id={retryId} type="button" variant="secondary" aria-disabled={checking}
@@ -202,7 +195,7 @@ function StyleDnaWorkspace({ onPrepare }: ProgramWorkspaceProps) {
             <label className={styles.consent}><input type="checkbox" checked={consent} disabled={running}
               onChange={(event) => setConsent(event.target.checked)} />분석할 권리가 있으며 Gemini에 분석용 이미지 사본을 보내는 데 동의해요.</label>
             <div className={styles.actions}>
-              <Button type="submit" loading={running} loadingLabel="Style DNA 분석 중" disabled={!source || !consent}>Style DNA로 분석</Button>
+              <Button type="submit" loading={running} loadingLabel="이미지 분석 중" disabled={!source || !consent}>이미지 분석 실행</Button>
               {running && <Button type="button" variant="secondary" onClick={() => { cancel(); setMarker("분석을 취소했어요."); }}>취소</Button>}
             </div>
           </>}
@@ -210,12 +203,11 @@ function StyleDnaWorkspace({ onPrepare }: ProgramWorkspaceProps) {
         </form>
         <a className={hub.link} href={apiLink}>API연동 보기 <Icon name="arrow" /></a>
       </section>
-      <section className={styles.control} aria-label="Style DNA 결과">
+      <section className={styles.control} aria-label="이미지 분석 결과">
         <h3>스타일 리포트</h3>
         {report ? <ImageSemanticReport semantic={report} /> : <p className={styles.note}>분석이 완료되면 스타일 근거와 한영 프롬프트를 확인할 수 있어요.</p>}
-        {report && report.status !== "unavailable" && <DnaPublicDraft result={report} onPrepare={onPrepare} />}
+        {report && report.status !== "unavailable" && <ImagePublicDraft result={report} onPrepare={onPrepare} />}
       </section>
-      <SourceGuide detail={copy[0].guide} />
     </div>
     <Preview title="이미지 프리뷰">
       {permittedSource?.kind === "file" ? <LocalMedia file={permittedSource.file} kind="image" />
@@ -247,7 +239,6 @@ function MusicWorkspace({ onPrepare }: ProgramWorkspaceProps) {
         {issue && <p role="status">{issue}</p>}
         <AdminMusicSemantic file={selected} onPrepare={onPrepare} />
       </section>
-      <SourceGuide detail={copy[1].guide} />
     </div>
     <Preview title="오디오 프리뷰">
       <div className={styles.previewMessage}>
@@ -265,7 +256,6 @@ function ShortsWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   return <div className={styles.workbench}>
     <div className={styles.desk}>
       <div className={styles.control}><AdminShortsAnalysis onSourceChange={setUrl} onPrepare={onPrepare} appearance="premiere" /></div>
-      <SourceGuide detail={copy[2].guide} />
     </div>
     <Preview title="세로 영상 프리뷰">
       <div className={styles.filmFrame} aria-hidden="true"><Icon name="play" /></div>
@@ -277,7 +267,7 @@ function ShortsWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   </div>;
 }
 
-const workspaces = [StyleDnaWorkspace, MusicWorkspace, ShortsWorkspace] as const;
+const workspaces = [ImageWorkspace, MusicWorkspace, ShortsWorkspace] as const;
 
 export function AdminPremierePrograms() {
   const current = useAdminSection();

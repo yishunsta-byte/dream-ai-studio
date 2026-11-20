@@ -16,7 +16,7 @@ describe("Premiere analysis publication drafts", () => {
       prompts: { ko: "한국어 제안", en: "An English prompt" },
     }, "en");
     expect(draft).toEqual({
-      media: "image", title: "Style DNA 분석 결과", summary: "추정 구도 — 오른쪽 피사체", prompt: "An English prompt",
+      media: "image", title: "이미지 분석 결과", summary: "추정 구도 — 오른쪽 피사체", prompt: "An English prompt",
     });
   });
 

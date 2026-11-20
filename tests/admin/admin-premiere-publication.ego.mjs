@@ -1,4 +1,4 @@
-/* global taskSpace, window, document, location, innerHeight, getComputedStyle, history, DataTransfer, File, Event, console */
+/* global taskSpace, window, document, location, innerHeight, getComputedStyle, history, DataTransfer, File, Event, URL, console */
 import assert from "node:assert/strict";
 // Run against the loopback URL emitted by admin-premiere-publication-run.mjs.
 import {mkdir,writeFile} from "node:fs/promises";
@@ -14,6 +14,9 @@ const publicPage=await task.newPage();
 const runCode=Math.random().toString(36).slice(2,7);
 const listId="admin-analysis-results";
 const apiId="admin-api-integrations";
+const settingsId="admin-account";
+const manualId="admin-manual";
+const operationsId="admin-operations-availability";
 const imageId="admin-style-dna";
 const musicId="admin-music-analysis";
 const shortsId="admin-shorts-analysis";
@@ -34,7 +37,8 @@ const tabTo=async selector=>{
   throw new Error("Tab could not reach "+selector);
 };
 const view=async (id,hash="#"+id)=>{
-  await page.waitForFunction(({id,hash})=>location.hash===hash&&document.activeElement.tagName==="H2"&&document.getElementById(id)?.contains(document.activeElement),{id,hash},{timeout:5500});
+  const headingTag=id===apiId?"H3":"H2";
+  await page.waitForFunction(({id,hash,headingTag})=>location.hash===hash&&document.activeElement.tagName===headingTag&&document.getElementById(id)?.contains(document.activeElement),{id,hash,headingTag},{timeout:5500});
   const state=await page.evaluate(id=>{
     const heading=document.activeElement;
     const rect=heading.getBoundingClientRect();
@@ -47,14 +51,15 @@ const view=async (id,hash="#"+id)=>{
       overflow:Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth),
       position:getComputedStyle(menu).position, onlyPanel:[...document.querySelectorAll('[data-active-section="true"]')].map(p=>p.id)};
   },id);
-  assert.equal(state.active,"#"+id);
+  const activeId=id===apiId?settingsId:id;
+  assert.equal(state.active,"#"+activeId);
   assert.equal(state.overflow,0,JSON.stringify(state));
   assert.equal(state.clear,true,JSON.stringify(state));
-  assert.deepEqual(state.onlyPanel,[id]);
+  assert.deepEqual(state.onlyPanel,[activeId]);
   return state;
 };
 const move=async id=>{
-  await tabTo('nav[aria-label="관리 메뉴"] a[href="#'+id+'"]');
+  await tabTo('nav:is([aria-label="관리 메뉴"], [aria-label="분석 프로그램"]) a[href="#'+id+'"]');
   await page.keyboard.press("Enter");
   return view(id);
 };
@@ -119,16 +124,63 @@ try{
   await open(width,900);
   assert.equal((await listReads()).length,0);
   const focus=[];
-  for(const id of [musicId,"admin-overview",apiId,"admin-account",imageId])focus.push(await move(id));
+  for(const id of [musicId,"admin-overview",settingsId,imageId])focus.push(await move(id));
   await page.evaluate(()=>history.back());
-  focus.push(await view("admin-account"));
+  focus.push(await view(settingsId));
   await page.evaluate(()=>history.forward());
   focus.push(await view(imageId));
+  assert.deepEqual(await page.evaluate(()=>{
+    const heading=document.querySelector("#admin-workspace-heading");
+    const programs=document.querySelector('nav[aria-label="분석 프로그램"]');
+    const operations=document.querySelector('nav[aria-label="관리 메뉴"]');
+    const panel=document.querySelector('[data-active-section="true"]');
+    const bounds=node=>node.getBoundingClientRect();
+    return {
+      inOrder:bounds(operations).bottom<=bounds(heading).top&&bounds(heading).bottom<=bounds(programs).top&&bounds(programs).bottom<=bounds(panel).top,
+      heading:panel.querySelector('h2').textContent,
+      programs:[...programs.querySelectorAll('strong,small')].map(node=>node.textContent),
+      settings:[...operations.querySelectorAll('a')].filter(link=>link.textContent.includes('설정')||link.textContent.includes('API')).map(link=>link.textContent.trim()),
+    };
+  }),{
+    inOrder:true,heading:"이미지 분석",
+    programs:["이미지 분석","색감·조명·구도 분석과 한영 프롬프트","음악 분석","장르·악기·템포 분석과 Suno 프롬프트","쇼츠 분석","첫 장면·영상 구성 분석과 연출 프롬프트"],
+    settings:["계정설정 및 API 연동"],
+  });
+  await page.screenshot({path:proof+"/admin-analyzer-menu-"+width+".png"});
+  await move(operationsId);
+  await text(operationsId,"미연결 기능 6개 보기");
+  await press('loc=css:#'+operationsId+' summary');
+  await text(operationsId,"서비스 상태");
+  await move(manualId);
+  await text(manualId,"Gemini API연동");
+  assert.equal(await page.evaluate(()=>{
+    const menu=document.querySelector('nav[aria-label="관리 메뉴"]');
+    const links=[...menu.querySelectorAll('a')];
+    const last=links.at(-1);
+    return last.hash==="#admin-manual"&&Math.max(...links.map(link=>link.getBoundingClientRect().right))===last.getBoundingClientRect().right;
+  }),true);
+  await press('loc=css:#'+manualId+' summary');
+  await text(manualId,"DREAM_REFERENCE_SHORTS_GEMINI_MODEL");
+  await page.screenshot({path:proof+"/admin-manual-"+width+".png"});
+  await tabTo('#'+manualId+' a[href="#'+imageId+'"]');
+  await page.keyboard.press("Enter");
+  await view(imageId);
+  assert.equal(await page.evaluate(()=>document.querySelector('#admin-operations-availability').getClientRects().length),0);
+  assert.equal(await page.evaluate(()=>[...document.querySelectorAll('#admin-style-dna summary')].some(node=>node.textContent.includes('사용 매뉴얼'))),false);
+  await tabTo('#'+imageId+' a[href="#'+apiId+'"]');
+  await page.keyboard.press("Enter");
+  focus.push(await view(apiId));
+  await text(settingsId,"비밀번호 바꾸기");
+  await text(apiId,"API 응답 확인");
+  await press('loc=role:button[name="API 응답 확인"]');
+  await text(apiId,"서버 설정 확인");
+  await page.evaluate(()=>history.back());
+  focus.push(await view(imageId));
   assert.equal((await listReads()).length,0);
-  await text(imageId,"Style DNA로 분석");
+  await text(imageId,"이미지 분석 실행");
   await page.fill('loc=css:#'+imageId+' input[type=url]',"https://mdn.github.io/fixture.png");
   await check('loc=css:#'+imageId+' input[type=checkbox]');
-  await press('loc=role:button[name="Style DNA로 분석"]');
+  await press('loc=role:button[name="이미지 분석 실행"]');
   await text(imageId,"공개 준비");
   await page.selectOption('#'+imageId+' select',"en");
   await prepare();
@@ -232,10 +284,10 @@ try{
   await awaitWrite("POST",7);
   const videoPosts=(await writes()).slice(5);
   assert.notEqual(videoPosts[0].body.id,videoPosts[1].body.id);
-  await move(apiId);
+  await move(settingsId);
   await release();
   await page.waitForFunction(()=>document.querySelector("#admin-analysis-results form [role=status]")?.textContent.includes("공개했어요."));
-  assert.equal(await page.evaluate(()=>document.activeElement.id),"admin-api-integrations-title");
+  assert.equal(await page.evaluate(()=>document.activeElement.id),"admin-menu");
   await readPublic(videoTitle,true,"Premiere fixture Shorts");
   await move(listId);
   await text(listId,videoTitle);
@@ -254,23 +306,29 @@ try{
   assert.equal(removed.id,(await writes()).at(-1).body.id);
   await page.evaluate(()=>window.scrollTo(0,0));
   await page.screenshot({path:proof+"/premiere-publication-"+width+".png",fullPage:width===390});
-  await move(apiId);
+  await move(settingsId);
   await fault("login");
   await move(listId);
   await text(listId,"로그인이 끝났어요");
   assert.equal(await page.evaluate(()=>document.querySelector("#admin-analysis-results form")),null);
   assert.equal((await writes()).length,7);
+  await page.evaluate(()=>{window.__premiere.statuses.image="login";});
+  await move(imageId);
+  await text(imageId,"관리자 로그인");
+  const returnTo=await page.evaluate(()=>new URL(document.querySelector('#admin-style-dna a[href^="/admin/login"]').href).searchParams.get("next"));
+  assert.equal(returnTo,"/admin#admin-style-dna");
   results.push({width,focus,firstListReadCount:draftOpenReadCount,sameIdOnRetry:true,newIdAfterEditAndConflict:true,invalidPublicationRecovery:true,safeFields,publicCard:true,revokedAbsent:true,writeStatusAfterLeave:true,authFailureHide:true});
  }
  for(const [width,height,scale] of [[320,360,2],[1280,900,2]]){
   await open(width,height,scale);
   const focus=[];
-  for(const id of [imageId,musicId,shortsId,"admin-overview","admin-project-list","admin-review","admin-render-queue",apiId,"admin-account"]){
+  for(const id of [imageId,musicId,shortsId,"admin-overview","admin-project-list","admin-review","admin-render-queue",settingsId,operationsId,manualId]){
     focus.push(await move(id));
   }
   await page.evaluate(()=>history.back());
+  focus.push(await view(operationsId));
+  await page.goto(base+"/admin?api="+width+"#"+apiId);
   focus.push(await view(apiId));
-  if(height===360)assert.ok(focus.every(row=>row.position==="static"));
   results.push({width,height,scale,focus});
  }
  await writeFile(proof+"/premiere-admin-publication-results.json",JSON.stringify(results,null,2)+"\n");
