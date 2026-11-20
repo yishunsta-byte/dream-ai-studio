@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Button, Card } from "@/components/ui/primitives";
 import { referenceFileByteLimit, referenceUploadByteLimit } from "@/lib/reference-analysis/input";
+import { MUSIC_SEMANTIC_URI } from "@/lib/reference-analysis/music-semantic-contract";
+import { SHORTS_ANALYSIS_URI } from "@/lib/reference-analysis/shorts-analysis-contract";
 import { ANALYSIS_URI, MEDIA_LABEL, PUBLICATIONS_URI, SUPPORTED_FORMATS, SUPPORTED_ORIGINS } from "./admin-reference-analysis-model";
 import styles from "./admin.module.css";
 
@@ -11,6 +13,8 @@ const MiB = 1024 * 1024;
 const checks = [
   { label: "미디어 분석", path: ANALYSIS_URI, probe: "options", methods: "POST", description: "URL과 파일 업로드를 분석해요." },
   { label: "Gemini · 이미지 Style DNA", path: ANALYSIS_URI, probe: "image", methods: "GET", description: "서버의 이미지 분석 키와 모델 설정을 확인해요." },
+  { label: "Gemini · 음악 의미 분석", path: MUSIC_SEMANTIC_URI, probe: "music", methods: "GET", description: "서버의 음악 의미 분석 설정을 확인해요." },
+  { label: "Gemini · YouTube Shorts 분석", path: SHORTS_ANALYSIS_URI, probe: "shorts", methods: "GET", description: "서버의 YouTube Shorts 분석 설정을 확인해요." },
   { label: "분석 결과 공개", path: PUBLICATIONS_URI, probe: "publications", methods: "GET · POST · DELETE", description: "공개 목록 조회, 공개, 철회에 사용해요." },
 ] as const;
 
@@ -27,7 +31,7 @@ export function AdminAnalysisGuide() {
           <li><strong>소스 선택</strong><p>URL 주소 또는 파일 업로드를 선택한 뒤 이미지, 음악, 영상 중 하나를 고르세요.</p></li>
           <li><strong>권리 확인하고 분석</strong><p>분석할 권리가 있는 자료를 넣고 버튼을 누르세요. 파일은 {referenceUploadByteLimit / MiB} MiB까지 업로드할 수 있어요.</p></li>
           <li><strong>결과 확인</strong><p>분석 근거와 생성 프롬프트를 확인하세요. 공개가 필요하면 결과를 골라 제목·요약·프롬프트를 공개할 수 있어요.</p></li>
-          <li><strong>의미 분석</strong><p>이미지는 Style DNA로 분석하고, 음악은 파일 업로드 후 음악 의미 분석을 실행하세요. 영상에서는 공개 YouTube 주소로 쇼츠를 분석할 수 있어요. 각 기능은 화면에서 안내한 자료를 Gemini로 보내요.</p></li>
+          <li><strong>의미 분석</strong><p>Style DNA로 분석을 누르면 Gemini에 분석용 이미지 사본이 전송돼요. 음악과 쇼츠는 선택한 음악 원본 또는 공개 YouTube 영상 주소 전송에 동의한 뒤 각각 음악 의미 분석 실행 또는 쇼츠 분석을 누르세요. 결과 공개 동의는 공개 준비에서 따로 받아요.</p></li>
         </ol>
         <h3>지원 형식</h3>
         <dl className={styles.guideFormats}>
@@ -78,10 +82,11 @@ async function probeApi({ path, probe }: typeof checks[number]): Promise<ApiChec
         if (probe === "publications" && typeof data === "object" && data !== null && "items" in data && Array.isArray(data.items)) {
           return { tone: "success", message: "공개 목록 조회 확인" };
         }
-        if (probe === "image" && typeof data === "object" && data !== null && "semantic" in data &&
-          typeof data.semantic === "object" && data.semantic !== null && "image" in data.semantic) {
-          if (data.semantic.image === "configured") return { tone: "success", message: "서버 설정 확인" };
-          if (data.semantic.image === "not_configured") return { tone: "warning", message: "Gemini 서버 설정 필요" };
+        if (probe !== "publications" && typeof data === "object" && data !== null && "semantic" in data &&
+          typeof data.semantic === "object" && data.semantic !== null) {
+          const status = (data.semantic as Record<string, unknown>)[probe];
+          if (status === "configured") return { tone: "success", message: "서버 설정 확인" };
+          if (status === "not_configured") return { tone: "warning", message: "Gemini 서버 설정 필요" };
         }
       }
     }
@@ -96,6 +101,7 @@ export function AdminApiIntegrations() {
   const [checking, setChecking] = useState(false);
 
   async function checkApis() {
+    if (checking) return;
     setChecking(true);
     setResults([]);
     const outcomes = await Promise.all(checks.map(probeApi));
@@ -111,7 +117,9 @@ export function AdminApiIntegrations() {
     <Card className={styles.apiCard}>
       <div className={styles.apiIntro}>
         <div><h3>콘텐츠 분석 API</h3><p className={styles.note}>기본 분석과 공개 기능은 관리자 로그인으로 사용해요. 이미지 기본 분석에는 별도 API 키는 필요 없어요. 이미지·음악·쇼츠 의미 분석은 Gemini 서버 설정을 사용해요.</p></div>
-        <Button variant="secondary" loading={checking} loadingLabel="응답 확인 중" onClick={() => void checkApis()}>API 응답 확인</Button>
+        <Button type="button" variant="secondary" aria-disabled={checking} onClick={() => void checkApis()}>
+          {checking ? "응답 확인 중" : "API 응답 확인"}
+        </Button>
       </div>
       <ul className={styles.apiRoutes}>
         {checks.map(({ path, label, methods, description, probe }, index) => <li key={probe}>
@@ -120,12 +128,12 @@ export function AdminApiIntegrations() {
             <p className={styles.apiMethod}><strong>{methods}</strong> <code>{path}</code></p>
             <p className={styles.note}>{description}</p>
           </div>
-          <p className={styles.apiStatus} role="status" data-tone={results[index]?.tone}>
+          <p className={styles.apiStatus} role="status" aria-label={label} data-tone={results[index]?.tone}>
             {results[index]?.message ?? (checking ? "확인 중" : "확인 전")}
           </p>
         </li>)}
       </ul>
-      <p className={styles.note}>응답 확인은 내부 API와 모델 설정 상태를 조회해요. 미디어 전송이나 공개 요청 없이 실행돼요.</p>
+      <p className={styles.note}>응답 확인은 GET·OPTIONS로 내부 API와 서버 설정 상태만 조회해요. 실제 모델 응답은 각 분석 화면에서 확인할 수 있어요.</p>
     </Card>
   </>;
 }

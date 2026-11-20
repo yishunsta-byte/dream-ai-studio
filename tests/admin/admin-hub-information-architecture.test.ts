@@ -42,7 +42,10 @@ describe("admin hub information architecture", () => {
     expect(html).toContain("API 응답 확인");
     expect(html).toContain("별도 API 키는 필요 없어요.");
     expect(html).toContain("<code>/api/admin/reference-analysis</code>");
+    expect(html).toMatch(/<h4>Gemini · 음악 의미 분석<\/h4><p[^>]*><strong>GET<\/strong> <code>\/api\/admin\/music-semantic<\/code>/);
+    expect(html).toMatch(/<h4>Gemini · YouTube Shorts 분석<\/h4><p[^>]*><strong>GET<\/strong> <code>\/api\/admin\/shorts-analysis<\/code>/);
     expect(html).toContain("<code>/api/admin/reference-publications</code>");
+    expect(html).toContain("GET·OPTIONS로 내부 API와 서버 설정 상태만 조회해요. 실제 모델 응답은 각 분석 화면에서 확인할 수 있어요.");
   });
 
   it("keeps missing operational suppliers as text with no actions or placeholder metrics", () => {
