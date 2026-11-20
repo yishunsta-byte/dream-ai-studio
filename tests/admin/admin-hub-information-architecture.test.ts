@@ -19,7 +19,7 @@ describe("admin hub information architecture", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
     const nav = html.match(/<nav\b[^>]*aria-label="관리 메뉴"[\s\S]*?<\/nav>/)?.[0];
     expect(nav).toBeDefined();
-    const targets = ["admin-overview", "admin-project-list", "admin-review", "admin-reference-analysis", "admin-render-queue", "admin-account"];
+    const targets = ["admin-overview", "admin-project-list", "admin-review", "admin-reference-analysis", "admin-api-integrations", "admin-render-queue", "admin-account"];
     expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(targets);
     expect(nav).toMatch(/href="#admin-project-list" aria-current="location"/);
     expect(nav!.match(/aria-current=/g)).toHaveLength(1);
@@ -28,8 +28,19 @@ describe("admin hub information architecture", () => {
       expect(html).toMatch(new RegExp(`<[^>]+id="${id}"[^>]*tabindex="-1"`));
     }
     for (const href of ["/cloud/manage", "/cloud/projects", "/account/password"]) expect(html).toContain(`href="${href}"`);
-    expect(html.indexOf('id="admin-project-list"')).toBeLessThan(html.indexOf('id="admin-review"'));
+    expect(html.indexOf('id="admin-project-list"')).toBeLessThan(html.indexOf('id="admin-reference-analysis"'));
+    expect(html.indexOf('id="admin-reference-analysis"')).toBeLessThan(html.indexOf('id="admin-review"'));
     expect(html.indexOf('id="admin-review"')).toBeLessThan(html.indexOf('id="admin-account"'));
+  });
+
+  it("places the analysis guide and real admin API methods near the shared analyzer", () => {
+    const html = markup({ kind: "unlinked" }, { kind: "closed" });
+    expect(html).toMatch(/<summary>.*사용 매뉴얼<\/summary>/);
+    expect(html).toContain("파일은 4 MiB까지");
+    expect(html).toContain("<code>mdn.github.io</code>");
+    expect(html).toContain("API 응답 확인");
+    expect(html).toContain("<code>/api/admin/reference-analysis</code>");
+    expect(html).toContain("<code>/api/admin/reference-publications</code>");
   });
 
   it("keeps missing operational suppliers as text with no actions or placeholder metrics", () => {
