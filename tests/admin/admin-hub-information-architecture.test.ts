@@ -37,6 +37,7 @@ describe("admin hub information architecture", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
     expect(html).toMatch(/<summary>.*사용 매뉴얼<\/summary>/);
     expect(html).toContain("파일은 4 MiB까지");
+    expect(html).toMatch(/<dt>이미지<\/dt><dd>PNG · JPG/);
     expect(html).toContain("<code>mdn.github.io</code>");
     expect(html).toContain("API 응답 확인");
     expect(html).toContain("<code>/api/admin/reference-analysis</code>");

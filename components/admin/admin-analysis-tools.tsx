@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Button, Card } from "@/components/ui/primitives";
 import { referenceFileByteLimit, referenceUploadByteLimit } from "@/lib/reference-analysis/input";
-import { ANALYSIS_URI, PUBLICATIONS_URI, SUPPORTED_FORMATS, SUPPORTED_ORIGINS } from "./admin-reference-analysis-model";
+import { ANALYSIS_URI, MEDIA_LABEL, PUBLICATIONS_URI, SUPPORTED_FORMATS, SUPPORTED_ORIGINS } from "./admin-reference-analysis-model";
 import styles from "./admin.module.css";
 
 const MiB = 1024 * 1024;
@@ -12,6 +12,10 @@ const checks = [
   { label: "미디어 분석", path: ANALYSIS_URI, methods: "POST", description: "URL과 파일 업로드를 분석해요." },
   { label: "분석 결과 공개", path: PUBLICATIONS_URI, methods: "GET · POST · DELETE", description: "공개 목록 조회, 공개, 철회에 사용해요." },
 ] as const;
+
+function extensionList(extensions: string | readonly string[]) {
+  return typeof extensions === "string" ? extensions : extensions.map(extension => extension.toUpperCase()).join(" · ");
+}
 
 export function AdminAnalysisGuide() {
   return <aside aria-label="분석기 도움말" className={styles.analysisGuide}>
@@ -26,8 +30,8 @@ export function AdminAnalysisGuide() {
         <h3>지원 형식</h3>
         <dl className={styles.guideFormats}>
           {SUPPORTED_FORMATS.map(format => <div key={format.media}>
-            <dt>{format.label}</dt>
-            <dd>{format.extensions}{format.limit ? ` · ${format.limit}` : ""}</dd>
+            <dt>{MEDIA_LABEL[format.media]}</dt>
+            <dd>{extensionList(format.extensions)}{format.limit ? ` · ${format.limit}` : ""}</dd>
           </div>)}
         </dl>
         <h3>분석 결과에서 볼 수 있는 항목</h3>
