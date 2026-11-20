@@ -153,7 +153,8 @@ describe("화면", () => {
     const html = renderToStaticMarkup(createElement(AdminReferenceAnalysis, { client: createAdminReferenceAnalysisClient(transportOf().transport) }));
     expect(html).toContain("콘텐츠 프롬프트 분석기");
     expect(html).toContain("스펙트럼 랩");
-    expect(html).toContain("직접 URL");
+    expect(html).toContain("URL 주소");
+    expect(html).toContain("파일 업로드");
     expect(html).toContain("https://tonejs.github.io");
     expect(html).toContain("MP4 · MOV · WEBM");
     expect(html).toContain("분석할 권리가 있는 자료만 실행하세요.");

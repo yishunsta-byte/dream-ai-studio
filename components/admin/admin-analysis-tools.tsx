@@ -24,7 +24,7 @@ export function AdminAnalysisGuide() {
       <div className={styles.guideBody}>
         <ol>
           <li><strong>소스 선택</strong><p>URL 주소 또는 파일 업로드를 선택한 뒤 이미지, 음악, 영상 중 하나를 고르세요.</p></li>
-          <li><strong>분석 실행</strong><p>분석할 권리가 있는 자료를 넣고 실행하세요. 파일은 {referenceUploadByteLimit / MiB} MiB까지 업로드할 수 있어요.</p></li>
+          <li><strong>권리 확인하고 분석</strong><p>분석할 권리가 있는 자료를 넣고 버튼을 누르세요. 파일은 {referenceUploadByteLimit / MiB} MiB까지 업로드할 수 있어요.</p></li>
           <li><strong>결과 확인</strong><p>분석 근거와 생성 프롬프트를 확인하세요. 공개가 필요하면 결과를 골라 제목·요약·프롬프트를 공개할 수 있어요.</p></li>
         </ol>
         <h3>지원 형식</h3>

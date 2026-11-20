@@ -150,7 +150,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
             {(["url", "file"] as const).map((kind) => <label key={kind}>
               <input type="radio" name={`${id}-source-kind`} value={kind} checked={sourceKind === kind}
                 onChange={() => editInput(() => { setSourceKind(kind); setFile(undefined); setMultipleFiles(false); })} />
-              {kind === "url" ? "직접 URL" : "파일"}
+              {kind === "url" ? "URL 주소" : "파일 업로드"}
             </label>)}
           </div>
         </fieldset>
