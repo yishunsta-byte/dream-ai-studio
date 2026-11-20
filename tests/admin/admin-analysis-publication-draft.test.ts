@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { containsNonPublicText } from "@/lib/reference-analysis/publication-text";
 import {
-  containsNonPublicText, imagePublicationDraft, musicPublicationDraft, shortsPublicationDraft,
+  imagePublicationDraft, musicPublicationDraft, shortsPublicationDraft,
 } from "@/components/admin/admin-analysis-publication-draft";
 
 describe("Premiere analysis publication drafts", () => {

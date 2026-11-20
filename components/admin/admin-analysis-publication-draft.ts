@@ -1,11 +1,8 @@
 import type { ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
 import type { MusicSemanticReport } from "@/lib/reference-analysis/music-semantic-contract";
+import { containsNonPublicText } from "@/lib/reference-analysis/publication-text";
 import type { ShortsAnalysisResult } from "@/lib/reference-analysis/shorts-analysis-contract";
 import type { PublicationDraft } from "./admin-reference-analysis-model";
-
-const sourceOrCredential = /(?:\b(?:https?:\/\/|ftp:\/\/|file:|blob:|data:|www\.)[^\s]+|\b[A-Z]:[\\/]|\b(?:AIza[A-Za-z0-9_-]{20,}|sk[-_][A-Za-z0-9_-]{16,})\b|\b[^\s@]+@[^\s@]+\.[A-Za-z]{2,}\b)/i;
-
-export const containsNonPublicText = (text: string) => sourceOrCredential.test(text);
 
 function proposal(text?: string | null) {
   return text && !containsNonPublicText(text) ? text : "";

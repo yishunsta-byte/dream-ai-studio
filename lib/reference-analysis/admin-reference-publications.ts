@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { supabasePublicConfig } from "../auth/config";
 import { createSupabaseServer } from "../auth/server";
+import { containsNonPublicText } from "./publication-text";
 
 const table = "reference_analysis_publications";
 const columns = "id,title,summary,prompt,media,status,published_at";
@@ -15,7 +16,8 @@ const resultFields = {
   media: z.enum(["image", "music", "video"]),
 };
 
-export const publishReferenceAnalysisSchema = z.strictObject({ ...resultFields, authorized: z.literal(true) });
+export const publishReferenceAnalysisSchema = z.strictObject({ ...resultFields, authorized: z.literal(true) })
+  .refine(({ title, summary, prompt }) => ![title, summary, prompt].some(containsNonPublicText));
 export const revokeReferenceAnalysisSchema = z.strictObject({ id: resultFields.id });
 
 const resultSchema = z.strictObject({

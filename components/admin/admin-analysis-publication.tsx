@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { Button, Callout, Card, StatusPill } from "@/components/ui/primitives";
-import { containsNonPublicText } from "./admin-analysis-publication-draft";
+import { containsNonPublicText } from "@/lib/reference-analysis/publication-text";
 import {
   failureMessage, formatPublishedAt, LIMITS, MEDIA_LABEL, trimmedDraft, validateDraft,
   type AdminReferenceAnalysisClient, type DraftErrors, type Failure, type PublicationDraft, type PublishedReferenceAnalysis,
