@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nearestAspectRatio, wholeImageMeasure } from "@/components/admin/admin-style-dna-report";
+import { nearestAspectRatio, ratioRows, wholeImageMeasure } from "@/components/admin/admin-style-dna-report";
 import type { ReadyResult } from "@/components/admin/admin-reference-analysis-model";
 import { parseStyleDna } from "@/components/admin/admin-style-dna-extension";
 
@@ -44,5 +44,25 @@ describe("styleDna 선택 응답 읽기", () => {
       { ...valid, dimensions: { width: 0, height: 5 } }, { ...valid, keywords: [""] }, "x", null]) {
       expect(parseStyleDna(broken)).toBeUndefined();
     }
+  });
+});
+
+describe("원본 비율과 생성 추천 비율 구분", () => {
+  const dna = (patch: object) => parseStyleDna({ schemaVersion: 1, ...patch });
+  it("목록 밖 원본 비율도 생성 추천은 크기로 계산한다", () => {
+    expect(ratioRows(dna({ dimensions: { width: 1024, height: 512 }, aspectRatio: "2:1" })))
+      .toEqual({ dimensions: { width: 1024, height: 512, source: "server" }, original: "2:1", supported: "16:9" });
+    expect(ratioRows(dna({ dimensions: { width: 1280, height: 720 }, aspectRatio: "7:3" }))?.supported).toBe("16:9");
+  });
+  it("목록 안 원본 비율이어도 원본 문자열을 그대로 추천으로 쓰지 않는다", () => {
+    expect(ratioRows(dna({ dimensions: { width: 1000, height: 1000 }, aspectRatio: "16:9" })))
+      .toMatchObject({ original: "16:9", supported: "1:1" });
+  });
+  it("빠진 칸은 비우고, 서버 크기가 없으면 브라우저 크기를 쓴다", () => {
+    expect(ratioRows(dna({ aspectRatio: "2:1" }))).toEqual({ original: "2:1" });
+    expect(ratioRows(undefined, { width: 400, height: 300 })).toEqual({ dimensions: { width: 400, height: 300, source: "browser" }, supported: "4:3" });
+    expect(ratioRows(dna({ dimensions: { width: 30, height: 60 } }), { width: 400, height: 300 }))
+      .toEqual({ dimensions: { width: 30, height: 60, source: "server" }, supported: "9:16" });
+    expect(ratioRows()).toEqual({});
   });
 });

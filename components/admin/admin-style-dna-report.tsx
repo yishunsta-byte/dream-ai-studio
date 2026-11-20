@@ -27,6 +27,23 @@ export function nearestAspectRatio(width: number, height: number) {
   return best;
 }
 
+// 원본 크기·원본 비율·생성 지원 비율을 나눠 정한다. styleDna.aspectRatio는 서버가 디코딩한 원본 비율(메타데이터)일 뿐
+// 생성 비율이 아니다. 생성 지원 비율은 늘 화면이 잰(또는 서버가 잰) 크기로 12개 목록에서 계산한다(목록 밖 값을 지원으로 보이지 않게).
+export type RatioRows = {
+  dimensions?: { width: number; height: number; source: "server" | "browser" };
+  original?: string;
+  supported?: string;
+};
+export function ratioRows(styleDna?: StyleDna, size?: { width: number; height: number }): RatioRows {
+  const server = styleDna?.dimensions;
+  const dimensions = server ? { ...server, source: "server" as const } : size ? { ...size, source: "browser" as const } : undefined;
+  return {
+    ...(dimensions && { dimensions }),
+    ...(styleDna?.aspectRatio && { original: styleDna.aspectRatio }),
+    ...(dimensions && { supported: nearestAspectRatio(dimensions.width, dimensions.height) }),
+  };
+}
+
 type ImageObservation = Extract<ReadyResult["proposals"][number]["observations"][number], { measure: "region_color_luminance" }>;
 // 서버 픽셀 측정 중 이미지 전체 영역 값. 없으면(측정 실패·다른 매체) undefined.
 export function wholeImageMeasure(result?: ReadyResult): ImageObservation | undefined {
@@ -118,21 +135,19 @@ export function StyleDnaReport({ semantic, result, size, styleDna }: {
   semantic?: ImageSemanticResult; result?: ReadyResult; size?: { width: number; height: number }; styleDna?: StyleDna;
 }) {
   const measure = wholeImageMeasure(result);
-  // 서버가 원본을 디코딩해 잰 크기가 있으면 그것을, 없으면 미리보기 이미지 크기를 쓴다.
-  const serverSize = styleDna?.dimensions;
-  const shownSize = serverSize ?? size;
-  const ratio = serverSize ? styleDna?.aspectRatio ?? nearestAspectRatio(serverSize.width, serverSize.height) : size && nearestAspectRatio(size.width, size.height);
+  const { dimensions, original, supported } = ratioRows(styleDna, size);
   const titles = styleDna?.titles;
   return <div className={styles.report}>
     {(titles?.en || titles?.ko) && <header className={styles.titles} aria-label="분석 제목">
       {titles.en && <p lang="en"><span>EN</span> {titles.en}</p>}
       {titles.ko && <p><span>KO</span> {titles.ko}</p>}
     </header>}
-    {(measure || shownSize) && <section className={styles.measured} aria-label="픽셀 측정">
+    {(measure || dimensions || original) && <section className={styles.measured} aria-label="픽셀 측정">
       <h5>미학적 팔레트 <span className={styles.tag}>픽셀 측정</span></h5>
-      {shownSize && <dl className={styles.ratio}>
-        <div><dt>원본 크기</dt><dd><strong>{shownSize.width}×{shownSize.height}px</strong> <span className={styles.note}>{serverSize ? "서버가 원본을 열어 잰 값" : "브라우저 미리보기에서 잰 값"}</span></dd></div>
-        {ratio && <div><dt>가장 가까운 지원 비율</dt><dd><strong>{ratio}</strong> <span className={styles.note}>생성 도구가 지원하는 12개 비율 중 선택{serverSize && styleDna?.aspectRatio ? "(서버 계산)" : ""}</span></dd></div>}
+      {(dimensions || original) && <dl className={styles.ratio}>
+        {dimensions && <div><dt>원본 크기</dt><dd><strong>{dimensions.width}×{dimensions.height}px</strong> <span className={styles.note}>{dimensions.source === "server" ? "서버가 원본을 열어 잰 값" : "브라우저 미리보기에서 잰 값"}</span></dd></div>}
+        {original && <div><dt>원본 비율</dt><dd><strong>{original}</strong> <span className={styles.note}>서버가 원본에서 잰 비율</span></dd></div>}
+        {supported && <div><dt>생성 추천 비율</dt><dd><strong>{supported}</strong> <span className={styles.note}>원본 크기에 가장 가까운 생성 지원 비율(12개 중 화면에서 계산)</span></dd></div>}
       </dl>}
       {measure && <>
         <ul className={styles.palette} aria-label="대표 색상">

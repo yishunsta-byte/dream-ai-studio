@@ -90,7 +90,8 @@ for (const width of [320, 390, 1440]) {
   const rich = await state();
   assert.equal(rich.titles, "EN Dusk city portrait KO 노을빛 도심 초상");
   assert.match(rich.measured, /원본 크기 1920×1080px 서버가 원본을 열어 잰 값/);
-  assert.match(rich.measured, /가장 가까운 지원 비율 16:9 생성 도구가 지원하는 12개 비율 중 선택\(서버 계산\)/);
+  assert.match(rich.measured, /원본 비율 16:9 서버가 원본에서 잰 비율 생성 추천 비율 16:9 원본 크기에 가장 가까운 생성 지원 비율\(12개 중 화면에서 계산\)/);
+  assert.doesNotMatch(rich.measured, /서버 계산/);
   assert.match(rich.camera, /앵글 눈높이 시각 단서 · 수평선 위치/);
   assert.match(rich.camera, /렌즈 이미지에서 확인할 수 없었어요/);
   assert.doesNotMatch(rich.camera, /샷 크기/); // 서버가 주지 않은 칸은 만들지 않는다.
@@ -101,6 +102,23 @@ for (const width of [320, 390, 1440]) {
   assert.ok(rich.overflow <= 0, `overflow ${width}`);
   await page.evaluate((root) => document.querySelector(`${root} [aria-label='분석 제목']`)?.scrollIntoView(), root);
   await page.screenshot({ path: `${proof}/style-dna-${width}.png` });
+
+  // 3-1) 원본 비율은 메타데이터일 뿐: 목록 밖 원본 비율(2:1·7:3)이어도 생성 추천은 크기로 계산(16:9).
+  //      칸이 빠지면 그 줄만 숨긴다(크기 없음 → 추천 없음, 원본 비율 없음 → 그 줄 없음).
+  const ratioCases = [
+    [{ dimensions: { width: 1024, height: 512 }, aspectRatio: "2:1" }, /원본 크기 1024×512px .*원본 비율 2:1 .*생성 추천 비율 16:9/, /생성 추천 비율 2:1/],
+    [{ dimensions: { width: 1280, height: 720 }, aspectRatio: "7:3" }, /원본 크기 1280×720px .*원본 비율 7:3 .*생성 추천 비율 16:9/, /생성 추천 비율 7:3/],
+    [{ dimensions: undefined, aspectRatio: "2:1" }, /원본 비율 2:1/, /원본 크기|생성 추천 비율/],
+    [{ aspectRatio: undefined }, /원본 크기 1920×1080px .*생성 추천 비율 16:9/, /원본 비율/],
+  ];
+  for (const [patch, shown, hidden] of ratioCases) {
+    await page.evaluate((extra) => { window.__premiere.imageExtra = { styleDna: extra }; }, { ...styleDna, ...patch });
+    await run();
+    const ratio = await state();
+    assert.match(ratio.measured, shown);
+    assert.doesNotMatch(ratio.measured, hidden);
+    assert.match(ratio.camera, /앵글 눈높이/); // 다른 선택 칸은 그대로
+  }
 
   // 4) 형식이 맞지 않는 styleDna는 통째로 무시하고 지금 리포트만 보여 준다.
   await page.evaluate((extra) => { window.__premiere.imageExtra = { styleDna: { ...extra, schemaVersion: 2 } }; }, styleDna);
@@ -118,14 +136,14 @@ for (const width of [320, 390, 1440]) {
   await until((root) => document.querySelector(`${root} img[alt='선택한 원본 이미지']`)?.naturalWidth === 400, "file 1", root);
   await choose(`loc=css:${root} input[type=checkbox]`);
   await run();
-  assert.match((await state()).measured, /원본 크기 400×300px 브라우저 미리보기에서 잰 값 가장 가까운 지원 비율 4:3/);
+  assert.match((await state()).measured, /원본 크기 400×300px 브라우저 미리보기에서 잰 값 생성 추천 비율 4:3/);
   await pickFile(300, 600);
   assert.equal((await state()).measured, null);
   await until((root) => document.querySelector(`${root} img[alt='선택한 원본 이미지']`)?.naturalWidth === 300, "file 2", root);
   await choose(`loc=css:${root} input[type=checkbox]`);
   await run();
   const swapped = await state();
-  assert.match(swapped.measured, /원본 크기 300×600px .*가장 가까운 지원 비율 9:16/);
+  assert.match(swapped.measured, /원본 크기 300×600px .*생성 추천 비율 9:16/);
   assert.doesNotMatch(swapped.measured, /400×300/);
   rows.push({ width, overflow: Math.max(0, rich.overflow) });
 }
