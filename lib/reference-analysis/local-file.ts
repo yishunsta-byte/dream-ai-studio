@@ -1,12 +1,12 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { createWriteStream, type BigIntStats } from "node:fs";
+import { createWriteStream, openAsBlob, type BigIntStats } from "node:fs";
 import { lstat, mkdtemp, open, readFile, realpath, rm, rmdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, isAbsolute, join, relative, sep } from "node:path";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { fileTypeFromFile } from "file-type";
+import { fileTypeFromBlob } from "file-type";
 import { z } from "zod";
 import { mediaBinary, runMedia } from "../media/tools";
 import { classifyReferenceInput, referenceFileByteLimit, referenceFileFormat, type ReferenceFileSource } from "./input";
@@ -167,7 +167,8 @@ async function probeMedia(path: string, source: ReferenceFileSource, signal: Abo
   signal.throwIfAborted();
   let detected;
   try {
-    detected = await fileTypeFromFile(path, { signal });
+    // The owned snapshot provides a known size and random access without a runtime tokenizer import.
+    detected = await fileTypeFromBlob(await openAsBlob(path), { signal });
   } catch (error) {
     if ((error as { name?: string }).name === "EndOfStreamError") throw new InspectionError("invalid_file");
     throw error;
