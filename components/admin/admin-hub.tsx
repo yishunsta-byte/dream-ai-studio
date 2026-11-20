@@ -7,6 +7,7 @@ import { AdminProjectsSection, type AdminProjects } from "./admin-projects";
 import { AdminNavigation } from "./admin-navigation";
 import { AdminReferenceAnalysis } from "./admin-reference-analysis";
 import { AdminRenderQueue } from "./admin-render-queue";
+import { AdminShortsAnalysis } from "./admin-shorts-analysis";
 import styles from "./admin.module.css";
 
 const unavailable = [
@@ -36,7 +37,10 @@ export function AdminHub({ email, projects, review }: { email: string; projects:
         <AdminProjectsSection state={projects} />
       </div>
       <div id="admin-reference-analysis" role="group" aria-label="콘텐츠 프롬프트 분석기" className={`${styles.target} ${styles.analysisDeck}`} tabIndex={-1}>
-        <div className={styles.analysisMain}><AdminReferenceAnalysis /></div>
+        <div className={styles.analysisMain}>
+          <AdminReferenceAnalysis />
+          <AdminShortsAnalysis />
+        </div>
         <AdminAnalysisGuide />
       </div>
       <div id="admin-review" role="group" aria-label="완성본 검수·게시" className={styles.target} tabIndex={-1}>
