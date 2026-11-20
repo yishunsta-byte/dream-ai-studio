@@ -88,7 +88,12 @@ export const browserTransport: AdminTransport = (uri, init) => fetch(uri, { ...i
 
 const errorBody = z.object({ error: z.enum(ERROR_CODES) });
 
-async function call<T>(transport: AdminTransport, uri: string, init: RequestInit, accept: (body: unknown) => T | undefined): Promise<T | Failure> {
+// 분석 422 analysis_failed 중 서버가 알려 준 멈춘 이유가 정확히 시간 초과·취소일 때만 기존 안내로 돌린다.
+// stage·원문 detail·서버 경로는 화면으로 넘기지 않는다. 그 밖의 값·누락은 공통 실패 문구를 그대로 쓴다.
+const stoppedAnalysis = z.object({ error: z.literal("analysis_failed"), detail: z.enum(["timed_out", "cancelled"]) });
+
+async function call<T>(transport: AdminTransport, uri: string, init: RequestInit, accept: (body: unknown) => T | undefined,
+  rejected?: (status: number, body: unknown) => T | undefined): Promise<T | Failure> {
   let response: AdminTransportResponse;
   try { response = await transport(uri, init); } catch { return { kind: "failed" }; }
   if (response.status === 401) return { kind: "login" };
@@ -98,6 +103,8 @@ async function call<T>(transport: AdminTransport, uri: string, init: RequestInit
   if (init.signal?.aborted) return { kind: "failed" };
   if (response.status === 200) return accept(body) ?? { kind: "failed" };
   if ([400, 404, 409, 413, 422, 429].includes(response.status)) {
+    const special = rejected?.(response.status, body);
+    if (special) return special;
     const parsed = errorBody.safeParse(body);
     if (parsed.success) return { kind: "rejected", code: parsed.data.error };
   }
@@ -129,6 +136,9 @@ export function createAdminReferenceAnalysisClient(transport: AdminTransport = b
           if (!imageSemantic) return { kind: "ready", result };
           const semantic = imageSemanticResultSchema.safeParse(parsed.data.semantic);
           return { kind: "ready", result, semantic: semantic.data ?? { status: "unavailable", reason: "invalid_response" } };
+        }, (status, body) => {
+          const stopped = status === 422 ? stoppedAnalysis.safeParse(body) : undefined;
+          return stopped?.success ? { kind: "unavailable", reason: stopped.data.detail } : undefined;
         });
     },
     list: (signal?: AbortSignal): Promise<ListOutcome> => call(transport, PUBLICATIONS_URI, { method: "GET", signal }, (body) => {

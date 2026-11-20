@@ -2,7 +2,7 @@
 // 관리자 콘텐츠 분석·공개 화면 · 합성 응답 대역, 폭 390·1440, 키보드 흐름
 //  1 첫 목록 빈 상태 → 2 음악 분석(키보드) → 결과·근거·프롬프트, 결과 제목 초점 → 3 공개: 첫 응답 실패 → 같은 id 재시도 → 성공·목록 갱신
 //  4 철회 확인 → DELETE {id} → 목록 '철회됨' → 5 이미지·영상(결과 2개) 분석 → 5b 영상 공개 409 충돌이면 안내·동의 해제, 다시 동의하면 새 id
-//  6 401이면 조작 멈춤·로그인 안내. 단계마다 가로 넘침 0.
+//  6b 422 analysis_failed의 시한·취소 안내(그 밖은 공통 안내) → 7 401이면 조작 멈춤·로그인 안내. 단계마다 가로 넘침 0.
 // 실행: ego-browser nodejs -e 'globalThis.FIXTURE_ORIGIN = "<준비 줄의 주소>"; await import("file:///…/tests/admin/admin-reference-analysis.ego.mjs")'
 const origin = globalThis.FIXTURE_ORIGIN;
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(origin ?? "")) throw new Error("FIXTURE_ORIGIN must be the loopback fixture origin");
@@ -338,12 +338,32 @@ try {
     await page.click("loc=css:main input[type=radio][value=url]");
     check(!(await fx(() => [...document.querySelectorAll("button")].some(button => button.textContent === "의미 분석"))),
       `input change clears model result ${width}`);
+    // 6b 422 analysis_failed: detail이 정확히 timed_out·cancelled일 때만 기존 시한·취소 안내, 그 밖은 공통 안내. stage·원문 detail은 화면에 없다.
+    const stopped = [
+      ["timed_out", "분석 시간이 초과됐어요. 더 짧은 파일로 다시 시도해 주세요."],
+      ["cancelled", "분석이 취소됐어요."],
+      ["TimeoutError", "이 파일은 지금 분석할 수 없어요. 다른 파일이나 형식으로 시도해 주세요."],
+    ];
+    r.stopped = [];
+    for (const [index, [detail, message]] of stopped.entries()) {
+      await analyze(`https://mdn.github.io/stop-${index}.png`, "image");
+      await untilRequests(18 + index, "422 " + detail);
+      await reply(17 + index, 422, { error: "analysis_failed", stage: "inspect", detail, requestAborted: false });
+      for (let i = 0; i < 50 && !(await fx((text) => document.querySelector("main").innerText.includes(text), message)); i++) await wait(100);
+      check(await fx((text) => document.querySelector("main").innerText.includes(text), message), `422 ${detail} message ${width}`);
+      const seen = await state();
+      r.stopped.push({ detail, focus: seen.focus, overflow: seen.overflow });
+      check(seen.overflow <= 0 && seen.focus !== "BODY" && !/inspect|timed_out|TimeoutError|stage/.test(seen.text) &&
+        !seen.text.includes("서버에서 분석하고 있어요") && !(await fx(() => document.querySelector("form button[type=submit]").disabled)),
+        `422 ${detail} guidance ${width}`);
+    }
+
     await analyze("https://mdn.github.io/b.png", "image");
-    await untilRequests(18, "auth");
-    await reply(17, 401);
+    await untilRequests(21, "auth");
+    await reply(20, 401);
     await until(() => document.querySelector("main").innerText.includes("다시 로그인이 필요해요"), "login stop");
     r.steps.login = await state();
-    check(r.steps.login.inputs === 0 && r.steps.login.text.includes("관리자 로그인") && (await requests()).length === 18, `auth stop ${width}`);
+    check(r.steps.login.inputs === 0 && r.steps.login.text.includes("관리자 로그인") && (await requests()).length === 21, `auth stop ${width}`);
     for (const step of Object.values(r.steps)) delete step.text;
   }
 } catch (error) {

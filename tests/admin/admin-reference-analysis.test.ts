@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
-  ANALYSIS_URI, PUBLICATIONS_URI, analysisInputIssue, createAdminReferenceAnalysisClient, draftFromResult, failureMessage, validateDraft,
+  ANALYSIS_URI, PUBLICATIONS_URI, analysisInputIssue, createAdminReferenceAnalysisClient, draftFromResult, failureMessage, unavailableMessage, validateDraft,
   type AdminTransport, type AnalysisMedia, type AnalysisSource, type ReadyResult,
 } from "@/components/admin/admin-reference-analysis-model";
 import { AdminReferenceAnalysis } from "@/components/admin/admin-reference-analysis";
@@ -101,6 +101,31 @@ describe("분석 요청", () => {
     expect(await client(200, { result: READY.music }).analyze(urlSource("https://x"))).toEqual({ kind: "failed" });
     expect(await createAdminReferenceAnalysisClient(transportOf("throw").transport).analyze(urlSource("https://x"))).toEqual({ kind: "failed" });
     expect(failureMessage({ kind: "rejected", code: "unsupported_origin" })).toBe("지원하는 공개 원본의 주소만 분석할 수 있어요.");
+  });
+
+  it("422 analysis_failed는 detail이 정확히 timed_out·cancelled일 때만 기존 시한·취소 안내로 바꾼다", async () => {
+    // 파일 업로드 본문은 JSON이 아니라서 공용 도우미 대신 상태·본문만 돌려주는 전송을 쓴다.
+    const client = (status: number, body?: unknown) => createAdminReferenceAnalysisClient(async () => ({ status, json: async () => body }));
+    const base = { error: "analysis_failed", stage: "inspect", requestAborted: false };
+    for (const source of [urlSource("https://x"), { kind: "file" as const, file: new File([new Uint8Array(4)], "a.mp3"), media: "music" as const }]) {
+      const timed = await client(422, { ...base, detail: "timed_out" }).analyze(source);
+      expect(timed).toEqual({ kind: "unavailable", reason: "timed_out" });
+      expect(unavailableMessage("timed_out")).toBe("분석 시간이 초과됐어요. 더 짧은 파일로 다시 시도해 주세요.");
+      expect(await client(422, { ...base, stage: "fetch", detail: "cancelled" }).analyze(source)).toEqual({ kind: "unavailable", reason: "cancelled" });
+      expect(unavailableMessage("cancelled")).toBe("분석이 취소됐어요.");
+    }
+    // 그 밖의 값·누락·대소문자·다른 상태·다른 코드는 기존 공통 안내 그대로다.
+    const common = { kind: "rejected", code: "analysis_failed" };
+    for (const detail of [undefined, "TimeoutError", "AbortError", "TIMED_OUT", "timed_out ", "inspection_failed", 1, null]) {
+      expect(await client(422, { ...base, detail }).analyze(urlSource("https://x"))).toEqual(common);
+    }
+    expect(await client(422, { error: "analysis_failed" }).analyze(urlSource("https://x"))).toEqual(common);
+    expect(await client(400, { ...base, detail: "timed_out" }).analyze(urlSource("https://x"))).toEqual(common);
+    expect(await client(500, { ...base, detail: "timed_out" }).analyze(urlSource("https://x"))).toEqual({ kind: "failed" });
+    expect(await client(422, { error: "too_large", detail: "timed_out" }).analyze(urlSource("https://x"))).toEqual({ kind: "rejected", code: "too_large" });
+    expect(failureMessage({ kind: "rejected", code: "analysis_failed" })).toBe("이 파일은 지금 분석할 수 없어요. 다른 파일이나 형식으로 시도해 주세요.");
+    // 공개·목록 요청에는 적용하지 않는다.
+    expect(await client(422, { ...base, detail: "timed_out" }).list()).toEqual(common);
   });
 
   it("취소된 요청은 늦게 성공해도 실패로 닫는다", async () => {
