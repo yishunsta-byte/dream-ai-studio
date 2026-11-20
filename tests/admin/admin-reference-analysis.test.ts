@@ -57,6 +57,10 @@ describe("분석 요청", () => {
     expect(await client(403).analyze("https://x")).toEqual({ kind: "forbidden" });
     expect(await client(422, { error: "unsupported_origin", message: "<b>내부</b>" }).analyze("https://x")).toEqual({ kind: "rejected", code: "unsupported_origin" });
     expect(await client(400, { error: "모르는 코드" }).analyze("https://x")).toEqual({ kind: "failed" });
+    // 서버(admin-reference-http) 상태·코드 짝: 413 too_large, 429 analysis_busy, 400 invalid_input
+    expect(await client(413, { error: "too_large" }).analyze("https://x")).toEqual({ kind: "rejected", code: "too_large" });
+    expect(await client(429, { error: "analysis_busy" }).analyze("https://x")).toEqual({ kind: "rejected", code: "analysis_busy" });
+    expect(await client(400, { error: "invalid_input" }).analyze("https://x")).toEqual({ kind: "rejected", code: "invalid_input" });
     expect(await client(500, { error: "analysis_failed" }).analyze("https://x")).toEqual({ kind: "failed" });
     expect(await client(200, { result: { schemaVersion: 1, status: "unavailable", reason: "timed_out" } }).analyze("https://x")).toEqual({ kind: "unavailable", reason: "timed_out" });
     // 여분 필드·형식이 다른 결과는 받지 않는다(strict).
@@ -81,6 +85,10 @@ describe("공개·철회", () => {
     expect(sent[0]).toEqual({ uri: PUBLICATIONS_URI, method: "POST",
       body: { id: ID, title: "음악 분석 결과", summary: "요약", prompt: "프롬프트", media: "music", authorized: true } });
     expect(await client.publish(ID, draft)).toEqual({ kind: "failed" });
+    // 같은 id에 다른 내용이면 서버가 409 publication_conflict로 확정한다. 미확정(failed)이 아니라 거절로 분류해 새 요청을 요구한다.
+    const conflict = createAdminReferenceAnalysisClient(transportOf({ status: 409, body: { error: "publication_conflict" } }).transport);
+    expect(await conflict.publish(ID, draft)).toEqual({ kind: "rejected", code: "publication_conflict" });
+    expect(failureMessage({ kind: "rejected", code: "publication_conflict" })).toContain("다시 공개해 주세요");
   });
 
   it("목록은 형식이 맞을 때만 받고, 철회는 id만 보낸다", async () => {

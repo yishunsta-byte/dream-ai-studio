@@ -5,16 +5,11 @@ import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
 import { analyzeRegisteredReferenceSnapshot } from "./registered-snapshot";
 import { referenceFileByteLimit, referenceFileFormat } from "./input";
+import { MediaUrlError } from "./media-url-error";
 import { proposalsForLocalReference } from "./project-preview";
 
 // Additional origins are supplied only by the local operator CLI; the web action always uses the fixed origins.
 const publicOrigins = new Set(["https://interactive-examples.mdn.mozilla.net", "https://tonejs.github.io", "https://mdn.github.io"]);
-
-type MediaUrlErrorCode = "invalid_url" | "unsupported_origin" | "unsupported_format" | "too_large";
-
-export class MediaUrlError extends Error {
-  constructor(readonly code: MediaUrlErrorCode, message: string) { super(message); }
-}
 
 export async function analyzeLocalMediaUrl(input: string, operatorOrigin?: string, requestSignal?: AbortSignal) {
   let url: URL;

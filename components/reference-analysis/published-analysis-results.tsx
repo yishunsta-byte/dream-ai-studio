@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { MEDIA_LABEL, formatPublishedAt, type AnalysisMedia } from "@/components/admin/admin-reference-analysis-model";
 import styles from "./published-analysis-results.module.css";
 
@@ -10,7 +9,9 @@ export type PublishedAnalysisFeed = Readonly<{ kind: "ok"; items: readonly Publi
 export function PublishedAnalysisResults({ feed }: { feed: PublishedAnalysisFeed }) {
   return <main id="main-content" className={styles.page}>
     <header className={styles.header}>
-      <Link className={styles.brand} href="/">DREAM <em>SCREEN</em></Link>
+      {/* 공개 홈은 항상 새 문서로 연다(T-255-F1, 철회 가드). */}
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- 의도한 전체 문서 이동 */}
+      <a className={styles.brand} href="/">DREAM <em>SCREEN</em></a>
       <h1>콘텐츠 분석 결과</h1>
       <p className={styles.lead}>이미지·음악·영상 소스를 분석해 공개 승인한 결과와 생성 프롬프트예요.</p>
     </header>

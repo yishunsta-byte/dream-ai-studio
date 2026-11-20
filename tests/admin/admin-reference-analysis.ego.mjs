@@ -1,7 +1,8 @@
 /* global taskSpace, fetch, document, window, setTimeout, console */
 // 관리자 콘텐츠 분석·공개 화면 · 합성 응답 대역, 폭 390·1440, 키보드 흐름
 //  1 첫 목록 빈 상태 → 2 음악 분석(키보드) → 결과·근거·프롬프트, 결과 제목 초점 → 3 공개: 첫 응답 실패 → 같은 id 재시도 → 성공·목록 갱신
-//  4 철회 확인 → DELETE {id} → 목록 '철회됨' → 5 이미지·영상(결과 2개) 분석 → 6 401이면 조작 멈춤·로그인 안내. 단계마다 가로 넘침 0.
+//  4 철회 확인 → DELETE {id} → 목록 '철회됨' → 5 이미지·영상(결과 2개) 분석 → 5b 영상 공개 409 충돌이면 안내·동의 해제, 다시 동의하면 새 id
+//  6 401이면 조작 멈춤·로그인 안내. 단계마다 가로 넘침 0.
 // 실행: ego-browser nodejs -e 'globalThis.FIXTURE_ORIGIN = "<준비 줄의 주소>"; await import("file:///…/tests/admin/admin-reference-analysis.ego.mjs")'
 const origin = globalThis.FIXTURE_ORIGIN;
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(origin ?? "")) throw new Error("FIXTURE_ORIGIN must be the loopback fixture origin");
@@ -73,7 +74,7 @@ try {
     await until(() => document.querySelector("main").innerText.includes("추정 템포 120 BPM"), "music result");
     r.steps.music = await state();
     check((await requests())[1].body?.url === "https://tonejs.github.io/audio/loop.mp3" && (await requests())[1].body?.authorized === true
-      && r.steps.running.text.includes("서버에서 분석하고 있어요") && r.steps.music.focus.startsWith("H3:") && r.steps.music.title === "음악 분석 결과"
+      && r.steps.running.text.includes("서버에서 분석하고 있어요") && r.steps.running.focus.includes("분석 취소") && r.steps.music.focus.startsWith("H3:") && r.steps.music.title === "음악 분석 결과"
       && r.steps.music.prompt === "120 BPM의 경쾌한 배경 음악" && r.steps.music.overflow <= 0, `music analysis ${width}`);
 
     // 3 공개: 실패 → 같은 id 재시도 → 성공
@@ -129,13 +130,37 @@ try {
     check(r.steps.image.prompt === "푸른 색이 넓게 퍼진 장면" && r.steps.image.title === "이미지 분석 결과" && r.steps.video.title === "영상 분석 결과" && r.steps.video.pick
       && r.steps.video.prompt === "125ms에서 장면을 바꾸는 컷" && r.steps.video.overflow <= 0 && r.steps.image.overflow <= 0, `image video ${width}`);
 
+    // 5b 공개 확정 충돌(409): 안내 → 동의 해제·같은 id 재시도 중단 → 목록 다시 읽기 → 다시 동의하면 새 id
+    const publishVideo = async () => {
+      await page.focus("loc=css:form:has(> h3) input[type=checkbox]"); await page.keyboard.press("Space");
+      await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
+    };
+    await publishVideo();
+    await untilRequests(10, "video publish");
+    await reply(9, 409, { error: "publication_conflict" });
+    await untilRequests(11, "list after conflict");
+    await reply(10, 200, { items: [item({ status: "revoked" })] });
+    await until(() => document.querySelector("main").innerText.includes("다른 내용으로 이미 처리됐어요"), "conflict notice");
+    r.steps.conflict = await state();
+    const consentAfterConflict = await fx(() => document.querySelector("form:has(> h3) input[type=checkbox]").checked);
+    await publishVideo();
+    await untilRequests(12, "video publish new intent");
+    await reply(11, 200, { item: item({ id: "10000000-0000-4000-8000-000000000003", media: "video", title: "영상 분석 결과" }) });
+    await untilRequests(13, "list after video publish");
+    await reply(12, 200, { items: [item({ id: "10000000-0000-4000-8000-000000000003", media: "video", title: "영상 분석 결과" }), item({ status: "revoked" })] });
+    await until(() => document.querySelector("main").innerText.includes("‘영상 분석 결과’을 공개했어요"), "video published");
+    const conflictSent = await requests();
+    r.conflictIds = [conflictSent[9].body?.id, conflictSent[11].body?.id];
+    check(conflictSent[9].body?.id === "10000000-0000-4000-8000-000000000002" && conflictSent[11].body?.id === "10000000-0000-4000-8000-000000000003"
+      && !consentAfterConflict && r.steps.conflict.focus.startsWith("P:") && r.steps.conflict.overflow <= 0, `conflict new intent ${width}`);
+
     // 6 401 → 멈춤
     await analyze("https://mdn.github.io/b.png");
-    await untilRequests(10, "auth");
-    await reply(9, 401);
+    await untilRequests(14, "auth");
+    await reply(13, 401);
     await until(() => document.querySelector("main").innerText.includes("다시 로그인이 필요해요"), "login stop");
     r.steps.login = await state();
-    check(r.steps.login.inputs === 0 && r.steps.login.text.includes("관리자 로그인") && (await requests()).length === 10, `auth stop ${width}`);
+    check(r.steps.login.inputs === 0 && r.steps.login.text.includes("관리자 로그인") && (await requests()).length === 14, `auth stop ${width}`);
     for (const step of Object.values(r.steps)) delete step.text;
   }
 } catch (error) {

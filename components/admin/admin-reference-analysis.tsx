@@ -60,6 +60,13 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   }
   function editInput(next: () => void) { cancelAnalysis(); next(); setAnalysis({ kind: "idle" }); }
 
+  // 실행 버튼은 분석 중 비활성이라 초점을 잃는다. 폼 안에서 시작했으면 바로 '분석 취소'로 옮긴다.
+  useLayoutEffect(() => {
+    if (analysis.kind !== "running") return;
+    const active = document.activeElement;
+    if (active === document.body || form.current?.contains(active)) document.getElementById(`${id}-cancel`)?.focus({ preventScroll: true });
+  }, [analysis, id]);
+
   useLayoutEffect(() => {
     if (analysis.kind !== "ready" && analysis.kind !== "unavailable" && analysis.kind !== "failed") return;
     const active = document.activeElement;
@@ -136,7 +143,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
       </label>
       <div className={styles.actions}>
         <Button type="submit" loading={running} loadingLabel="분석 중" disabled={!url.trim() || !authorized || running}>분석 실행</Button>
-        {running && <Button type="button" variant="secondary" onClick={() => editInput(() => {})}>분석 취소</Button>}
+        {running && <Button id={`${id}-cancel`} type="button" variant="secondary" onClick={() => editInput(() => {})}>분석 취소</Button>}
       </div>
       <p className={styles.status} role="status" aria-live="polite">{running ? "서버에서 분석하고 있어요. 영상은 시간이 더 걸릴 수 있어요." : ""}</p>
     </form>
@@ -192,7 +199,12 @@ function PublishForm({ result, client, newRequestId, onBlocked, onPublished }: {
     }
     if (onBlocked(outcome)) return;
     // 잘못된 요청은 초안을 고쳐야 하므로 id를 버린다. 응답 미확정(failed)은 같은 id로 다시 보낸다.
-    if (outcome.kind === "rejected") requestId.current = null;
+    if (outcome.kind === "rejected") {
+      requestId.current = null;
+      setConsent(false);
+      // 충돌(같은 id, 다른 내용)은 서버에 이미 무언가 공개돼 있다는 뜻이라 목록을 다시 읽어 맞춘다.
+      if (outcome.code === "publication_conflict") onPublished();
+    }
     setNotice({ tone: "danger", text: failureMessage(outcome) + (outcome.kind === "failed" ? " 다시 누르면 같은 공개 요청을 다시 보내요." : "") });
   }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { isAnonymousPublicPath } from "../../lib/auth/config";
 import { createAdminReferenceHttp } from "../../lib/reference-analysis/admin-reference-http";
-import { MediaUrlError } from "../../lib/reference-analysis/local-media-url";
+import { MediaUrlError } from "../../lib/reference-analysis/media-url-error";
 
 vi.mock("server-only", () => ({}));
 

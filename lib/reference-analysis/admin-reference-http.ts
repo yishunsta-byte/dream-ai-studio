@@ -4,7 +4,8 @@ import { z } from "zod";
 import { resolveServerAuth } from "../auth/resolve";
 import { readLimitedText, rejectForeignWrite } from "../public-showcase/admin-publication-http";
 import { openReferencePublicationStore, publishReferenceAnalysisSchema, revokeReferenceAnalysisSchema } from "./admin-reference-publications";
-import { analyzeLocalMediaUrl, MediaUrlError } from "./local-media-url";
+import type { analyzeLocalMediaUrl } from "./local-media-url";
+import { MediaUrlError } from "./media-url-error";
 import { studioAnalysisResultSchema } from "./studio-analysis-result-dto";
 
 const inputSchema = z.strictObject({ url: z.string().trim().min(1).max(4096), authorized: z.literal(true) });
@@ -23,7 +24,7 @@ async function payload(request: Request) {
 
 const defaults = {
   authenticate: resolveServerAuth,
-  analyze: analyzeLocalMediaUrl,
+  analyze: undefined as typeof analyzeLocalMediaUrl | undefined,
   openStore: openReferencePublicationStore,
   env: process.env as Readonly<Record<string, string | undefined>>,
 };
@@ -57,6 +58,7 @@ export function createAdminReferenceHttp(overrides: Partial<typeof defaults> = {
       if (analyzing) return json({ error: "analysis_busy" }, 429);
       analyzing = true;
       try {
+        if (!deps.analyze) return json({ error: "unavailable" }, 503);
         const { schemaVersion, status, media, proposals } = await deps.analyze(parsed.data.url, undefined, request.signal);
         return json({ result: studioAnalysisResultSchema.parse({ schemaVersion, status, media, proposals }) });
       } catch (error) {

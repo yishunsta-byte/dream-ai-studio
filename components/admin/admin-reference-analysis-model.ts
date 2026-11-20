@@ -40,8 +40,8 @@ export const isPublishedReferenceAnalysis = (value: unknown): value is Published
 export type PublicationDraft = Readonly<{ title: string; summary: string; prompt: string; media: AnalysisMedia }>;
 export type ReadyResult = Extract<StudioAnalysisResult, { status: "ready" }>;
 
-export const ERROR_CODES = ["invalid_url", "unsupported_origin", "unsupported_format", "too_large", "rights_required",
-  "analysis_failed", "invalid_publication", "not_found", "already_revoked"] as const;
+export const ERROR_CODES = ["invalid_input", "analysis_busy", "invalid_url", "unsupported_origin", "unsupported_format", "too_large", "rights_required",
+  "analysis_failed", "invalid_publication", "publication_conflict", "not_found", "already_revoked"] as const;
 export type ErrorCode = typeof ERROR_CODES[number];
 export type Failure =
   | Readonly<{ kind: "login" }>
@@ -69,7 +69,7 @@ async function call<T>(transport: AdminTransport, uri: string, init: RequestInit
   try { body = await response.json(); } catch { return { kind: "failed" }; }
   if (init.signal?.aborted) return { kind: "failed" };
   if (response.status === 200) return accept(body) ?? { kind: "failed" };
-  if ([400, 404, 409, 422].includes(response.status)) {
+  if ([400, 404, 409, 413, 422, 429].includes(response.status)) {
     const parsed = errorBody.safeParse(body);
     if (parsed.success) return { kind: "rejected", code: parsed.data.error };
   }
@@ -143,6 +143,8 @@ const UNAVAILABLE: Record<string, string> = {
 export const unavailableMessage = (reason: string) => UNAVAILABLE[reason] ?? "이 파일은 지금 분석할 수 없어요.";
 
 const REJECTED: Record<ErrorCode, string> = {
+  invalid_input: "요청 형식이 올바르지 않아요. 화면을 새로 고친 뒤 다시 시도해 주세요.",
+  analysis_busy: "다른 분석이 진행 중이에요. 잠시 뒤 다시 실행해 주세요.",
   invalid_url: "직접 파일 주소(https://…/파일.확장자)를 입력하세요.",
   unsupported_origin: "지원하는 공개 원본의 주소만 분석할 수 있어요.",
   unsupported_format: "지원하는 이미지·음악·영상 형식이 아니에요.",
@@ -150,6 +152,7 @@ const REJECTED: Record<ErrorCode, string> = {
   rights_required: "자료를 분석할 권리 확인이 필요해요.",
   analysis_failed: "이 파일은 지금 분석할 수 없어요. 다른 파일이나 형식으로 시도해 주세요.",
   invalid_publication: "공개 내용을 확인해 주세요. 제목·요약·프롬프트가 한도 안에 있어야 해요.",
+  publication_conflict: "같은 공개 요청이 다른 내용으로 이미 처리됐어요. 공개 목록을 새로 불러왔으니 확인한 뒤 다시 공개해 주세요.",
   not_found: "이미 없어진 공개 결과예요. 목록을 새로 불러왔어요.",
   already_revoked: "이미 철회된 결과예요. 목록을 새로 불러왔어요.",
 };
