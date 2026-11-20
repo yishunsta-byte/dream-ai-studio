@@ -32,6 +32,7 @@ const defaults = {
   analyze: undefined as typeof analyzeLocalMediaUrl | undefined,
   analyzeUpload: undefined as typeof analyzeLocalMediaUpload | undefined,
   analyzeImageSemantics: undefined as AnalyzeImageSemantics | undefined,
+  loadImageSemantics: undefined as ((ownerId: string) => Promise<AnalyzeImageSemantics | undefined>) | undefined,
   openStore: openReferencePublicationStore,
   env: process.env as Readonly<Record<string, string | undefined>>,
 };
@@ -39,6 +40,7 @@ const defaults = {
 export function createAdminReferenceHttp(overrides: Partial<typeof defaults> = {}) {
   const deps = { ...defaults, ...overrides };
   let analyzing = false;
+  const imageSemantics = (owner: string) => deps.loadImageSemantics ? deps.loadImageSemantics(owner) : deps.analyzeImageSemantics;
 
   async function withAdmin(request: Request, handle: (ownerId: string) => Promise<Response>, allowedTypes?: readonly string[]) {
     try {
@@ -54,10 +56,10 @@ export function createAdminReferenceHttp(overrides: Partial<typeof defaults> = {
   }
 
   async function analyze(request: Request) {
-    return withAdmin(request, async () => {
+    return withAdmin(request, async owner => {
       const contentType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
       let wantsSemantics: boolean;
-      let run: () => Promise<Awaited<ReturnType<typeof analyzeLocalMediaUpload>>>;
+      let run: (analyzer?: AnalyzeImageSemantics) => Promise<Awaited<ReturnType<typeof analyzeLocalMediaUpload>>>;
       if (contentType === "application/octet-stream") {
         const media = referenceMedia.safeParse(request.headers.get("x-dream-media"));
         if (!media.success) return json({ error: "invalid_input" }, 400);
@@ -71,9 +73,7 @@ export function createAdminReferenceHttp(overrides: Partial<typeof defaults> = {
         catch { return json({ error: "invalid_file" }, 400); }
         const analyzeUpload = deps.analyzeUpload;
         if (!analyzeUpload) return json({ error: "unavailable" }, 503);
-        run = () => wantsSemantics && deps.analyzeImageSemantics
-          ? analyzeUpload(request, name, media.data, deps.analyzeImageSemantics)
-          : analyzeUpload(request, name, media.data);
+        run = analyzer => analyzer ? analyzeUpload(request, name, media.data, analyzer) : analyzeUpload(request, name, media.data);
       } else {
         const input = await payload(request);
         if (input.error) return input.error;
@@ -90,15 +90,18 @@ export function createAdminReferenceHttp(overrides: Partial<typeof defaults> = {
         const analyzeUrl = deps.analyze;
         if (!analyzeUrl) return json({ error: "unavailable" }, 503);
         // The transport signal can end after Next reads the request body.
-        run = () => {
-          if (wantsSemantics && deps.analyzeImageSemantics) return analyzeUrl(url, undefined, undefined, media, deps.analyzeImageSemantics);
+        run = analyzer => {
+          if (analyzer) return analyzeUrl(url, undefined, undefined, media, analyzer);
           return media ? analyzeUrl(url, undefined, undefined, media) : analyzeUrl(url, undefined, undefined);
         };
       }
       if (analyzing) return json({ error: "analysis_busy" }, 429);
       analyzing = true;
       try {
-        const { schemaVersion, status, media, proposals, semantic } = await run();
+        let analyzer: AnalyzeImageSemantics | undefined;
+        try { analyzer = wantsSemantics ? await imageSemantics(owner) : undefined; }
+        catch { return json({ error: "unavailable" }, 503); }
+        const { schemaVersion, status, media, proposals, semantic } = await run(analyzer);
         const result = studioAnalysisResultSchema.parse({ schemaVersion, status, media, proposals });
         const ready = json({ result, ...(wantsSemantics && {
           semantic: semantic ?? { status: "unavailable", reason: "not_configured" },
@@ -121,9 +124,11 @@ export function createAdminReferenceHttp(overrides: Partial<typeof defaults> = {
   }
 
   async function capabilities(request: Request) {
-    return withAdmin(request, async () => json({
-      semantic: { image: deps.analyzeImageSemantics && imageSemanticConfigured(deps.env) ? "configured" : "not_configured" },
-    }));
+    return withAdmin(request, async owner => {
+      const configured = deps.loadImageSemantics ? await imageSemantics(owner) :
+        deps.analyzeImageSemantics && imageSemanticConfigured(deps.env);
+      return json({ semantic: { image: configured ? "configured" : "not_configured" } });
+    });
   }
 
   async function publications(request: Request) {

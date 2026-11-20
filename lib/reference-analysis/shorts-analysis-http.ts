@@ -4,6 +4,7 @@ import { z } from "zod";
 import { resolveServerAuth } from "../auth/resolve";
 import { readLimitedText, rejectForeignWrite } from "../public-showcase/admin-publication-http";
 import { shortsFindingsSchema, youtubeVideoId } from "./shorts-analysis-contract";
+import type { GeminiSettings } from "./analysis-gemini-settings";
 
 const input = z.strictObject({ url: z.string().trim().min(1).max(2048), authorized: z.literal(true) });
 const providerResponse = z.object({
@@ -19,6 +20,7 @@ const defaults = {
   authenticate: resolveServerAuth,
   env: process.env as Readonly<Record<string, string | undefined>>,
   fetch: globalThis.fetch,
+  loadSettings: undefined as ((owner: string) => Promise<GeminiSettings | undefined>) | undefined,
 };
 
 const instructions = [
@@ -47,25 +49,26 @@ function readModelConfig(env: typeof defaults.env) {
 export function createShortsAnalysisHttp(dependencies: Partial<typeof defaults> = {}) {
   const deps = { ...defaults, ...dependencies };
 
-  async function withAdmin(handle: () => Response | Promise<Response>) {
+  async function withAdmin(handle: (owner: string) => Response | Promise<Response>) {
     try {
       const auth = await deps.authenticate();
       if (auth.kind === "local") return json({ error: "authentication_required" }, 401);
       if (auth.kind === "denied") return json({ error: auth.code }, auth.status);
-      return await handle();
+      return await handle(auth.userId);
     } catch {
       return json({ error: "unavailable" }, 503);
     }
   }
+  const configFor = (owner: string) => deps.loadSettings ? deps.loadSettings(owner) : readModelConfig(deps.env);
 
   function get() {
-    return withAdmin(() => json({
-      semantic: { shorts: readModelConfig(deps.env) ? "configured" : "not_configured" },
+    return withAdmin(async owner => json({
+      semantic: { shorts: await configFor(owner) ? "configured" : "not_configured" },
     }));
   }
 
   function post(request: Request) {
-    return withAdmin(async () => {
+    return withAdmin(async owner => {
       const rejected = rejectForeignWrite(request, deps.env);
       if (rejected) return rejected;
 
@@ -79,7 +82,7 @@ export function createShortsAnalysisHttp(dependencies: Partial<typeof defaults> 
       const id = parsed.success ? youtubeVideoId(parsed.data.url) : null;
       if (!id) return json({ error: "invalid_input" }, 400);
 
-      const config = readModelConfig(deps.env);
+      const config = await configFor(owner);
       if (!config) return json({ error: "not_configured" }, 503);
       const { key, model } = config;
 

@@ -124,7 +124,7 @@ const publicAuthRoutes = ["auth/login", "auth/signup", "auth/reset"];
 const selfAuthenticatedRoutes = ["auth/password"];
 const referenceRoutes = ["admin/reference-analysis", "admin/reference-publications", "admin/music-semantic", "admin/shorts-analysis"];
 const guardedRoutes = [
-  "admin/publications", "admin/render-queue", ...referenceRoutes,
+  "admin/analysis-credentials", "admin/analysis-credentials/test", "admin/publications", "admin/render-queue", ...referenceRoutes,
   "assets/[id]", "assets/link", "assets/upload", "auth/logout", "auth/session",
   "backups/configuration", "backups", "characters", "exports/[id]", "jobs",
   "library/archive", "projects/[id]/finishing", "projects/[id]/production",

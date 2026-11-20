@@ -6,6 +6,7 @@ import {
   type ImageSemanticFinding, type ImageSemanticResult,
 } from "./image-semantic-result";
 import { referenceUploadByteLimit } from "./input";
+import type { GeminiSettings } from "./analysis-gemini-settings";
 
 type Environment = Readonly<Record<string, string | undefined>>;
 export type AnalyzeImageSemantics = (path: string, signal: AbortSignal) => Promise<ImageSemanticResult>;
@@ -87,7 +88,12 @@ function parseResult(payload: unknown): ImageSemanticResult {
 export function createGeminiImageAnalysis(env: Environment, send: typeof fetch = fetch): AnalyzeImageSemantics {
   return async (path, deadline) => {
     const config = imageSemanticConfig(env);
-    if (!config) return { status: "unavailable", reason: "not_configured" };
+    return config ? geminiImageAnalyzer(config, send)(path, deadline) : { status: "unavailable", reason: "not_configured" };
+  };
+}
+
+export function geminiImageAnalyzer(config: GeminiSettings, send: typeof fetch = fetch): AnalyzeImageSemantics {
+  return async (path, deadline) => {
     const signal = AbortSignal.any([deadline, AbortSignal.timeout(15_000)]);
 
     let image: Buffer;

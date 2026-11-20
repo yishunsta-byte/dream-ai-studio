@@ -6,6 +6,7 @@ import { resolveServerAuth } from "../auth/resolve";
 import { rejectForeignWrite } from "../public-showcase/admin-publication-http";
 import { classifyReferenceInput, referenceUploadByteLimit } from "./input";
 import { MUSIC_EXTERNAL_CONSENT_HEADER, musicReportSchema, type MusicSemanticResult } from "./music-semantic-contract";
+import type { GeminiSettings } from "./analysis-gemini-settings";
 
 type AudioPayload = { bytes: Buffer; mime: string };
 type MusicProvider = (audio: AudioPayload) => Promise<MusicSemanticResult>;
@@ -52,6 +53,10 @@ export function geminiMusicProvider(env: Readonly<Record<string, string | undefi
   const key = env.DREAM_MUSIC_SEMANTIC_GEMINI_API_KEY?.trim();
   const model = env.DREAM_MUSIC_SEMANTIC_GEMINI_MODEL?.trim();
   if (!key || !model || !/^gemini-[a-z0-9][a-z0-9.-]{0,79}$/.test(model)) return undefined;
+  return musicProviderFromSettings({ key, model }, send);
+}
+
+export function musicProviderFromSettings({ key, model }: GeminiSettings, send: typeof fetch = fetch): MusicProvider {
   return async ({ bytes, mime }) => {
     const signal = AbortSignal.timeout(25_000);
     let raw: Buffer | undefined;
@@ -78,50 +83,60 @@ export function geminiMusicProvider(env: Readonly<Record<string, string | undefi
   };
 }
 
+type MusicHttpOptions = {
+  authenticate?: typeof resolveServerAuth;
+  env?: Readonly<Record<string, string | undefined>>;
+  provider?: (ownerId: string) => MusicProvider | undefined | Promise<MusicProvider | undefined>;
+};
+
 export function createMusicSemanticHttp({ authenticate = resolveServerAuth, env = process.env,
-  provider = () => geminiMusicProvider(env) } = {}) {
+  provider = () => geminiMusicProvider(env) }: MusicHttpOptions = {}) {
   let busy = false;
-  async function authFailure() {
-    const auth = await authenticate();
-    if (auth.kind === "verified") return undefined;
-    if (auth.kind === "local") return json({ error: "AUTH_REQUIRED" }, 401);
-    return json({ error: auth.code }, auth.status);
+  async function withAdmin(handle: (owner: string) => Promise<Response>) {
+    try {
+      const auth = await authenticate();
+      if (auth.kind === "local") return json({ error: "AUTH_REQUIRED" }, 401);
+      if (auth.kind === "denied") return json({ error: auth.code }, auth.status);
+      return await handle(auth.userId);
+    } catch { return json({ error: "unavailable" }, 503); }
   }
   return {
     async get() {
-      return (await authFailure()) ?? json({ semantic: { music: provider() ? "configured" : "not_configured" } });
+      return withAdmin(async owner => json({ semantic: { music: await provider(owner) ? "configured" : "not_configured" } }));
     },
     async post(request: Request) {
-      const blocked = (await authFailure()) ?? rejectForeignWrite(request, env, ["application/octet-stream"]);
-      if (blocked) return blocked;
-      if (request.headers.get(MUSIC_EXTERNAL_CONSENT_HEADER) !== "true") return json({ error: "consent_required" }, 400);
-      const run = provider();
-      if (!run) return json({ semantic: unavailable("not_configured") });
-      let name: string;
-      try { name = decodeURIComponent(request.headers.get("x-dream-filename") ?? ""); }
-      catch { return json({ error: "invalid_file" }, 400); }
-      const decision = classifyReferenceInput({ kind: "file", name, sizeBytes: 1, permission: "authorized" });
-      if (decision.status !== "ready" || decision.source.kind !== "file" || decision.source.media !== "music") {
-        return json({ error: "invalid_file" }, 400);
-      }
-      const ext = name.split(".").at(-1)?.toLowerCase() ?? "";
-      if (!Object.hasOwn(mimeByExtension, ext)) return json({ error: "invalid_file" }, 400);
-      const expected = ext as keyof typeof mimeByExtension;
-      const declared = request.headers.get("content-length");
-      if (declared !== null && (!/^\d{1,9}$/.test(declared) || Number(declared) > referenceUploadByteLimit)) {
-        return json({ error: "too_large" }, 413);
-      }
-      if (busy) return json({ error: "analysis_busy" }, 429);
-      busy = true;
-      try {
-        const signal = AbortSignal.any([request.signal, AbortSignal.timeout(10_000)]);
-        const bytes = await readBounded(request.body, referenceUploadByteLimit, signal);
-        if (!bytes) return json({ error: "too_large" }, 413);
-        const format = await fileTypeFromBuffer(bytes).catch(() => undefined);
-        if (format?.ext !== expected) return json({ error: "invalid_file" }, 422);
-        return json({ semantic: await run({ bytes, mime: mimeByExtension[expected] }) });
-      } catch { return json({ error: "music_analysis_failed" }, 422); }
-      finally { busy = false; }
+      return withAdmin(async owner => {
+        const blocked = rejectForeignWrite(request, env, ["application/octet-stream"]);
+        if (blocked) return blocked;
+        if (request.headers.get(MUSIC_EXTERNAL_CONSENT_HEADER) !== "true") return json({ error: "consent_required" }, 400);
+        const run = await provider(owner);
+        if (!run) return json({ semantic: unavailable("not_configured") });
+        let name: string;
+        try { name = decodeURIComponent(request.headers.get("x-dream-filename") ?? ""); }
+        catch { return json({ error: "invalid_file" }, 400); }
+        const decision = classifyReferenceInput({ kind: "file", name, sizeBytes: 1, permission: "authorized" });
+        if (decision.status !== "ready" || decision.source.kind !== "file" || decision.source.media !== "music") {
+          return json({ error: "invalid_file" }, 400);
+        }
+        const ext = name.split(".").at(-1)?.toLowerCase() ?? "";
+        if (!Object.hasOwn(mimeByExtension, ext)) return json({ error: "invalid_file" }, 400);
+        const expected = ext as keyof typeof mimeByExtension;
+        const declared = request.headers.get("content-length");
+        if (declared !== null && (!/^\d{1,9}$/.test(declared) || Number(declared) > referenceUploadByteLimit)) {
+          return json({ error: "too_large" }, 413);
+        }
+        if (busy) return json({ error: "analysis_busy" }, 429);
+        busy = true;
+        try {
+          const signal = AbortSignal.any([request.signal, AbortSignal.timeout(10_000)]);
+          const bytes = await readBounded(request.body, referenceUploadByteLimit, signal);
+          if (!bytes) return json({ error: "too_large" }, 413);
+          const format = await fileTypeFromBuffer(bytes).catch(() => undefined);
+          if (format?.ext !== expected) return json({ error: "invalid_file" }, 422);
+          return json({ semantic: await run({ bytes, mime: mimeByExtension[expected] }) });
+        } catch { return json({ error: "music_analysis_failed" }, 422); }
+        finally { busy = false; }
+      });
     },
   };
 }
