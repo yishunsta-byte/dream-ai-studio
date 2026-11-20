@@ -1,8 +1,8 @@
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, rmdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mediaBinary, runMedia } from "../../lib/media/tools";
 import { createAdminReferenceHttp } from "../../lib/reference-analysis/admin-reference-http";
 import { referenceUploadByteLimit, type ReferenceMedia } from "../../lib/reference-analysis/input";
@@ -39,11 +39,23 @@ function urlRequest(media?: ReferenceMedia) {
   });
 }
 
-async function tempUploads() {
-  return (await readdir(tmpdir())).filter(name => name.startsWith("dream-rea-upload-")).sort();
-}
-
 describe("관리자 직접 파일 분석", () => {
+  let testTempRoot: string | undefined;
+
+  beforeEach(async () => {
+    testTempRoot = await mkdtemp(join(tmpdir(), "reference-upload-test-"));
+    for (const name of ["TMPDIR", "TEMP", "TMP"]) vi.stubEnv(name, testTempRoot);
+  });
+
+  afterEach(async () => {
+    const root = testTempRoot;
+    testTempRoot = undefined;
+    vi.unstubAllEnvs();
+    if (!root) return;
+    expect(await readdir(root)).toEqual([]);
+    await rmdir(root);
+  });
+
   it("기존 관리자 인증과 출처 제한을 파일 입력보다 먼저 적용한다", async () => {
     const analyzeUpload = vi.fn();
     const anonymous = createAdminReferenceHttp({ ...adminOptions, authenticate: async () => ({ kind: "local" }), analyzeUpload });
@@ -76,7 +88,6 @@ describe("관리자 직접 파일 분석", () => {
     const bytes = new Uint8Array(await sharp({
       create: { width: 16, height: 16, channels: 3, background: "#2867ac" },
     }).png().toBuffer());
-    const before = await tempUploads();
     const fetch = vi.fn(async () => new Response(bytes));
     vi.stubGlobal("fetch", fetch);
     try {
@@ -99,14 +110,12 @@ describe("관리자 직접 파일 분석", () => {
       const corrupt = await admin.analyze(upload("picture.png", "image", "corrupt"));
       expect(corrupt.status).toBe(422);
       expect(await corrupt.json()).toEqual({ error: "invalid_file" });
-      expect(await tempUploads()).toEqual(before);
     } finally {
       vi.unstubAllGlobals();
     }
   });
 
   it("헤더 초과와 실제 스트림 초과를 막고 정확히 4 MiB는 검사까지 전달한다", async () => {
-    const before = await tempUploads();
     const admin = createAdminReferenceHttp(adminOptions);
     const declared = await admin.analyze(upload("picture.png", "image", "data", {
       headers: { "content-length": String(referenceUploadByteLimit + 1) },
@@ -127,7 +136,6 @@ describe("관리자 직접 파일 분석", () => {
     const boundary = await admin.analyze(upload("picture.png", "image", new Uint8Array(referenceUploadByteLimit)));
     expect(boundary.status).toBe(422);
     expect(await boundary.json()).toEqual({ error: "invalid_file" });
-    expect(await tempUploads()).toEqual(before);
   });
 
   it.each(["cancelled", "timed_out"] as const)("수신 중 %s이면 정리하고 URL과 공유하는 분석 슬롯을 반환한다", async detail => {
@@ -135,7 +143,6 @@ describe("관리자 직접 파일 분석", () => {
     const deadline = new AbortController();
     const timer = vi.spyOn(AbortSignal, "timeout").mockReturnValueOnce(deadline.signal);
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    const before = await tempUploads();
     const cancel = vi.fn(() => new Promise<void>(() => {}));
     let start!: () => void;
     const reading = new Promise<void>(resolve => { start = resolve; });
@@ -144,6 +151,7 @@ describe("관리자 직접 파일 분석", () => {
     const running = admin.analyze(upload("picture.png", "image", body, { signal: transport.signal }));
     try {
       await Promise.race([reading, running.then(() => { throw new Error("분석이 본문을 읽기 전에 응답했습니다."); })]);
+      expect(await readdir(tmpdir())).toEqual([expect.stringMatching(/^dream-rea-upload-/)]);
       expect((await admin.analyze(urlRequest())).status).toBe(429);
       if (detail === "cancelled") transport.abort();
       else deadline.abort(new DOMException("test deadline", "TimeoutError"));
@@ -152,19 +160,19 @@ describe("관리자 직접 파일 분석", () => {
       expect(await interrupted.json()).toMatchObject({ error: "analysis_failed", stage: "download", detail });
       expect(cancel).toHaveBeenCalledOnce();
       expect((await admin.analyze(upload("picture.png", "image"))).status).toBe(400);
-      expect(await tempUploads()).toEqual(before);
     } finally {
       transport.abort();
       timer.mockRestore();
       log.mockRestore();
+      await running;
     }
   });
 
   it("음악·영상 역시 실제 로컬 분석기로 처리한다", async () => {
-    const temp = await mkdtemp(join(tmpdir(), "reference-upload-test-"));
+    const temp = await mkdtemp(join(tmpdir(), "media-fixtures-"));
+    const audioPath = join(temp, "sample.wav");
+    const videoPath = join(temp, "sample.mp4");
     try {
-      const audioPath = join(temp, "sample.wav");
-      const videoPath = join(temp, "sample.mp4");
       const output = { windowsHide: true };
       const ffmpeg = mediaBinary("ffmpeg");
       await runMedia(ffmpeg, ["-v", "error", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=24000:duration=1",
@@ -179,7 +187,8 @@ describe("관리자 직접 파일 분석", () => {
       expect(await music.json()).toMatchObject({ result: { schemaVersion: 1, status: "ready", media: "music" } });
       expect(await moving.json()).toMatchObject({ result: { schemaVersion: 1, status: "ready", media: "video" } });
     } finally {
-      await rm(temp, { recursive: true, force: true });
+      await Promise.all([rm(audioPath, { force: true }), rm(videoPath, { force: true })]);
+      await rmdir(temp);
     }
   });
 });
