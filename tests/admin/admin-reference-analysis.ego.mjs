@@ -39,14 +39,15 @@ const requests = () => fx(() => window.__fixture.requests());
 const reply = (index, status, body) => fx((v) => window.__fixture.reply(v.index, v.status, v.body), { index, status, body });
 const untilRequests = async (n, label) => { for (let i = 0; i < 50; i++) { if ((await requests()).length === n) return; await wait(100); } throw new Error("timeout: " + label); };
 const until = async (fn, label) => { for (let i = 0; i < 50; i++) { if (await fx(fn).catch(() => false)) return; await wait(100); } throw new Error("timeout: " + label + " | " + (await fx(() => document.querySelector("main").innerText.replace(/\s+/g, " ").slice(-700)))); };
+// 공개 준비 폼은 제목 "공개 준비"(aria-labelledby …-heading)로 고른다. 영상일 때 함께 그려지는 Shorts 폼에도 체크박스가 있어 체크박스로는 구분되지 않는다.
 const state = () => fx(() => {
   const text = document.querySelector("main").innerText;
   const a = document.activeElement;
   return { text, overflow: document.documentElement.scrollWidth - window.innerWidth,
     focus: a === document.body ? "BODY" : `${a.tagName}:${(a.getAttribute("type") || "")}:${(a.textContent || a.value || "").trim().slice(0, 24)}`,
-    title: document.querySelector("form:has(input[type=checkbox]) input:not([type])")?.value ?? null,
-    prompt: document.querySelectorAll("form:has(input[type=checkbox]) textarea")[1]?.value ?? null,
-    pick: !!document.querySelector("form:has(input[type=checkbox]) select"), inputs: document.querySelectorAll("main input, main textarea, main select").length };
+    title: document.querySelector("form[aria-labelledby$=-heading] input:not([type])")?.value ?? null,
+    prompt: document.querySelectorAll("form[aria-labelledby$=-heading] textarea")[1]?.value ?? null,
+    pick: !!document.querySelector("form[aria-labelledby$=-heading] select"), inputs: document.querySelectorAll("main input, main textarea, main select").length };
 });
 async function submitAnalysis() {
   await page.focus("loc=css:form:has(input[type=radio]) button[type=submit]");
@@ -177,14 +178,14 @@ try {
     check((await state()).title === "음악 분석 결과" && (await requests()).length === 2, `same URL keeps result and does not submit ${width}`);
 
     // 3 공개: 실패 → 같은 id 재시도 → 성공
-    await page.focus("loc=css:form:has(input[type=checkbox]) input:not([type])");
+    await page.focus("loc=css:form[aria-labelledby$=-heading] input:not([type])");
     for (let i = 0; i < 3; i++) await page.keyboard.press("Tab");
     await page.keyboard.press("Space"); await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
     await untilRequests(3, "publish 1");
     await reply(2, 503);
     await until(() => document.querySelector("main").innerText.includes("같은 공개 요청을 다시 보내요"), "publish failed");
     r.steps.publishFailed = await state();
-    await page.focus("loc=css:form:has(input[type=checkbox]) button[type=submit]"); await page.keyboard.press("Enter");
+    await page.focus("loc=css:form[aria-labelledby$=-heading] button[type=submit]"); await page.keyboard.press("Enter");
     await untilRequests(4, "publish retry");
     await reply(3, 200, { item: item() });
     await untilRequests(5, "list after publish");
@@ -241,7 +242,7 @@ try {
 
     // 5b 공개 확정 충돌(409): 안내 → 동의 해제·같은 id 재시도 중단 → 목록 다시 읽기 → 다시 동의하면 새 id
     const publishVideo = async () => {
-      await page.focus("loc=css:form:has(input[type=checkbox]) input[type=checkbox]"); await page.keyboard.press("Space");
+      await page.focus("loc=css:form[aria-labelledby$=-heading] input[type=checkbox]"); await page.keyboard.press("Space");
       await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
     };
     await publishVideo();
@@ -251,7 +252,7 @@ try {
     await reply(10, 200, { items: [item({ status: "revoked" })] });
     await until(() => document.querySelector("main").innerText.includes("다른 내용으로 이미 처리됐어요"), "conflict notice");
     r.steps.conflict = await state();
-    const consentAfterConflict = await fx(() => document.querySelector("form:has(input[type=checkbox]) input[type=checkbox]").checked);
+    const consentAfterConflict = await fx(() => document.querySelector("form[aria-labelledby$=-heading] input[type=checkbox]").checked);
     await publishVideo();
     await untilRequests(12, "video publish new intent");
     await reply(11, 200, { item: item({ id: "10000000-0000-4000-8000-000000000003", media: "video", title: "영상 분석 결과" }) });
@@ -281,7 +282,7 @@ try {
     await until(() => document.activeElement === document.querySelector("input[type=file]") &&
       document.querySelector('form [role="alert"]').textContent.includes("업로드는 4 MiB까지"), "oversized file refocus");
     check((await requests()).length === 13 && await fx(() => !document.querySelector("form button[type=submit]").disabled &&
-      !document.querySelector("form:has(input[type=checkbox])")), `large file and previous result cleared ${width}`);
+      !document.querySelector("form[aria-labelledby$=-heading]")), `large file and previous result cleared ${width}`);
     await fx(() => window.__fixture.selectFile("검수 사진.jpg", 32, true));
     await page.click("loc=css:form:has(input[type=file]) details:first-of-type summary");
     await until(() => !!document.querySelector('form:has(input[type=file]) img[src^="blob:"]'), "local file preview");
@@ -293,7 +294,7 @@ try {
     await page.keyboard.press("Enter");
     await reply(13, 200, { result: READY.image });
     await until(() => document.activeElement?.textContent.includes("권리 확인하고 분석") && window.__fixture.requests()[13].aborted, "canceled file");
-    check(!(await fx(() => document.querySelector("form:has(input[type=checkbox])"))), `late file ignored ${width}`);
+    check(!(await fx(() => document.querySelector("form[aria-labelledby$=-heading]"))), `late file ignored ${width}`);
     await submitAnalysis();
     await untilRequests(15, "raw file retry");
     await reply(14, 200, { result: READY.image });
@@ -303,7 +304,7 @@ try {
 
     // 이미지 확장 분석은 명시 실행에만 전송하고, 실제 관찰과 사용자가 쓴 초안을 보존한다.
     const semanticButton = "loc=role:button[name='Style DNA로 분석']";
-    const publishPrompt = "loc=css:form:has(input[type=checkbox]) textarea >> nth=1";
+    const publishPrompt = "loc=css:form[aria-labelledby$=-heading] textarea >> nth=1";
     check(!fileRequest.headers["x-dream-semantic"], `ordinary file keeps local analysis ${width}`);
     await page.fill(publishPrompt, "운영자가 작성한 기존 초안");
     await page.focus(semanticButton);
