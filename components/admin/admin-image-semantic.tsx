@@ -1,5 +1,6 @@
 import type { ImageSemanticCategory, ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
 import styles from "./admin-reference-analysis.module.css";
+import { ADMIN_SETTINGS_HREF, SettingsLink, type SettingsHref } from "./admin-settings-link";
 
 const labels: Record<ImageSemanticCategory, string> = {
   people: "인물",
@@ -18,11 +19,11 @@ const notes: Record<Extract<ImageSemanticResult, { status: "unavailable" }>["rea
   timed_out: "Gemini 분석 시간이 초과됐어요. 잠시 뒤 다시 실행해 주세요.",
 };
 
-export function ImageSemanticReport({ semantic }: { semantic: ImageSemanticResult }) {
+export function ImageSemanticReport({ semantic, settingsHref = ADMIN_SETTINGS_HREF }: { semantic: ImageSemanticResult; settingsHref?: SettingsHref }) {
   if (semantic.status === "unavailable") return <div className={styles.promptEditor}>
     <p className={styles.error}>이미지 의미 분석을 완료하지 못했어요.</p>
     <p className={styles.note}>{notes[semantic.reason]}</p>
-    {semantic.reason === "not_configured" && <a className={styles.link} href="#admin-api-integrations">API연동 보기</a>}
+    {semantic.reason === "not_configured" && <SettingsLink className={styles.link} href={settingsHref} />}
   </div>;
 
   return <div className={styles.promptEditor}>

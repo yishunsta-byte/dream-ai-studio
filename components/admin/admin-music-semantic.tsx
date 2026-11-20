@@ -8,6 +8,7 @@ import { analysisInputIssue, type PublicationDraft } from "./admin-reference-ana
 import { createAdminMusicSemanticClient, type AdminMusicSemanticClient } from "./admin-music-semantic-client";
 import styles from "./admin-music-semantic.module.css";
 import analysisStyles from "./admin-reference-analysis.module.css";
+import { ADMIN_SETTINGS_HREF, SettingsLink, type SettingsHref } from "./admin-settings-link";
 
 const defaultClient = createAdminMusicSemanticClient();
 const unknown = "확인되지 않았어요.";
@@ -18,21 +19,25 @@ const unavailableMessage = {
   timed_out: "응답 시간이 길어졌어요. 더 짧은 파일로 다시 시도해 주세요.",
 } as const;
 
-type Props = { file?: File; client?: AdminMusicSemanticClient; disabled?: boolean; onPrepare?: (draft: PublicationDraft) => void };
+type Props = {
+  file?: File; client?: AdminMusicSemanticClient; disabled?: boolean; onPrepare?: (draft: PublicationDraft) => void;
+  /** 미설정 안내의 설정 링크. 생략하면 관리자 API연동, null이면 숨김. */
+  settingsHref?: SettingsHref;
+};
 
 /** Pass the currently selected music file from the existing analyzer. */
-export function AdminMusicSemantic({ file, client = defaultClient, disabled, onPrepare }: Props) {
+export function AdminMusicSemantic({ file, client = defaultClient, disabled, onPrepare, settingsHref = ADMIN_SETTINGS_HREF }: Props) {
   const [selection, setSelection] = useState({ file, version: 0 });
   if (selection.file !== file) setSelection({ file, version: selection.version + 1 });
   const id = useId();
   return <section className={styles.panel} aria-labelledby={id}>
     <h3 id={id}>음악 의미 분석</h3>
-    {file ? <MusicFileAnalysis key={selection.version} file={file} client={client} disabled={disabled} onPrepare={onPrepare} />
+    {file ? <MusicFileAnalysis key={selection.version} file={file} client={client} disabled={disabled} onPrepare={onPrepare} settingsHref={settingsHref} />
       : <p>음악 파일을 선택하면 의미 분석을 실행할 수 있어요.</p>}
   </section>;
 }
 
-function MusicFileAnalysis({ file, client, disabled, onPrepare }: Props & { file: File; client: AdminMusicSemanticClient }) {
+function MusicFileAnalysis({ file, client, disabled, onPrepare, settingsHref }: Props & { file: File; client: AdminMusicSemanticClient }) {
   const [consent, setConsent] = useState(false);
   const [result, setResult] = useState<MusicSemanticResult>();
   const [error, setError] = useState("");
@@ -77,7 +82,7 @@ function MusicFileAnalysis({ file, client, disabled, onPrepare }: Props & { file
     </div>}
     {availability?.kind === "ok" && !configured && <>
       <p role="status">{unavailableMessage.not_configured}</p>
-      <a href="#admin-api-integrations" className={analysisStyles.link}>API연동 보기</a>
+      <SettingsLink href={settingsHref ?? null} className={analysisStyles.link} />
     </>}
     {fileIssue && <p role="status">{fileIssue}</p>}
     {configured && <>

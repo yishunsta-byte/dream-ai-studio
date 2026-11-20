@@ -29,7 +29,9 @@ type RequestRow = { path:string; method:string; headers:Record<string,string>; b
 const realFetch=window.fetch.bind(window);
 const requests:RequestRow[]=[];
 const fixture={
-  statuses:{image:"configured",music:"configured",shorts:"configured"} as Record<string,string>,
+  // ?analysisStatus=music:not_configured,shorts:not_configured 처럼 주소로 분석기 설정 상태를 바꿔 시작할 수 있다.
+  statuses:{image:"configured",music:"configured",shorts:"configured",...Object.fromEntries((new URLSearchParams(location.search).get("analysisStatus")??"")
+    .split(",").map(pair=>pair.split(":")).filter(([program,status])=>["image","music","shorts"].includes(program)&&["configured","not_configured","login"].includes(status)))} as Record<string,string>,
   hold:"", publicationFault:"",
   // 이미지 분석 응답의 선택 형제 필드(예: Backend 제안 styleDna). 비워 두면 지금 응답 그대로.
   imageExtra:undefined as Record<string,unknown>|undefined,

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/primitives";
 import type { ImageSemanticCategory, ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
 import type { ReadyResult } from "./admin-reference-analysis-model";
 import { ImageSemanticReport } from "./admin-image-semantic";
+import type { SettingsHref } from "./admin-settings-link";
 import { cameraKeys, lightingKeys, type StyleDna, type StyleDnaCell } from "./admin-style-dna-extension";
 import styles from "./admin-style-dna-report.module.css";
 
@@ -131,8 +132,10 @@ function PromptCard({ language, original }: { language: "en" | "ko"; original?: 
   </section>;
 }
 
-export function StyleDnaReport({ semantic, result, size, styleDna }: {
+export function StyleDnaReport({ semantic, result, size, styleDna, settingsHref }: {
   semantic?: ImageSemanticResult; result?: ReadyResult; size?: { width: number; height: number }; styleDna?: StyleDna;
+  /** 미설정 안내의 설정 링크. 생략하면 관리자 API연동, null이면 숨김. */
+  settingsHref?: SettingsHref;
 }) {
   const measure = wholeImageMeasure(result);
   const { dimensions, original, supported } = ratioRows(styleDna, size);
@@ -164,7 +167,7 @@ export function StyleDnaReport({ semantic, result, size, styleDna }: {
         <p className={styles.note}>대표 색은 이미지 픽셀을 64색으로 묶어 잰 값이에요(최대 3색).</p>
       </>}
     </section>}
-    {semantic?.status === "unavailable" ? <ImageSemanticReport semantic={semantic} /> : semantic && <>
+    {semantic?.status === "unavailable" ? <ImageSemanticReport semantic={semantic} settingsHref={settingsHref} /> : semantic && <>
       {semantic.status === "partial" && <p className={styles.note}>일부 항목만 분석했어요.</p>}
       <ul className={styles.cards} aria-label="이미지 의미와 스타일">
         {cardOrder.map(({ category, title }) => {

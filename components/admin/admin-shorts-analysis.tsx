@@ -9,6 +9,7 @@ import { shortsPublicationDraft } from "./admin-analysis-publication-draft";
 import type { PublicationDraft } from "./admin-reference-analysis-model";
 import styles from "./admin-reference-analysis.module.css";
 import { ShortsReport, ShortsSteps } from "./admin-shorts-report";
+import { ADMIN_SETTINGS_HREF, SettingsLink, type SettingsHref } from "./admin-settings-link";
 
 const errors: Record<string, string> = {
   invalid_input: "공개 YouTube 쇼츠 또는 시청 주소를 확인해 주세요.",
@@ -21,7 +22,11 @@ const errors: Record<string, string> = {
 type Availability = { kind: "checking" } | { kind: "configured" } | { kind: "not_configured" }
   | { kind: "failed"; message: string };
 
-export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare }: { onSourceChange?: (url: string) => void; appearance?: "premiere"; onPrepare?: (draft: PublicationDraft) => void } = {}) {
+export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare, settingsHref = ADMIN_SETTINGS_HREF }: {
+  onSourceChange?: (url: string) => void; appearance?: "premiere"; onPrepare?: (draft: PublicationDraft) => void;
+  /** 미설정 안내의 설정 링크. 생략하면 관리자 API연동, null이면 숨김. */
+  settingsHref?: SettingsHref;
+} = {}) {
   const id = useId();
   const retryStatusId = `${id}-retry-status`;
   const urlField = useRef<HTMLInputElement>(null);
@@ -143,7 +148,7 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare }: {
               : availability.kind === "not_configured" ? errors.not_configured : availability.message}
           </p>
           {(availability.kind !== "checking" || statusAttempt > 0) && <div className={styles.actions}>
-            <a className={styles.link} href="#admin-api-integrations">API연동 보기</a>
+            <SettingsLink className={styles.link} href={settingsHref} />
             <Button id={retryStatusId} type="button" variant="secondary" aria-disabled={availability.kind === "checking"}
               onClick={() => {
                 if (availability.kind === "checking") return;
