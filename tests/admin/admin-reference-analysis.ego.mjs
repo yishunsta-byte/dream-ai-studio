@@ -186,7 +186,7 @@ try {
       !document.querySelector("form:has(input[type=checkbox])")), `large file and previous result cleared ${width}`);
     await fx(() => window.__fixture.selectFile("검수 사진.jpg", 32, true));
     await page.click("loc=css:form:has(input[type=file]) details:first-of-type summary");
-    await until(() => document.querySelector('form:has(input[type=file]) img[src^="blob:"]'), "local file preview");
+    await until(() => !!document.querySelector('form:has(input[type=file]) img[src^="blob:"]'), "local file preview");
     await submitAnalysis();
     await untilRequests(14, "raw file");
     const fileRequest = (await requests())[13];
