@@ -28,16 +28,32 @@ export const clock = (seconds: number) => {
   return `${minutes}:${rest < 10 ? "0" : ""}${rest}`;
 };
 
-type Wave = { file: File; peaks: number[] } | { file: File; failed: true };
+type Wave = { peaks: number[] } | { failed: true };
+type Playback = { kind: "loading" } | { kind: "ready"; duration: number } | { kind: "failed" };
+
+// 파일 하나마다 재생기를 새로 만든다(같은 File 객체면 같은 번호). 이전 파일의 길이·위치·오류·늦게 끝난 디코딩이
+// 새 파일에 남지 않는다. 부모가 key를 주지 않아도 되게 부품 안에서 처리한다.
+const fileIds = new WeakMap<File, number>();
+let lastFileId = 0;
+function fileKey(file: File) {
+  let key = fileIds.get(file);
+  if (key === undefined) { key = ++lastFileId; fileIds.set(file, key); }
+  return key;
+}
 
 export function AudioWaveform({ file }: { file: File }) {
+  return <WaveformPlayer key={fileKey(file)} file={file} />;
+}
+
+function WaveformPlayer({ file }: { file: File }) {
   const id = useId();
   const audio = useRef<HTMLAudioElement>(null);
   const [wave, setWave] = useState<Wave>();
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [time, setTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  // 재생 조작은 이 파일의 재생 정보(길이)를 확인한 뒤에만 연다.
+  const [playback, setPlayback] = useState<Playback>({ kind: "loading" });
   const [status, setStatus] = useState("");
 
   // 재생용 blob URL: 파일이 바뀌거나 화면에서 빠지면 해제한다.
@@ -57,27 +73,28 @@ export function AudioWaveform({ file }: { file: File }) {
   useEffect(() => {
     let cancelled = false;
     const Context = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Context) { queueMicrotask(() => { if (!cancelled) setWave({ file, failed: true }); }); return () => { cancelled = true; }; }
+    if (!Context) { queueMicrotask(() => { if (!cancelled) setWave({ failed: true }); }); return () => { cancelled = true; }; }
     const context = new Context();
     void file.arrayBuffer()
       .then(buffer => context.decodeAudioData(buffer))
       .then(decoded => {
         if (cancelled) return;
-        setDuration(previous => previous || decoded.duration);
         const peaks = waveformPeaks(decoded.getChannelData(0));
-        setWave(peaks.length ? { file, peaks } : { file, failed: true });
+        setWave(peaks.length ? { peaks } : { failed: true });
       })
-      .catch(() => { if (!cancelled) setWave({ file, failed: true }); })
+      .catch(() => { if (!cancelled) setWave({ failed: true }); })
       .finally(() => { void context.close().catch(() => undefined); });
     return () => { cancelled = true; };
   }, [file]);
 
-  const current = wave?.file === file ? wave : undefined;
+  const current = wave;
+  const ready = playback.kind === "ready";
+  const duration = ready ? playback.duration : 0;
   const progress = duration > 0 ? Math.min(1, time / duration) : 0;
 
   async function toggle() {
     const player = audio.current;
-    if (!player) return;
+    if (!player || !ready) return;
     if (!player.paused) { player.pause(); return; }
     try { await player.play(); setStatus(""); }
     catch { setStatus("이 브라우저에서 이 파일을 재생하지 못했어요."); }
@@ -87,11 +104,15 @@ export function AudioWaveform({ file }: { file: File }) {
     <audio ref={audio} preload="metadata"
       onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)}
       onTimeUpdate={event => setTime(event.currentTarget.currentTime)}
-      onLoadedMetadata={event => { if (Number.isFinite(event.currentTarget.duration)) setDuration(event.currentTarget.duration); }}
+      onLoadedMetadata={event => {
+        const length = event.currentTarget.duration;
+        setPlayback(Number.isFinite(length) && length > 0 ? { kind: "ready", duration: length } : { kind: "failed" });
+      }}
+      onError={() => { setPlayback({ kind: "failed" }); setPlaying(false); setTime(0); }}
       onVolumeChange={event => setMuted(event.currentTarget.muted)} />
     <div className={styles.head}>
       <h4 id={`${id}-name`}>{file.name}</h4>
-      <span className={styles.time} aria-label={`재생 위치 ${clock(time)}, 전체 ${clock(duration)}`}>{clock(time)} / {clock(duration)}</span>
+      <span className={styles.time} aria-label={ready ? `재생 위치 ${clock(time)}, 전체 ${clock(duration)}` : "재생 위치 확인 전"}>{ready ? `${clock(time)} / ${clock(duration)}` : "–:– / –:–"}</span>
     </div>
     <div className={styles.track} style={{ "--progress": `${progress * 100}%` } as CSSProperties}>
       <div className={styles.bars} aria-hidden="true">
@@ -100,15 +121,16 @@ export function AudioWaveform({ file }: { file: File }) {
           : <span className={styles.placeholder}>{current ? "" : "파형을 그리는 중…"}</span>}
       </div>
       <input type="range" className={styles.seek} aria-label="재생 위치" min={0} max={duration || 0} step={0.1} value={Math.min(time, duration || 0)}
-        disabled={!duration} aria-valuetext={`${clock(time)} / ${clock(duration)}`}
+        disabled={!ready} aria-valuetext={`${clock(time)} / ${clock(duration)}`}
         onChange={event => { const player = audio.current; const next = Number(event.target.value); if (player) player.currentTime = next; setTime(next); }} />
     </div>
     <div className={styles.controls}>
-      <Button type="button" size="sm" onClick={() => void toggle()}>{playing ? "일시정지" : "재생"}</Button>
-      <Button type="button" size="sm" variant="secondary" onClick={() => { const player = audio.current; if (player) { player.currentTime = 0; setTime(0); } }}>처음으로</Button>
-      <Button type="button" size="sm" variant="secondary" aria-pressed={muted} onClick={() => { const player = audio.current; if (player) player.muted = !player.muted; }}>{muted ? "소리 켜기" : "음소거"}</Button>
+      <Button type="button" size="sm" disabled={!ready} onClick={() => void toggle()}>{playing ? "일시정지" : "재생"}</Button>
+      <Button type="button" size="sm" variant="secondary" disabled={!ready} onClick={() => { const player = audio.current; if (player) { player.currentTime = 0; setTime(0); } }}>처음으로</Button>
+      <Button type="button" size="sm" variant="secondary" disabled={!ready} aria-pressed={muted} onClick={() => { const player = audio.current; if (player) player.muted = !player.muted; }}>{muted ? "소리 켜기" : "음소거"}</Button>
     </div>
-    <p className={styles.note}>{current && "failed" in current ? "이 파일의 파형을 그리지 못했어요. 재생은 할 수 있으면 그대로 써요." : "파형은 브라우저가 이 파일을 디코딩해 구간별 평균 세기로 그린 값이에요."}</p>
+    <p className={styles.note}>{current && "failed" in current ? "이 파일의 파형을 그리지 못했어요." : "파형은 브라우저가 이 파일을 디코딩해 구간별 평균 세기로 그린 값이에요."}</p>
+    {playback.kind === "failed" && <p className={styles.note}>이 브라우저에서 이 파일을 재생할 수 없어요. 분석은 따로 실행할 수 있어요.</p>}
     <p role="status" className={styles.note}>{status}</p>
   </section>;
 }

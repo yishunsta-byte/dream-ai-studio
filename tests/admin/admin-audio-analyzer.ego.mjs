@@ -146,6 +146,43 @@ for (const width of [320, 390, 1440]) {
     input.dispatchEvent(new Event("change", { bubbles: true }));
   }, root);
   await until((root) => document.querySelector(`${root} section:has(> audio)`)?.innerText.includes("파형을 그리지 못했어요"), "broken", root);
+  // 7) 해제 없이 바로 교체: 손상→정상, 길이 다른 정상→정상, 정상→손상. 이전 길이·위치·오류가 남지 않고,
+  //    재생 정보를 확인하기 전에는 재생·위치·음소거를 잠근다.
+  const controls = () => page.evaluate((root) => {
+    const wave = document.querySelector(`${root} section:has(> audio)`);
+    const range = wave.querySelector("input[type=range]");
+    return { name: wave.querySelector("h4").textContent, time: wave.querySelector("span[aria-label^='재생 위치']").textContent,
+      max: Number(range.max), disabled: [range, ...wave.querySelectorAll("button")].map(control => control.disabled),
+      unplayable: wave.innerText.includes("재생할 수 없어요") };
+  }, root);
+  await until((root) => document.querySelector(`${root} section:has(> audio)`)?.innerText.includes("재생할 수 없어요"), "broken unplayable", root);
+  const broken = await controls();
+  assert.deepEqual([broken.time, broken.max, broken.disabled], ["–:– / –:–", 0, [true, true, true, true]]);
+  await put("tone-3.wav", 3, "input");
+  await waveReady("tone-3.wav", 3);
+  const healed = await controls();
+  assert.deepEqual([healed.time, healed.max, healed.disabled, healed.unplayable], ["0:00 / 0:03", 3, [false, false, false, false], false]);
+  await page.focus(`loc=css:${root} input[type=range]`);
+  for (let step = 0; step < 25; step += 1) await page.keyboard.press("ArrowRight");
+  await until((root) => document.querySelector(`${root} audio`).currentTime > 2, "seek past 2s", root);
+  await put("tone-2.wav", 2, "input");
+  await waveReady("tone-2.wav", 2);
+  const shorter = await controls();
+  assert.deepEqual([shorter.time, shorter.max], ["0:00 / 0:02", 2]);
+  assert.equal(await page.evaluate((root) => document.querySelector(`${root} audio`).currentTime, root), 0);
+  await page.evaluate((root) => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([new Uint8Array(160)], "broken-2.wav", { type: "audio/wav" }));
+    const input = document.querySelector(`${root} input[type=file]`);
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }, root);
+  await until((root) => document.querySelector(`${root} section:has(> audio) h4`)?.textContent === "broken-2.wav", "broken-2 name", root);
+  const immediate = await controls(); // 오류가 오기 전에도 이전 길이를 쓰지 않는다.
+  assert.deepEqual([immediate.time, immediate.max, immediate.disabled], ["–:– / –:–", 0, [true, true, true, true]]);
+  await until((root) => document.querySelector(`${root} section:has(> audio)`)?.innerText.includes("재생할 수 없어요"), "broken-2 unplayable", root);
+  assert.deepEqual((await controls()).disabled, [true, true, true, true]);
+
   rows.push({ width, overflow: Math.max(0, report.overflow) });
 }
 console.log("AUDIO-RESULT" + JSON.stringify(rows));
