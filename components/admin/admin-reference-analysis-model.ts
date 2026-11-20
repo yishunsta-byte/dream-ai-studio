@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { imageSemanticResultSchema, type ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
 import { referenceFileFormat } from "@/lib/reference-analysis/input";
 import { studioAnalysisResultSchema, type StudioAnalysisResult } from "@/lib/reference-analysis/studio-analysis-result-dto";
 
@@ -76,7 +77,7 @@ export type Failure =
   | Readonly<{ kind: "rejected"; code: ErrorCode }>
   | Readonly<{ kind: "failed" }>;
 
-export type AnalyzeOutcome = Readonly<{ kind: "ready"; result: ReadyResult }> | Readonly<{ kind: "unavailable"; reason: string }> | Failure;
+export type AnalyzeOutcome = Readonly<{ kind: "ready"; result: ReadyResult; semantic?: ImageSemanticResult }> | Readonly<{ kind: "unavailable"; reason: string }> | Failure;
 export type ListOutcome = Readonly<{ kind: "ok"; items: readonly PublishedReferenceAnalysis[] }> | Failure;
 export type PublishOutcome = Readonly<{ kind: "ok"; item: PublishedReferenceAnalysis }> | Failure;
 export type RevokeOutcome = Readonly<{ kind: "ok" }> | Failure;
@@ -108,17 +109,28 @@ const json = (method: string, body: unknown, signal?: AbortSignal): RequestInit 
 
 export function createAdminReferenceAnalysisClient(transport: AdminTransport = browserTransport) {
   return {
-    analyze: (source: AnalysisSource, signal?: AbortSignal): Promise<AnalyzeOutcome> => call(transport, ANALYSIS_URI,
-      source.kind === "url" ? json("POST", { url: source.url, authorized: true, media: source.media }, signal) : {
-        method: "POST", signal, body: source.file,
-        headers: { "content-type": "application/octet-stream", "x-dream-media": source.media, "x-dream-filename": encodeURIComponent(source.file.name) },
-      }, (body) => {
-        const parsed = z.object({ result: studioAnalysisResultSchema }).safeParse(body);
-        if (!parsed.success) return undefined;
-        const result = parsed.data.result;
-        if (result.status === "unavailable") return { kind: "unavailable", reason: result.reason };
-        return result.media === source.media ? { kind: "ready", result } : undefined;
-      }),
+    analyze: (source: AnalysisSource, signal?: AbortSignal, options?: { imageSemantic?: boolean }): Promise<AnalyzeOutcome> => {
+      const imageSemantic = source.media === "image" && options?.imageSemantic === true;
+      return call(transport, ANALYSIS_URI,
+        source.kind === "url" ? json("POST", {
+          url: source.url, authorized: true, media: source.media, ...(imageSemantic && { semantic: "image" }),
+        }, signal) : {
+          method: "POST", signal, body: source.file,
+          headers: {
+            "content-type": "application/octet-stream", "x-dream-media": source.media, "x-dream-filename": encodeURIComponent(source.file.name),
+            ...(imageSemantic && { "x-dream-semantic": "image" }),
+          },
+        }, (body) => {
+          const parsed = z.object({ result: studioAnalysisResultSchema, semantic: z.unknown().optional() }).safeParse(body);
+          if (!parsed.success) return undefined;
+          const result = parsed.data.result;
+          if (result.status === "unavailable") return { kind: "unavailable", reason: result.reason };
+          if (result.media !== source.media) return undefined;
+          if (!imageSemantic) return { kind: "ready", result };
+          const semantic = imageSemanticResultSchema.safeParse(parsed.data.semantic);
+          return { kind: "ready", result, semantic: semantic.data ?? { status: "unavailable", reason: "invalid_response" } };
+        });
+    },
     list: (signal?: AbortSignal): Promise<ListOutcome> => call(transport, PUBLICATIONS_URI, { method: "GET", signal }, (body) => {
       const parsed = z.object({ items: z.array(publicationSchema) }).safeParse(body);
       return parsed.success ? { kind: "ok", items: parsed.data.items } : undefined;

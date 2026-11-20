@@ -1,6 +1,8 @@
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/primitives";
 import { PromptComparison } from "@/components/reference-analysis/prompt-comparison";
+import type { ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
+import { ImageSemanticReport } from "./admin-image-semantic";
 import { MEDIA_LABEL, type ReadyResult } from "./admin-reference-analysis-model";
 import styles from "./admin-reference-analysis.module.css";
 
@@ -98,10 +100,10 @@ function PromptEditor({ proposal, value, onEdit }: { proposal: Proposal; value: 
   </div>;
 }
 
-export function SpectrumResults({ result }: { result: ReadyResult }) {
+export function SpectrumResults({ result, semantic }: { result: ReadyResult; semantic?: ImageSemanticResult }) {
   const id = useId();
   const [index, setIndex] = useState(0);
-  const [view, setView] = useState<"evidence" | "prompt">("evidence");
+  const [view, setView] = useState<"evidence" | "semantic" | "prompt">("evidence");
   const [drafts, setDrafts] = useState(() => new Map<string, string>());
   const proposal = result.proposals[index];
   const { observations, inference, sourceSeek } = proposal;
@@ -120,8 +122,12 @@ export function SpectrumResults({ result }: { result: ReadyResult }) {
     </div>
     <div className={styles.switches} role="group" aria-label="결과 보기">
       <button type="button" aria-pressed={view === "evidence"} aria-controls={`${id}-evidence`} onClick={() => setView("evidence")}>관찰 근거</button>
+      {semantic && <button type="button" aria-pressed={view === "semantic"} aria-controls={`${id}-semantic`} onClick={() => setView("semantic")}>
+        의미 분석
+      </button>}
       <button type="button" aria-pressed={view === "prompt"} aria-controls={`${id}-prompt`} onClick={() => setView("prompt")}>생성 프롬프트</button>
     </div>
+    {semantic && <div id={`${id}-semantic`} hidden={view !== "semantic"}><ImageSemanticReport semantic={semantic} /></div>}
     <div id={`${id}-evidence`} hidden={view !== "evidence"}>
       {sourceSeek && <p className={styles.note}>원본 프레임 표시 시각 {sourceSeek.ptsMs} ms</p>}
       <ol className={styles.observations}>

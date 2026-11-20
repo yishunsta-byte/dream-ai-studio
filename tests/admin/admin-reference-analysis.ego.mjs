@@ -301,14 +301,49 @@ try {
     r.steps.file = await state();
     check(r.steps.file.overflow <= 0 && r.steps.file.prompt === "푸른 색이 넓게 퍼진 장면", `file result ${width}`);
 
+    // 이미지 확장 분석은 명시 실행에만 전송하고, 실제 관찰과 사용자가 쓴 초안을 보존한다.
+    const semanticButton = "loc=role:button[name='Style DNA로 분석']";
+    const publishPrompt = "loc=css:form:has(input[type=checkbox]) textarea >> nth=1";
+    check(!fileRequest.headers["x-dream-semantic"], `ordinary file keeps local analysis ${width}`);
+    await page.fill(publishPrompt, "운영자가 작성한 기존 초안");
+    await page.focus(semanticButton);
+    await page.keyboard.press("Enter");
+    await untilRequests(16, "Style DNA file");
+    const semanticRequest = (await requests())[15];
+    check(semanticRequest.headers["x-dream-semantic"] === "image" && (await state()).prompt === "운영자가 작성한 기존 초안",
+      `explicit model request retains previous draft while pending ${width}`);
+    await reply(15, 200, { result: READY.image, semantic: {
+      status: "partial", provider: "gemini",
+      findings: ["people", "objects", "actions", "context", "composition", "lighting"].map(category => category === "objects"
+        ? { category, certainty: "estimated", description: "파란 소품", basis: "화면 가운데" }
+        : { category, certainty: "unconfirmed" }),
+      prompts: { ko: "푸른 컵 사진", en: "A photo of a blue cup" },
+    } });
+    await page.click("loc=role:button[name='의미 분석']");
+    await until(() => document.querySelector("main").innerText.includes("사물 · 추정"), "Style DNA partial reports");
+    r.steps.semantic = await state();
+    check(r.steps.semantic.text.includes("행동 · 미확인") && r.steps.semantic.text.includes("화면 가운데") &&
+      r.steps.semantic.text.includes("Style DNA 이미지 생성 프롬프트") && r.steps.semantic.prompt === "운영자가 작성한 기존 초안" &&
+      r.steps.semantic.overflow <= 0, `partial results and user draft shown ${width}`);
+    await page.click(semanticButton);
+    await untilRequests(17, "retry Style DNA file");
+    await reply(16, 200, { result: READY.image, semantic: { status: "unavailable", reason: "not_configured" } });
+    await until(() => document.querySelector("main").innerText.includes("Gemini 설정이 필요해요"), "Style DNA config error");
+    await page.click("loc=role:button[name='관찰 근거']");
+    r.steps.semanticFallback = await state();
+    check(r.steps.semanticFallback.text.includes("#3366cc · 60%") && r.steps.semanticFallback.prompt === "운영자가 작성한 기존 초안",
+      `fallback keeps measurements and user draft ${width}`);
+
     // 7 401 → 멈춤
     await page.click("loc=css:main input[type=radio][value=url]");
+    check(!(await fx(() => [...document.querySelectorAll("button")].some(button => button.textContent === "의미 분석"))),
+      `input change clears model result ${width}`);
     await analyze("https://mdn.github.io/b.png", "image");
-    await untilRequests(16, "auth");
-    await reply(15, 401);
+    await untilRequests(18, "auth");
+    await reply(17, 401);
     await until(() => document.querySelector("main").innerText.includes("다시 로그인이 필요해요"), "login stop");
     r.steps.login = await state();
-    check(r.steps.login.inputs === 0 && r.steps.login.text.includes("관리자 로그인") && (await requests()).length === 16, `auth stop ${width}`);
+    check(r.steps.login.inputs === 0 && r.steps.login.text.includes("관리자 로그인") && (await requests()).length === 18, `auth stop ${width}`);
     for (const step of Object.values(r.steps)) delete step.text;
   }
 } catch (error) {

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, Callout, Card, StatusPill } from "@/components/ui/primitives";
+import type { ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
+import { ImageSemanticAction } from "./admin-image-semantic";
 import { SpectrumResults } from "./admin-reference-analysis-spectrum";
 import {
   LIMITS, MEDIA_LABEL, URL_SIZE_LIMIT_LABEL, UPLOAD_SIZE_LIMIT_LABEL, SUPPORTED_FORMATS, SUPPORTED_ORIGINS,
@@ -20,8 +22,10 @@ import styles from "./admin-reference-analysis.module.css";
 // - 철회: 확인 단계를 한 번 더 거친다. 성공·대상 없음·이미 철회는 목록을 새로 읽어 서버 상태로 맞춘다.
 // - 401·403: 모든 조작을 멈추고 로그인·권한 안내만 남긴다.
 
+type ReadyAnalysis = { kind: "ready"; result: ReadyResult; revision: number; semantic?: ImageSemanticResult; retryIssue?: string };
 type AnalysisView =
-  | { kind: "idle" } | { kind: "running" } | { kind: "ready"; result: ReadyResult }
+  | { kind: "idle" } | { kind: "running"; imageSemantic: boolean; previous?: ReadyAnalysis }
+  | ReadyAnalysis
   | { kind: "unavailable"; message: string } | { kind: "failed"; message: string };
 type ListView = { kind: "loading" } | { kind: "ok"; items: readonly PublishedReferenceAnalysis[] } | { kind: "failed"; message: string };
 type Notice = { tone: "success" | "danger"; text: string } | null;
@@ -64,7 +68,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
     : (file ? { kind: "file", file, media } : undefined);
   const issue = multipleFiles ? "한 번에 파일 하나를 선택해 주세요." : source && analysisInputIssue(source);
 
-  async function runAnalysis() {
+  async function runAnalysis(imageSemantic = false) {
     if (analysisAbort.current || blocked) return;
     if (issue) {
       setSubmittedInvalidInput(true);
@@ -76,13 +80,20 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
     const mine = ++analysisSeq.current;
     const controller = new AbortController();
     analysisAbort.current = controller;
-    setAnalysis({ kind: "running" });
-    const outcome = await client.analyze(source, controller.signal);
+    const previous = imageSemantic && analysis.kind === "ready" ? analysis : undefined;
+    setAnalysis({ kind: "running", imageSemantic, previous });
+    const outcome = await client.analyze(source, controller.signal, { imageSemantic });
     if (mine !== analysisSeq.current || controller.signal.aborted) return;
     analysisAbort.current = null;
-    if (outcome.kind === "ready") setAnalysis({ kind: "ready", result: outcome.result });
-    else if (outcome.kind === "unavailable") setAnalysis({ kind: "unavailable", message: unavailableMessage(outcome.reason) });
-    else if (!block(outcome)) setAnalysis({ kind: "failed", message: failureMessage(outcome) });
+    if (outcome.kind === "ready") {
+      const revision = previous && JSON.stringify(previous.result) === JSON.stringify(outcome.result)
+        ? previous.revision : mine;
+      setAnalysis({ kind: "ready", revision, result: outcome.result, semantic: outcome.semantic });
+    } else if (outcome.kind === "unavailable" || !block(outcome)) {
+      const unavailable = outcome.kind === "unavailable";
+      const message = unavailable ? unavailableMessage(outcome.reason) : failureMessage(outcome);
+      setAnalysis(previous ? { ...previous, retryIssue: message } : { kind: unavailable ? "unavailable" : "failed", message });
+    }
   }
   function clearPaste() { pasteSeq.current++; setPasteNotice(""); }
   function editInput(next: () => void) {
@@ -126,9 +137,10 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
 
   // 실행 버튼은 분석 중 비활성이라 초점을 잃는다. 폼 안에서 시작했으면 바로 '분석 취소'로 옮긴다.
   useLayoutEffect(() => {
-    if (restoreExecuteFocus.current && analysis.kind === "idle") {
+    if (restoreExecuteFocus.current && analysis.kind !== "running") {
       restoreExecuteFocus.current = false;
       document.getElementById(`${id}-run`)?.focus({ preventScroll: true });
+      return;
     }
     if (analysis.kind !== "running") return;
     const active = document.activeElement;
@@ -180,6 +192,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   </section>;
 
   const running = analysis.kind === "running";
+  const ready = analysis.kind === "ready" ? analysis : running ? analysis.previous : undefined;
   const extensions = SUPPORTED_FORMATS.find((format) => format.media === media)?.extensions ?? [];
   return <section className={styles.panel} aria-labelledby={`${id}-heading`}>
     <div className={`${styles.head} ${styles.hero}`}>
@@ -267,23 +280,29 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
             aria-describedby={`${id}-rights`} disabled={!source && !multipleFiles}>권리 확인하고 분석</Button>
           {running && <Button id={`${id}-cancel`} type="button" variant="secondary" onClick={() => {
             restoreExecuteFocus.current = true;
-            editInput(() => {});
+            cancelAnalysis();
+            setAnalysis(analysis.previous ?? { kind: "idle" });
           }}>분석 취소</Button>}
         </div>
+        {media === "image" && <ImageSemanticAction disabled={!source && !multipleFiles} running={running}
+          onClick={() => { void runAnalysis(true); }} />}
       </form>
 
       <section className={`${styles.result} ${styles.surface}`} aria-labelledby={`${id}-results`}>
         <h3 id={`${id}-results`} ref={resultHeading} tabIndex={-1}>{analysis.kind === "failed" || analysis.kind === "unavailable"
           ? "분석하지 못했어요" : "분석 결과 · 근거 · 생성 프롬프트"}</h3>
         {analysis.kind === "idle" && <p className={styles.empty}>직접 URL을 넣거나 파일을 선택해 분석하세요.</p>}
-        {running && <p className={styles.empty} role="status">서버에서 분석하고 있어요. 영상은 시간이 더 걸릴 수 있어요.</p>}
+        {running && <p className={styles.empty} role="status">{analysis.imageSemantic
+          ? "이미지 관찰 근거와 Style DNA를 분석하고 있어요."
+          : "서버에서 분석하고 있어요. 영상은 시간이 더 걸릴 수 있어요."}</p>}
         {(analysis.kind === "unavailable" || analysis.kind === "failed") && <p className={styles.error} role="alert">{analysis.message}</p>}
-        {analysis.kind === "ready" && <SpectrumResults result={analysis.result} />}
+        {ready?.retryIssue && !running && <p className={styles.error} role="status">{ready.retryIssue}</p>}
+        {ready && <SpectrumResults key={ready.revision} result={ready.result} semantic={ready.semantic} />}
       </section>
     </div>
 
-    {analysis.kind === "ready" && <div className={styles.surface}>
-      <PublishForm key={analysis.result.proposals.map((proposal) => proposal.selectionId).join("|")} result={analysis.result} client={client}
+    {ready && <div className={styles.surface}>
+      <PublishForm key={ready.revision} result={ready.result} client={client}
         newRequestId={newRequestId} onBlocked={block} onPublished={() => void refreshList()} />
     </div>}
 

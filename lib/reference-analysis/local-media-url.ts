@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, realpath, rm, rmdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
+import type { AnalyzeImageSemantics } from "./image-semantic-gemini";
 import { analyzeRegisteredReferenceSnapshot } from "./registered-snapshot";
 import {
   classifyReferenceInput, referenceFileByteLimit, referenceFileFormat, referenceUploadByteLimit, type ReferenceMedia,
@@ -36,6 +37,7 @@ function analysisDeadline(requestSignal?: AbortSignal) {
 
 export async function analyzeLocalMediaUrl(
   input: string, operatorOrigin?: string, requestSignal?: AbortSignal, selectedMedia?: ReferenceMedia,
+  analyzeImageSemantics?: AnalyzeImageSemantics,
 ) {
   let url: URL;
   try { url = new URL(input); }
@@ -63,11 +65,13 @@ export async function analyzeLocalMediaUrl(
     throw new AnalysisStageError("fetch", `status_${response.status}`);
   }
 
-  const result = await analyzeBody(response.body, name, referenceFileByteLimit, deadline, selectedMedia);
+  const result = await analyzeBody(response.body, name, referenceFileByteLimit, deadline, selectedMedia, undefined, analyzeImageSemantics);
   return { ...result, sourceUrl: url.href };
 }
 
-export async function analyzeLocalMediaUpload(request: Request, filename: string, selectedMedia: ReferenceMedia) {
+export async function analyzeLocalMediaUpload(
+  request: Request, filename: string, selectedMedia: ReferenceMedia, analyzeImageSemantics?: AnalyzeImageSemantics,
+) {
   // Reuse the filename rules, then discard the client-supplied stem before touching disk.
   const classified = classifyReferenceInput({ kind: "file", name: filename, sizeBytes: 1, permission: "authorized" });
   if (classified.status === "invalid" && classified.reason === "unsupported_file_type") {
@@ -86,12 +90,12 @@ export async function analyzeLocalMediaUpload(request: Request, filename: string
 
   // Use the transport signal while receiving the body. After EOF, Next may
   // end it early, so local decoding uses the original analysis deadline.
-  return analyzeBody(request.body, name, referenceUploadByteLimit, analysisDeadline(), selectedMedia, request.signal);
+  return analyzeBody(request.body, name, referenceUploadByteLimit, analysisDeadline(), selectedMedia, request.signal, analyzeImageSemantics);
 }
 
 async function analyzeBody(
   body: ReadableStream<Uint8Array>, name: string, maxBytes: number, deadline: ReturnType<typeof analysisDeadline>,
-  selectedMedia?: ReferenceMedia, requestSignal?: AbortSignal,
+  selectedMedia?: ReferenceMedia, requestSignal?: AbortSignal, analyzeImageSemantics?: AnalyzeImageSemantics,
 ) {
   const { signal, interruption } = deadline;
   const receiveSignal = requestSignal ? AbortSignal.any([signal, requestSignal]) : signal;
@@ -151,8 +155,11 @@ async function analyzeBody(
     }
     const proposals = proposalsForLocalReference(analyzed.analysis);
     if (!proposals.length) throw new AnalysisStageError("proposals", "empty");
+    const semantic = analyzed.analysis.media === "image" && analyzeImageSemantics
+      ? await analyzeImageSemantics(path, signal).catch(() => ({ status: "unavailable", reason: "provider_error" } as const))
+      : undefined;
     return { schemaVersion: 1 as const, status: "ready" as const, sha256, sizeBytes,
-      media: analyzed.analysis.media, proposals };
+      media: analyzed.analysis.media, proposals, ...(semantic && { semantic }) };
   } finally {
     await rm(join(temp, name), { force: true });
     await rmdir(temp);
