@@ -35,6 +35,12 @@ for (const width of [320, 390, 1440]) {
   await until((root) => document.querySelector(`${root} [aria-label='쇼츠 분석 단계']`) && document.querySelector(`${root} input[type=checkbox]:not(:disabled)`), "form", root);
   const empty = await state();
   assert.deepEqual(empty.steps, ["current*", "next", "locked", "locked", "locked", "locked"]);
+  // 잠긴 단계는 화면에도 보이는 안내 한 줄로 알린다(보조기기와 같은 내용).
+  assert.equal(await page.evaluate((root) => {
+    const list = document.querySelector(`${root} [aria-label='쇼츠 분석 단계']`);
+    const note = document.getElementById(list.getAttribute("aria-describedby"));
+    return note && note.getClientRects().length ? note.textContent : null;
+  }, root), "3~6단계(소재 발굴부터)는 준비 중이에요. 서버가 연결되면 열려요.");
   assert.equal(empty.target, null);
 
   await page.fill('loc=role:textbox[name="공개 YouTube 영상 주소"]', "https://www.youtube.com/shorts/A1b2C3d4E5F");

@@ -6,6 +6,8 @@
 .note:empty { display: none; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .mono { font-family: var(--font-mono); overflow-wrap: anywhere; }
+.stepBlock { display: grid; gap: var(--sp-1); }
+.stepBlock .note { margin: 0; }
 .steps { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); margin: 0; padding: 0; list-style: none; font-size: var(--text-xs); }
 .steps li { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 2px 10px 2px 4px; border: 1px solid currentColor; border-radius: var(--radius-pill); opacity: 0.6; }
 .steps li[data-state="current"], .steps li[data-state="done"] { opacity: 1; }

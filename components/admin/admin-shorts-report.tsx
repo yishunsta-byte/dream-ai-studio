@@ -12,13 +12,15 @@ export const SHORTS_STEPS = ["쇼츠 주소", "바이럴 분석", "소재 발굴
 const OPEN_STEPS = 2; // 지금 서버로 할 수 있는 단계 수
 
 export function ShortsSteps({ current }: { current: 0 | 1 }) {
-  return <ol className={styles.steps} aria-label="쇼츠 분석 단계">
+  const id = useId();
+  return <div className={styles.stepBlock}><ol className={styles.steps} aria-label="쇼츠 분석 단계" aria-describedby={`${id}-locked`}>
     {SHORTS_STEPS.map((label, index) => <li key={label} aria-current={index === current ? "step" : undefined}
       data-state={index < OPEN_STEPS ? (index < current ? "done" : index === current ? "current" : "next") : "locked"}>
       <span className={styles.stepNo} aria-hidden="true">{index + 1}</span>
-      <span>{label}{index >= OPEN_STEPS && <span className={styles.srOnly}> (서버 연결 후 열려요)</span>}</span>
+      <span>{label}{index >= OPEN_STEPS && <span className={styles.srOnly}> (준비 중)</span>}</span>
     </li>)}
-  </ol>;
+  </ol>
+  <p id={`${id}-locked`} className={styles.note}>{OPEN_STEPS + 1}~{SHORTS_STEPS.length}단계({SHORTS_STEPS[OPEN_STEPS]}부터)는 준비 중이에요. 서버가 연결되면 열려요.</p></div>;
 }
 
 // 근거 종류. 응답이 확인한 값만 보여 주고, 영상 직접 분석이 아닌 근거를 직접 분석처럼 쓰지 않는다.
