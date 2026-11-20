@@ -47,12 +47,15 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   const [pasteNotice, setPasteNotice] = useState("");
   const [file, setFile] = useState<File>();
   const [multipleFiles, setMultipleFiles] = useState(false);
+  const [submittedInvalidInput, setSubmittedInvalidInput] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisView>({ kind: "idle" });
   const analysisSeq = useRef(0);
   const analysisAbort = useRef<AbortController | null>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const form = useRef<HTMLFormElement>(null);
   const urlInput = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const focusFileOnMount = useRef(false);
   const restoreExecuteFocus = useRef(false);
   const cancelAnalysis = () => { analysisSeq.current++; analysisAbort.current?.abort(); analysisAbort.current = null; };
   useEffect(() => () => { analysisAbort.current?.abort(); pasteSeq.current++; }, []);
@@ -62,7 +65,13 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   const issue = multipleFiles ? "한 번에 파일 하나를 선택해 주세요." : source && analysisInputIssue(source);
 
   async function runAnalysis() {
-    if (!source || issue || analysisAbort.current || blocked) return;
+    if (analysisAbort.current || blocked) return;
+    if (issue) {
+      setSubmittedInvalidInput(true);
+      (sourceKind === "url" ? urlInput : fileInput).current?.focus();
+      return;
+    }
+    if (!source) return;
     clearPaste();
     const mine = ++analysisSeq.current;
     const controller = new AbortController();
@@ -76,7 +85,19 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
     else if (!block(outcome)) setAnalysis({ kind: "failed", message: failureMessage(outcome) });
   }
   function clearPaste() { pasteSeq.current++; setPasteNotice(""); }
-  function editInput(next: () => void) { clearPaste(); cancelAnalysis(); next(); setAnalysis({ kind: "idle" }); }
+  function editInput(next: () => void) {
+    clearPaste(); cancelAnalysis(); setSubmittedInvalidInput(false); next(); setAnalysis({ kind: "idle" });
+  }
+  function changeSource(kind: AnalysisSource["kind"]) {
+    editInput(() => { setSourceKind(kind); setFile(undefined); setMultipleFiles(false); });
+  }
+
+  useLayoutEffect(() => {
+    if (sourceKind === "file" && focusFileOnMount.current) {
+      focusFileOnMount.current = false;
+      fileInput.current?.focus();
+    }
+  }, [sourceKind]);
 
   async function pasteUrl() {
     const mine = ++pasteSeq.current;
@@ -177,7 +198,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
           <div className={styles.options}>
             {(["url", "file"] as const).map((kind) => <label key={kind}>
               <input type="radio" name={`${id}-source-kind`} value={kind} checked={sourceKind === kind}
-                onChange={() => editInput(() => { setSourceKind(kind); setFile(undefined); setMultipleFiles(false); })} />
+                onChange={() => changeSource(kind)} />
               {kind === "url" ? "URL 주소" : "파일 업로드"}
             </label>)}
           </div>
@@ -215,13 +236,18 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
           }}>
           미디어 파일
           <span className={styles.note}>파일을 이곳에 놓거나 파일 선택을 누르세요.</span>
-          <input key={media} id={`${id}-file`} type="file" accept={extensions.map((extension) => `.${extension}`).join(",")} disabled={running}
+          <input ref={fileInput} key={media} id={`${id}-file`} type="file" accept={extensions.map((extension) => `.${extension}`).join(",")} disabled={running}
             aria-invalid={!!issue} aria-describedby={`${id}-input-help${issue ? ` ${id}-input-error` : ""}`}
             onChange={(event) => chooseFiles(event.target.files)} />
         </label>}
         <p id={`${id}-input-help`} className={styles.note}>{sourceKind === "url" ? "지원 원본의 직접 HTTPS 파일 주소를 입력하세요."
           : `${extensions.join(" · ").toUpperCase()} · 최대 ${UPLOAD_SIZE_LIMIT_LABEL}`}</p>
         {issue && <p id={`${id}-input-error`} className={styles.error} role="status">{issue}</p>}
+        <span className="sr-only" role="alert">{submittedInvalidInput && issue ? issue : ""}</span>
+        {submittedInvalidInput && issue && sourceKind === "url" && <Button type="button" variant="secondary" onClick={() => {
+          focusFileOnMount.current = true;
+          changeSource("file");
+        }}>저장한 원본 업로드</Button>}
         {source && !issue && (source.kind === "file" || analysis.kind === "ready") && <SourcePreview
           key={source.kind === "url" ? source.url : "local-file"} source={source} />}
 
@@ -238,7 +264,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
         <p id={`${id}-rights`} className={styles.note}>분석할 권리가 있는 자료만 실행하세요.</p>
         <div className={styles.actions}>
           <Button id={`${id}-run`} className={styles.run} type="submit" loading={running} loadingLabel="분석 중"
-            aria-describedby={`${id}-rights`} disabled={!source || !!issue}>권리 확인하고 분석</Button>
+            aria-describedby={`${id}-rights`} disabled={!source && !multipleFiles}>권리 확인하고 분석</Button>
           {running && <Button id={`${id}-cancel`} type="button" variant="secondary" onClick={() => {
             restoreExecuteFocus.current = true;
             editInput(() => {});

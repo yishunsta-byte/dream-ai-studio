@@ -40,6 +40,7 @@ describe("admin hub information architecture", () => {
     expect(html).toMatch(/<dt>이미지<\/dt><dd>PNG · JPG/);
     expect(html).toContain("<code>mdn.github.io</code>");
     expect(html).toContain("API 응답 확인");
+    expect(html).toContain("별도 API 키는 필요 없어요.");
     expect(html).toContain("<code>/api/admin/reference-analysis</code>");
     expect(html).toContain("<code>/api/admin/reference-publications</code>");
   });

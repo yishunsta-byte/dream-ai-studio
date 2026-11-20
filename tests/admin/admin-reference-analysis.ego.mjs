@@ -60,7 +60,7 @@ async function analyze(url, media) {
 }
 
 async function pasteWithKeyboard() {
-  await page.focus("loc=css:form:has(input[type=url]) button[type=button]");
+  await page.focus("loc=css:form input[type=url] + button[type=button]");
   await page.keyboard.press("Enter");
 }
 
@@ -75,6 +75,7 @@ try {
     await reply(0, 200, { items: [] });
     await until(() => document.querySelector("main").innerText.includes("아직 공개한 분석 결과가 없어요"), "empty list");
     r.steps.empty = await state();
+    check(await fx(() => document.querySelector("form button[type=submit]").disabled), `empty source keeps analysis disabled ${width}`);
     await fx(() => {
       const fixture = { reads: 0, mode: "text", text: "  https://www.threads.com/@fixture/post/123  ", resolve: null };
       Object.defineProperty(navigator, "clipboard", { configurable: true, value: { readText: async () => {
@@ -89,8 +90,12 @@ try {
     await pasteWithKeyboard();
     await until(() => document.querySelector("input[type=url]").value === "https://www.threads.com/@fixture/post/123", "paste text");
     check(await fx(() => document.querySelector("input[type=url]").getAttribute("aria-invalid") === "true" &&
-      document.querySelector("form button[type=submit]").disabled && document.querySelector("main").innerText.includes("Threads 게시물 링크") &&
+      !document.querySelector("form button[type=submit]").disabled && document.querySelector("main").innerText.includes("Threads 게시물 링크") &&
       !document.querySelector("input[type=checkbox]") && window.__pasteFixture.reads === 1), `paste retains unsupported URL and rights guidance ${width}`);
+    await page.click("loc=css:form button[type=submit]");
+    await until(() => document.activeElement === document.querySelector("input[type=url]") &&
+      document.querySelector('form [role="alert"]').textContent.includes("Threads 게시물 링크"), "clicked unsupported URL");
+    check((await requests()).length === 1, `unsupported URL click sends no request ${width}`);
 
     await fx(() => { window.__pasteFixture.mode = "denied"; });
     await pasteWithKeyboard();
@@ -105,7 +110,7 @@ try {
       const error = document.getElementById(input.getAttribute("aria-describedby").split(" ").find((id) => id.endsWith("-input-error")));
       return input.value === value && input.getAttribute("aria-invalid") === "true" && error?.getAttribute("role") === "status" &&
         error.textContent.includes("원본 파일을 저장한 뒤 파일 업로드에서 선택하세요.") &&
-        document.querySelector("form button[type=submit]").disabled && !document.querySelector('main img[src^="blob:"]');
+        !document.querySelector("form button[type=submit]").disabled && !document.querySelector('main img[src^="blob:"]');
     }, blobUrl);
     await page.fill("loc=css:main input[type=url]", blobUrl);
     check(await blobGuidance(), `typed blob URL preserves value and shows upload guidance ${width}`);
@@ -114,7 +119,27 @@ try {
     await pasteWithKeyboard();
     await until(() => document.querySelector("input[type=url]").value.startsWith("blob:"), "blob URL pasted");
     check(await blobGuidance(), `pasted blob URL shows the same upload guidance ${width}`);
+    await page.keyboard.press("Enter");
+    await until(() => document.querySelector('form [role="alert"]').textContent.includes("원본 파일을 저장한 뒤"), "Enter submits blob to validation");
+    await page.click("loc=css:form .sr-only + button[type=button]");
+    await until(() => document.activeElement === document.querySelector("input[type=file]") &&
+      document.querySelector("form button[type=submit]").disabled, "upload fallback focuses empty file input");
     check((await requests()).length === 1, `blob input sends no analysis or publication ${width}`);
+    await page.click("loc=css:main input[type=radio][value=url]");
+    check(await fx(() => document.querySelector("input[type=url]").value.startsWith("blob:")), `upload fallback preserves URL ${width}`);
+
+    await page.fill("loc=css:main input[type=url]", "not-a-url");
+    await page.focus("loc=css:main input[type=url]");
+    await page.keyboard.press("Enter");
+    await until(() => document.activeElement === document.querySelector("input[type=url]") &&
+      document.querySelector('form [role="alert"]').textContent.includes("https://로 시작하는"), "Enter validates a malformed URL");
+    check((await requests()).length === 1, `malformed URL sends no request ${width}`);
+
+    await page.fill("loc=css:main input[type=url]", "https://cdn.midjourney.com/fixture/0_0.png");
+    await page.click("loc=css:form button[type=submit]");
+    await until(() => document.activeElement === document.querySelector("input[type=url]") &&
+      document.querySelector('form [role="alert"]').textContent.includes("지원하는 공개 원본"), "unsupported image host can be submitted for validation");
+    check((await requests()).length === 1, `unapproved image origin sends no request ${width}`);
 
     await fx(() => { window.__pasteFixture.mode = "delay"; });
     await pasteWithKeyboard();
@@ -128,6 +153,8 @@ try {
     // 2 음악 분석
     await analyze("https://tonejs.github.io/audio/loop.mp3", "music");
     await untilRequests(2, "analyze music");
+    await fx(() => document.querySelector("form:has(input[type=url])").requestSubmit());
+    check((await requests()).length === 2 && await fx(() => document.querySelector("form button[type=submit]").disabled), `analysis prevents duplicate submit ${width}`);
     r.steps.running = await state();
     await reply(1, 200, { result: READY.music });
     await until(() => document.querySelector("main").innerText.includes("추정 템포 120 BPM"), "music result");
@@ -189,7 +216,9 @@ try {
       && r.steps.revoked.focus.startsWith("H3:") && r.steps.revoked.overflow <= 0, `revoke ${width}`);
 
     // 5 이미지·영상
-    await analyze("https://mdn.github.io/a.png", "image");
+    await page.click("loc=css:main input[type=radio][value=image]");
+    await page.fill("loc=css:main input[type=url]", "https://mdn.github.io/a.png");
+    await page.click("loc=css:form button[type=submit]");
     await untilRequests(8, "image");
     await reply(7, 200, { result: READY.image });
     await until(() => document.querySelector("main").innerText.includes("이미지 분석"), "image result");
@@ -237,9 +266,21 @@ try {
     // 6 파일 선택·크기, 취소, 원본 전송
     await page.click("loc=css:main input[type=radio][value=file]");
     await page.click("loc=css:main input[type=radio][value=image]");
+    await fx(() => {
+      const files = new window.DataTransfer();
+      for (const name of ["one.jpg", "two.jpg"]) files.items.add(new window.File(["test"], name));
+      document.querySelector("input[type=file]").closest("label")?.dispatchEvent(new window.DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: files }));
+    });
+    await submitAnalysis();
+    await until(() => document.activeElement === document.querySelector("input[type=file]") &&
+      document.querySelector('form [role="alert"]').textContent.includes("한 번에 파일 하나"), "multiple files refocus file input");
+    check((await requests()).length === 13, `multiple files send no request ${width}`);
     await fx(() => window.__fixture.selectFile("큰 사진.jpg", 4 * 1024 * 1024 + 1));
     await until(() => document.querySelector("main").innerText.includes("업로드는 4 MiB까지 가능해요"), "large file");
-    check((await requests()).length === 13 && await fx(() => document.querySelector("form button[type=submit]").disabled &&
+    await page.click("loc=css:form button[type=submit]");
+    await until(() => document.activeElement === document.querySelector("input[type=file]") &&
+      document.querySelector('form [role="alert"]').textContent.includes("업로드는 4 MiB까지"), "oversized file refocus");
+    check((await requests()).length === 13 && await fx(() => !document.querySelector("form button[type=submit]").disabled &&
       !document.querySelector("form:has(input[type=checkbox])")), `large file and previous result cleared ${width}`);
     await fx(() => window.__fixture.selectFile("검수 사진.jpg", 32, true));
     await page.click("loc=css:form:has(input[type=file]) details:first-of-type summary");

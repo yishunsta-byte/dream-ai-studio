@@ -103,7 +103,7 @@ export function AdminApiIntegrations() {
     </div>
     <Card className={styles.apiCard}>
       <div className={styles.apiIntro}>
-        <div><h3>콘텐츠 분석 API</h3><p className={styles.note}>관리자 로그인으로 현재 사이트의 분석과 공개 API를 사용해요.</p></div>
+        <div><h3>콘텐츠 분석 API</h3><p className={styles.note}>관리자로 로그인하면 현재 사이트의 분석과 공개 기능을 이용할 수 있어요. 별도 API 키는 필요 없어요.</p></div>
         <Button variant="secondary" loading={checking} loadingLabel="응답 확인 중" onClick={() => void checkApis()}>API 응답 확인</Button>
       </div>
       <ul className={styles.apiRoutes}>
