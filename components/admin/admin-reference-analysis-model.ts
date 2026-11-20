@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { referenceFileFormat } from "@/lib/reference-analysis/input";
 import { studioAnalysisResultSchema, type StudioAnalysisResult } from "@/lib/reference-analysis/studio-analysis-result-dto";
 
 // 관리자 콘텐츠 분석·공개 화면 계약(브라우저 안전). 서버 경로·저장·권한 판정은 Master 점유 서버가 맡는다.
-// - POST /api/admin/reference-analysis {url, authorized:true} → 200 {result: StudioAnalysisResult}
+// - POST /api/admin/reference-analysis: {url, authorized:true, media} 또는 분류·이름 헤더를 가진 원본 파일.
 // - GET  /api/admin/reference-publications → 200 {items: PublishedReferenceAnalysis[]}
 // - POST 같은 경로 {id, title, summary, prompt, media, authorized:true} → 200 {item}  (명시 공개, 재시도는 같은 id)
 // - DELETE 같은 경로 {id} → 200 {ok: true}  (철회, 이미 철회돼 있어도 ok)
@@ -14,15 +15,40 @@ export const LIMITS = { title: 80, summary: 600, prompt: 2000 } as const;
 
 export type AnalysisMedia = "image" | "music" | "video";
 export const MEDIA_LABEL: Record<AnalysisMedia, string> = { image: "이미지", music: "음악", video: "영상" };
+export type AnalysisSource = { media: AnalysisMedia } & ({ kind: "url"; url: string } | { kind: "file"; file: File });
 
 // 지원 안내(기존 local-media-url의 고정 원본·형식·한도와 같다).
 export const SUPPORTED_ORIGINS = ["https://interactive-examples.mdn.mozilla.net", "https://mdn.github.io", "https://tonejs.github.io"] as const;
 export const SUPPORTED_FORMATS = [
-  { media: "image", label: "이미지", extensions: "PNG · JPG · WEBP", limit: "" },
-  { media: "music", label: "음악", extensions: "MP3 · WAV · M4A", limit: "24초까지" },
-  { media: "video", label: "영상", extensions: "MP4 · MOV · WEBM", limit: "20초 · 240프레임까지" },
+  { media: "image", extensions: ["png", "jpg", "jpeg", "webp"], limit: "" },
+  { media: "music", extensions: ["mp3", "wav", "m4a"], limit: "24초까지" },
+  { media: "video", extensions: ["mp4", "mov", "webm"], limit: "20초 · 240프레임까지" },
 ] as const;
-export const SIZE_LIMIT_LABEL = "64MB";
+export const URL_SIZE_LIMIT_LABEL = "64 MiB";
+export const UPLOAD_SIZE_LIMIT_LABEL = "4 MiB";
+const uploadByteLimit = 4 * 1024 * 1024;
+
+export function analysisInputIssue(source: AnalysisSource): string | undefined {
+  let name: string;
+  if (source.kind === "file") {
+    if (!source.file.size) return "내용이 있는 파일을 선택해 주세요.";
+    if (source.file.size > uploadByteLimit) return `업로드는 ${UPLOAD_SIZE_LIMIT_LABEL}까지 가능해요.`;
+    name = source.file.name;
+  } else {
+    let url: URL;
+    try { url = new URL(source.url); }
+    catch { return "https://로 시작하는 직접 파일 주소를 입력하세요."; }
+    if (/(^|\.)threads\.(com|net)$/.test(url.hostname)) return "Threads 게시물 링크는 분석할 수 없어요. 미디어 파일의 직접 HTTPS 주소를 입력하세요.";
+    if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || url.port) {
+      return "쿼리나 로그인 정보가 없는 직접 HTTPS 파일 주소를 입력하세요.";
+    }
+    if (!SUPPORTED_ORIGINS.some((origin) => origin === url.origin)) return "지원하는 공개 원본의 주소만 분석할 수 있어요.";
+    name = url.pathname;
+  }
+  const format = referenceFileFormat(name);
+  if (!format) return "지원하는 파일 확장자를 확인해 주세요.";
+  if (format.media !== source.media) return `파일 형식에 맞게 ‘${MEDIA_LABEL[format.media]}’ 옵션을 선택하세요.`;
+}
 
 const media = z.enum(["image", "music", "video"]);
 const publicationSchema = z.strictObject({
@@ -40,7 +66,7 @@ export const isPublishedReferenceAnalysis = (value: unknown): value is Published
 export type PublicationDraft = Readonly<{ title: string; summary: string; prompt: string; media: AnalysisMedia }>;
 export type ReadyResult = Extract<StudioAnalysisResult, { status: "ready" }>;
 
-export const ERROR_CODES = ["invalid_input", "analysis_busy", "invalid_url", "unsupported_origin", "unsupported_format", "too_large", "rights_required",
+export const ERROR_CODES = ["invalid_input", "analysis_busy", "invalid_url", "unsupported_origin", "unsupported_format", "too_large", "rights_required", "invalid_file", "file_type_mismatch",
   "analysis_failed", "invalid_publication", "publication_conflict", "not_found", "already_revoked"] as const;
 export type ErrorCode = typeof ERROR_CODES[number];
 export type Failure =
@@ -81,12 +107,17 @@ const json = (method: string, body: unknown, signal?: AbortSignal): RequestInit 
 
 export function createAdminReferenceAnalysisClient(transport: AdminTransport = browserTransport) {
   return {
-    analyze: (url: string, signal?: AbortSignal): Promise<AnalyzeOutcome> => call(transport, ANALYSIS_URI, json("POST", { url, authorized: true }, signal), (body) => {
-      const parsed = z.object({ result: studioAnalysisResultSchema }).safeParse(body);
-      if (!parsed.success) return undefined;
-      const result = parsed.data.result as StudioAnalysisResult;
-      return result.status === "ready" ? (result.proposals.length ? { kind: "ready", result } : undefined) : { kind: "unavailable", reason: result.reason };
-    }),
+    analyze: (source: AnalysisSource, signal?: AbortSignal): Promise<AnalyzeOutcome> => call(transport, ANALYSIS_URI,
+      source.kind === "url" ? json("POST", { url: source.url, authorized: true, media: source.media }, signal) : {
+        method: "POST", signal, body: source.file,
+        headers: { "content-type": "application/octet-stream", "x-dream-media": source.media, "x-dream-filename": encodeURIComponent(source.file.name) },
+      }, (body) => {
+        const parsed = z.object({ result: studioAnalysisResultSchema }).safeParse(body);
+        if (!parsed.success) return undefined;
+        const result = parsed.data.result;
+        if (result.status === "unavailable") return { kind: "unavailable", reason: result.reason };
+        return result.media === source.media ? { kind: "ready", result } : undefined;
+      }),
     list: (signal?: AbortSignal): Promise<ListOutcome> => call(transport, PUBLICATIONS_URI, { method: "GET", signal }, (body) => {
       const parsed = z.object({ items: z.array(publicationSchema) }).safeParse(body);
       return parsed.success ? { kind: "ok", items: parsed.data.items } : undefined;
@@ -134,7 +165,7 @@ export const trimmedDraft = (draft: PublicationDraft): PublicationDraft =>
   ({ title: draft.title.trim(), summary: draft.summary.trim(), prompt: draft.prompt.trim(), media: draft.media });
 
 const UNAVAILABLE: Record<string, string> = {
-  invalid_selection: "분석할 수 없는 자료예요. URL을 다시 확인해 주세요.",
+  invalid_selection: "분석할 수 없는 자료예요. 주소나 파일을 다시 확인해 주세요.",
   source_unavailable: "원본 파일을 가져올 수 없어요.",
   analysis_unavailable: "이 파일은 지금 분석할 수 없어요.",
   cancelled: "분석이 취소됐어요.",
@@ -148,8 +179,10 @@ const REJECTED: Record<ErrorCode, string> = {
   invalid_url: "직접 파일 주소(https://…/파일.확장자)를 입력하세요.",
   unsupported_origin: "지원하는 공개 원본의 주소만 분석할 수 있어요.",
   unsupported_format: "지원하는 이미지·음악·영상 형식이 아니에요.",
-  too_large: `파일이 ${SIZE_LIMIT_LABEL} 한도를 넘거나 길이 한도를 넘었어요.`,
+  too_large: "파일 크기나 길이가 한도를 넘었어요. 지원 원본·형식 안내를 확인해 주세요.",
   rights_required: "자료를 분석할 권리 확인이 필요해요.",
+  invalid_file: "파일을 읽을 수 없어요. 다른 파일을 선택해 주세요.",
+  file_type_mismatch: "선택한 매체와 파일 내용이 달라요. 매체나 파일을 다시 선택해 주세요.",
   analysis_failed: "이 파일은 지금 분석할 수 없어요. 다른 파일이나 형식으로 시도해 주세요.",
   invalid_publication: "공개 내용을 확인해 주세요. 제목·요약·프롬프트가 한도 안에 있어야 해요.",
   publication_conflict: "같은 공개 요청이 다른 내용으로 이미 처리됐어요. 아래 공개 목록을 확인한 뒤 다시 동의하고 공개해 주세요.",

@@ -33,6 +33,7 @@ const item = (over = {}) => ({ id: ID1, title: "음악 분석 결과", summary: 
 
 const task = await taskSpace("admin reference analysis");
 const page = task.page("p1");
+console.log(`ADMIN-ANALYSIS-SPACE ${task.spaceId}`);
 const fx = (expr, arg) => (arg === undefined ? page.evaluate(expr) : page.evaluate(expr, arg));
 const requests = () => fx(() => window.__fixture.requests());
 const reply = (index, status, body) => fx((v) => window.__fixture.reply(v.index, v.status, v.body), { index, status, body });
@@ -43,15 +44,19 @@ const state = () => fx(() => {
   const a = document.activeElement;
   return { text, overflow: document.documentElement.scrollWidth - window.innerWidth,
     focus: a === document.body ? "BODY" : `${a.tagName}:${(a.getAttribute("type") || "")}:${(a.textContent || a.value || "").trim().slice(0, 24)}`,
-    title: document.querySelector("form:has(> h3) input:not([type])")?.value ?? null,
-    prompt: document.querySelectorAll("form:has(> h3) textarea")[1]?.value ?? null,
-    pick: !!document.querySelector("form:has(> h3) select"), inputs: document.querySelectorAll("main input, main textarea, main select").length };
+    title: document.querySelector("form:has(input[type=checkbox]) input:not([type])")?.value ?? null,
+    prompt: document.querySelectorAll("form:has(input[type=checkbox]) textarea")[1]?.value ?? null,
+    pick: !!document.querySelector("form:has(input[type=checkbox]) select"), inputs: document.querySelectorAll("main input, main textarea, main select").length };
 });
-async function analyze(url) {
-  await page.focus("loc=css:main input[type=url]");
-  await page.keyboard.press("Control+A"); await page.keyboard.type(url);
-  await page.keyboard.press("Tab"); await page.keyboard.press("Space");
-  await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
+async function submitAnalysis() {
+  await page.focus("loc=css:form:has(input[type=radio]) button[type=submit]");
+  await page.keyboard.press("Enter");
+}
+
+async function analyze(url, media) {
+  await page.click(`loc=css:main input[type=radio][value=${media}]`);
+  await page.fill("loc=css:main input[type=url]", url);
+  await submitAnalysis();
 }
 
 const out = { widths: [] };
@@ -65,27 +70,37 @@ try {
     await reply(0, 200, { items: [] });
     await until(() => document.querySelector("main").innerText.includes("아직 공개한 분석 결과가 없어요"), "empty list");
     r.steps.empty = await state();
+    await page.fill("loc=css:main input[type=url]", "https://www.threads.com/@fixture/post/123");
+    check(await fx(() => document.querySelector("input[type=url]").getAttribute("aria-invalid") === "true" &&
+      document.querySelector("form button[type=submit]").disabled && document.querySelector("main").innerText.includes("Threads 게시물 링크") &&
+      !document.querySelector("input[type=checkbox]")), `initial rights and URL guidance ${width}`);
 
     // 2 음악 분석
-    await analyze("https://tonejs.github.io/audio/loop.mp3");
+    await analyze("https://tonejs.github.io/audio/loop.mp3", "music");
     await untilRequests(2, "analyze music");
     r.steps.running = await state();
     await reply(1, 200, { result: READY.music });
     await until(() => document.querySelector("main").innerText.includes("추정 템포 120 BPM"), "music result");
     r.steps.music = await state();
+    check(await fx(() => [...document.querySelectorAll('main h2, form h3, section[aria-labelledby$="-results"] h3')].every(
+      (heading) => getComputedStyle(heading).color === 'rgb(237, 253, 248)')), `lab heading contrast ${width}`);
+    if (globalThis.FIXTURE_SCREENSHOT_DIR) {
+      await page.screenshot({ path: `${globalThis.FIXTURE_SCREENSHOT_DIR}/spectrum-${width}.png`, fullPage: true });
+    }
     check((await requests())[1].body?.url === "https://tonejs.github.io/audio/loop.mp3" && (await requests())[1].body?.authorized === true
+      && (await requests())[1].body?.media === "music" && r.steps.music.text.includes("0, 500, 1000, 1500, 2000 ms")
       && r.steps.running.text.includes("서버에서 분석하고 있어요") && r.steps.running.focus.includes("분석 취소") && r.steps.music.focus.startsWith("H3:") && r.steps.music.title === "음악 분석 결과"
       && r.steps.music.prompt === "120 BPM의 경쾌한 배경 음악" && r.steps.music.overflow <= 0, `music analysis ${width}`);
 
     // 3 공개: 실패 → 같은 id 재시도 → 성공
-    await page.focus("loc=css:form:has(> h3) input:not([type])");
+    await page.focus("loc=css:form:has(input[type=checkbox]) input:not([type])");
     for (let i = 0; i < 3; i++) await page.keyboard.press("Tab");
     await page.keyboard.press("Space"); await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
     await untilRequests(3, "publish 1");
     await reply(2, 503);
     await until(() => document.querySelector("main").innerText.includes("같은 공개 요청을 다시 보내요"), "publish failed");
     r.steps.publishFailed = await state();
-    await page.focus("loc=css:form:has(> h3) button[type=submit]"); await page.keyboard.press("Enter");
+    await page.focus("loc=css:form:has(input[type=checkbox]) button[type=submit]"); await page.keyboard.press("Enter");
     await untilRequests(4, "publish retry");
     await reply(3, 200, { item: item() });
     await untilRequests(5, "list after publish");
@@ -117,22 +132,30 @@ try {
       && r.steps.revoked.focus.startsWith("H3:") && r.steps.revoked.overflow <= 0, `revoke ${width}`);
 
     // 5 이미지·영상
-    await analyze("https://mdn.github.io/a.png");
+    await analyze("https://mdn.github.io/a.png", "image");
     await untilRequests(8, "image");
     await reply(7, 200, { result: READY.image });
     await until(() => document.querySelector("main").innerText.includes("이미지 분석"), "image result");
     r.steps.image = await state();
-    await analyze("https://interactive-examples.mdn.mozilla.net/media/a.mp4");
+    await analyze("https://interactive-examples.mdn.mozilla.net/media/a.mp4", "video");
     await untilRequests(9, "video");
     await reply(8, 200, { result: READY.video });
     await until(() => document.querySelector("main").innerText.includes("영상 분석"), "video result");
     r.steps.video = await state();
     check(r.steps.image.prompt === "푸른 색이 넓게 퍼진 장면" && r.steps.image.title === "이미지 분석 결과" && r.steps.video.title === "영상 분석 결과" && r.steps.video.pick
+      && r.steps.image.text.includes("#3366cc · 60%") && r.steps.video.text.includes("원본 프레임 표시 시각 125 ms")
       && r.steps.video.prompt === "125ms에서 장면을 바꾸는 컷" && r.steps.video.overflow <= 0 && r.steps.image.overflow <= 0, `image video ${width}`);
+
+    await page.click('loc=css:button[aria-controls$="-prompt"]');
+    await page.fill('loc=css:section[aria-labelledby$="-results"] textarea', "첫 번째 구간 수정 문장");
+    await page.selectOption('loc=css:section[aria-labelledby$="-results"] select', { index: 1 });
+    check(await fx(() => document.querySelector('section[aria-labelledby$="-results"] textarea').value === "두 번째 컷"), `second draft separate ${width}`);
+    await page.selectOption('loc=css:section[aria-labelledby$="-results"] select', { index: 0 });
+    check(await fx(() => document.querySelector('section[aria-labelledby$="-results"] textarea').value === "첫 번째 구간 수정 문장"), `first draft restored ${width}`);
 
     // 5b 공개 확정 충돌(409): 안내 → 동의 해제·같은 id 재시도 중단 → 목록 다시 읽기 → 다시 동의하면 새 id
     const publishVideo = async () => {
-      await page.focus("loc=css:form:has(> h3) input[type=checkbox]"); await page.keyboard.press("Space");
+      await page.focus("loc=css:form:has(input[type=checkbox]) input[type=checkbox]"); await page.keyboard.press("Space");
       await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
     };
     await publishVideo();
@@ -142,7 +165,7 @@ try {
     await reply(10, 200, { items: [item({ status: "revoked" })] });
     await until(() => document.querySelector("main").innerText.includes("다른 내용으로 이미 처리됐어요"), "conflict notice");
     r.steps.conflict = await state();
-    const consentAfterConflict = await fx(() => document.querySelector("form:has(> h3) input[type=checkbox]").checked);
+    const consentAfterConflict = await fx(() => document.querySelector("form:has(input[type=checkbox]) input[type=checkbox]").checked);
     await publishVideo();
     await untilRequests(12, "video publish new intent");
     await reply(11, 200, { item: item({ id: "10000000-0000-4000-8000-000000000003", media: "video", title: "영상 분석 결과" }) });
@@ -154,13 +177,38 @@ try {
     check(conflictSent[9].body?.id === "10000000-0000-4000-8000-000000000002" && conflictSent[11].body?.id === "10000000-0000-4000-8000-000000000003"
       && !consentAfterConflict && r.steps.conflict.focus.startsWith("P:") && r.steps.conflict.overflow <= 0, `conflict new intent ${width}`);
 
-    // 6 401 → 멈춤
-    await analyze("https://mdn.github.io/b.png");
-    await untilRequests(14, "auth");
-    await reply(13, 401);
+    // 6 파일 선택·크기, 취소, 원본 전송
+    await page.click("loc=css:main input[type=radio][value=file]");
+    await page.click("loc=css:main input[type=radio][value=image]");
+    await fx(() => window.__fixture.selectFile("큰 사진.jpg", 4 * 1024 * 1024 + 1));
+    await until(() => document.querySelector("main").innerText.includes("업로드는 4 MiB까지 가능해요"), "large file");
+    check((await requests()).length === 13 && await fx(() => document.querySelector("form button[type=submit]").disabled &&
+      !document.querySelector("form:has(input[type=checkbox])")), `large file and previous result cleared ${width}`);
+    await fx(() => window.__fixture.selectFile("검수 사진.jpg", 32));
+    await submitAnalysis();
+    await untilRequests(14, "raw file");
+    const fileRequest = (await requests())[13];
+    check(fileRequest.body?.size === 32 && fileRequest.headers["content-type"] === "application/octet-stream" &&
+      fileRequest.headers["x-dream-media"] === "image" && fileRequest.headers["x-dream-filename"] === encodeURIComponent("검수 사진.jpg"), `raw file wire ${width}`);
+    await page.keyboard.press("Enter");
+    await reply(13, 200, { result: READY.image });
+    await until(() => document.activeElement?.textContent.includes("권리 확인하고 분석") && window.__fixture.requests()[13].aborted, "canceled file");
+    check(!(await fx(() => document.querySelector("form:has(input[type=checkbox])"))), `late file ignored ${width}`);
+    await submitAnalysis();
+    await untilRequests(15, "raw file retry");
+    await reply(14, 200, { result: READY.image });
+    await until(() => document.querySelector("main").innerText.includes("#3366cc · 60%"), "raw file success");
+    r.steps.file = await state();
+    check(r.steps.file.overflow <= 0 && r.steps.file.prompt === "푸른 색이 넓게 퍼진 장면", `file result ${width}`);
+
+    // 7 401 → 멈춤
+    await page.click("loc=css:main input[type=radio][value=url]");
+    await analyze("https://mdn.github.io/b.png", "image");
+    await untilRequests(16, "auth");
+    await reply(15, 401);
     await until(() => document.querySelector("main").innerText.includes("다시 로그인이 필요해요"), "login stop");
     r.steps.login = await state();
-    check(r.steps.login.inputs === 0 && r.steps.login.text.includes("관리자 로그인") && (await requests()).length === 14, `auth stop ${width}`);
+    check(r.steps.login.inputs === 0 && r.steps.login.text.includes("관리자 로그인") && (await requests()).length === 16, `auth stop ${width}`);
     for (const step of Object.values(r.steps)) delete step.text;
   }
 } catch (error) {

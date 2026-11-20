@@ -2,10 +2,11 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
-  ANALYSIS_URI, PUBLICATIONS_URI, createAdminReferenceAnalysisClient, draftFromResult, failureMessage, validateDraft,
-  type AdminTransport, type ReadyResult,
+  ANALYSIS_URI, PUBLICATIONS_URI, analysisInputIssue, createAdminReferenceAnalysisClient, draftFromResult, failureMessage, validateDraft,
+  type AdminTransport, type AnalysisMedia, type AnalysisSource, type ReadyResult,
 } from "@/components/admin/admin-reference-analysis-model";
 import { AdminReferenceAnalysis } from "@/components/admin/admin-reference-analysis";
+import { SpectrumResults } from "@/components/admin/admin-reference-analysis-spectrum";
 import { PublishedAnalysisResults } from "@/components/reference-analysis/published-analysis-results";
 
 // 관리자 콘텐츠 분석·공개 화면 계약(합성 응답만). 서버 저장·권한 판정은 서버 시험 범위다.
@@ -45,34 +46,66 @@ function transportOf(...replies: Array<{ status: number; body?: unknown } | "thr
 }
 
 describe("분석 요청", () => {
+  const urlSource = (url: string, media: AnalysisMedia = "image"): AnalysisSource => ({ kind: "url", url, media });
+
   it.each(["image", "music", "video"] as const)("%s 결과를 받고 URL과 권리 확인을 함께 보낸다", async (media) => {
     const { transport, sent } = transportOf({ status: 200, body: { result: READY[media] } });
-    expect(await createAdminReferenceAnalysisClient(transport).analyze("https://mdn.github.io/a.wav")).toEqual({ kind: "ready", result: READY[media] });
-    expect(sent).toEqual([{ uri: ANALYSIS_URI, method: "POST", body: { url: "https://mdn.github.io/a.wav", authorized: true } }]);
+    const url = `https://mdn.github.io/a.${{ image: "jpg", music: "mp3", video: "mp4" }[media]}`;
+    expect(await createAdminReferenceAnalysisClient(transport).analyze(urlSource(url, media))).toEqual({ kind: "ready", result: READY[media] });
+    expect(sent).toEqual([{ uri: ANALYSIS_URI, method: "POST", body: { url, authorized: true, media } }]);
+  });
+
+  it("파일 원본과 인코딩한 이름·선택한 매체를 그대로 전송한다", async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], "작은 사진.jpg", { type: "image/jpeg" });
+    const signal = new AbortController().signal;
+    const transport: AdminTransport = async (uri, init) => {
+      expect(uri).toBe(ANALYSIS_URI);
+      expect(init).toEqual({ method: "POST", signal, body: file,
+        headers: { "content-type": "application/octet-stream", "x-dream-media": "image", "x-dream-filename": encodeURIComponent(file.name) } });
+      expect(init.body).toBe(file);
+      return Response.json({ result: READY.image });
+    };
+    expect(await createAdminReferenceAnalysisClient(transport).analyze({ kind: "file", file, media: "image" }, signal))
+      .toEqual({ kind: "ready", result: READY.image });
+  });
+
+  it("직접 URL과 매체별 확장자를 구분하고 파일 한도를 4 MiB까지 허용한다", () => {
+    const limit = 4 * 1024 * 1024;
+    const valid = new File([new Uint8Array(limit)], "photo.JPG");
+    const oversized = new File([new Uint8Array(limit + 1)], "photo.jpg");
+    expect(analysisInputIssue({ kind: "file", file: valid, media: "image" })).toBeUndefined();
+    expect(analysisInputIssue({ kind: "file", file: oversized, media: "image" })).toContain("4 MiB");
+    expect(analysisInputIssue({ kind: "file", file: new File([], "photo.jpg"), media: "image" })).toContain("내용이 있는");
+    expect(analysisInputIssue(urlSource("https://www.threads.com/@demo/post/a"))).toContain("직접 HTTPS");
+    expect(analysisInputIssue(urlSource("https://mdn.github.io/a.jpg?token=secret"))).toContain("쿼리");
+    expect(analysisInputIssue(urlSource("https://mdn.github.io/a.mp4"))).toContain("‘영상’");
   });
 
   it("서버 판정을 화면 분류로 옮기고 서버 문장은 쓰지 않는다", async () => {
     const client = (status: number, body?: unknown) => createAdminReferenceAnalysisClient(transportOf({ status, body }).transport);
-    expect(await client(401).analyze("https://x")).toEqual({ kind: "login" });
-    expect(await client(403).analyze("https://x")).toEqual({ kind: "forbidden" });
-    expect(await client(422, { error: "unsupported_origin", message: "<b>내부</b>" }).analyze("https://x")).toEqual({ kind: "rejected", code: "unsupported_origin" });
-    expect(await client(400, { error: "모르는 코드" }).analyze("https://x")).toEqual({ kind: "failed" });
+    expect(await client(401).analyze(urlSource("https://x"))).toEqual({ kind: "login" });
+    expect(await client(403).analyze(urlSource("https://x"))).toEqual({ kind: "forbidden" });
+    expect(await client(422, { error: "unsupported_origin", message: "<b>내부</b>" }).analyze(urlSource("https://x"))).toEqual({ kind: "rejected", code: "unsupported_origin" });
+    expect(await client(400, { error: "모르는 코드" }).analyze(urlSource("https://x"))).toEqual({ kind: "failed" });
     // 서버(admin-reference-http) 상태·코드 짝: 413 too_large, 429 analysis_busy, 400 invalid_input
-    expect(await client(413, { error: "too_large" }).analyze("https://x")).toEqual({ kind: "rejected", code: "too_large" });
-    expect(await client(429, { error: "analysis_busy" }).analyze("https://x")).toEqual({ kind: "rejected", code: "analysis_busy" });
-    expect(await client(400, { error: "invalid_input" }).analyze("https://x")).toEqual({ kind: "rejected", code: "invalid_input" });
-    expect(await client(500, { error: "analysis_failed" }).analyze("https://x")).toEqual({ kind: "failed" });
-    expect(await client(200, { result: { schemaVersion: 1, status: "unavailable", reason: "timed_out" } }).analyze("https://x")).toEqual({ kind: "unavailable", reason: "timed_out" });
+    expect(await client(413, { error: "too_large" }).analyze(urlSource("https://x"))).toEqual({ kind: "rejected", code: "too_large" });
+    expect(await client(429, { error: "analysis_busy" }).analyze(urlSource("https://x"))).toEqual({ kind: "rejected", code: "analysis_busy" });
+    expect(await client(400, { error: "invalid_input" }).analyze(urlSource("https://x"))).toEqual({ kind: "rejected", code: "invalid_input" });
+    expect(await client(400, { error: "invalid_file" }).analyze(urlSource("https://x"))).toEqual({ kind: "rejected", code: "invalid_file" });
+    expect(await client(422, { error: "file_type_mismatch" }).analyze(urlSource("https://x"))).toEqual({ kind: "rejected", code: "file_type_mismatch" });
+    expect(await client(500, { error: "analysis_failed" }).analyze(urlSource("https://x"))).toEqual({ kind: "failed" });
+    expect(await client(200, { result: { schemaVersion: 1, status: "unavailable", reason: "timed_out" } }).analyze(urlSource("https://x"))).toEqual({ kind: "unavailable", reason: "timed_out" });
     // 여분 필드·형식이 다른 결과는 받지 않는다(strict).
-    expect(await client(200, { result: { ...READY.image, sourceUrl: "https://secret" } }).analyze("https://x")).toEqual({ kind: "failed" });
-    expect(await createAdminReferenceAnalysisClient(transportOf("throw").transport).analyze("https://x")).toEqual({ kind: "failed" });
+    expect(await client(200, { result: { ...READY.image, sourceUrl: "https://secret" } }).analyze(urlSource("https://x"))).toEqual({ kind: "failed" });
+    expect(await client(200, { result: READY.music }).analyze(urlSource("https://x"))).toEqual({ kind: "failed" });
+    expect(await createAdminReferenceAnalysisClient(transportOf("throw").transport).analyze(urlSource("https://x"))).toEqual({ kind: "failed" });
     expect(failureMessage({ kind: "rejected", code: "unsupported_origin" })).toBe("지원하는 공개 원본의 주소만 분석할 수 있어요.");
   });
 
   it("취소된 요청은 늦게 성공해도 실패로 닫는다", async () => {
     const controller = new AbortController();
     const transport: AdminTransport = async () => ({ status: 200, json: async () => { controller.abort(); return { result: READY.image }; } });
-    expect(await createAdminReferenceAnalysisClient(transport).analyze("https://x", controller.signal)).toEqual({ kind: "failed" });
+    expect(await createAdminReferenceAnalysisClient(transport).analyze(urlSource("https://x"), controller.signal)).toEqual({ kind: "failed" });
   });
 });
 
@@ -116,15 +149,30 @@ describe("공개·철회", () => {
 });
 
 describe("화면", () => {
-  it("관리자 화면 첫 그림은 지원 안내·URL·권리 확인과 잠긴 실행 버튼, 목록 불러오는 중이다", () => {
+  it("소스·매체와 단일 권리 확인 동작을 표시하고, 분석 전에는 예시 결과를 표시하지 않는다", () => {
     const html = renderToStaticMarkup(createElement(AdminReferenceAnalysis, { client: createAdminReferenceAnalysisClient(transportOf().transport) }));
-    expect(html).toContain("콘텐츠 분석·공개");
+    expect(html).toContain("콘텐츠 프롬프트 분석기");
+    expect(html).toContain("스펙트럼 랩");
+    expect(html).toContain("직접 URL");
     expect(html).toContain("https://tonejs.github.io");
     expect(html).toContain("MP4 · MOV · WEBM");
-    expect(html).toContain("이 자료를 분석할 권리가 있어요.");
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>[^<]*분석 실행/);
+    expect(html).toContain("분석할 권리가 있는 자료만 실행하세요.");
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>[^<]*권리 확인하고 분석/);
+    expect(html).not.toMatch(/type="checkbox"|예시 결과|<meter|공개 준비/);
     expect(html).toContain("공개 목록을 불러오고 있어요.");
     expect(html).toContain('href="/analysis-results"');
+  });
+
+  it("관찰 화면에는 응답의 시간, 색상, 비중과 추정 값을 그대로 표시한다", () => {
+    const render = (media: AnalysisMedia) => renderToStaticMarkup(createElement(SpectrumResults, { result: READY[media] }));
+    const music = render("music");
+    expect(music).toContain("0, 500, 1000, 1500, 2000");
+    expect(music).toContain("추정 템포 120 BPM");
+    expect(music).toContain("관련 관찰 근거 1번");
+    expect(render("image")).toContain("#3366cc");
+    expect(render("image")).toContain("60%");
+    expect(render("video")).toContain("원본 프레임 표시 시각 125 ms");
+    expect(render("video")).toContain("500 ms");
   });
 
   it("공개 페이지는 승인 필드만 평문으로 그리고, 3종·빈 목록·장애를 구분한다", () => {

@@ -5,18 +5,28 @@ import { AdminReferenceAnalysis } from "../../components/admin/admin-reference-a
 import { createAdminReferenceAnalysisClient, type AdminTransport } from "../../components/admin/admin-reference-analysis-model";
 import "../../app/globals.css";
 
-type Entry = { uri: string; method: string; body: unknown; aborted: boolean; done: boolean; respond: (status: number, body?: unknown) => void };
+type Entry = { uri: string; method: string; headers: Record<string, string>; body: unknown; aborted: boolean; done: boolean;
+  respond: (status: number, body?: unknown) => void };
 const requests: Entry[] = [];
 const transport: AdminTransport = (uri, init) => new Promise((resolve) => {
-  const entry: Entry = { uri, method: String(init.method), body: init.body ? JSON.parse(String(init.body)) : null, aborted: false, done: false,
+  const body = init.body instanceof File ? { name: init.body.name, size: init.body.size } : init.body ? JSON.parse(String(init.body)) : null;
+  const entry: Entry = { uri, method: String(init.method), headers: Object.fromEntries(new Headers(init.headers)), body, aborted: false, done: false,
     respond: (status, body) => { entry.done = true; resolve({ status, json: async () => { if (body === undefined) throw new SyntaxError("empty"); return body; } }); } };
   init.signal?.addEventListener("abort", () => { entry.aborted = true; });
   requests.push(entry);
 });
 let ids = 0;
 (window as unknown as { __fixture: unknown }).__fixture = {
-  requests: () => requests.map(({ uri, method, body, aborted, done }) => ({ uri, method, body, aborted, done })),
+  requests: () => requests.map(({ uri, method, headers, body, aborted, done }) => ({ uri, method, headers, body, aborted, done })),
   reply: (index: number, status: number, body?: unknown) => requests[index].respond(status, body),
+  selectFile: (name: string, size: number) => {
+    const input = document.querySelector<HTMLInputElement>("input[type=file]");
+    if (!input) throw new Error("Missing fixture file input");
+    const files = new DataTransfer();
+    files.items.add(new File([new Uint8Array(size)], name));
+    input.files = files.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  },
 };
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing fixture root");

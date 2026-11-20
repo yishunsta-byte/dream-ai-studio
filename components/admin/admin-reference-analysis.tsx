@@ -3,16 +3,18 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, Callout, Card, StatusPill } from "@/components/ui/primitives";
-import { RegisteredAnalysisResults } from "@/components/reference-analysis/studio-registered-analysis";
+import { SpectrumResults } from "./admin-reference-analysis-spectrum";
 import {
-  LIMITS, MEDIA_LABEL, SIZE_LIMIT_LABEL, SUPPORTED_FORMATS, SUPPORTED_ORIGINS, createAdminReferenceAnalysisClient, draftFromResult, failureMessage,
+  LIMITS, MEDIA_LABEL, URL_SIZE_LIMIT_LABEL, UPLOAD_SIZE_LIMIT_LABEL, SUPPORTED_FORMATS, SUPPORTED_ORIGINS,
+  analysisInputIssue, createAdminReferenceAnalysisClient, draftFromResult, failureMessage,
   formatPublishedAt, isAuthFailure, unavailableMessage, validateDraft,
-  type AdminReferenceAnalysisClient, type DraftErrors, type Failure, type PublicationDraft, type PublishedReferenceAnalysis, type ReadyResult,
+  type AdminReferenceAnalysisClient, type AnalysisMedia, type AnalysisSource, type DraftErrors, type Failure,
+  type PublicationDraft, type PublishedReferenceAnalysis, type ReadyResult,
 } from "./admin-reference-analysis-model";
 import styles from "./admin-reference-analysis.module.css";
 
 // 관리자 콘텐츠 분석·공개(이미지·음악·영상). 화면은 서버가 준 결과만 그리고, 권한·저장·공개 상태는 서버가 정한다.
-// - 분석: 직접 파일 URL + 권리 확인 뒤에만 요청한다. 새 요청·입력 변경은 진행 중 요청을 취소하고, 늦은 응답은 순번으로 버린다.
+// - 분석: 권리 확인 동작에서 선택한 URL 또는 파일만 보낸다. 입력 변경과 취소 뒤에는 늦은 응답을 버린다.
 // - 공개: 관리자가 고른 결과 한 개의 제목·요약·생성 프롬프트(평문)만 보낸다. 권리·공개 동의 체크 뒤에만 보낸다.
 //   같은 공개 의도의 재시도는 같은 요청 id를 쓰고, 초안을 고치면 새 id를 만든다.
 // - 철회: 확인 단계를 한 번 더 거친다. 성공·대상 없음·이미 철회는 목록을 새로 읽어 서버 상태로 맞춘다.
@@ -33,25 +35,30 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   const block = useCallback((failure: Failure) => { if (isAuthFailure(failure)) { setBlocked(failure); return true; } return false; }, []);
 
   // ── 분석 ──
+  const [sourceKind, setSourceKind] = useState<AnalysisSource["kind"]>("url");
+  const [media, setMedia] = useState<AnalysisMedia>("image");
   const [url, setUrl] = useState("");
-  const [authorized, setAuthorized] = useState(false);
+  const [file, setFile] = useState<File>();
   const [analysis, setAnalysis] = useState<AnalysisView>({ kind: "idle" });
   const analysisSeq = useRef(0);
   const analysisAbort = useRef<AbortController | null>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const form = useRef<HTMLFormElement>(null);
+  const restoreExecuteFocus = useRef(false);
   const cancelAnalysis = () => { analysisSeq.current++; analysisAbort.current?.abort(); analysisAbort.current = null; };
   useEffect(() => () => { analysisAbort.current?.abort(); }, []);
+  const source: AnalysisSource | undefined = sourceKind === "url"
+    ? (url.trim() ? { kind: "url", url: url.trim(), media } : undefined)
+    : (file ? { kind: "file", file, media } : undefined);
+  const issue = source && analysisInputIssue(source);
 
   async function runAnalysis() {
-    const target = url.trim();
-    if (!target || !authorized || analysis.kind === "running" || blocked) return;
-    cancelAnalysis();
-    const mine = analysisSeq.current;
+    if (!source || issue || analysisAbort.current || blocked) return;
+    const mine = ++analysisSeq.current;
     const controller = new AbortController();
     analysisAbort.current = controller;
     setAnalysis({ kind: "running" });
-    const outcome = await client.analyze(target, controller.signal);
+    const outcome = await client.analyze(source, controller.signal);
     if (mine !== analysisSeq.current || controller.signal.aborted) return;
     analysisAbort.current = null;
     if (outcome.kind === "ready") setAnalysis({ kind: "ready", result: outcome.result });
@@ -62,6 +69,10 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
 
   // 실행 버튼은 분석 중 비활성이라 초점을 잃는다. 폼 안에서 시작했으면 바로 '분석 취소'로 옮긴다.
   useLayoutEffect(() => {
+    if (restoreExecuteFocus.current && analysis.kind === "idle") {
+      restoreExecuteFocus.current = false;
+      document.getElementById(`${id}-run`)?.focus({ preventScroll: true });
+    }
     if (analysis.kind !== "running") return;
     const active = document.activeElement;
     if (active === document.body || form.current?.contains(active)) document.getElementById(`${id}-cancel`)?.focus({ preventScroll: true });
@@ -104,7 +115,7 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   }, [loadList]);
 
   if (blocked) return <section className={styles.panel} aria-labelledby={`${id}-heading`}>
-    <h2 id={`${id}-heading`} tabIndex={-1}>콘텐츠 분석·공개</h2>
+    <h2 id={`${id}-heading`} tabIndex={-1}>콘텐츠 프롬프트 분석기</h2>
     <Callout tone="danger" title={blocked.kind === "login" ? "다시 로그인이 필요해요" : "관리 권한이 없어요"}>
       <p>{failureMessage(blocked)}</p>
       {blocked.kind === "login" && <p><a className={styles.link} href="/admin/login?next=%2Fadmin%23admin-reference-analysis">관리자 로그인</a></p>}
@@ -112,51 +123,86 @@ export function AdminReferenceAnalysis({ client: given, newRequestId = newId }: 
   </section>;
 
   const running = analysis.kind === "running";
+  const extensions = SUPPORTED_FORMATS.find((format) => format.media === media)?.extensions ?? [];
   return <section className={styles.panel} aria-labelledby={`${id}-heading`}>
-    <div className={styles.head}>
-      <h2 id={`${id}-heading`} tabIndex={-1}>콘텐츠 분석·공개</h2>
+    <div className={`${styles.head} ${styles.hero}`}>
+      <div>
+        <h2 id={`${id}-heading`} tabIndex={-1}>콘텐츠 프롬프트 분석기</h2>
+        <p className={styles.labName}>스펙트럼 랩</p>
+      </div>
       <Link className={styles.link} href="/analysis-results">공개 결과 페이지 보기</Link>
     </div>
-    <p className={styles.note}>이미지·음악·영상 소스의 직접 파일 URL을 서버에서 분석해요. 공개는 아래에서 고른 결과의 제목·요약·생성 프롬프트만 내보내요.</p>
+    <div className={styles.workspace}>
+      <form ref={form} className={`${styles.form} ${styles.surface}`} aria-labelledby={`${id}-source`} noValidate
+        onSubmit={(event) => { event.preventDefault(); void runAnalysis(); }}>
+        <h3 id={`${id}-source`}>미디어 소스</h3>
+        <fieldset className={styles.choices} disabled={running}>
+          <legend>소스 방식</legend>
+          <div className={styles.options}>
+            {(["url", "file"] as const).map((kind) => <label key={kind}>
+              <input type="radio" name={`${id}-source-kind`} value={kind} checked={sourceKind === kind}
+                onChange={() => editInput(() => { setSourceKind(kind); setFile(undefined); })} />
+              {kind === "url" ? "직접 URL" : "파일"}
+            </label>)}
+          </div>
+        </fieldset>
+        <fieldset className={styles.choices} disabled={running}>
+          <legend>분석할 매체</legend>
+          <div className={styles.options}>
+            {SUPPORTED_FORMATS.map(({ media: option }) => <label key={option}>
+              <input type="radio" name={`${id}-media`} value={option} checked={media === option}
+                onChange={() => editInput(() => { setMedia(option); setFile(undefined); })} />
+              {MEDIA_LABEL[option]}
+            </label>)}
+          </div>
+        </fieldset>
+        {sourceKind === "url" ? <label className={styles.field} htmlFor={`${id}-url`}>
+          미디어 파일 URL
+          <input id={`${id}-url`} type="url" inputMode="url" autoComplete="off" spellCheck={false} required value={url} disabled={running}
+            placeholder={`https://…/파일.${extensions[0]}`} aria-invalid={!!issue} aria-describedby={`${id}-input-help${issue ? ` ${id}-input-error` : ""}`}
+            onChange={(event) => editInput(() => setUrl(event.target.value))} />
+        </label> : <label className={styles.field} htmlFor={`${id}-file`}>
+          미디어 파일
+          <input key={media} id={`${id}-file`} type="file" accept={extensions.map((extension) => `.${extension}`).join(",")} disabled={running}
+            aria-invalid={!!issue} aria-describedby={`${id}-input-help${issue ? ` ${id}-input-error` : ""}`}
+            onChange={(event) => editInput(() => setFile(event.target.files?.[0]))} />
+        </label>}
+        <p id={`${id}-input-help`} className={styles.note}>{sourceKind === "url" ? "지원 원본의 직접 HTTPS 파일 주소를 입력하세요."
+          : `${extensions.join(" · ").toUpperCase()} · 최대 ${UPLOAD_SIZE_LIMIT_LABEL}`}</p>
+        {issue && <p id={`${id}-input-error`} className={styles.error} role="status">{issue}</p>}
 
-    <details className={styles.support}>
-      <summary>지원 원본·형식 보기</summary>
-      <div className={styles.supportBody}>
-        <p>지원 원본(HTTPS 직접 파일 주소만, 쿼리·로그인 정보 없음)</p>
-        <ul>{SUPPORTED_ORIGINS.map((origin) => <li key={origin}><code>{origin}</code></li>)}</ul>
-        <p>지원 형식 · 파일 {SIZE_LIMIT_LABEL}까지</p>
-        <ul>{SUPPORTED_FORMATS.map((format) => <li key={format.media}>{format.label}: {format.extensions}{format.limit && ` · ${format.limit}`}</li>)}</ul>
-      </div>
-    </details>
+        <details className={styles.support}>
+          <summary>지원 원본·형식 보기</summary>
+          <div className={styles.supportBody}>
+            <p>URL은 쿼리와 로그인 정보가 없는 직접 파일 주소만 지원해요.</p>
+            <ul>{SUPPORTED_ORIGINS.map((origin) => <li key={origin}><code>{origin}</code></li>)}</ul>
+            <p>URL 파일 {URL_SIZE_LIMIT_LABEL} · 직접 업로드 {UPLOAD_SIZE_LIMIT_LABEL}까지</p>
+            <ul>{SUPPORTED_FORMATS.map((format) => <li key={format.media}>{MEDIA_LABEL[format.media]}: {format.extensions.join(" · ").toUpperCase()}
+              {format.limit && ` · ${format.limit}`}</li>)}</ul>
+          </div>
+        </details>
+        <p id={`${id}-rights`} className={styles.note}>분석할 권리가 있는 자료만 실행하세요.</p>
+        <div className={styles.actions}>
+          <Button id={`${id}-run`} className={styles.run} type="submit" loading={running} loadingLabel="분석 중"
+            aria-describedby={`${id}-rights`} disabled={!source || !!issue}>권리 확인하고 분석</Button>
+          {running && <Button id={`${id}-cancel`} type="button" variant="secondary" onClick={() => {
+            restoreExecuteFocus.current = true;
+            editInput(() => {});
+          }}>분석 취소</Button>}
+        </div>
+      </form>
 
-    <form ref={form} className={styles.form} onSubmit={(event) => { event.preventDefault(); void runAnalysis(); }}>
-      <label className={styles.field} htmlFor={`${id}-url`}>
-        <span>미디어 파일 URL</span>
-        <input id={`${id}-url`} type="url" inputMode="url" autoComplete="off" spellCheck={false} required value={url} disabled={running}
-          placeholder="https://…/파일.mp3" aria-describedby={`${id}-url-help`}
-          onChange={(event) => editInput(() => { setUrl(event.target.value); setAuthorized(false); })} />
-      </label>
-      <p id={`${id}-url-help`} className={styles.note}>주소를 바꾸면 권리 확인과 이전 결과가 지워져요.</p>
-      <label className={styles.check}>
-        <input type="checkbox" checked={authorized} disabled={running} onChange={(event) => editInput(() => setAuthorized(event.target.checked))} />
-        이 자료를 분석할 권리가 있어요.
-      </label>
-      <div className={styles.actions}>
-        <Button type="submit" loading={running} loadingLabel="분석 중" disabled={!url.trim() || !authorized || running}>분석 실행</Button>
-        {running && <Button id={`${id}-cancel`} type="button" variant="secondary" onClick={() => editInput(() => {})}>분석 취소</Button>}
-      </div>
-      <p className={styles.status} role="status" aria-live="polite">{running ? "서버에서 분석하고 있어요. 영상은 시간이 더 걸릴 수 있어요." : ""}</p>
-    </form>
+      <section className={`${styles.result} ${styles.surface}`} aria-labelledby={`${id}-results`}>
+        <h3 id={`${id}-results`} ref={resultHeading} tabIndex={-1}>{analysis.kind === "failed" || analysis.kind === "unavailable"
+          ? "분석하지 못했어요" : "분석 결과 · 근거 · 생성 프롬프트"}</h3>
+        {analysis.kind === "idle" && <p className={styles.empty}>직접 URL을 넣거나 파일을 선택해 분석하세요.</p>}
+        {running && <p className={styles.empty} role="status">서버에서 분석하고 있어요. 영상은 시간이 더 걸릴 수 있어요.</p>}
+        {(analysis.kind === "unavailable" || analysis.kind === "failed") && <p className={styles.error} role="alert">{analysis.message}</p>}
+        {analysis.kind === "ready" && <SpectrumResults result={analysis.result} />}
+      </section>
+    </div>
 
-    {(analysis.kind === "unavailable" || analysis.kind === "failed") && <div className={styles.result} role="alert">
-      <h3 ref={resultHeading} tabIndex={-1}>분석하지 못했어요</h3>
-      <p>{analysis.message}</p>
-      <p className={styles.note}>공개할 분석 결과가 없어요.</p>
-    </div>}
-
-    {analysis.kind === "ready" && <div className={styles.result}>
-      <h3 ref={resultHeading} tabIndex={-1}>분석 결과 · 근거 · 생성 프롬프트</h3>
-      <RegisteredAnalysisResults result={analysis.result} />
+    {analysis.kind === "ready" && <div className={styles.surface}>
       <PublishForm key={analysis.result.proposals.map((proposal) => proposal.selectionId).join("|")} result={analysis.result} client={client}
         newRequestId={newRequestId} onBlocked={block} onPublished={() => void refreshList()} />
     </div>}
