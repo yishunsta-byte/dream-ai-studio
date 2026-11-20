@@ -33,8 +33,10 @@ export default async function AdminPage() {
     <div className={styles.console}>
       <header className={styles.header}>
         <Link className={styles.brand} href="/admin" aria-label="DREAM SCREEN 운영 관리자">
-          <span className={styles.brandMark} aria-hidden="true">✦</span>
-          <span>DREAM <em>SCREEN</em></span>
+          <span className={styles.brandIdentity}>
+            <span className={styles.brandMark} aria-hidden="true">✦</span>
+            <span>DREAM <em>SCREEN</em></span>
+          </span>
           <span className={styles.brandScope}>운영 관리자</span>
         </Link>
         <AccountMenu email={account} />
