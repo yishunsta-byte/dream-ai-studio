@@ -12,10 +12,11 @@ const origin = "https://studio.example.com";
 const endpoint = `${origin}/api/admin/reference-analysis`;
 const publicImage = "https://mdn.github.io/synthetic.png";
 const privateKey = "synthetic-key-only";
+const versionedModel = "gemini-3.8-flash";
 const environment = {
   DREAM_SITE_URL: origin,
   DREAM_REFERENCE_GEMINI_API_KEY: privateKey,
-  DREAM_REFERENCE_GEMINI_MODEL: "gemini-fixture",
+  DREAM_REFERENCE_GEMINI_MODEL: versionedModel,
 };
 const adminOptions = {
   authenticate: async () => ({ kind: "verified", userId: "10000000-0000-4000-8000-000000000011", email: "admin@example.com" } as const),
@@ -81,7 +82,7 @@ describe("관리자 Style DNA 이미지 의미 분석", () => {
     expect(JSON.stringify(payload)).not.toContain(privateKey);
     expect(send).toHaveBeenCalledOnce();
     const [destination, request] = send.mock.calls[0];
-    expect(destination).toBe("https://generativelanguage.googleapis.com/v1beta/models/gemini-fixture:generateContent");
+    expect(destination).toBe(`https://generativelanguage.googleapis.com/v1beta/models/${versionedModel}:generateContent`);
     expect(request).toMatchObject({ redirect: "error", headers: { "x-goog-api-key": privateKey } });
     const body = JSON.parse(String(request?.body));
     const { inlineData } = body.contents[0].parts[1];
@@ -152,6 +153,12 @@ describe("관리자 Style DNA 이미지 의미 분석", () => {
       semantic: { status: "unavailable", reason: "not_configured" },
     });
     expect(await (await missing.capabilities(new Request(endpoint))).json()).toEqual({ semantic: { image: "not_configured" } });
+    const invalidEnv = { ...environment, DREAM_REFERENCE_GEMINI_MODEL: "gemini-3.8-flash/other" };
+    const invalid = createAdminReferenceHttp({ ...options, env: invalidEnv, analyzeImageSemantics: createGeminiImageAnalysis(invalidEnv, send) });
+    expect(await (await invalid.capabilities(new Request(endpoint))).json()).toEqual({ semantic: { image: "not_configured" } });
+    expect(await (await invalid.analyze(upload(bytes, { semantic: "image" }))).json()).toMatchObject({
+      semantic: { status: "unavailable", reason: "not_configured" },
+    });
     expect(send).not.toHaveBeenCalled();
   });
 

@@ -13,7 +13,7 @@ export type AnalyzeImageSemantics = (path: string, signal: AbortSignal) => Promi
 function imageSemanticConfig(env: Environment) {
   const key = env.DREAM_REFERENCE_GEMINI_API_KEY?.trim();
   const model = env.DREAM_REFERENCE_GEMINI_MODEL?.trim();
-  if (!key || !model || !/^gemini-[a-z0-9-]{1,100}$/.test(model)) return null;
+  if (!key || !model || !/^gemini-[a-z0-9][a-z0-9.-]{0,99}$/.test(model)) return null;
   return { key, model };
 }
 
