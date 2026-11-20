@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const referenceMedia = z.enum(["video", "music", "image"]);
+export type ReferenceMedia = z.infer<typeof referenceMedia>;
 export const referencePermission = z.enum(["synthetic", "authorized", "unknown"]);
 const fileName = z.string().min(1).max(255).refine(value =>
   value === value.trim() && value !== "." && value !== ".." && !/[\\/:]/.test(value) &&
@@ -38,6 +39,7 @@ const fileFormats = [
 ] as const;
 
 export const referenceFileByteLimit = 64 * 1024 * 1024;
+export const referenceUploadByteLimit = 4 * 1024 * 1024;
 
 export function referenceFileFormat(name: string) {
   const suffix = /\.(\w+)$/.exec(name)?.[1]?.toLowerCase();

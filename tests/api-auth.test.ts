@@ -122,8 +122,9 @@ const routeModules = import.meta.glob<Record<string, unknown>>("../app/api/**/ro
 // inheriting a public exemption or disappearing from the authentication tests.
 const publicAuthRoutes = ["auth/login", "auth/signup", "auth/reset"];
 const selfAuthenticatedRoutes = ["auth/password"];
+const referenceRoutes = ["admin/reference-analysis", "admin/reference-publications"];
 const guardedRoutes = [
-  "admin/publications", "admin/render-queue",
+  "admin/publications", "admin/render-queue", ...referenceRoutes,
   "assets/[id]", "assets/link", "assets/upload", "auth/logout", "auth/session",
   "backups/configuration", "backups", "characters", "exports/[id]", "jobs",
   "library/archive", "projects/[id]/finishing", "projects/[id]/production",
@@ -161,14 +162,17 @@ describe("direct route calls without proxy", () => {
       for (const method of handlers) {
         const request = new Request("https://example.invalid/api/direct", { method: method === "GET" || method === "HEAD" ? method : "POST" });
         const readBody = vi.spyOn(request, "json").mockRejectedValue(new Error("must not parse body"));
+        const readStream = vi.spyOn(request, "body", "get").mockImplementation(() => { throw new Error("must not read the body stream"); });
         const readParams = vi.fn(() => { throw new Error("must not read params"); });
         const params = { then: readParams } as unknown as Promise<{ id: string }>;
         const response = await (loadedRoute[method] as Handler)(request, { params });
         expect(response.status, method).toBe(status);
-        expect(await response.json(), method).toMatchObject({ code });
+        const referenceRoute = referenceRoutes.some(route => modulePath(route) === path);
+        expect(await response.json(), method).toMatchObject(referenceRoute ? { error: code } : { code });
         expect(response.headers.get("cache-control"), method).toBe("no-store");
         expect(response.headers.get("location"), method).toBeNull();
         expect(readBody, method).not.toHaveBeenCalled();
+        expect(readStream, method).not.toHaveBeenCalled();
         expect(readParams, method).not.toHaveBeenCalled();
         expect(state.listJobs, method).not.toHaveBeenCalled();
       }

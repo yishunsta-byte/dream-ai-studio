@@ -1,7 +1,9 @@
-type MediaUrlErrorCode = "invalid_url" | "unsupported_origin" | "unsupported_format" | "too_large";
+type MediaUrlErrorCode =
+  | "invalid_url" | "unsupported_origin" | "unsupported_format" | "too_large"
+  | "invalid_file" | "file_type_mismatch";
 
 export class MediaUrlError extends Error {
-  constructor(readonly code: MediaUrlErrorCode, message: string) { super(message); }
+  constructor(readonly code: MediaUrlErrorCode, message: string, readonly status?: 400 | 413) { super(message); }
 }
 
 /** 분석이 어느 단계에서 멈췄는지(운영 진단용). URL·경로·서버 메시지는 담지 않는다. */

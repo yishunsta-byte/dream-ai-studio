@@ -12,6 +12,7 @@ type BoundAnalysis =
 
 type RegisteredSnapshotResult =
   | { status: "bound"; proof: { snapshotSha256: string; sourceGeneration: string }; analysis: BoundAnalysis }
+  | { status: "unavailable"; reason: "unverified_analysis"; fileIssue: "invalid_file" | "file_type_mismatch" }
   | { status: "unavailable"; reason: "invalid_registration" | "unverified_analysis" | "cancelled" | "timed_out" };
 
 /**
@@ -35,6 +36,13 @@ export async function analyzeRegisteredReferenceSnapshot(
       : { media, ...await analyzeLocalReferenceImage(path, submission, boundOptions) };
   const inspection = analysis.inspection.inspection;
   if (inspection === "cancelled" || inspection === "timed_out") return { status: "unavailable", reason: inspection };
+  if (inspection === "invalid_file") {
+    const inspected = analysis.inspection.input;
+    return {
+      status: "unavailable", reason: "unverified_analysis",
+      fileIssue: inspected.status === "invalid" && inspected.reason === "file_type_mismatch" ? "file_type_mismatch" : "invalid_file",
+    };
+  }
 
   const features = analysis.media === "video" ? analysis.video : analysis.media === "music" ? analysis.audio : analysis.image;
   if (inspection !== "completed" || features.status !== "completed") {
