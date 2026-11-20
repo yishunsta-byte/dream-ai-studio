@@ -51,7 +51,7 @@ export function AdminManual() {
         <ol>
           <li>Google AI Studio에서 연동할 프로젝트의 Gemini API 키를 준비하세요.</li>
           <li>Vercel 프로젝트의 환경 변수에 아래 이름으로 키와 모델 ID를 추가하세요. 적용할 환경을 선택하고 새로 배포하세요.</li>
-          <li><a className={styles.link} href="#admin-api-integrations">계정설정 및 API 연동</a>에서 <strong>API 응답 확인</strong>을 누르세요.</li>
+          <li><a className={styles.link} href="#admin-api-integrations">계정설정 및 API 연동</a>에서 <strong>서버 설정 확인</strong>을 누르세요.</li>
         </ol>
         <details>
           <summary>프로그램별 환경 변수 이름</summary>
@@ -61,7 +61,7 @@ export function AdminManual() {
             <dt>쇼츠 분석</dt><dd><code>DREAM_REFERENCE_GEMINI_API_KEY</code><br /><code>DREAM_REFERENCE_SHORTS_GEMINI_MODEL</code></dd>
           </dl>
         </details>
-        <p className={styles.note}>키 값은 서버 환경 변수에만 저장하세요. API 응답 확인은 설정 상태를 조회합니다.</p>
+        <p className={styles.note}>키 값은 서버 환경 변수에만 저장하세요. 서버 설정 확인은 키와 모델 설정이 있는지만 조회하고, 실제 Gemini 연결은 분석을 실행할 때 확인돼요.</p>
         <div className={styles.manualLinks}>
           <a className={styles.link} href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noreferrer">Gemini API 키 안내</a>
           <a className={styles.link} href="https://vercel.com/docs/environment-variables/managing-environment-variables" target="_blank" rel="noreferrer">Vercel 환경 변수 안내</a>
