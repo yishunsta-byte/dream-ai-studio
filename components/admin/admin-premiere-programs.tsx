@@ -8,13 +8,13 @@ import { youtubeVideoId } from "@/lib/reference-analysis/shorts-analysis-contrac
 import { readAnalysisSettings, settingsMessage, type AnalysisSettings } from "./admin-analysis-tools";
 import { AdminAnalysisResults, type PreparedPublication } from "./admin-analysis-results";
 import { imagePublicationDraft } from "./admin-analysis-publication-draft";
-import { ImageSemanticReport } from "./admin-image-semantic";
+import { StyleDnaReport } from "./admin-style-dna-report";
 import { AdminMusicSemantic } from "./admin-music-semantic";
 import { PasteUrlField } from "./admin-paste-url";
 import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
 import {
   analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, SUPPORTED_ORIGINS,
-  unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource, type PublicationDraft,
+  unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource, type PublicationDraft, type ReadyResult,
 } from "./admin-reference-analysis-model";
 import { AdminShortsAnalysis } from "./admin-shorts-analysis";
 import hub from "./admin.module.css";
@@ -30,7 +30,11 @@ const copy = [
   { kind: "shorts", description: "YouTube 쇼츠의 첫 장면과 시간대별 근거를 확인해요.", caption: "첫 장면·시간대별 근거" },
 ] as const;
 
-function LocalMedia({ file, kind }: { file: File; kind: "image" | "music" }) {
+type Size = { width: number; height: number };
+const naturalSize = (image: HTMLImageElement): Size | undefined =>
+  image.naturalWidth > 0 && image.naturalHeight > 0 ? { width: image.naturalWidth, height: image.naturalHeight } : undefined;
+
+function LocalMedia({ file, kind, onSize }: { file: File; kind: "image" | "music"; onSize?: (size?: Size) => void }) {
   const preview = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const player = preview.current?.querySelector("img, audio");
@@ -46,7 +50,7 @@ function LocalMedia({ file, kind }: { file: File; kind: "image" | "music" }) {
   return <div className={styles.localMedia} ref={preview}>
     {kind === "music" ? <audio controls preload="none" aria-label="선택한 음악 원본" /> : (
       // eslint-disable-next-line @next/next/no-img-element -- The selected file stays in a browser-owned blob URL.
-      <img alt="선택한 원본 이미지" />
+      <img alt="선택한 원본 이미지" onLoad={event => onSize?.(naturalSize(event.currentTarget))} />
     )}
   </div>;
 }
@@ -88,6 +92,8 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   const [attempt, setAttempt] = useState(0);
   const [running, setRunning] = useState(false);
   const [report, setReport] = useState<ImageSemanticResult>();
+  const [measured, setMeasured] = useState<ReadyResult>();
+  const [size, setSize] = useState<Size>();
   const id = useId();
   const sourceInput = useRef<HTMLInputElement>(null);
   const retryId = `${id}-retry`;
@@ -121,6 +127,8 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
     cancel();
     setConsent(false);
     setReport(undefined);
+    setMeasured(undefined);
+    setSize(undefined);
     setMarker("");
     setPreviewOpen(false);
     setPreviewFailed(false);
@@ -139,12 +147,14 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
     setRunning(true);
     setMarker("");
     setReport(undefined);
+    setMeasured(undefined);
     const outcome = await imageClient.analyze(source, controller.signal, { imageSemantic: true });
     if (controller.signal.aborted || analysisRequest.current !== controller) return;
     analysisRequest.current = null;
     setRunning(false);
     if (outcome.kind === "ready") {
       setReport(outcome.semantic);
+      setMeasured(outcome.result);
       if (outcome.semantic?.status === "unavailable" && outcome.semantic.reason === "not_configured") {
         setSettings({ kind: "not_configured" });
         setConsent(false);
@@ -209,15 +219,16 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
       </section>
       <section className={styles.control} aria-label="이미지 분석 결과">
         <h3>스타일 리포트</h3>
-        {report ? <ImageSemanticReport semantic={report} /> : <p className={styles.note}>분석이 완료되면 스타일 근거와 한영 프롬프트를 확인할 수 있어요.</p>}
+        {report || measured ? <StyleDnaReport semantic={report} result={measured} size={size} /> : <p className={styles.note}>분석이 완료되면 스타일 근거와 한영 프롬프트를 확인할 수 있어요.</p>}
         {report && report.status !== "unavailable" && <ImagePublicDraft result={report} onPrepare={onPrepare} />}
       </section>
     </div>
     <Preview title="이미지 프리뷰">
-      {permittedSource?.kind === "file" ? <LocalMedia file={permittedSource.file} kind="image" />
+      {permittedSource?.kind === "file" ? <LocalMedia file={permittedSource.file} kind="image" onSize={setSize} />
         : permittedSource?.kind === "url" && previewOpen && !previewFailed ? (
           // eslint-disable-next-line @next/next/no-img-element -- The operator explicitly opens a validated direct reference URL.
-          <img src={permittedSource.url} alt="선택한 원본 이미지" referrerPolicy="no-referrer" onError={() => setPreviewFailed(true)} />
+          <img src={permittedSource.url} alt="선택한 원본 이미지" referrerPolicy="no-referrer"
+            onLoad={event => setSize(naturalSize(event.currentTarget))} onError={() => setPreviewFailed(true)} />
         ) : <div className={styles.previewMessage}>
           <Icon name="flask" />
           <p>{previewFailed ? "원본 이미지를 표시하지 못했어요." : "선택한 이미지가 여기에 표시돼요."}</p>
