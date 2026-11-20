@@ -53,6 +53,7 @@ function MusicFileAnalysis({ file, client, disabled }: { file: File; client: Adm
     const controller = new AbortController();
     request.current = controller;
     setBusy(true);
+    setResult(undefined);
     setError("");
     const outcome = await client.analyze(file, true, controller.signal);
     if (controller.signal.aborted || request.current !== controller) return;
@@ -80,7 +81,7 @@ function MusicFileAnalysis({ file, client, disabled }: { file: File; client: Adm
     </>}
     {busy && <p role="status">장르, 악기, 템포와 구간 구조를 분석하는 중이에요.</p>}
     {error && <p role="alert">{error}</p>}
-    {result && <MusicReport key={result.status === "unavailable" ? undefined : result.report.sunoPrompt ?? undefined} result={result} />}
+    {result && <MusicReport result={result} />}
   </>;
 }
 
