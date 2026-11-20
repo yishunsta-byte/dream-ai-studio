@@ -192,7 +192,7 @@ try{
   await fault("conflict");
   await submit();
   await awaitWrite("POST",4);
-  await text(listId,"같은 공개 요청이 다른 내용으로");
+  await text(listId,"‘공개한 분석 결과’ 목록을 확인한 뒤 다시 동의하고 공개해 주세요");
   await authorize();
   await submit();
   await awaitWrite("POST",5);
@@ -213,9 +213,25 @@ try{
   const videoTitle="프리미어 쇼츠 "+width+" "+runCode;
   await fill("title",videoTitle);
   await authorize();
-  await hold("publication");
+  await fault("invalid");
   await submit();
   await awaitWrite("POST",6);
+  await text(listId,"링크, 파일 경로, 계정 정보, API 키를 지워 주세요");
+  assert.deepEqual(await page.evaluate(selector=>{
+    const form=document.querySelector(selector);
+    return {
+      focused:document.activeElement===form.querySelector('[role="alert"]'),
+      checked:form.querySelector('input[type="checkbox"]').checked,
+      title:form.querySelector('input[id$="-title"]').value,
+    };
+  },listForm),{focused:true,checked:false,title:videoTitle});
+  await readPublic(videoTitle,false);
+  await authorize();
+  await hold("publication");
+  await submit();
+  await awaitWrite("POST",7);
+  const videoPosts=(await writes()).slice(5);
+  assert.notEqual(videoPosts[0].body.id,videoPosts[1].body.id);
   await move(apiId);
   await release();
   await page.waitForFunction(()=>document.querySelector("#admin-analysis-results form [role=status]")?.textContent.includes("공개했어요."));
@@ -243,8 +259,8 @@ try{
   await move(listId);
   await text(listId,"로그인이 끝났어요");
   assert.equal(await page.evaluate(()=>document.querySelector("#admin-analysis-results form")),null);
-  assert.equal((await writes()).length,6);
-  results.push({width,focus,firstListReadCount:draftOpenReadCount,sameIdOnRetry:true,newIdAfterEditAndConflict:true,safeFields,publicCard:true,revokedAbsent:true,writeStatusAfterLeave:true,authFailureHide:true});
+  assert.equal((await writes()).length,7);
+  results.push({width,focus,firstListReadCount:draftOpenReadCount,sameIdOnRetry:true,newIdAfterEditAndConflict:true,invalidPublicationRecovery:true,safeFields,publicCard:true,revokedAbsent:true,writeStatusAfterLeave:true,authFailureHide:true});
  }
  for(const [width,height,scale] of [[320,360,2],[1280,900,2]]){
   await open(width,height,scale);

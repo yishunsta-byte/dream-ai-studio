@@ -186,10 +186,10 @@ const REJECTED: Record<ErrorCode, string> = {
   invalid_file: "파일을 읽을 수 없어요. 다른 파일을 선택해 주세요.",
   file_type_mismatch: "선택한 매체와 파일 내용이 달라요. 매체나 파일을 다시 선택해 주세요.",
   analysis_failed: "이 파일은 지금 분석할 수 없어요. 다른 파일이나 형식으로 시도해 주세요.",
-  invalid_publication: "공개 내용을 확인해 주세요. 제목·요약·프롬프트가 한도 안에 있어야 해요.",
-  publication_conflict: "같은 공개 요청이 다른 내용으로 이미 처리됐어요. 아래 공개 목록을 확인한 뒤 다시 동의하고 공개해 주세요.",
-  not_found: "이미 없어진 공개 결과예요. 아래 공개 목록을 확인해 주세요.",
-  already_revoked: "이미 철회된 결과예요. 아래 공개 목록을 확인해 주세요.",
+  invalid_publication: "제목·요약·생성 프롬프트의 글자 수를 확인하고 링크, 파일 경로, 계정 정보, API 키를 지워 주세요.",
+  publication_conflict: "같은 공개 요청이 다른 내용으로 이미 처리됐어요. ‘공개한 분석 결과’ 목록을 확인한 뒤 다시 동의하고 공개해 주세요.",
+  not_found: "공개 결과를 찾을 수 없어요. ‘공개한 분석 결과’ 목록에서 최신 상태를 확인해 주세요.",
+  already_revoked: "이미 철회된 결과예요. ‘공개한 분석 결과’ 목록에서 최신 상태를 확인해 주세요.",
 };
 export function failureMessage(failure: Failure): string {
   switch (failure.kind) {

@@ -48,6 +48,7 @@ window.fetch=async(raw,init)=>{
     if (fault && (method==="POST" || fault==="login")) fixture.publicationFault="";
     if (fault==="login") return response({},401);
     if (fault==="conflict" && method==="POST") return response({error:"publication_conflict"},409);
+    if (fault==="invalid" && method==="POST") return response({error:"invalid_publication"},400);
     if (fixture.hold==="publication" && method==="POST") await new Promise<void>(resolve=>{row.resolve=resolve;});
     const reply=await realFetch(path,init);
     if(fault==="lost"&&method==="POST") throw new TypeError("Fixture lost a completed publication response");
