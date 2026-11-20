@@ -20,6 +20,7 @@ const operationsId="admin-operations-availability";
 const imageId="admin-style-dna";
 const musicId="admin-music-analysis";
 const shortsId="admin-shorts-analysis";
+const analyzerIds=[imageId,musicId,shortsId];
 const publication="/api/admin/reference-publications";
 const listForm="#"+listId+" form";
 const results=[];
@@ -43,24 +44,36 @@ const view=async (id,hash="#"+id)=>{
     const heading=document.activeElement;
     const rect=heading.getBoundingClientRect();
     const menu=document.querySelector('nav[aria-label="관리 메뉴"]');
+    const programs=document.querySelector('nav[aria-label="분석 프로그램"]');
     const bar=menu.getBoundingClientRect();
     const point=document.elementFromPoint((rect.left+rect.right)/2,(rect.top+rect.bottom)/2);
-    return {id,heading:heading.innerText,active:document.querySelector('nav [aria-current="location"]')?.hash,
+    return {id,heading:heading.innerText,active:menu.querySelector('[aria-current="location"]')?.hash,
+      activeAnalyzer:programs.querySelector('[aria-current="location"]')?.hash??null,programsVisible:!programs.hidden&&!!programs.getClientRects().length,
       clear:rect.top>=0&&rect.bottom<=innerHeight&&heading.contains(point)&&
         (getComputedStyle(menu).position!=="sticky"||bar.top>1||rect.top>=bar.bottom-1),
       overflow:Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth),
       position:getComputedStyle(menu).position, onlyPanel:[...document.querySelectorAll('[data-active-section="true"]')].map(p=>p.id)};
   },id);
   const activeId=id===apiId?settingsId:id;
-  assert.equal(state.active,"#"+activeId);
+  const isAnalyzer=analyzerIds.includes(id);
+  assert.equal(state.active,"#"+(isAnalyzer?listId:activeId));
+  assert.equal(state.activeAnalyzer,isAnalyzer?"#"+id:null);
+  assert.equal(state.programsVisible,isAnalyzer||id===listId);
   assert.equal(state.overflow,0,JSON.stringify(state));
   assert.equal(state.clear,true,JSON.stringify(state));
   assert.deepEqual(state.onlyPanel,[activeId]);
   return state;
 };
-const move=async id=>{
+const activateMenuLink=async id=>{
   await tabTo('nav:is([aria-label="관리 메뉴"], [aria-label="분석 프로그램"]) a[href="#'+id+'"]');
   await page.keyboard.press("Enter");
+};
+const move=async id=>{
+  if(analyzerIds.includes(id)&&await page.evaluate(()=>document.querySelector('nav[aria-label="분석 프로그램"]').hidden)){
+    await activateMenuLink(listId);
+    await view(listId);
+  }
+  await activateMenuLink(id);
   return view(id);
 };
 const open=async(width,height,scale=1)=>{
@@ -123,26 +136,32 @@ try{
   await view(imageId);
   await open(width,900);
   assert.equal((await listReads()).length,0);
+  assert.equal(await page.evaluate(()=>document.querySelector('nav[aria-label="분석 프로그램"]').getClientRects().length),0);
+  await move(listId);
+  await text(listId,"공개한 분석 결과");
+  assert.equal((await listReads()).length,1);
   const focus=[];
   for(const id of [musicId,"admin-overview",settingsId,imageId])focus.push(await move(id));
   await page.evaluate(()=>history.back());
-  focus.push(await view(settingsId));
+  focus.push(await view(listId));
   await page.evaluate(()=>history.forward());
   focus.push(await view(imageId));
   assert.deepEqual(await page.evaluate(()=>{
-    const heading=document.querySelector("#admin-workspace-heading");
+    const heading=document.querySelector('main h1');
     const programs=document.querySelector('nav[aria-label="분석 프로그램"]');
     const operations=document.querySelector('nav[aria-label="관리 메뉴"]');
     const panel=document.querySelector('[data-active-section="true"]');
     const bounds=node=>node.getBoundingClientRect();
     return {
-      inOrder:bounds(operations).bottom<=bounds(heading).top&&bounds(heading).bottom<=bounds(programs).top&&bounds(programs).bottom<=bounds(panel).top,
+      inOrder:programs.previousElementSibling===operations&&bounds(operations).bottom<=bounds(programs).top&&bounds(programs).bottom<=bounds(panel).top,
+      headingOutOfFlow:heading.textContent==='관리 화면'&&bounds(heading).height<=1&&getComputedStyle(heading).position==='absolute',
       heading:panel.querySelector('h2').textContent,
+      firstMenu:operations.querySelector('a').textContent,
       programs:[...programs.querySelectorAll('strong,small')].map(node=>node.textContent),
       settings:[...operations.querySelectorAll('a')].filter(link=>link.textContent.includes('설정')||link.textContent.includes('API')).map(link=>link.textContent.trim()),
     };
   }),{
-    inOrder:true,heading:"이미지 분석",
+    inOrder:true,headingOutOfFlow:true,heading:"이미지 분석",firstMenu:"콘텐츠 분석기",
     programs:["이미지 분석","색감·조명·구도 분석과 한영 프롬프트","음악 분석","장르·악기·템포 분석과 Suno 프롬프트","쇼츠 분석","첫 장면·영상 구성 분석과 연출 프롬프트"],
     settings:["계정설정 및 API 연동"],
   });
@@ -176,7 +195,7 @@ try{
   await text(apiId,"서버 설정 확인");
   await page.evaluate(()=>history.back());
   focus.push(await view(imageId));
-  assert.equal((await listReads()).length,0);
+  const readsBeforeDraft=(await listReads()).length;
   await text(imageId,"이미지 분석 실행");
   await page.fill('loc=css:#'+imageId+' input[type=url]',"https://mdn.github.io/fixture.png");
   await check('loc=css:#'+imageId+' input[type=checkbox]');
@@ -190,7 +209,7 @@ try{
   assert.equal((await writes()).length,0);
   assert.equal(await page.evaluate(selector=>document.querySelector(selector+' button[type=submit]').disabled,listForm),true);
   await page.waitForFunction(()=>document.querySelector("#admin-analysis-results").innerText.includes("공개한 분석 결과"));
-  const draftOpenReadCount=(await listReads()).length;
+  const draftOpenReadCount=(await listReads()).length-readsBeforeDraft;
   assert.equal(draftOpenReadCount,1);
   const imageTitle="프리미어 이미지 "+width+" "+runCode;
   await fill("title",imageTitle);

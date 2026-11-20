@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/primitives";
 import type { ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
 import { youtubeVideoId } from "@/lib/reference-analysis/shorts-analysis-contract";
 import { readAnalysisSettings, settingsMessage, type AnalysisSettings } from "./admin-analysis-tools";
-import { analysisResultsSection, AdminAnalysisResults, type PreparedPublication } from "./admin-analysis-results";
+import { AdminAnalysisResults, type PreparedPublication } from "./admin-analysis-results";
 import { imagePublicationDraft } from "./admin-analysis-publication-draft";
 import { ImageSemanticReport } from "./admin-image-semantic";
 import { AdminMusicSemantic } from "./admin-music-semantic";
-import { analysisPrograms, navigateAdminSection, useAdminSection } from "./admin-navigation";
+import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
 import {
   analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, SUPPORTED_ORIGINS,
   unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource, type PublicationDraft,

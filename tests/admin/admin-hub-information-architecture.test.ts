@@ -21,13 +21,14 @@ describe("admin hub information architecture", () => {
     expect(nav).toBeDefined();
     const programs = html.match(/<nav\b[^>]*aria-label="분석 프로그램"[\s\S]*?<\/nav>/)?.[0];
     expect(programs).toBeDefined();
-    const operations = ["admin-overview", "admin-project-list", "admin-review", "admin-analysis-results", "admin-render-queue", "admin-account", "admin-operations-availability", "admin-manual"];
+    const operations = ["admin-analysis-results", "admin-overview", "admin-project-list", "admin-review", "admin-render-queue", "admin-account", "admin-operations-availability", "admin-manual"];
     const analyzers = ["admin-style-dna", "admin-music-analysis", "admin-shorts-analysis"];
     expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(operations);
     expect([...programs!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(analyzers);
-    const titlePosition = html.indexOf('id="admin-workspace-heading"');
-    expect(html.indexOf(nav!)).toBeLessThan(titlePosition);
-    expect(titlePosition).toBeLessThan(html.indexOf(programs!));
+    expect(html).toContain('<h1 class="sr-only">관리 화면</h1>');
+    expect(html).toContain(nav! + programs!);
+    expect(programs).toMatch(/<nav\b[^>]*\bhidden(?:="")?/);
+    expect(nav).toContain(">콘텐츠 분석기</a>");
     expect(html.indexOf(programs!)).toBeLessThan(html.indexOf('id="admin-style-dna"'));
     expect(nav).toMatch(/href="#admin-project-list" aria-current="location"/);
     expect(nav!.match(/aria-current=/g)).toHaveLength(1);

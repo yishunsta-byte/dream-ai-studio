@@ -21,11 +21,9 @@ const unavailable = [
 
 export function AdminHub({ email, projects, review }: { email: string; projects: AdminProjects; review: ReactNode }) {
   return <div className={styles.workspace}>
+    <h1 className="sr-only">관리 화면</h1>
     <AdminNavigation />
-    <div className={styles.workspaceIntro}>
-      <h1 id="admin-workspace-heading" className={styles.consoleTitle}>관리 화면</h1>
-      <AdminProgramNavigation />
-    </div>
+    <AdminProgramNavigation />
     <div className={styles.sections}>
       <section id="admin-overview" tabIndex={-1} aria-label="개요" className={`${styles.target} ${styles.overview}`}>
         <h2 tabIndex={-1}>개요</h2>

@@ -4,14 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Callout } from "@/components/ui/primitives";
 import { AnalysisPublicationForm, PublicationList, type PublicationListView } from "./admin-analysis-publication";
-import { useAdminSection } from "./admin-navigation";
+import { analysisResultsSection, useAdminSection } from "./admin-navigation";
 import {
   createAdminReferenceAnalysisClient, failureMessage, type Failure, type PublicationDraft,
 } from "./admin-reference-analysis-model";
 import hub from "./admin.module.css";
 import styles from "./admin-premiere-programs.module.css";
 
-export const analysisResultsSection = "admin-analysis-results";
 export type PreparedPublication = { draft: PublicationDraft; revision: number };
 const client = createAdminReferenceAnalysisClient();
 const loginLink = "/admin/login?next=%2Fadmin%23admin-analysis-results";

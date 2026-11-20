@@ -11,13 +11,15 @@ export const analysisPrograms = [
 ] as const satisfies readonly { id: string; label: string; detail: string; icon: IconName }[];
 
 const legacyAnalysisHash = "#admin-reference-analysis";
+const programNavigationId = "admin-program-navigation";
+export const analysisResultsSection = "admin-analysis-results";
 export const accountSettingsId = "admin-account";
 const apiIntegrationsId = "admin-api-integrations";
 const operations = [
+  { id: analysisResultsSection, label: "콘텐츠 분석기", icon: "flask" },
   { id: "admin-overview", label: "개요", icon: "home" },
   { id: "admin-project-list", label: "내 프로젝트", icon: "folder" },
   { id: "admin-review", label: "완성본 검수·게시", icon: "check" },
-  { id: "admin-analysis-results", label: "분석 결과 관리", icon: "check" },
   { id: "admin-render-queue", label: "렌더 대기열", icon: "clock" },
   { id: accountSettingsId, label: "계정설정 및 API 연동", icon: "settings" },
   { id: "admin-operations-availability", label: "운영 연결 범위", icon: "lock" },
@@ -25,6 +27,10 @@ const operations = [
 ] as const satisfies readonly { id: string; label: string; icon: IconName }[];
 
 const sections = [...analysisPrograms, ...operations];
+
+function isAnalysisSection(id: string) {
+  return id === analysisResultsSection || analysisPrograms.some(program => program.id === id);
+}
 
 function subscribeLocation(onChange: () => void) {
   window.addEventListener("hashchange", onChange);
@@ -57,16 +63,16 @@ function focusSection(id: string) {
   if (!heading) return;
   heading.tabIndex = -1;
   heading.focus({ preventScroll: true });
-  const intro = analysisPrograms.some(program => program.id === id)
-    ? document.getElementById("admin-workspace-heading")?.parentElement
+  const programNavigation = isAnalysisSection(id)
+    ? document.getElementById(programNavigationId)
     : null;
-  if (intro) {
-    const top = intro.getBoundingClientRect().top;
+  if (programNavigation) {
+    const top = programNavigation.getBoundingClientRect().top;
     const bottom = heading.getBoundingClientRect().bottom;
-    const offset = parseFloat(getComputedStyle(intro).scrollMarginTop) || 0;
+    const offset = parseFloat(getComputedStyle(programNavigation).scrollMarginTop) || 0;
     const height = Math.min(window.innerHeight, window.visualViewport?.height ?? window.innerHeight);
     if (bottom - top + offset <= height) {
-      if (top < offset || bottom > height) intro.scrollIntoView({ block: "start" });
+      if (top < offset || bottom > height) programNavigation.scrollIntoView({ block: "start" });
       return;
     }
   }
@@ -90,7 +96,7 @@ export function useAdminSection() {
 
 export function AdminProgramNavigation() {
   const current = useAdminSection();
-  return <nav className={styles.programNavigation} aria-label="분석 프로그램">
+  return <nav id={programNavigationId} className={styles.programNavigation} aria-label="분석 프로그램" hidden={!isAnalysisSection(current)}>
     <ul className={styles.programLinks}>
       {analysisPrograms.map(({ id, label, detail, icon }) => <li key={id}>
         <a href={`#${id}`} aria-current={id === current ? "location" : undefined}>
@@ -104,6 +110,7 @@ export function AdminProgramNavigation() {
 export function AdminNavigation() {
   const hash = useSyncExternalStore(subscribeLocation, browserHash, serverHash);
   const current = sectionFromHash(hash);
+  const currentMenu = isAnalysisSection(current) ? analysisResultsSection : current;
   const visitedSection = useRef(false);
   const navigation = useRef<HTMLElement>(null);
 
@@ -195,7 +202,7 @@ export function AdminNavigation() {
   return <nav ref={navigation} className={styles.navigation} aria-label="관리 메뉴">
     <ul className={styles.operationLinks} aria-label="운영 메뉴">
       {operations.map(({ id, label, icon }) => <li key={id}>
-        <a href={`#${id}`} aria-current={id === current ? "location" : undefined}>
+        <a href={`#${id}`} aria-current={id === currentMenu ? "location" : undefined}>
           <Icon name={icon} />{label}
         </a>
       </li>)}
