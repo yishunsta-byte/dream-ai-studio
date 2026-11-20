@@ -6,6 +6,7 @@ import type { MusicSemanticResult } from "@/lib/reference-analysis/music-semanti
 import { analysisInputIssue } from "./admin-reference-analysis-model";
 import { createAdminMusicSemanticClient, type AdminMusicSemanticClient } from "./admin-music-semantic-client";
 import styles from "./admin-music-semantic.module.css";
+import analysisStyles from "./admin-reference-analysis.module.css";
 
 const defaultClient = createAdminMusicSemanticClient();
 const unknown = "확인되지 않았어요.";
@@ -59,8 +60,11 @@ function MusicFileAnalysis({ file, client, disabled }: { file: File; client: Adm
     if (controller.signal.aborted || request.current !== controller) return;
     request.current = null;
     setBusy(false);
-    if (outcome.kind === "ok") setResult(outcome.result);
-    else setError(outcome.message);
+    if (outcome.kind === "failed") setError(outcome.message);
+    else if (outcome.result.status === "unavailable" && outcome.result.reason === "not_configured") {
+      setAvailability({ kind: "ok", configured: false });
+      setConsent(false);
+    } else setResult(outcome.result);
   }
 
   const configured = availability?.kind === "ok" && availability.configured;
@@ -70,7 +74,10 @@ function MusicFileAnalysis({ file, client, disabled }: { file: File; client: Adm
       <p role="alert">{availability.message}</p>
       <Button type="button" variant="secondary" onClick={() => { setAvailability(undefined); setCheck(value => value + 1); }}>설정 다시 확인</Button>
     </div>}
-    {availability?.kind === "ok" && !configured && <p role="status">{unavailableMessage.not_configured}</p>}
+    {availability?.kind === "ok" && !configured && <>
+      <p role="status">{unavailableMessage.not_configured}</p>
+      <a href="#admin-api-integrations" className={analysisStyles.link}>API 연동 보기</a>
+    </>}
     {fileIssue && <p role="status">{fileIssue}</p>}
     {configured && <>
       <label className={styles.consent}>
