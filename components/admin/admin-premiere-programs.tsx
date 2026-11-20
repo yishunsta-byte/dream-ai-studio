@@ -10,6 +10,7 @@ import { AdminAnalysisResults, type PreparedPublication } from "./admin-analysis
 import { imagePublicationDraft } from "./admin-analysis-publication-draft";
 import { ImageSemanticReport } from "./admin-image-semantic";
 import { AdminMusicSemantic } from "./admin-music-semantic";
+import { PasteUrlField } from "./admin-paste-url";
 import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
 import {
   analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, SUPPORTED_ORIGINS,
@@ -171,10 +172,13 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
               }} />{mode === "url" ? "직접 URL" : "파일 업로드"}
             </label>)}
           </fieldset>
-          {kind === "url" ? <label className={styles.field}>이미지 직접 URL
-            <input ref={sourceInput} type="url" aria-invalid={!!issue} value={url} placeholder="https://…/image.webp"
-              onChange={(event) => { resetSource(); setUrl(event.target.value); }} />
-          </label> : <label className={styles.field}>이미지 파일
+          {kind === "url" ? <PasteUrlField input={sourceInput} value={url} noticeId={`${id}-paste`} disabled={running}
+            onPaste={(text) => { resetSource(); setUrl(text); }}>
+            <label className={styles.field}>이미지 직접 URL
+              <input ref={sourceInput} type="url" aria-invalid={!!issue} value={url} placeholder="https://…/image.webp"
+                aria-describedby={`${id}-paste`} onChange={(event) => { resetSource(); setUrl(event.target.value); }} />
+            </label>
+          </PasteUrlField> : <label className={styles.field}>이미지 파일
             <input ref={sourceInput} type="file" accept=".png,.jpg,.jpeg,.webp" aria-invalid={!!issue}
               onChange={(event) => { resetSource(); setFile(event.target.files?.[0]); }} />
           </label>}
