@@ -28,9 +28,14 @@ export async function analyzeLocalMediaUrl(input: string, operatorOrigin?: strin
 
   const deadline = AbortSignal.timeout(30_000);
   const signal = requestSignal ? AbortSignal.any([deadline, requestSignal]) : deadline;
+  function interruption() {
+    if (!signal.aborted) return;
+    // The first signal wins even when an external caller supplies a TimeoutError.
+    return deadline.aborted && signal.reason === deadline.reason ? "timed_out" : "cancelled";
+  }
   let response: Response;
   try { response = await fetch(url, { redirect: "error", credentials: "omit", cache: "no-store", signal }); }
-  catch (error) { throw new AnalysisStageError("fetch", errorKind(error)); }
+  catch (error) { throw new AnalysisStageError("fetch", interruption() ?? errorKind(error)); }
   if (Number(response.headers.get("content-length")) > referenceFileByteLimit) {
     await response.body?.cancel();
     throw new MediaUrlError("too_large", "파일 크기 한도를 초과했습니다.");
@@ -54,11 +59,18 @@ export async function analyzeLocalMediaUrl(input: string, operatorOrigin?: strin
       }
     }
     try { await writeFile(path, chunks(), { flag: "wx", signal }); }
-    catch (error) { throw error instanceof MediaUrlError ? error : new AnalysisStageError("download", errorKind(error)); }
+    catch (error) {
+      if (error instanceof MediaUrlError) throw error;
+      throw new AnalysisStageError("download", interruption() ?? errorKind(error));
+    }
     const sha256 = hash.digest("hex");
     const analyzed = await analyzeRegisteredReferenceSnapshot(path, { kind: "file", name, sizeBytes, permission: "authorized" },
       { sha256, sourceGeneration: sha256 }, { managedRoot: root, signal });
-    if (analyzed.status !== "bound") throw new AnalysisStageError("inspect", analyzed.reason);
+    if (analyzed.status !== "bound") {
+      // The inspector treats the overall URL deadline as a caller cancellation.
+      const detail = analyzed.reason === "cancelled" ? interruption() ?? analyzed.reason : analyzed.reason;
+      throw new AnalysisStageError("inspect", detail);
+    }
     const proposals = proposalsForLocalReference(analyzed.analysis);
     if (!proposals.length) throw new AnalysisStageError("proposals", "empty");
     return { schemaVersion: 1 as const, status: "ready" as const, sourceUrl: url.href, sha256, sizeBytes,
