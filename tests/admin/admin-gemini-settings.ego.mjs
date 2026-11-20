@@ -140,15 +140,31 @@ try {
     row.refreshFailed = await testState();
     assert.deepEqual([row.refreshFailed.focus, row.refreshFailed.buttons, row.refreshFailed.retry], [true, [true, false, true], true]);
     assert.equal(await count("GET"), getsFailed + 1);
+    // 잠긴 동안 다른 묶음(음악) 시험을 해도 이미지·쇼츠 복구 안내·버튼·잠금은 그대로
+    await pressButton("음악 분석 연결 시험");
+    await until((root) => document.querySelectorAll(`${root} section li [role=status]`)[1].textContent.startsWith("연결 확인"), "music during lock", root);
+    row.otherGroup = await testState();
+    assert.deepEqual([row.otherGroup.text, row.otherGroup.buttons, row.otherGroup.retry], [row.refreshFailed.text, [true, false, true], true]);
+    // 두 묶음 모두: 음악도 1→2로 바뀐 뒤 시험 409 + 다시 읽기 실패 → 두 묶음 모두 잠금, 복구 안내에 둘 다 표시
+    await page.evaluate(() => { const c = window.__premiere.credentials; c.groups.music.version += 1; c.programs.music.lastTest = null;
+      window.__premiere.credentialFaults.push({ status: 409, body: { code: "stale", error: "x" } }, { status: 503, body: { code: "provider_error", error: "x" } }); });
+    await pressButton("음악 분석 연결 시험");
+    await until((root) => document.querySelector(`${root} section > [role=status]`).textContent.includes("이미지·쇼츠, 음악 설정이 바뀌었는데"), "both failed", root);
+    row.bothFailed = await testState();
+    assert.deepEqual([row.bothFailed.focus, row.bothFailed.buttons, row.bothFailed.retry], [true, [true, true, true], true]);
+    assert.equal(await count("GET"), getsFailed + 2);
     const testsAfterFail = (await tests()).length;
     await pressButton("최신 설정 다시 불러오기");
-    await until((root) => document.querySelector(`${root} section > [role=status]`).textContent === "다른 곳에서 이미지·쇼츠 설정이 바뀌어 최신 설정을 불러왔어요. 다시 시험해 주세요.", "refresh retry", root);
+    await until((root) => document.querySelector(`${root} section > [role=status]`).textContent === "다른 곳에서 이미지·쇼츠, 음악 설정이 바뀌어 최신 설정을 불러왔어요. 다시 시험해 주세요.", "refresh retry", root);
     row.refreshRetried = await testState();
     assert.deepEqual([row.refreshRetried.focus, row.refreshRetried.buttons, row.refreshRetried.retry], [true, [false, false, false], false]);
-    assert.deepEqual([await count("GET"), (await tests()).length], [getsFailed + 2, testsAfterFail]);
+    assert.deepEqual([await count("GET"), (await tests()).length], [getsFailed + 3, testsAfterFail]);
     await pressButton("이미지 분석 연결 시험");
     await until((root) => document.querySelector(`${root} section li [role=status]`).textContent.startsWith("연결 확인"), "retest 3", root);
     assert.deepEqual((await tests()).at(-1).body, { program: "image", group: "reference", version: 3 });
+    await pressButton("음악 분석 연결 시험");
+    await until((root) => document.querySelectorAll(`${root} section li [role=status]`)[1].textContent.startsWith("연결 확인"), "music v2", root);
+    assert.deepEqual((await tests()).at(-1).body, { program: "music", group: "music", version: 2 });
 
     // 시험 중에 설정을 바꿔 저장하면, 늦게 온 이전 버전 시험 결과는 쓰지 않는다
     await page.evaluate(() => { window.__premiere.hold = "credential-test"; });
@@ -161,7 +177,7 @@ try {
     await page.evaluate(() => window.__premiere.release()); await settle(300);
     row.late = (await view()).tests[1].state;
     assert.equal(row.late, "설정이 바뀌어 다시 시험 필요");
-    assert.deepEqual((await rows()).filter((item) => item.method === "PUT").at(-1).body, { group: "music", expectedVersion: 1, models: { music: "gemini-music-next" } });
+    assert.deepEqual((await rows()).filter((item) => item.method === "PUT").at(-1).body, { group: "music", expectedVersion: 2, models: { music: "gemini-music-next" } });
 
     // 한 묶음만 저장: 다른 탭이 음악 설정을 먼저 바꿨다면 이미지·쇼츠만 저장하고 최신 설정을 다시 읽는다
     const getsBefore = await count("GET");

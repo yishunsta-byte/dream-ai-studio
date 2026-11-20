@@ -26,7 +26,9 @@ const programText: Record<CredentialProgram, string> = { image: "이미지 분�
 
 type Read = { kind: "loading" } | { kind: "login" } | { kind: "forbidden" } | { kind: "failed" } | { kind: "ok"; value: CredentialSettings };
 type Notice = { tone: "success" | "warning" | "danger"; text: string };
-type TestNotice = Notice & { retry?: { group: CredentialGroup; keptEdits: boolean } };
+// 최신 설정 다시 읽기 결과: 반영한 설정, 실패(null), 더 새 다시 읽기에 밀려남.
+type Reload = CredentialSettings | null | "superseded";
+const groupNames = (groups: readonly CredentialGroup[]) => groups.map(group => groupText[group].name).join(", ");
 type Models = Record<CredentialProgram, string>;
 type Testing = Partial<Record<CredentialProgram, CredentialTest | "pending" | "stale" | "error">>;
 
@@ -77,7 +79,7 @@ function testState(settings: CredentialSettings, program: CredentialProgram, loc
 }
 
 function SettingsForm({ settings, onSaved, onStale, onLogin }: {
-  settings: CredentialSettings; onSaved: (value: CredentialSettings) => void; onStale: () => Promise<CredentialSettings | null>; onLogin: () => void;
+  settings: CredentialSettings; onSaved: (value: CredentialSettings) => void; onStale: () => Promise<Reload>; onLogin: () => void;
 }) {
   const base = useId();
   const ready = settings.storage === "ready";
@@ -89,10 +91,14 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<Testing>({});
   const [rechecking, setRechecking] = useState(false);
-  const [testNotice, setTestNotice] = useState<TestNotice | null>(null);
-  // 시험이 409를 받았는데 최신 설정을 아직 못 읽은 묶음. 그동안 그 묶음의 시험은 옛 버전을 보내지 않도록 잠근다.
-  const [needsRefresh, setNeedsRefresh] = useState<CredentialGroup | null>(null);
+  const [testNotice, setTestNotice] = useState<Notice | null>(null);
+  // 시험이 409를 받아 최신 설정이 필요한 묶음(값: 저장하지 않은 입력을 남겼는지). 서버에서 최신 설정(GET)을 받아
+  // 화면에 반영해야만 풀린다. 그동안 그 묶음의 시험은 옛 버전을 보내지 않도록 잠근다. 다른 묶음 시험과는 무관하다.
+  const [pending, setPending] = useState<Partial<Record<CredentialGroup, boolean>>>({});
+  const pendingRef = useRef<Partial<Record<CredentialGroup, boolean>>>({});
+  const [recoveryFailed, setRecoveryFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const refreshCount = useRef(0);
   const testNoticeRef = useRef<HTMLParagraphElement>(null);
   const referenceKey = useRef<HTMLInputElement>(null);
   const musicKey = useRef<HTMLInputElement>(null);
@@ -133,6 +139,22 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
   const showKey = (group: CredentialGroup) => settings.groups[group].version === 0 || keyOpen[group];
   const track = () => { const controller = new AbortController(); requests.current.add(controller); return controller; };
   const clearKey = (group: CredentialGroup) => { const input = keyRef(group).current; if (input) input.value = ""; };
+  const writePending = (next: Partial<Record<CredentialGroup, boolean>>) => { pendingRef.current = next; setPending(next); };
+
+  // 최신 설정을 서버에서 다시 읽는다. 반영했으면 기다리던 모든 묶음의 복구를 끝내고 무엇을 불러왔는지 알린다.
+  async function reloadLatest(): Promise<Reload> {
+    const latest = await onStale();
+    if (latest && latest !== "superseded") {
+      const retired = groupOrder.filter(group => pendingRef.current[group] !== undefined);
+      if (retired.length) {
+        const kept = retired.some(group => pendingRef.current[group]);
+        writePending({});
+        setRecoveryFailed(false);
+        setTestNotice({ tone: "warning", text: `다른 곳에서 ${groupNames(retired)} 설정이 바뀌어 최신 설정을 불러왔어요.${kept ? " 저장하지 않은 입력은 그대로 두었어요." : ""} 다시 시험해 주세요.` });
+      }
+    }
+    return latest;
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -186,7 +208,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
       }
       if (outcome.kind === "login" || outcome.kind === "forbidden") groupOrder.forEach(clearKey);
       if (outcome.kind === "login") { onLogin(); return; }
-      if (outcome.kind === "stale") await onStale();
+      if (outcome.kind === "stale") await reloadLatest();
       pendingFocus.current = "notice";
       setNotice({ tone: outcome.kind === "stale" || outcome.kind === "forbidden" ? "warning" : "danger", text: done + failureText(outcome) });
       return;
@@ -196,18 +218,16 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
     setNotice({ tone: "success", text: `저장했어요. Gemini에서 ${plans.some(plan => plan.apiKey) ? "키와 " : ""}모델 정보를 확인했어요. 아래에서 연결 시험을 해 보세요.` });
   }
 
-  async function refreshAfterStale(group: CredentialGroup, keptEdits: boolean) {
-    setNeedsRefresh(group);
+  // 기다리는 묶음의 최신 설정을 다시 읽는다. 시험은 자동으로 다시 하지 않는다.
+  async function refreshPending() {
+    refreshCount.current += 1;
     setRefreshing(true);
-    const latest = await onStale();
-    setRefreshing(false);
+    const latest = await reloadLatest();
+    refreshCount.current -= 1;
+    setRefreshing(refreshCount.current > 0);
+    if (latest === "superseded") return; // 더 새 다시 읽기가 결과를 알린다.
     pendingFocus.current = "test-notice";
-    if (!latest) {
-      setTestNotice({ tone: "danger", text: `다른 곳에서 ${groupText[group].name} 설정이 바뀌었는데 최신 설정을 불러오지 못했어요. 다시 불러온 뒤 시험해 주세요.`, retry: { group, keptEdits } });
-      return;
-    }
-    setNeedsRefresh(null);
-    setTestNotice({ tone: "warning", text: `다른 곳에서 ${groupText[group].name} 설정이 바뀌어 최신 설정을 불러왔어요.${keptEdits ? " 저장하지 않은 입력은 그대로 두었어요." : ""} 다시 시험해 주세요.` });
+    if (!latest) setRecoveryFailed(true);
   }
 
   async function runTest(program: CredentialProgram) {
@@ -223,7 +243,9 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
     // 다른 곳에서 설정이 바뀌어 409가 오면 최신 설정(모델·버전)을 다시 읽는다. 시험은 자동으로 다시 하지 않는다.
     if (outcome.kind === "stale") {
       setTesting(previous => ({ ...previous, [program]: "stale" }));
-      await refreshAfterStale(group, credentialGroups[group].some(item => models[item].trim() !== (settings.programs[item].modelId ?? "")));
+      const kept = credentialGroups[group].some(item => models[item].trim() !== (settings.programs[item].modelId ?? ""));
+      writePending({ ...pendingRef.current, [group]: (pendingRef.current[group] ?? false) || kept });
+      await refreshPending();
       return;
     }
     // 늦게 온 이전 버전의 결과는 지금 설정에 적용하지 않는다.
@@ -234,6 +256,11 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
   const describe = (fieldKey: string, help?: string) => [help && `${fieldKey}-help`, errors[fieldKey] && `${fieldKey}-error`].filter(Boolean).join(" ") || undefined;
   const fieldError = (fieldKey: string) => errors[fieldKey] && <p id={`${fieldKey}-error`} className={styles.error}>{errors[fieldKey]}</p>;
   const dirty = programOrder.some(program => models[program].trim() !== (settings.programs[program].modelId ?? ""));
+  const waiting = groupOrder.filter(group => pending[group] !== undefined);
+  const recovery = recoveryFailed && waiting.length > 0;
+  const shownTestNotice: Notice | null = recovery
+    ? { tone: "danger", text: `다른 곳에서 ${groupNames(waiting)} 설정이 바뀌었는데 최신 설정을 불러오지 못했어요. 다시 불러온 뒤 시험해 주세요.` }
+    : testNotice;
 
   return <>
     <dl className={styles.status} aria-label="Gemini 키 저장 상태">
@@ -251,8 +278,9 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
       </p>
       <Button type="button" variant="secondary" size="sm" loading={rechecking} loadingLabel="다시 확인 중" onClick={async () => {
         setRechecking(true);
-        const latest = await onStale();
+        const latest = await reloadLatest();
         setRechecking(false);
+        if (latest === "superseded") return;
         pendingFocus.current = "notice";
         setNotice(!latest ? { tone: "danger", text: "상태를 다시 불러오지 못했어요." }
           : latest.storage === "ready" ? { tone: "success", text: "저장소에 연결됐어요. 이제 저장할 수 있어요." }
@@ -311,9 +339,9 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
     <section className={styles.tests} aria-labelledby={`${base}-tests`}>
       <h5 id={`${base}-tests`}>연결 시험</h5>
       <p className={styles.help}>저장된 설정으로 각 분석기의 Gemini 모델 정보를 확인해요. 원본 자료나 분석 요청은 보내지 않아요.{dirty ? " 바꾼 모델 ID는 먼저 저장해 주세요." : ""}</p>
-      <p ref={testNoticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone={testNotice?.tone}>{testNotice?.text ?? ""}</p>
-      {testNotice?.retry && <div><Button type="button" variant="secondary" size="sm" loading={refreshing} loadingLabel="불러오는 중"
-        onClick={() => { const retry = testNotice.retry!; void refreshAfterStale(retry.group, retry.keptEdits); }}>최신 설정 다시 불러오기</Button></div>}
+      <p ref={testNoticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone={shownTestNotice?.tone}>{shownTestNotice?.text ?? ""}</p>
+      {recovery && <div><Button type="button" variant="secondary" size="sm" loading={refreshing} loadingLabel="불러오는 중"
+        onClick={() => void refreshPending()}>최신 설정 다시 불러오기</Button></div>}
       <ul>
         {programOrder.map(program => {
           const state = testState(settings, program, testing[program]);
@@ -327,7 +355,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
               {state.text}{at && <> · 최근 확인 <time dateTime={at}>{time.format(new Date(at))}</time></>}
             </p>
             <Button type="button" variant="secondary" size="sm" loading={testing[program] === "pending"} loadingLabel="시험 중"
-              disabled={settings.groups[groupOf[program]].version === 0 || saving || needsRefresh === groupOf[program]} onClick={() => void runTest(program)}>
+              disabled={settings.groups[groupOf[program]].version === 0 || saving || pending[groupOf[program]] !== undefined} onClick={() => void runTest(program)}>
               {programText[program]} 연결 시험
             </Button>
           </li>;
@@ -351,13 +379,14 @@ export function GeminiSettingsCard() {
     return () => controller.abort();
   }, [attempt]);
 
-  // 최신 설정을 다시 읽어 화면에 반영하고 그 값을 돌려준다. 읽지 못했으면 null.
-  async function reload() {
+  // 최신 설정을 다시 읽어 화면에 반영하고 그 값을 돌려준다. 읽지 못했으면 null, 더 새 다시 읽기에 밀려났으면 "superseded".
+  async function reload(): Promise<Reload> {
     current.current?.abort();
     const controller = new AbortController();
     current.current = controller;
     const outcome = await readCredentialSettings(controller.signal).catch(() => null);
-    if (!outcome || controller.signal.aborted) return null;
+    if (controller.signal.aborted) return "superseded";
+    if (!outcome) return null;
     if (outcome.kind === "ok") setRead(outcome);
     else if (outcome.kind === "login" || outcome.kind === "forbidden") setRead({ kind: outcome.kind });
     return outcome.kind === "ok" ? outcome.value : null;
