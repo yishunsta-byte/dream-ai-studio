@@ -105,6 +105,51 @@ try {
     assert.deepEqual(row.tested.map((item) => [item.state, item.recent]), [["연결 확인", true], ["저장됨 · 시험 전", false], ["시험 실패 · 모델 ID 또는 사용 권한 확인", true]]);
     await page.evaluate(() => { window.__premiere.testOutcome = { status: "verified", code: null }; });
 
+    // 다른 탭이 이미지·쇼츠 설정을 1→2로 바꾼 뒤 시험(409) → 최신 설정 다시 읽기·시험 안내 초점, 고치던 쇼츠 칸은 유지,
+    // 시험은 자동으로 다시 하지 않음 → 다시 시험은 새 버전 2로 성공
+    const tests = async () => (await rows()).filter((item) => item.path.endsWith("/test"));
+    const testState = () => page.evaluate((root) => {
+      const note = document.querySelector(`${root} section > [role=status]`);
+      return { focus: document.activeElement === note, text: note.textContent, buttons: [...document.querySelectorAll(`${root} section li button`)].map((button) => button.disabled),
+        retry: [...document.querySelectorAll(`${root} section button`)].some((button) => button.textContent.trim() === "최신 설정 다시 불러오기") };
+    }, root);
+    await page.fill(`loc=css:${input("models.shorts")}`, "gemini-shorts-editing");
+    await page.evaluate(() => { const c = window.__premiere.credentials; c.groups.reference.version += 1; c.programs.image.modelId = "gemini-image-other"; c.programs.image.lastTest = null; c.programs.shorts.lastTest = null; });
+    const getsBeforeTest = await count("GET");
+    const testsBefore = (await tests()).length;
+    await pressButton("이미지 분석 연결 시험");
+    await until((root) => document.querySelector(`${root} section > [role=status]`).textContent.startsWith("다른 곳에서 이미지·쇼츠 설정이 바뀌어"), "test stale", root);
+    row.testStale = { ...(await testState()), ...(await page.evaluate((root) => ({ model: document.querySelector(`${root} section li span`).textContent,
+      image: document.querySelector(`${root} form input[name="models.image"]`).value, shorts: document.querySelector(`${root} form input[name="models.shorts"]`).value }), root)) };
+    assert.deepEqual(row.testStale, { focus: true, text: "다른 곳에서 이미지·쇼츠 설정이 바뀌어 최신 설정을 불러왔어요. 저장하지 않은 입력은 그대로 두었어요. 다시 시험해 주세요.",
+      buttons: [false, false, false], retry: false, model: "gemini-image-other", image: "gemini-image-other", shorts: "gemini-shorts-editing" });
+    assert.deepEqual([await count("GET"), (await tests()).length], [getsBeforeTest + 1, testsBefore + 1]);
+    await page.fill(`loc=css:${input("models.shorts")}`, "gemini-shorts-test");
+    await pressButton("이미지 분석 연결 시험");
+    await until((root) => document.querySelector(`${root} section li [role=status]`).textContent.startsWith("연결 확인"), "retest", root);
+    assert.deepEqual((await tests()).at(-1).body, { program: "image", group: "reference", version: 2 });
+    assert.equal((await testState()).text, "");
+
+    // 2→3으로 또 바뀐 뒤 시험 409 + 다시 읽기 실패 → 오류 안내 초점·다시 불러오기 버튼, 이미지·쇼츠 시험 잠금(음악은 가능)
+    // → 다시 불러오기 성공: 시험은 자동으로 하지 않고 잠금만 풂 → 다시 시험은 버전 3
+    await page.evaluate(() => { const c = window.__premiere.credentials; c.groups.reference.version += 1; c.programs.image.lastTest = null; c.programs.shorts.lastTest = null;
+      window.__premiere.credentialFaults.push({ status: 409, body: { code: "stale", error: "x" } }, { status: 503, body: { code: "provider_error", error: "x" } }); });
+    const getsFailed = await count("GET");
+    await pressButton("이미지 분석 연결 시험");
+    await until((root) => document.querySelector(`${root} section > [role=status]`).textContent.includes("최신 설정을 불러오지 못했어요"), "refresh failed", root);
+    row.refreshFailed = await testState();
+    assert.deepEqual([row.refreshFailed.focus, row.refreshFailed.buttons, row.refreshFailed.retry], [true, [true, false, true], true]);
+    assert.equal(await count("GET"), getsFailed + 1);
+    const testsAfterFail = (await tests()).length;
+    await pressButton("최신 설정 다시 불러오기");
+    await until((root) => document.querySelector(`${root} section > [role=status]`).textContent === "다른 곳에서 이미지·쇼츠 설정이 바뀌어 최신 설정을 불러왔어요. 다시 시험해 주세요.", "refresh retry", root);
+    row.refreshRetried = await testState();
+    assert.deepEqual([row.refreshRetried.focus, row.refreshRetried.buttons, row.refreshRetried.retry], [true, [false, false, false], false]);
+    assert.deepEqual([await count("GET"), (await tests()).length], [getsFailed + 2, testsAfterFail]);
+    await pressButton("이미지 분석 연결 시험");
+    await until((root) => document.querySelector(`${root} section li [role=status]`).textContent.startsWith("연결 확인"), "retest 3", root);
+    assert.deepEqual((await tests()).at(-1).body, { program: "image", group: "reference", version: 3 });
+
     // 시험 중에 설정을 바꿔 저장하면, 늦게 온 이전 버전 시험 결과는 쓰지 않는다
     await page.evaluate(() => { window.__premiere.hold = "credential-test"; });
     await pressButton("음악 분석 연결 시험");
@@ -171,6 +216,8 @@ try {
     await page.evaluate(() => { window.__premiere.credentials.storage = "unavailable"; location.hash = "#admin-overview"; }); await settle(200);
     await page.evaluate((hash) => { location.hash = hash; }, root);
     await until((root) => !!document.querySelector(`${root} form`), "storage", root);
+    // 메뉴 이동이 머리글로 초점을 옮기는 동작이 끝난 뒤 누른다(늦게 오면 버튼이 옮긴 초점을 덮음).
+    await until((root) => document.activeElement === document.querySelector(`${root}-title`), "heading focus", root);
     row.storage = await view();
     assert.equal(row.storage.locked, true); assert.equal(row.storage.status[0], "서버 키 저장소 미연결");
     assert.equal(await page.evaluate((root) => !!document.querySelector(`${root} a[href="#admin-manual"]`), root), true);

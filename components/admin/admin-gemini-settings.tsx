@@ -26,6 +26,7 @@ const programText: Record<CredentialProgram, string> = { image: "이미지 분�
 
 type Read = { kind: "loading" } | { kind: "login" } | { kind: "forbidden" } | { kind: "failed" } | { kind: "ok"; value: CredentialSettings };
 type Notice = { tone: "success" | "warning" | "danger"; text: string };
+type TestNotice = Notice & { retry?: { group: CredentialGroup; keptEdits: boolean } };
 type Models = Record<CredentialProgram, string>;
 type Testing = Partial<Record<CredentialProgram, CredentialTest | "pending" | "stale" | "error">>;
 
@@ -88,28 +89,41 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<Testing>({});
   const [rechecking, setRechecking] = useState(false);
+  const [testNotice, setTestNotice] = useState<TestNotice | null>(null);
+  // 시험이 409를 받았는데 최신 설정을 아직 못 읽은 묶음. 그동안 그 묶음의 시험은 옛 버전을 보내지 않도록 잠근다.
+  const [needsRefresh, setNeedsRefresh] = useState<CredentialGroup | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const testNoticeRef = useRef<HTMLParagraphElement>(null);
   const referenceKey = useRef<HTMLInputElement>(null);
   const musicKey = useRef<HTMLInputElement>(null);
   const keyRef = (group: CredentialGroup): RefObject<HTMLInputElement | null> => group === "reference" ? referenceKey : musicKey;
   const noticeRef = useRef<HTMLParagraphElement>(null);
   const requests = useRef(new Set<AbortController>());
   const versions = useRef({ reference: settings.groups.reference.version, music: settings.groups.music.version });
+  const savedRef = useRef<Models>(savedModels());
   // 초점은 그린 직후 옮긴다(새로 열린 입력 포함). 화면 밖 탭에서도 동작하도록 rAF를 쓰지 않는다.
   const pendingFocus = useRef<string | null>(null);
   useLayoutEffect(() => {
     const target = pendingFocus.current;
     if (!target) return;
     pendingFocus.current = null;
-    (target === "notice" ? noticeRef.current : document.getElementById(target))?.focus();
+    (target === "notice" ? noticeRef.current : target === "test-notice" ? testNoticeRef.current : document.getElementById(target))?.focus();
   });
   useEffect(() => { const active = requests.current; return () => active.forEach(controller => controller.abort()); }, []);
-  // 서버 버전이 바뀌면(저장·다시 불러오기) 모델 입력을 저장값으로 맞추고, 바뀐 묶음의 화면 시험 표시는 버린다.
+  // 서버 버전이 바뀌면(저장·다시 불러오기) 바뀐 묶음의 모델 입력 중 사용자가 고치지 않은 칸만 새 저장값으로 맞추고,
+  // 바뀐 묶음의 화면 시험 표시는 버린다. 저장하지 않은 입력은 덮어쓰지 않는다.
   useEffect(() => {
     const changed = groupOrder.filter(group => versions.current[group] !== settings.groups[group].version);
     if (!changed.length) return;
     versions.current = { reference: settings.groups.reference.version, music: settings.groups.music.version };
-    const saved = savedModels();
-    setModels(previous => ({ ...previous, ...Object.fromEntries(changed.flatMap(group => credentialGroups[group].map(program => [program, saved[program]]))) }));
+    const before = savedRef.current;
+    const after = savedModels();
+    savedRef.current = after;
+    setModels(previous => {
+      const next = { ...previous };
+      for (const group of changed) for (const program of credentialGroups[group]) if (previous[program].trim() === before[program]) next[program] = after[program];
+      return next;
+    });
     setTesting(previous => Object.fromEntries(Object.entries(previous).filter(([program]) => !changed.includes(groupOf[program as CredentialProgram]))));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.groups.reference.version, settings.groups.music.version]);
@@ -182,17 +196,38 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
     setNotice({ tone: "success", text: `저장했어요. Gemini에서 ${plans.some(plan => plan.apiKey) ? "키와 " : ""}모델 정보를 확인했어요. 아래에서 연결 시험을 해 보세요.` });
   }
 
+  async function refreshAfterStale(group: CredentialGroup, keptEdits: boolean) {
+    setNeedsRefresh(group);
+    setRefreshing(true);
+    const latest = await onStale();
+    setRefreshing(false);
+    pendingFocus.current = "test-notice";
+    if (!latest) {
+      setTestNotice({ tone: "danger", text: `다른 곳에서 ${groupText[group].name} 설정이 바뀌었는데 최신 설정을 불러오지 못했어요. 다시 불러온 뒤 시험해 주세요.`, retry: { group, keptEdits } });
+      return;
+    }
+    setNeedsRefresh(null);
+    setTestNotice({ tone: "warning", text: `다른 곳에서 ${groupText[group].name} 설정이 바뀌어 최신 설정을 불러왔어요.${keptEdits ? " 저장하지 않은 입력은 그대로 두었어요." : ""} 다시 시험해 주세요.` });
+  }
+
   async function runTest(program: CredentialProgram) {
     if (testing[program] === "pending") return;
     const group = groupOf[program];
     const version = settings.groups[group].version;
     setTesting(previous => ({ ...previous, [program]: "pending" }));
+    setTestNotice(null);
     const controller = track();
     let outcome;
     try { outcome = await testCredential({ program, group, version }, controller.signal); } catch { return; } finally { requests.current.delete(controller); }
     if (outcome.kind === "login") { onLogin(); return; }
+    // 다른 곳에서 설정이 바뀌어 409가 오면 최신 설정(모델·버전)을 다시 읽는다. 시험은 자동으로 다시 하지 않는다.
+    if (outcome.kind === "stale") {
+      setTesting(previous => ({ ...previous, [program]: "stale" }));
+      await refreshAfterStale(group, credentialGroups[group].some(item => models[item].trim() !== (settings.programs[item].modelId ?? "")));
+      return;
+    }
     // 늦게 온 이전 버전의 결과는 지금 설정에 적용하지 않는다.
-    const next = outcome.kind === "ok" ? outcome.value.version === versions.current[group] ? outcome.value : "stale" : outcome.kind === "stale" ? "stale" : "error";
+    const next = outcome.kind === "ok" ? outcome.value.version === versions.current[group] ? outcome.value : "stale" : "error";
     setTesting(previous => ({ ...previous, [program]: next }));
   }
 
@@ -276,6 +311,9 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
     <section className={styles.tests} aria-labelledby={`${base}-tests`}>
       <h5 id={`${base}-tests`}>연결 시험</h5>
       <p className={styles.help}>저장된 설정으로 각 분석기의 Gemini 모델 정보를 확인해요. 원본 자료나 분석 요청은 보내지 않아요.{dirty ? " 바꾼 모델 ID는 먼저 저장해 주세요." : ""}</p>
+      <p ref={testNoticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone={testNotice?.tone}>{testNotice?.text ?? ""}</p>
+      {testNotice?.retry && <div><Button type="button" variant="secondary" size="sm" loading={refreshing} loadingLabel="불러오는 중"
+        onClick={() => { const retry = testNotice.retry!; void refreshAfterStale(retry.group, retry.keptEdits); }}>최신 설정 다시 불러오기</Button></div>}
       <ul>
         {programOrder.map(program => {
           const state = testState(settings, program, testing[program]);
@@ -289,7 +327,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
               {state.text}{at && <> · 최근 확인 <time dateTime={at}>{time.format(new Date(at))}</time></>}
             </p>
             <Button type="button" variant="secondary" size="sm" loading={testing[program] === "pending"} loadingLabel="시험 중"
-              disabled={settings.groups[groupOf[program]].version === 0 || saving} onClick={() => void runTest(program)}>
+              disabled={settings.groups[groupOf[program]].version === 0 || saving || needsRefresh === groupOf[program]} onClick={() => void runTest(program)}>
               {programText[program]} 연결 시험
             </Button>
           </li>;
