@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, realpath, rm, rmdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
 import { analyzeRegisteredReferenceSnapshot } from "./registered-snapshot";
@@ -63,7 +63,7 @@ export async function analyzeLocalMediaUrl(
     throw new AnalysisStageError("fetch", `status_${response.status}`);
   }
 
-  const result = await analyzeBody(response.body, name, referenceFileByteLimit, deadline, "dream-rea-url-", selectedMedia);
+  const result = await analyzeBody(response.body, name, referenceFileByteLimit, deadline, selectedMedia);
   return { ...result, sourceUrl: url.href };
 }
 
@@ -86,16 +86,19 @@ export async function analyzeLocalMediaUpload(request: Request, filename: string
 
   // Use the transport signal while receiving the body. After EOF, Next may
   // end it early, so local decoding uses the original analysis deadline.
-  return analyzeBody(request.body, name, referenceUploadByteLimit, analysisDeadline(), "dream-rea-upload-", selectedMedia, request.signal);
+  return analyzeBody(request.body, name, referenceUploadByteLimit, analysisDeadline(), selectedMedia, request.signal);
 }
 
 async function analyzeBody(
   body: ReadableStream<Uint8Array>, name: string, maxBytes: number, deadline: ReturnType<typeof analysisDeadline>,
-  prefix: string, selectedMedia?: ReferenceMedia, requestSignal?: AbortSignal,
+  selectedMedia?: ReferenceMedia, requestSignal?: AbortSignal,
 ) {
   const { signal, interruption } = deadline;
   const receiveSignal = requestSignal ? AbortSignal.any([signal, requestSignal]) : signal;
-  const temp = await mkdtemp(join(tmpdir(), prefix));
+  // A dynamic prefix makes Next's file tracer include the system temp directory.
+  const temp = requestSignal
+    ? await mkdtemp(join(tmpdir(), "dream-rea-upload-"))
+    : await mkdtemp(join(tmpdir(), "dream-rea-url-"));
   try {
     const root = await realpath(temp);
     const path = join(root, name);
@@ -151,6 +154,7 @@ async function analyzeBody(
     return { schemaVersion: 1 as const, status: "ready" as const, sha256, sizeBytes,
       media: analyzed.analysis.media, proposals };
   } finally {
-    await rm(temp, { recursive: true, force: true });
+    await rm(join(temp, name), { force: true });
+    await rmdir(temp);
   }
 }
