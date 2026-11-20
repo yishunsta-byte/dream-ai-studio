@@ -38,15 +38,34 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function readModelConfig(env: typeof defaults.env) {
+  const key = env.DREAM_REFERENCE_GEMINI_API_KEY?.trim();
+  const model = env.DREAM_REFERENCE_SHORTS_GEMINI_MODEL?.trim();
+  return key && model && /^gemini-[a-z0-9.-]+$/i.test(model) ? { key, model } : null;
+}
+
 export function createShortsAnalysisHttp(dependencies: Partial<typeof defaults> = {}) {
   const deps = { ...defaults, ...dependencies };
 
-  return async function analyze(request: Request) {
+  async function withAdmin(handle: () => Response | Promise<Response>) {
     try {
       const auth = await deps.authenticate();
       if (auth.kind === "local") return json({ error: "authentication_required" }, 401);
       if (auth.kind === "denied") return json({ error: auth.code }, auth.status);
+      return await handle();
+    } catch {
+      return json({ error: "unavailable" }, 503);
+    }
+  }
 
+  function get() {
+    return withAdmin(() => json({
+      semantic: { shorts: readModelConfig(deps.env) ? "configured" : "not_configured" },
+    }));
+  }
+
+  function post(request: Request) {
+    return withAdmin(async () => {
       const rejected = rejectForeignWrite(request, deps.env);
       if (rejected) return rejected;
 
@@ -60,11 +79,9 @@ export function createShortsAnalysisHttp(dependencies: Partial<typeof defaults> 
       const id = parsed.success ? youtubeVideoId(parsed.data.url) : null;
       if (!id) return json({ error: "invalid_input" }, 400);
 
-      const key = deps.env.DREAM_REFERENCE_GEMINI_API_KEY?.trim();
-      const model = deps.env.DREAM_REFERENCE_SHORTS_GEMINI_MODEL?.trim();
-      if (!key || !model || !/^gemini-[a-z0-9.-]+$/i.test(model)) {
-        return json({ error: "not_configured" }, 503);
-      }
+      const config = readModelConfig(deps.env);
+      if (!config) return json({ error: "not_configured" }, 503);
+      const { key, model } = config;
 
       const timeout = AbortSignal.timeout(28_000);
       try {
@@ -106,8 +123,8 @@ export function createShortsAnalysisHttp(dependencies: Partial<typeof defaults> 
       } catch {
         return timeout.aborted ? json({ error: "timed_out" }, 504) : json({ error: "provider_error" }, 502);
       }
-    } catch {
-      return json({ error: "unavailable" }, 503);
-    }
-  };
+    });
+  }
+
+  return { get, post };
 }

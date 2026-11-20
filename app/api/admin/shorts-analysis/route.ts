@@ -3,4 +3,6 @@ import { createShortsAnalysisHttp } from "@/lib/reference-analysis/shorts-analys
 export const runtime = "nodejs";
 export const maxDuration = 35;
 
-export const POST = createShortsAnalysisHttp();
+const handlers = createShortsAnalysisHttp();
+export const GET = handlers.get;
+export const POST = handlers.post;

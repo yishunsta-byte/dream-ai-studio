@@ -97,7 +97,7 @@ const authRoutes = ["auth/login", "auth/signup", "auth/reset", "auth/password", 
 const CLOUD_ONLY: Record<string, string[]> = {
   "../app/api/admin/music-semantic/route.ts": ["GET", "POST"],
   "../app/api/admin/reference-analysis/route.ts": ["GET", "POST"],
-  "../app/api/admin/shorts-analysis/route.ts": ["POST"],
+  "../app/api/admin/shorts-analysis/route.ts": ["GET", "POST"],
   "../app/api/admin/render-queue/route.ts": ["GET"],
   "../app/api/projects/route.ts": ["GET"], "../app/api/projects/[id]/route.ts": ["GET"],
   "../app/api/admin/publications/route.ts": ["GET", "POST"],

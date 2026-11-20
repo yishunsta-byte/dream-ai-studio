@@ -56,10 +56,26 @@ describe("Shorts video URLs", () => {
 });
 
 describe("Shorts admin analysis route", () => {
+  it("reads only configuration status for verified administrators without calling the provider", async () => {
+    const provider = vi.fn<typeof fetch>();
+    const withConfig = createShortsAnalysisHttp({ authenticate, env: settings, fetch: provider });
+    const noConfig = createShortsAnalysisHttp({
+      authenticate, env: { ...settings, DREAM_REFERENCE_SHORTS_GEMINI_MODEL: "invalid" }, fetch: provider,
+    });
+    const anonymous = createShortsAnalysisHttp({ authenticate: async () => ({ kind: "local" }), env: settings, fetch: provider });
+    const available = await withConfig.get();
+    expect(available.status).toBe(200);
+    expect(available.headers.get("cache-control")).toBe("no-store");
+    expect(await available.json()).toEqual({ semantic: { shorts: "configured" } });
+    expect(await (await noConfig.get()).json()).toEqual({ semantic: { shorts: "not_configured" } });
+    expect((await anonymous.get()).status).toBe(401);
+    expect(provider).not.toHaveBeenCalled();
+  });
+
   it("checks authentication, same origin, request type, rights and URL before calling the provider", async () => {
     const provider = vi.fn<typeof fetch>();
-    const anonymous = createShortsAnalysisHttp({ authenticate: async () => ({ kind: "local" }), env: settings, fetch: provider });
-    const analyze = createShortsAnalysisHttp({ authenticate, env: settings, fetch: provider });
+    const anonymous = createShortsAnalysisHttp({ authenticate: async () => ({ kind: "local" }), env: settings, fetch: provider }).post;
+    const analyze = createShortsAnalysisHttp({ authenticate, env: settings, fetch: provider }).post;
     expect((await anonymous(request())).status).toBe(401);
     expect((await analyze(request(input, "https://other.example.com"))).status).toBe(403);
     expect((await analyze(request(input, site, "text/plain"))).status).toBe(415);
@@ -71,7 +87,7 @@ describe("Shorts admin analysis route", () => {
 
   it("reports unavailable configuration without fetching the video or a provider", async () => {
     const provider = vi.fn<typeof fetch>();
-    const analyze = createShortsAnalysisHttp({ authenticate, env: { DREAM_SITE_URL: site }, fetch: provider });
+    const analyze = createShortsAnalysisHttp({ authenticate, env: { DREAM_SITE_URL: site }, fetch: provider }).post;
     const response = await analyze(request());
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ error: "not_configured" });
@@ -80,7 +96,7 @@ describe("Shorts admin analysis route", () => {
 
   it("sends only the canonical video reference and validates the returned evidence", async () => {
     const provider = vi.fn<typeof fetch>().mockResolvedValue(modelResponse({ ...findings, privateField: "discard" }));
-    const analyze = createShortsAnalysisHttp({ authenticate, env: settings, fetch: provider });
+    const analyze = createShortsAnalysisHttp({ authenticate, env: settings, fetch: provider }).post;
     const response = await analyze(request());
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
@@ -101,7 +117,7 @@ describe("Shorts admin analysis route", () => {
       .mockResolvedValueOnce(new Response("private error details", { status: 400 }))
       .mockResolvedValueOnce(modelResponse(findings, "MAX_TOKENS"))
       .mockResolvedValueOnce(modelResponse({ ...findings, segments: [{ timestamp: "00:99", evidence: "invalid" }] }));
-    const analyze = createShortsAnalysisHttp({ authenticate, env: settings, fetch: provider });
+    const analyze = createShortsAnalysisHttp({ authenticate, env: settings, fetch: provider }).post;
     for (const error of ["provider_error", "invalid_response", "invalid_response"]) {
       const response = await analyze(request());
       expect(response.status).toBe(502);
