@@ -28,6 +28,9 @@ function deny(request: NextRequest, status: 401 | 403 | 503, code: string, messa
 }
 
 export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === "/api/admin/diagnostics/style-dna-direct-tls" && process.env.VERCEL_ENV !== "preview") {
+    return new NextResponse(null, { status: 404, headers: { "cache-control": "no-store" } });
+  }
   // 공개 메인 "/"와 고정 이미지 6개: 로그인 설정·세션과 상관없이 바로 통과(세션 갱신·쿠키 쓰기 없음).
   // 다른 모든 경로는 아래 기존 순서(설정 확인 → 세션 갱신 → 공개 인증 경로 → 로그인·허용 확인)를 그대로 거친다.
   if (isAnonymousPublicPath(request.nextUrl.pathname)) {
