@@ -6,5 +6,7 @@ const root=process.cwd(),runtime=resolve(process.env.DREAM_DATA_ROOT?.trim()||ro
 // outside the tracing root). scripts/verify-build.mjs checks the data root in both cases.
 const inside=local!==""&&local!==".."&&!local.startsWith(`..${"/"}`)&&!local.startsWith("..\\")&&!isAbsolute(local);
 const runtimePrefix=inside?local.replaceAll("\\","/").replace(/[!*?[\]{}()+@]/g,"\\$&"):"";
-const config:NextConfig={reactStrictMode:true,poweredByHeader:false,outputFileTracingIncludes:{"/api/admin/reference-analysis":["./node_modules/.dream-reference-media/**/*"]},outputFileTracingExcludes:{"/*":["./data/**/*","./storage/**/*","./backups/**/*","./tmp/**/*","./.tools/**/*","./.env*",...(runtimePrefix?[...["data","storage","backups","tmp",".tools"].map(name=>`${runtimePrefix}/${name}/**/*`),`${runtimePrefix}/.env*`]:[])]}};
+// P1-07 운영 이식: 오디오 바로 분석(audio-analysis POST)과 큰 파일 완료(audio-uploads/[id] POST)도 같은 고정 FFmpeg 묶음으로 미디어를 검사한다.
+const analysisMedia=["./node_modules/.dream-reference-media/**/*"];
+const config:NextConfig={reactStrictMode:true,poweredByHeader:false,outputFileTracingIncludes:{"/api/admin/reference-analysis":analysisMedia,"/api/admin/audio-analysis":analysisMedia,"/api/admin/audio-uploads/[id]":analysisMedia},outputFileTracingExcludes:{"/*":["./data/**/*","./storage/**/*","./backups/**/*","./tmp/**/*","./.tools/**/*","./.env*",...(runtimePrefix?[...["data","storage","backups","tmp",".tools"].map(name=>`${runtimePrefix}/${name}/**/*`),`${runtimePrefix}/.env*`]:[])]}};
 export default config;

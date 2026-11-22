@@ -25,3 +25,10 @@ it("limits bundled analysis binaries to the exact administrator analysis functio
   expect(check(unrelated,route).status).not.toBe(0);
   expect(check(bin).status).not.toBe(0);
 });
+// P1-07 운영 이식: 오디오 바로 분석·큰 파일 완료 함수도 같은 묶음을 받고, 시작·청크·음악 함수에는 들어가면 안 된다.
+it("allows the bundled analysis binaries in the two audio functions only",()=>{
+  const bin=join(app,"node_modules/.dream-reference-media/bin/ffprobe");
+  mkdirSync(dirname(bin),{recursive:true});writeFileSync(bin,"fixture");
+  for(const route of ["app/api/admin/audio-analysis/route.js.nft.json","app/api/admin/audio-uploads/[id]/route.js.nft.json"])expect(check(bin,route).status,route).toBe(0);
+  for(const route of ["app/api/admin/audio-uploads/route.js.nft.json","app/api/admin/audio-uploads/[id]/chunks/route.js.nft.json","app/api/admin/music-semantic/route.js.nft.json"])expect(check(bin,route).status,route).not.toBe(0);
+});
