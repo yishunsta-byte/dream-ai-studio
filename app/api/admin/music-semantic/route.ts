@@ -2,7 +2,8 @@ import { currentGeminiSettings } from "@/lib/reference-analysis/analysis-gemini-
 import { createMusicSemanticHttp, musicProviderFromSettings } from "@/lib/reference-analysis/music-semantic-server";
 
 export const runtime = "nodejs";
-export const maxDuration = 45;
+// Direct FLAC verification runs before the existing provider deadline.
+export const maxDuration = 75;
 
 const handlers = createMusicSemanticHttp({
   async provider(owner) {

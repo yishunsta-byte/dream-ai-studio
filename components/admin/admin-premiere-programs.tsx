@@ -15,6 +15,7 @@ import { AudioWaveform } from "./admin-audio-waveform";
 import { PasteUrlField } from "./admin-paste-url";
 import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
 import { imageShareSection } from "./admin-paths";
+import { audioAnalysisPath } from "./audio-analysis-path";
 import {
   analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, SUPPORTED_ORIGINS,
   unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource, type PublicationDraft, type ReadyResult,
@@ -265,6 +266,8 @@ function MusicWorkspace({ onPrepare }: ProgramWorkspaceProps) {
     <div className={styles.desk}>
       <section className={styles.control}>
         <h3>음악 파일</h3>
+        {/* P1-07 운영 이식: 원본 Audio v1.15 작업실(자동·음성·음악, 상세 보고서, FLAC·큰 파일 업로드)은 보호 전용 화면에서 연다. 이 칸의 음악 분석·공개 준비는 그대로. */}
+        <p className={styles.note}><a className={hub.link} href={audioAnalysisPath}>오디오 분석 작업실(원본 v1.15) 열기</a></p>
         <div className={styles.dropzone} data-dragging={dragging || undefined}
           onDragOver={event => { if (event.dataTransfer.types.includes("Files")) { event.preventDefault(); setDragging(true); } }}
           onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}

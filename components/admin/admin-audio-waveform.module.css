@@ -4,11 +4,12 @@
 .head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--sp-1) var(--sp-3); min-width: 0; }
 .head h4 { min-width: 0; font-size: var(--text-sm); color: var(--fg-strong); overflow-wrap: anywhere; }
 .time { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--fg-accent); }
-.track { position: relative; block-size: 64px; border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--bg-sunken); overflow: hidden; }
+/* 비텍스트 대비 3:1 이상(Tester 실측 9b33a19: 테두리 2.70, 재생 막대 3.01)이 되게 테두리는 line-strong에 fg-muted를 섞고, 재생 막대는 fg-accent를 쓴다. */
+.track { position: relative; block-size: 64px; border: 1px solid color-mix(in srgb, var(--line-strong) 70%, var(--fg-muted)); border-radius: var(--radius-md); background: var(--bg-sunken); overflow: hidden; }
 .track::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: 0; inline-size: var(--progress, 0%); background: var(--bg-accent-soft); pointer-events: none; }
 .bars { position: absolute; inset: 6px 10px; display: flex; align-items: center; gap: 1px; }
 .bars span { flex: 1 1 0; min-inline-size: 1px; border-radius: 1px; background: var(--fg-subtle); }
-.bars span[data-played] { background: var(--accent); }
+.bars span[data-played] { background: var(--fg-accent); }
 .bars .placeholder { flex: none; background: none; color: var(--fg-muted); font-size: var(--text-xs); }
 .seek { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .seek:disabled { cursor: default; }
