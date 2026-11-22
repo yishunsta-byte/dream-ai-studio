@@ -199,7 +199,7 @@ export function createStyleDnaStore(pool: Pick<Pool, "connect">) {
       await client.query("DELETE FROM dream_style_dna.records WHERE owner_id=$1 AND id=$2", [owner, id]);
       return true;
     }),
-    media: (owner: string, record: string, id: string) => transaction(owner, false, async client => {
+    media: (owner: string, record: string, id: string) => transaction<Buffer | undefined>(owner, false, async client => {
       const { rows: [row] } = await client.query<{ image: Buffer }>("SELECT image FROM dream_style_dna.media WHERE owner_id=$1 AND record_id=$2 AND id=$3", [owner, record, id]);
       return row?.image;
     }),

@@ -249,8 +249,19 @@ export function createStyleDnaHttp(overrides: Partial<typeof defaults> = {}) {
       const { id, media } = await route.params;
       if (!styleDnaId.safeParse(id).success || (media !== "original" && !styleDnaId.safeParse(media).success)) return problem("not_found", 404);
       const image = await store.media(owner, id, media === "original" ? id : media);
-      return image ? new Response(new Uint8Array(image), { headers: { "content-type": "image/webp", "cache-control": "private, no-store",
-        "x-content-type-options": "nosniff" } }) : problem("not_found", 404);
+      if (!image) return problem("not_found", 404);
+      // Large generated images can exceed Vercel's non-streaming response limit.
+      let offset = 0;
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          const end = Math.min(offset + 64 * 1024, image.byteLength);
+          if (end > offset) controller.enqueue(image.subarray(offset, end));
+          offset = end;
+          if (offset === image.byteLength) controller.close();
+        },
+      });
+      return new Response(body, { headers: { "content-type": "image/webp", "cache-control": "private, no-store",
+        "x-content-type-options": "nosniff" } });
     }),
     refine: (request: Request, route: RecordRoute) => withStore(async (owner, store) => {
       const { id } = await route.params;
