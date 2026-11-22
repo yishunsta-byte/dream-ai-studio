@@ -1,12 +1,13 @@
 /* global taskSpace, window, document, navigator, getComputedStyle, console, DOMException, setTimeout, location */
 import assert from "node:assert/strict";
 // 이미지 분석 URL 붙여넣기: admin-premiere-publication-run.mjs가 연 루프백 주소에서 실행한다.
+// P1-06: 이미지 분석은 원본 전체 화면(/admin/style-dna)으로 옮겼고, 이 붙여넣기 입력은 기존 결과 공개 준비 칸(#admin-image-publication)에 남는다.
 // 클립보드는 페이지 안에서 대역으로 바꿔 권한 거절·빈 값·정상 값·지연을 재현한다(실제 클립보드는 읽지 않음).
 const base = globalThis.FIXTURE_ORIGIN;
 assert.match(base ?? "", /^http:\/\/127\.0\.0\.1:\d+$/);
 const task = await taskSpace("Image URL paste " + Date.now());
 const page = task.page("p1");
-const section = "#admin-style-dna";
+const section = "#admin-image-publication";
 const urlInput = `${section} input[type=url]`;
 const results = [];
 
@@ -53,7 +54,7 @@ try {
     await page.cdp("Emulation.setDeviceMetricsOverride", { width, height: 800, deviceScaleFactor: 1, mobile: width < 600 });
     await page.goto(`${base}/admin?paste=${width}${section}`);
     await page.waitForFunction((selector) => !!document.querySelector(selector)
-      && !!document.querySelector("#admin-style-dna input[type=checkbox]"), urlInput, { timeout: 6000 });
+      && !!document.querySelector("#admin-image-publication input[type=checkbox]"), urlInput, { timeout: 6000 });
     const row = { width };
 
     await clipboard("deny");
@@ -168,7 +169,7 @@ try {
     await page.evaluate(() => { location.hash = "#admin-music-analysis"; });
     await settle();
     await page.evaluate(() => window.__releaseClipboard?.());
-    await page.evaluate(() => { location.hash = "#admin-style-dna"; });
+    await page.evaluate(() => { location.hash = "#admin-image-publication"; });
     await page.waitForFunction((selector) => !!document.querySelector(selector), urlInput, { timeout: 4000 });
     await settle();
     row.leftWhileWaiting = await state();

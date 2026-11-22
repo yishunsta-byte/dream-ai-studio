@@ -13,7 +13,7 @@ import type { StyleDna } from "./admin-style-dna-extension";
 import { AdminMusicSemantic } from "./admin-music-semantic";
 import { AudioWaveform } from "./admin-audio-waveform";
 import { PasteUrlField } from "./admin-paste-url";
-import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
+import { analysisPrograms, analysisResultsSection, imageShareSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
 import {
   analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, SUPPORTED_ORIGINS,
   unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource, type PublicationDraft, type ReadyResult,
@@ -24,7 +24,7 @@ import styles from "./admin-premiere-programs.module.css";
 
 const imageClient = createAdminReferenceAnalysisClient();
 const apiLink = "#admin-api-integrations";
-const loginLink = "/admin/login?next=%2Fadmin%23admin-style-dna";
+const loginLink = "/admin/login?next=%2Fadmin%23admin-image-publication";
 
 const copy = [
   { kind: "image", description: "이미지의 색감·조명·구도를 분석해 한국어와 영어로 이미지 생성 프롬프트를 만들어요.", caption: "컬러·구도·조명" },
@@ -334,7 +334,10 @@ export function AdminPremierePrograms() {
     navigateAdminSection(analysisResultsSection);
   }
 
-  return <>{analysisPrograms.map(({ id, label, icon }, index) => {
+  return <>{analysisPrograms.map(({ id: programId, label: programLabel, icon }, index) => {
+    // P1-06: 이미지 분석 프로그램은 원본 전체 화면(/admin/style-dna)으로 옮겼다. 여기 남은 이미지 칸은 기존 결과 공개 준비 전용(#admin-image-publication).
+    const id = index === 0 ? imageShareSection : programId;
+    const label = index === 0 ? "이미지 분석 결과 공개 준비" : programLabel;
     const active = current === id;
     const { kind, description, caption } = copy[index];
     const Workspace = workspaces[index];

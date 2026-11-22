@@ -5,7 +5,7 @@ import { Card, StatusPill } from "@/components/ui/primitives";
 import { AdminApiIntegrations } from "./admin-analysis-tools";
 import { AdminProjectsSection, type AdminProjects } from "./admin-projects";
 import { AdminManual } from "./admin-manual";
-import { AdminNavigation, AdminProgramNavigation } from "./admin-navigation";
+import { AdminNavigation, AdminProgramNavigation, imageShareSection, styleDnaPath } from "./admin-navigation";
 import { AdminPremierePrograms } from "./admin-premiere-programs";
 import { AdminRenderQueue } from "./admin-render-queue";
 import styles from "./admin.module.css";
@@ -30,6 +30,11 @@ export function AdminHub({ email, projects, review }: { email: string; projects:
       </div>
       <AdminPremierePrograms />
       <div id="admin-review" role="group" aria-label="완성본 검수·게시" className={styles.target} tabIndex={-1}>
+        {/* P1-06: 이미지 분석은 원본 전체 화면으로 옮겼고, 기존 이미지 분석 결과 공개 준비는 여기서 연다. */}
+        <nav aria-label="이미지 분석 결과 공개" className={styles.reviewLinks}>
+          <a className={styles.link} href={`#${imageShareSection}`}>이미지 분석 결과 공개 준비 <Icon name="arrow" /></a>
+          <a className={styles.link} href={styleDnaPath}>이미지 스타일 분석기 열기 <Icon name="arrow" /></a>
+        </nav>
         {review}
       </div>
 

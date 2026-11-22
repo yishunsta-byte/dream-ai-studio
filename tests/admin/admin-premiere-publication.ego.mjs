@@ -1,4 +1,4 @@
-/* global taskSpace, window, document, location, innerHeight, getComputedStyle, history, DataTransfer, File, Event, URL, console */
+/* global taskSpace, window, document, location, innerHeight, getComputedStyle, history, DataTransfer, File, Event, URL, console, setTimeout */
 import assert from "node:assert/strict";
 // Run against the loopback URL emitted by admin-premiere-publication-run.mjs.
 import {mkdir,writeFile} from "node:fs/promises";
@@ -17,10 +17,13 @@ const apiId="admin-api-integrations";
 const settingsId="admin-account";
 const manualId="admin-manual";
 const operationsId="admin-operations-availability";
-const imageId="admin-style-dna";
+// P1-06: 이미지 분석은 원본 전체 화면(/admin/style-dna)으로 옮겼고 기존 이미지 해시 두 개도 그리로 간다.
+// 기존 이미지 분석 결과 공개 준비 칸은 '완성본 검수·게시'의 링크로 여는 #admin-image-publication에 남는다(분석 프로그램 메뉴 밖).
+const imageId="admin-image-publication";
+const reviewId="admin-review";
 const musicId="admin-music-analysis";
 const shortsId="admin-shorts-analysis";
-const analyzerIds=[imageId,musicId,shortsId];
+const analyzerIds=[musicId,shortsId];
 const publication="/api/admin/reference-publications";
 const listForm="#"+listId+" form";
 const results=[];
@@ -48,7 +51,7 @@ const view=async (id,hash="#"+id)=>{
     const bar=menu.getBoundingClientRect();
     const point=document.elementFromPoint((rect.left+rect.right)/2,(rect.top+rect.bottom)/2);
     return {id,heading:heading.innerText,active:menu.querySelector('[aria-current="location"]')?.hash,
-      activeAnalyzer:programs.querySelector('[aria-current="location"]')?.hash??null,programsVisible:!programs.hidden&&!!programs.getClientRects().length,
+      activeAnalyzer:programs.querySelector('[aria-current="location"]')?.getAttribute("href")??null,programsVisible:!programs.hidden&&!!programs.getClientRects().length,
       clear:rect.top>=0&&rect.bottom<=innerHeight&&heading.contains(point)&&
         (getComputedStyle(menu).position!=="sticky"||bar.top>1||rect.top>=bar.bottom-1),
       overflow:Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth),
@@ -56,7 +59,7 @@ const view=async (id,hash="#"+id)=>{
   },id);
   const activeId=id===apiId?settingsId:id;
   const isAnalyzer=analyzerIds.includes(id);
-  assert.equal(state.active,"#"+(isAnalyzer?listId:activeId));
+  assert.equal(state.active,"#"+(isAnalyzer?listId:id===imageId?reviewId:activeId));
   assert.equal(state.activeAnalyzer,isAnalyzer?"#"+id:null);
   assert.equal(state.programsVisible,isAnalyzer||id===listId);
   assert.equal(state.overflow,0,JSON.stringify(state));
@@ -65,6 +68,15 @@ const view=async (id,hash="#"+id)=>{
   return state;
 };
 const activateMenuLink=async id=>{
+  // 이미지 공개 준비: 관리 메뉴 '완성본 검수·게시' → 그 칸의 '이미지 분석 결과 공개 준비' 링크.
+  if(id===imageId){
+    await tabTo('nav[aria-label="관리 메뉴"] a[href="#'+reviewId+'"]');
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(id=>location.hash==="#"+id&&document.getElementById(id)?.dataset.activeSection==="true",reviewId,{timeout:5500});
+    await tabTo('#'+reviewId+' a[href="#'+imageId+'"]');
+    await page.keyboard.press("Enter");
+    return;
+  }
   await tabTo('nav:is([aria-label="관리 메뉴"], [aria-label="분석 프로그램"]) a[href="#'+id+'"]');
   await page.keyboard.press("Enter");
 };
@@ -132,20 +144,29 @@ try{
   await move("admin-project-list");
   await page.evaluate(()=>history.back());
   await view("admin-project-list","");
-  await page.goto(base+"/admin?legacy="+width+"#admin-reference-analysis");
-  await view(imageId);
+  // 기존 이미지 해시(북마크·호환 쿼리 포함)는 원본 전체 화면으로 바꿔 간다(지금 기록 칸을 바꿔 뒤로 가기가 되튀지 않음). 대역 서버는 그 경로를 그리지 않아 주소만 본다.
+  for(const legacy of ["admin-reference-analysis","admin-style-dna"]){
+    await page.goto(base+"/admin?legacy="+width+"#"+legacy);
+    await page.waitForFunction(()=>location.pathname==="/admin/style-dna",null,{timeout:5500});
+    assert.equal(await page.evaluate(()=>location.search+location.hash),"");
+    await page.evaluate(()=>history.back());
+    await page.waitForFunction(()=>location.pathname==="/admin"&&!/admin-(style-dna|reference-analysis)/.test(location.hash)&&!!document.querySelector("[data-admin-ready]"),null,{timeout:5500});
+    await new Promise(done=>setTimeout(done,600));
+    assert.equal(await page.evaluate(()=>location.pathname),"/admin","뒤로 가기 뒤 원본 화면으로 되튀지 않음");
+  }
   await open(width,900);
+  assert.equal(await page.evaluate(()=>document.querySelector('nav[aria-label="분석 프로그램"] a[href="/admin/style-dna"]')?.textContent.includes("이미지 분석")??false),true,"이미지 타일 → /admin/style-dna");
   assert.equal((await listReads()).length,0);
   assert.equal(await page.evaluate(()=>document.querySelector('nav[aria-label="분석 프로그램"]').getClientRects().length),0);
   await move(listId);
   await text(listId,"공개한 분석 결과");
   assert.equal((await listReads()).length,1);
   const focus=[];
-  for(const id of [musicId,"admin-project-list",settingsId,imageId])focus.push(await move(id));
+  for(const id of [settingsId,imageId,"admin-project-list",musicId])focus.push(await move(id));
   await page.evaluate(()=>history.back());
   focus.push(await view(listId));
   await page.evaluate(()=>history.forward());
-  focus.push(await view(imageId));
+  focus.push(await view(musicId));
   assert.deepEqual(await page.evaluate(()=>{
     const heading=document.querySelector('main h1');
     const programs=document.querySelector('nav[aria-label="분석 프로그램"]');
@@ -161,7 +182,7 @@ try{
       settings:[...operations.querySelectorAll('a')].filter(link=>link.textContent.includes('설정')||link.textContent.includes('API')).map(link=>link.textContent.trim()),
     };
   }),{
-    inOrder:true,headingOutOfFlow:true,heading:"이미지 분석",firstMenu:"콘텐츠 분석기",
+    inOrder:true,headingOutOfFlow:true,heading:"음악 분석",firstMenu:"콘텐츠 분석기",
     programs:["이미지 분석","색감·조명·구도 분석과 한영 프롬프트","음악 분석","장르·악기·템포 분석과 Suno 프롬프트","쇼츠 분석","첫 장면·영상 구성 분석과 연출 프롬프트"],
     settings:["계정설정 및 API 연동"],
   });
@@ -181,11 +202,15 @@ try{
   await press('loc=css:#'+manualId+' summary');
   await text(manualId,"DREAM_REFERENCE_SHORTS_GEMINI_MODEL");
   await page.screenshot({path:proof+"/admin-manual-"+width+".png"});
-  await tabTo('#'+manualId+' a[href="#'+imageId+'"]');
+  // 매뉴얼의 기존 이미지 링크(#admin-style-dna)도 원본 전체 화면으로 가고, 뒤로 가면 매뉴얼로 돌아온다.
+  await tabTo('#'+manualId+' a[href="#admin-style-dna"]');
   await page.keyboard.press("Enter");
-  await view(imageId);
+  await page.waitForFunction(()=>location.pathname==="/admin/style-dna",null,{timeout:5500});
+  await page.evaluate(()=>history.back());
+  await page.waitForFunction(id=>location.pathname==="/admin"&&location.hash==="#"+id&&!!document.querySelector("[data-admin-ready]"),manualId,{timeout:5500});
+  await move(imageId);
   assert.equal(await page.evaluate(()=>document.querySelector('#admin-operations-availability').getClientRects().length),0);
-  assert.equal(await page.evaluate(()=>[...document.querySelectorAll('#admin-style-dna summary')].some(node=>node.textContent.includes('사용 매뉴얼'))),false);
+  assert.equal(await page.evaluate(id=>[...document.querySelectorAll('#'+id+' summary')].some(node=>node.textContent.includes('사용 매뉴얼')),imageId),false);
   await tabTo('#'+imageId+' a[href="#'+apiId+'"]');
   await page.keyboard.press("Enter");
   focus.push(await view(apiId));
@@ -336,8 +361,8 @@ try{
   await page.evaluate(()=>{window.__premiere.statuses.image="login";});
   await move(imageId);
   await text(imageId,"관리자 로그인");
-  const returnTo=await page.evaluate(()=>new URL(document.querySelector('#admin-style-dna a[href^="/admin/login"]').href).searchParams.get("next"));
-  assert.equal(returnTo,"/admin#admin-style-dna");
+  const returnTo=await page.evaluate(id=>new URL(document.querySelector('#'+id+' a[href^="/admin/login"]').href).searchParams.get("next"),imageId);
+  assert.equal(returnTo,"/admin#admin-image-publication");
   results.push({width,focus,firstListReadCount:draftOpenReadCount,sameIdOnRetry:true,newIdAfterEditAndConflict:true,invalidPublicationRecovery:true,safeFields,publicCard:true,revokedAbsent:true,writeStatusAfterLeave:true,authFailureHide:true});
  }
  for(const [width,height,scale] of [[320,360,2],[1280,900,2]]){

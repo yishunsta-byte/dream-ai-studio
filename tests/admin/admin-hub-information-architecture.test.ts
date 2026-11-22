@@ -22,14 +22,18 @@ describe("admin hub information architecture", () => {
     const programs = html.match(/<nav\b[^>]*aria-label="분석 프로그램"[\s\S]*?<\/nav>/)?.[0];
     expect(programs).toBeDefined();
     const operations = ["admin-analysis-results", "admin-project-list", "admin-review", "admin-render-queue", "admin-account", "admin-operations-availability", "admin-manual"];
-    const analyzers = ["admin-style-dna", "admin-music-analysis", "admin-shorts-analysis"];
+    // P1-06: 이미지 칸은 기존 결과 공개 준비 전용(#admin-image-publication)으로 남고, #admin-style-dna 주소는 원본 전체 화면으로 옮겨 간다.
+    const analyzers = ["admin-image-publication", "admin-music-analysis", "admin-shorts-analysis"];
     expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(operations);
-    expect([...programs!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(analyzers);
+    // P1-06: 이미지 타일은 원본 전체 화면(/admin/style-dna)으로, 음악·쇼츠는 허브 칸으로 연다.
+    expect([...programs!.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/admin/style-dna", "#admin-music-analysis", "#admin-shorts-analysis"]);
     expect(html).toContain('<h1 class="sr-only">관리 화면</h1>');
     expect(html).toContain(nav! + programs!);
     expect(programs).toMatch(/<nav\b[^>]*\bhidden(?:="")?/);
     expect(nav).toContain(">콘텐츠 분석기</a>");
-    expect(html.indexOf(programs!)).toBeLessThan(html.indexOf('id="admin-style-dna"'));
+    expect(html.indexOf(programs!)).toBeLessThan(html.indexOf('id="admin-image-publication"'));
+    expect(html).not.toContain(' id="admin-style-dna"');
+    expect(html).toMatch(/<nav aria-label="이미지 분석 결과 공개"[^>]*><a [^>]*href="#admin-image-publication"/);
     expect(nav).toMatch(/href="#admin-project-list" aria-current="location"/);
     expect(nav!.match(/aria-current=/g)).toHaveLength(1);
     for (const id of [...operations, ...analyzers, "admin-api-integrations"]) {
@@ -37,11 +41,11 @@ describe("admin hub information architecture", () => {
       expect(html).toMatch(new RegExp(`<[^>]+id="${id}"[^>]*tabindex="-1"`));
     }
     expect(html).not.toContain("admin-overview");
-    const projectPanel = html.slice(html.indexOf('id="admin-project-list"'), html.indexOf('id="admin-style-dna"'));
+    const projectPanel = html.slice(html.indexOf('id="admin-project-list"'), html.indexOf('id="admin-image-publication"'));
     for (const href of ["/cloud/manage", "/cloud/projects"]) expect(projectPanel).toContain(`href="${href}"`);
     expect(html).toContain('href="/account/password"');
-    expect(html.indexOf('id="admin-project-list"')).toBeLessThan(html.indexOf('id="admin-style-dna"'));
-    expect(html.indexOf('id="admin-style-dna"')).toBeLessThan(html.indexOf('id="admin-review"'));
+    expect(html.indexOf('id="admin-project-list"')).toBeLessThan(html.indexOf('id="admin-image-publication"'));
+    expect(html.indexOf('id="admin-image-publication"')).toBeLessThan(html.indexOf('id="admin-review"'));
     expect(html.indexOf('id="admin-review"')).toBeLessThan(html.indexOf('id="admin-account"'));
   });
 

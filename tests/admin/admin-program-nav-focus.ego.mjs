@@ -13,9 +13,10 @@ const menu = id => `nav[aria-label="관리 메뉴"] a[href="#${id}"]`;
 const program = id => `nav[aria-label="분석 프로그램"] a[href="#${id}"]`;
 const steps = [
   ["설정→분석 결과", menu("admin-analysis-results"), "admin-analysis-results", true],
-  ["분석 결과→이미지", program("admin-style-dna"), "admin-style-dna", true],
-  ["이미지→음악", program("admin-music-analysis"), "admin-music-analysis", true],
-  ["음악→설정", menu("admin-account"), "admin-account", false],
+  // P1-06: 이미지 타일은 허브 칸(#admin-style-dna)이 아니라 원본 전체 화면(/admin/style-dna)으로 연다(아래에서 주소만 확인). 분석 칸 사이 이동은 음악·쇼츠로 잰다.
+  ["분석 결과→음악", program("admin-music-analysis"), "admin-music-analysis", true],
+  ["음악→쇼츠", program("admin-shorts-analysis"), "admin-shorts-analysis", true],
+  ["쇼츠→설정", menu("admin-account"), "admin-account", false],
   ["설정→내 프로젝트", menu("admin-project-list"), "admin-project-list", false],
 ];
 
@@ -42,6 +43,7 @@ for (const width of [320, 390, 768, 1440]) {
     addEventListener("hashchange", () => { let n = 0; const loop = () => { sample(); if (++n < 12) requestAnimationFrame(loop); }; requestAnimationFrame(loop); });
     addEventListener("scroll", sample, true);
   });
+  assert.equal(await page.evaluate(() => document.querySelector('nav[aria-label="분석 프로그램"] a[href="/admin/style-dna"]')?.textContent.includes("이미지 분석") ?? false), true, "이미지 타일 → /admin/style-dna");
   for (const [label, selector, id, analysis] of steps) {
     // 아래 끝까지 내려 프로그램 메뉴가 화면 위로 나간 상태에서, 스크롤 없이 링크에 초점을 두고 Enter.
     await page.evaluate((selector) => {
