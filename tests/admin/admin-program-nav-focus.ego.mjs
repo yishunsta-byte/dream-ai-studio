@@ -16,12 +16,16 @@ const steps = [
   ["분석 결과→이미지", program("admin-style-dna"), "admin-style-dna", true],
   ["이미지→음악", program("admin-music-analysis"), "admin-music-analysis", true],
   ["음악→설정", menu("admin-account"), "admin-account", false],
-  ["설정→개요", menu("admin-overview"), "admin-overview", false],
+  ["설정→내 프로젝트", menu("admin-project-list"), "admin-project-list", false],
 ];
 
 const rows = [];
 for (const width of [320, 390, 768, 1440]) {
   await page.cdp("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 600 });
+  await page.goto(`${base}/admin?programFocus=${width}#admin-overview`);
+  await page.waitForFunction(() => location.hash === "#admin-project-list"
+    && document.activeElement?.id === "admin-projects"
+    && !document.querySelector('a[href="#admin-overview"], #admin-overview'), null, { timeout: 10000 });
   await page.goto(`${base}/admin?programFocus=${width}#admin-account`);
   await page.waitForFunction(() => document.querySelector("[data-admin-ready]") && document.querySelector('nav[aria-label="관리 메뉴"]')?.dataset.sticky, null, { timeout: 10000 });
   await page.evaluate(() => {

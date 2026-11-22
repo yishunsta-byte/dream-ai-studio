@@ -21,7 +21,7 @@ describe("admin hub information architecture", () => {
     expect(nav).toBeDefined();
     const programs = html.match(/<nav\b[^>]*aria-label="분석 프로그램"[\s\S]*?<\/nav>/)?.[0];
     expect(programs).toBeDefined();
-    const operations = ["admin-analysis-results", "admin-overview", "admin-project-list", "admin-review", "admin-render-queue", "admin-account", "admin-operations-availability", "admin-manual"];
+    const operations = ["admin-analysis-results", "admin-project-list", "admin-review", "admin-render-queue", "admin-account", "admin-operations-availability", "admin-manual"];
     const analyzers = ["admin-style-dna", "admin-music-analysis", "admin-shorts-analysis"];
     expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(operations);
     expect([...programs!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(analyzers);
@@ -36,7 +36,10 @@ describe("admin hub information architecture", () => {
       expect(html.match(new RegExp(`\\bid="${id}"`, "g"))).toHaveLength(1);
       expect(html).toMatch(new RegExp(`<[^>]+id="${id}"[^>]*tabindex="-1"`));
     }
-    for (const href of ["/cloud/manage", "/cloud/projects", "/account/password"]) expect(html).toContain(`href="${href}"`);
+    expect(html).not.toContain("admin-overview");
+    const projectPanel = html.slice(html.indexOf('id="admin-project-list"'), html.indexOf('id="admin-style-dna"'));
+    for (const href of ["/cloud/manage", "/cloud/projects"]) expect(projectPanel).toContain(`href="${href}"`);
+    expect(html).toContain('href="/account/password"');
     expect(html.indexOf('id="admin-project-list"')).toBeLessThan(html.indexOf('id="admin-style-dna"'));
     expect(html.indexOf('id="admin-style-dna"')).toBeLessThan(html.indexOf('id="admin-review"'));
     expect(html.indexOf('id="admin-review"')).toBeLessThan(html.indexOf('id="admin-account"'));

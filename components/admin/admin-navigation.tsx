@@ -11,13 +11,13 @@ export const analysisPrograms = [
 ] as const satisfies readonly { id: string; label: string; detail: string; icon: IconName }[];
 
 const legacyAnalysisHash = "#admin-reference-analysis";
+const legacyOverviewHash = "#admin-overview";
 const programNavigationId = "admin-program-navigation";
 export const analysisResultsSection = "admin-analysis-results";
 export const accountSettingsId = "admin-account";
 const apiIntegrationsId = "admin-api-integrations";
 const operations = [
   { id: analysisResultsSection, label: "콘텐츠 분석기", icon: "flask" },
-  { id: "admin-overview", label: "개요", icon: "home" },
   { id: "admin-project-list", label: "내 프로젝트", icon: "folder" },
   { id: "admin-review", label: "완성본 검수·게시", icon: "check" },
   { id: "admin-render-queue", label: "렌더 대기열", icon: "clock" },
@@ -186,8 +186,8 @@ export function AdminNavigation() {
   }, [current]);
 
   useEffect(() => {
-    if (window.location.hash === legacyAnalysisHash) {
-      history.replaceState(history.state, "", `#${analysisPrograms[0].id}`);
+    if (hash === legacyAnalysisHash || hash === legacyOverviewHash) {
+      history.replaceState(history.state, "", `#${current}`);
     }
     const destination = hash === `#${apiIntegrationsId}` ? apiIntegrationsId : current;
     if (hash && window.location.hash !== `#${destination}`) return;

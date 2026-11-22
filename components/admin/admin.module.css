@@ -83,8 +83,8 @@
 .programLinks svg { color: var(--fg-accent); flex: 0 0 auto; }
 .programLinks span { min-width: 0; display: grid; line-height: 1.32; overflow-wrap: anywhere; }
 .programLinks small { color: var(--fg-muted); font-weight: 500; font-size: var(--text-xs); }
-.sections, .section, .overview { display: grid; gap: var(--sp-4); min-width: 0; }
-.section h2, .overview h2 { margin: 0; }
+.sections, .section { display: grid; gap: var(--sp-4); min-width: 0; }
+.section h2 { margin: 0; }
 .subsection { scroll-margin-top: var(--admin-nav-offset); }
 .subsection > h3 { margin: 0; }
 .target { display: none; min-width: 0; scroll-margin-top: var(--admin-nav-offset); }
@@ -120,8 +120,8 @@
 .missingValue, .nextStage { margin: 0; color: var(--fg-muted); font-size: var(--text-sm); }
 .missingValue > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .noMatches { margin: var(--sp-3) 0; color: var(--fg-muted); }
-.overviewLinks { display: flex; flex-wrap: wrap; gap: 0 var(--sp-4); }
-.overview .link, .accountCard .link { gap: var(--sp-2); }
+.projectLinks { display: flex; flex-wrap: wrap; gap: 0 var(--sp-4); }
+.projectLinks .link, .accountCard .link { gap: var(--sp-2); }
 .accountCard { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); }
 .accountCard strong { overflow-wrap: anywhere; }
 .unlinkedGroup { display: grid; gap: var(--sp-3); }

@@ -25,15 +25,6 @@ export function AdminHub({ email, projects, review }: { email: string; projects:
     <AdminNavigation />
     <AdminProgramNavigation />
     <div className={styles.sections}>
-      <section id="admin-overview" tabIndex={-1} aria-label="개요" className={`${styles.target} ${styles.overview}`}>
-        <h2 tabIndex={-1}>개요</h2>
-        <div className={styles.overviewLinks}>
-          <Link className={styles.link} href="/cloud/manage">클라우드 개인 관리 <Icon name="arrow" /></Link>
-          {(projects.kind === "unlinked" || projects.kind === "failed") &&
-            <Link className={styles.link} href="/cloud/projects">내 프로젝트 전체 화면 <Icon name="arrow" /></Link>}
-        </div>
-      </section>
-
       <div id="admin-project-list" role="group" aria-label="내 프로젝트" className={`${styles.target} ${styles.defaultPanel}`} tabIndex={-1}>
         <AdminProjectsSection state={projects} />
       </div>

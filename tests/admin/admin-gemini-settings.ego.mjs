@@ -213,7 +213,7 @@ try {
     // 저장 중 다른 메뉴로 떠나면 요청 취소, 돌아오면 서버 상태를 다시 읽고 키 입력은 비어 있음
     await page.evaluate(() => { window.__premiere.hold = "credentials"; });
     await save();
-    await page.evaluate(() => { location.hash = "#admin-overview"; }); await settle(300);
+    await page.evaluate(() => { location.hash = "#admin-project-list"; }); await settle(300);
     row.leftAborted = (await rows()).filter((item) => item.method === "PUT").at(-1).aborted;
     assert.equal(row.leftAborted, true);
     await page.evaluate(() => { window.__premiere.hold = ""; window.__premiere.release(); });
@@ -229,7 +229,7 @@ try {
     assert.deepEqual(row.login, { form: false, link: "/admin/login?next=%2Fadmin%23admin-api-integrations" });
 
     // 저장소가 없는 배포: 상태는 보이고 입력·저장은 막힘
-    await page.evaluate(() => { window.__premiere.credentials.storage = "unavailable"; location.hash = "#admin-overview"; }); await settle(200);
+    await page.evaluate(() => { window.__premiere.credentials.storage = "unavailable"; location.hash = "#admin-project-list"; }); await settle(200);
     await page.evaluate((hash) => { location.hash = hash; }, root);
     await until((root) => !!document.querySelector(`${root} form`), "storage", root);
     // 메뉴 이동이 머리글로 초점을 옮기는 동작이 끝난 뒤 누른다(늦게 오면 버튼이 옮긴 초점을 덮음).
@@ -248,7 +248,7 @@ try {
     await pressButton("저장소 다시 확인");
     await until((root) => document.querySelector(`${root} form [role=status]`)?.textContent === "저장소에 연결됐어요. 이제 저장할 수 있어요.", "recheck ok", root);
     assert.deepEqual([(await view()).focus, (await view()).locked, (await view()).status[0]], ["notice", false, "서버 키 저장소"]);
-    await page.evaluate(() => { location.hash = "#admin-overview"; }); await settle(200);
+    await page.evaluate(() => { location.hash = "#admin-project-list"; }); await settle(200);
     await page.evaluate((hash) => { location.hash = hash; }, root);
     await until((root) => !!document.querySelector(`${root} form`), "shot", root);
     if (globalThis.FIXTURE_OUTPUT_DIR) await page.screenshot({ path: `${globalThis.FIXTURE_OUTPUT_DIR}/gemini-settings-${width}.png`, fullPage: true });

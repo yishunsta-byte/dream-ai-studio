@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icon";
 import { Callout, Card, StatusPill } from "@/components/ui/primitives";
 import { readCloudProjects, type CloudProjectCard } from "@/lib/cloud/project-read-page";
 import styles from "./admin.module.css";
 import { AdminProjectConsole } from "./admin-project-console";
 
-// T283 관리자 개요의 첫 실제 기능: 지금 로그인한 운영자 자신의 클라우드 프로젝트 목록·상태·상세 이동.
+// T283 내 프로젝트: 지금 로그인한 운영자 자신의 클라우드 프로젝트 목록·상태·상세 이동.
 // - 읽기는 기존 /cloud/manage·/cloud/projects와 같은 owner 목록 읽기(readCloudProjects) 1번뿐이다.
 //   owner는 서버가 확인한 계정 UUID이며, 다른 회원 조회·서비스 역할·쓰기는 없다.
 // - 상태를 넷으로 나눈다: 미연결(이 환경에 클라우드 프로젝트 읽기가 설정되지 않음) / 실패(설정됐지만 읽지 못함) /
@@ -54,6 +55,10 @@ export function AdminProjectsSection({ state, reloadToken = newReloadToken() }: 
   return <section aria-labelledby="admin-projects" className="stack">
     <div className={styles.sectionHead}>
       <h2 id="admin-projects" tabIndex={-1}>프로젝트 콘솔</h2>
+      <div className={styles.projectLinks}>
+        <Link className={styles.link} href="/cloud/manage">클라우드 개인 관리 <Icon name="arrow" /></Link>
+        <Link className={styles.link} href="/cloud/projects">내 프로젝트 전체 화면 <Icon name="arrow" /></Link>
+      </div>
     </div>
     <p className={styles.note}>지금 로그인한 운영자 계정의 클라우드 프로젝트만 보여요. 다른 회원의 프로젝트는 보이지 않아요.</p>
     {state.kind === "unlinked" && <Card>
@@ -70,14 +75,12 @@ export function AdminProjectsSection({ state, reloadToken = newReloadToken() }: 
       <h3 className={styles.stateHead}>내 프로젝트가 0개예요</h3>
       <p className={styles.note}>현재 로그인한 계정으로 조회한 결과예요. 조회 시각 <Moment iso={state.readAt} /></p>
       <Reload token={reloadToken} />
-      <p><Link href="/cloud/projects" className={styles.link}>내 프로젝트 전체 화면 →</Link></p>
     </Card>}
     {state.kind === "ok" && <Card>
       <h3 className={styles.stateHead}>내 프로젝트 {state.projects.length}개</h3>
       <p className={styles.note}>조회 시각 <Moment iso={state.readAt} /></p>
       <AdminProjectConsole projects={state.projects} />
       <Reload token={reloadToken} />
-      <p><Link href="/cloud/projects" className={styles.link}>내 프로젝트 전체 화면 →</Link></p>
     </Card>}
   </section>;
 }

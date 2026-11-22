@@ -141,7 +141,7 @@ try{
   await text(listId,"공개한 분석 결과");
   assert.equal((await listReads()).length,1);
   const focus=[];
-  for(const id of [musicId,"admin-overview",settingsId,imageId])focus.push(await move(id));
+  for(const id of [musicId,"admin-project-list",settingsId,imageId])focus.push(await move(id));
   await page.evaluate(()=>history.back());
   focus.push(await view(listId));
   await page.evaluate(()=>history.forward());
@@ -343,7 +343,7 @@ try{
  for(const [width,height,scale] of [[320,360,2],[1280,900,2]]){
   await open(width,height,scale);
   const focus=[];
-  for(const id of [imageId,musicId,shortsId,"admin-overview","admin-project-list","admin-review","admin-render-queue",settingsId,operationsId,manualId]){
+  for(const id of [imageId,musicId,shortsId,"admin-project-list","admin-review","admin-render-queue",settingsId,operationsId,manualId]){
     focus.push(await move(id));
   }
   await page.evaluate(()=>history.back());
