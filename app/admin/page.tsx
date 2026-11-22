@@ -5,6 +5,7 @@ import { AccountMenu } from "@/components/auth/account-menu";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { ProtectedContent, SessionBoundary } from "@/components/auth/session-boundary";
 import { AdminHub } from "@/components/admin/admin-hub";
+import { AdminOperationsHome } from "@/components/admin/admin-operations-home";
 import { loadAdminProjects } from "@/components/admin/admin-projects";
 import { AdminLocalNotice } from "@/components/admin/admin-local-notice";
 import { PublicationHttpQueue } from "@/components/admin/publication-http-queue";
@@ -42,7 +43,8 @@ export default async function AdminPage() {
       </header>
       <main id="main-content" className="content">
         <ProtectedContent>
-          <AdminHub email={account} projects={projects} review={<PublicationHttpQueue initial={publications} />} />
+          <AdminHub email={account} projects={projects} home={<AdminOperationsHome publications={publications} />}
+            review={<PublicationHttpQueue initial={publications} />} />
         </ProtectedContent>
       </main>
     </div>

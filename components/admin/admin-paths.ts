@@ -4,5 +4,7 @@
 export const styleDnaPath = "/admin/style-dna";
 /** 기존 이미지 분석 결과 공개 준비(ImageWorkspace·onPrepare) 칸. '완성본 검수·게시'의 링크로만 연다. */
 export const imageShareSection = "admin-image-publication";
+/** 관리자 운영 현황 홈(2안, Master msg_d8399b51662f). /admin 기본 칸이자 '콘텐츠 분석기' 메뉴의 목적지. 기존 #admin-analysis-results(공개 준비·게시·철회)와 분리한다. */
+export const homeSectionId = "admin-home";
 /** 완성본 검수·게시 칸. */
 export const reviewSectionId = "admin-review";

@@ -12,6 +12,9 @@ const task=await taskSpace("Premiere keyboard and publication "+Date.now());
 const page=task.page("p1");
 const publicPage=await task.newPage();
 const runCode=Math.random().toString(36).slice(2,7);
+// 관리자 홈 2안: '콘텐츠 분석기' 메뉴·빈 주소는 운영 현황 홈(#admin-home). 기존 분석 결과(#admin-analysis-results)는 홈의 링크로 열고,
+// 분석 칸에서는 메뉴의 '콘텐츠 분석기'(#admin-home)가 현재다. 홈에서는 분석 프로그램 줄을 숨기고 배너로 음악·쇼츠 칸을 연다.
+const homeId="admin-home";
 const listId="admin-analysis-results";
 const apiId="admin-api-integrations";
 const settingsId="admin-account";
@@ -42,7 +45,8 @@ const tabTo=async selector=>{
 };
 const view=async (id,hash="#"+id)=>{
   const headingTag=id===apiId?"H3":"H2";
-  await page.waitForFunction(({id,hash,headingTag})=>location.hash===hash&&document.activeElement.tagName===headingTag&&document.getElementById(id)?.contains(document.activeElement),{id,hash,headingTag},{timeout:5500});
+  await page.waitForFunction(({id,hash,headingTag})=>location.hash===hash&&document.activeElement.tagName===headingTag&&document.getElementById(id)?.contains(document.activeElement),{id,hash,headingTag},{timeout:5500})
+    .catch(async error=>{throw new Error("view "+id+" "+JSON.stringify(await page.evaluate(()=>({hash:location.hash,active:document.activeElement?.tagName+"#"+document.activeElement?.id})))+" "+error.message);});
   const state=await page.evaluate(id=>{
     const heading=document.activeElement;
     const rect=heading.getBoundingClientRect();
@@ -59,7 +63,7 @@ const view=async (id,hash="#"+id)=>{
   },id);
   const activeId=id===apiId?settingsId:id;
   const isAnalyzer=analyzerIds.includes(id);
-  assert.equal(state.active,"#"+(isAnalyzer?listId:id===imageId?reviewId:activeId));
+  assert.equal(state.active,"#"+(isAnalyzer||id===listId?homeId:id===imageId?reviewId:activeId));
   assert.equal(state.activeAnalyzer,isAnalyzer?"#"+id:null);
   assert.equal(state.programsVisible,isAnalyzer||id===listId);
   assert.equal(state.overflow,0,JSON.stringify(state));
@@ -77,13 +81,25 @@ const activateMenuLink=async id=>{
     await page.keyboard.press("Enter");
     return;
   }
+  if(id===listId){
+    await tabTo('nav[aria-label="관리 메뉴"] a[href="#'+homeId+'"]');
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(id=>location.hash==="#"+id&&document.getElementById(id)?.dataset.activeSection==="true",homeId,{timeout:5500});
+    await tabTo('#'+homeId+' a[href="#'+listId+'"]');
+    await page.keyboard.press("Enter");
+    return;
+  }
   await tabTo('nav:is([aria-label="관리 메뉴"], [aria-label="분석 프로그램"]) a[href="#'+id+'"]');
   await page.keyboard.press("Enter");
 };
 const move=async id=>{
   if(analyzerIds.includes(id)&&await page.evaluate(()=>document.querySelector('nav[aria-label="분석 프로그램"]').hidden)){
-    await activateMenuLink(listId);
-    await view(listId);
+    // 홈 배너로 분석 칸을 연다(홈에는 분석 프로그램 줄이 없다).
+    await activateMenuLink(homeId);
+    await view(homeId);
+    await tabTo('#'+homeId+' a[href="#'+id+'"]');
+    await page.keyboard.press("Enter");
+    return view(id);
   }
   await activateMenuLink(id);
   return view(id);
@@ -143,7 +159,7 @@ try{
   await open(width,900);
   await move("admin-project-list");
   await page.evaluate(()=>history.back());
-  await view("admin-project-list","");
+  await view(homeId,"");
   // 기존 이미지 해시(북마크·호환 쿼리 포함)는 원본 전체 화면으로 바꿔 간다(지금 기록 칸을 바꿔 뒤로 가기가 되튀지 않음). 대역 서버는 그 경로를 그리지 않아 주소만 본다.
   for(const legacy of ["admin-reference-analysis","admin-style-dna"]){
     await page.goto(base+"/admin?legacy="+width+"#"+legacy);
@@ -163,8 +179,9 @@ try{
   assert.equal((await listReads()).length,1);
   const focus=[];
   for(const id of [settingsId,imageId,"admin-project-list",musicId])focus.push(await move(id));
+  // 홈 2안: 음악 칸은 홈 배너로 열었으므로 뒤로 가기는 홈으로 돌아간다.
   await page.evaluate(()=>history.back());
-  focus.push(await view(listId));
+  focus.push(await view(homeId));
   await page.evaluate(()=>history.forward());
   focus.push(await view(musicId));
   assert.deepEqual(await page.evaluate(()=>{

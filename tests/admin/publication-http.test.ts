@@ -222,7 +222,7 @@ describe("T297 화면·라우트 소스", () => {
   it("관리자 화면은 인증 판정 뒤 같은 캐시 인증으로 첫 목록을 읽고, 보호 영역 안에 큐를 그린다", () => {
     const page = readFileSync("app/admin/page.tsx", "utf8");
     expect(page.indexOf("createAdminPublicationHttp({ resolveAuth: getRenderAuth }).list()")).toBeGreaterThan(page.indexOf('if (auth.kind === "denied")'));
-    expect(page).toMatch(/<ProtectedContent>\s*<AdminHub email=\{account\} projects=\{projects\} review=\{<PublicationHttpQueue initial=\{publications\} \/>\} \/>\s*<\/ProtectedContent>/);
+    expect(page).toMatch(/<ProtectedContent>\s*<AdminHub email=\{account\} projects=\{projects\} home=\{<AdminOperationsHome publications=\{publications\} \/>\}\s*review=\{<PublicationHttpQueue initial=\{publications\} \/>\} \/>\s*<\/ProtectedContent>/);
   });
   it("라우트는 서버 경계만 부르고 nodejs·동적이다", () => {
     const route = readFileSync("app/api/admin/publications/route.ts", "utf8");

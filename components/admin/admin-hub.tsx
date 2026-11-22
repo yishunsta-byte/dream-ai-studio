@@ -6,7 +6,7 @@ import { AdminApiIntegrations } from "./admin-analysis-tools";
 import { AdminProjectsSection, type AdminProjects } from "./admin-projects";
 import { AdminManual } from "./admin-manual";
 import { AdminNavigation, AdminProgramNavigation } from "./admin-navigation";
-import { imageShareSection, styleDnaPath } from "./admin-paths";
+import { homeSectionId, imageShareSection, styleDnaPath } from "./admin-paths";
 import { AdminPremierePrograms } from "./admin-premiere-programs";
 import { AdminRenderQueue } from "./admin-render-queue";
 import styles from "./admin.module.css";
@@ -20,13 +20,18 @@ const unavailable = [
   { title: "서비스 상태", detail: "작업 처리기 응답과 파일 저장소 점검" },
 ] as const;
 
-export function AdminHub({ email, projects, review }: { email: string; projects: AdminProjects; review: ReactNode }) {
+/** home: 관리자 홈 2안(운영 현황) 내용. review처럼 페이지가 같은 인증 뒤 읽은 첫 목록으로 만들어 넘긴다. */
+export function AdminHub({ email, projects, review, home }: { email: string; projects: AdminProjects; review: ReactNode; home: ReactNode }) {
   return <div className={styles.workspace}>
     <h1 className="sr-only">관리 화면</h1>
     <AdminNavigation />
     <AdminProgramNavigation />
     <div className={styles.sections}>
-      <div id="admin-project-list" role="group" aria-label="내 프로젝트" className={`${styles.target} ${styles.defaultPanel}`} tabIndex={-1}>
+      {/* 관리자 홈 2안: /admin 기본 칸. 기존 분석 결과 공개 준비(#admin-analysis-results)와 다른 칸이다. */}
+      <section id={homeSectionId} tabIndex={-1} aria-labelledby="admin-home-heading" className={`${styles.target} ${styles.section} ${styles.defaultPanel}`}>
+        {home}
+      </section>
+      <div id="admin-project-list" role="group" aria-label="내 프로젝트" className={styles.target} tabIndex={-1}>
         <AdminProjectsSection state={projects} />
       </div>
       <AdminPremierePrograms />

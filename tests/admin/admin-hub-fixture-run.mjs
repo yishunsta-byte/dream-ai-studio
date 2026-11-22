@@ -10,6 +10,7 @@ const port = Number(process.env.DREAM_ADMIN_HUB_FIXTURE_PORT ?? 0);
 const require = createRequire(new URL("../../package.json", import.meta.url));
 const app = `
 import {AdminHub} from "@/components/admin/admin-hub";
+import {AdminOperationsHome} from "@/components/admin/admin-operations-home";
 import {PublicationHttpQueue} from "@/components/admin/publication-http-queue";
 import styles from "@/components/admin/admin.module.css";
 import "@/app/globals.css";
@@ -18,7 +19,7 @@ import {AdminStyleDnaWorkflow} from "@/components/admin/admin-style-dna-workflow
 const account = "hub-fixture@example.invalid";
 // 실제 /admin 페이지처럼 .console(관리 화면 어두운 색 변수) 안에 그린다. ?theme=light면 감싸지 않아 앱 기본(밝은) 변수로 대조한다.
 const light = typeof location !== "undefined" && new URLSearchParams(location.search).get("theme") === "light";
-const hub=<main className="content"><AdminHub email={account} projects={{kind:"unlinked"}} review={<PublicationHttpQueue initial={{kind:"closed"}}/>}/></main>;
+const hub=<main className="content"><AdminHub email={account} projects={{kind:"unlinked"}} home={<AdminOperationsHome publications={{kind:"closed"}}/>} review={<PublicationHttpQueue initial={{kind:"closed"}}/>}/></main>;
 // P1-06 원본 Style DNA 전체 화면(/admin/style-dna 페이지 본문): ?page=style-dna. 실제 페이지처럼 공통 세션 경계 안에 그린다.
 const pageName = () => typeof location !== "undefined" ? new URLSearchParams(location.search).get("page") : (globalThis as {__fixturePage?:string}).__fixturePage ?? null;
 // ?page=style-dna-panel: 같은 작업 화면을 c7886a1 관리자 칸(#admin-style-dna) 모양으로 그린다(c7886a1 Style DNA 시험을 그대로 다시 쓰는 용도).
@@ -748,8 +749,11 @@ window.fetch=async(raw,init)=>{
 };
 `;
 const plugins = [{ name: "fixture-server-boundaries", setup(builder) {
-  builder.onResolve({ filter: /^(next\/link|@\/lib\/cloud\/project-read-page|server-only)$/ }, args => ({ path: args.path, namespace: "fixture" }));
-  builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => ({ loader: "tsx", resolveDir: repo, contents: args.path === "next/link"
+  builder.onResolve({ filter: /^(next\/link|next\/image|@\/lib\/cloud\/project-read-page|server-only)$/ }, args => ({ path: args.path, namespace: "fixture" }));
+  // 관리자 홈 2안 배너: next/image는 Next 밖에서 묶으면 컴포넌트가 아니므로 같은 속성의 <img>로 대신한다.
+  builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => ({ loader: "tsx", resolveDir: repo, contents: args.path === "next/image"
+    ? "import { createElement } from 'react'; export default function Image({ src, alt, fill, sizes, priority, loading, fetchPriority, ...rest }) { void priority; void fetchPriority; return createElement('img', { src, alt, sizes, loading: loading ?? 'lazy', decoding: 'async', style: fill ? { position: 'absolute', inset: 0, width: '100%', height: '100%' } : undefined, ...rest }); }"
+    : args.path === "next/link"
     ? "import { createElement } from 'react'; export default function Link({ href, prefetch, ...rest }) { void prefetch; return createElement('a', { href, ...rest }); }"
     : args.path === "server-only" ? "export {};"
     : "export async function readCloudProjects() { throw new Error('Storage is outside this UI fixture'); }" }));
