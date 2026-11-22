@@ -46,3 +46,14 @@
 .structure li { display: grid; grid-template-columns: auto 1fr; gap: 0.6rem; align-items: start; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-md); }
 .structure p { margin: 0; color: var(--fg-default); }
 .step { display: grid; place-items: center; inline-size: 1.75rem; block-size: 1.75rem; border-radius: 50%; background: var(--bg-accent-soft); color: var(--fg-accent); font-weight: var(--weight-bold); font-size: var(--text-sm); }
+/* P1-07 자동·음성 모드 선택과 음성 보고서 */
+.modes { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; width: 100%; margin: 0; padding: 0; border: 0; min-width: 0; }
+.modes legend { width: 100%; margin-bottom: 0.25rem; padding: 0; font-weight: 700; }
+.modes label { display: inline-flex; gap: 0.35rem; align-items: center; min-height: 2rem; }
+.modes .hint { width: 100%; margin: 0; }
+.topics { display: grid; gap: 0.5rem; width: 100%; margin: 0; padding: 0; list-style: none; }
+.topics > li { display: grid; gap: 0.35rem; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-md); }
+.transcript { display: grid; gap: 0.5rem; width: 100%; margin: 0; padding: 0; list-style: none; }
+.transcript li { display: grid; gap: 0.25rem; padding: 0.6rem 0.75rem; border-inline-start: 3px solid var(--line-strong); background: var(--bg-surface); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+.transcript p { margin: 0; color: var(--fg-default); }
+.speaker { font-size: var(--text-sm); color: var(--fg-muted); }

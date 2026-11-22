@@ -1,188 +1,195 @@
-/* global taskSpace, document, innerWidth, DataTransfer, File, Event, DragEvent, Blob, console */
-// Audio Analyzer 첫 화면 묶음 확인: 끌어다 놓기·교체·해제, 브라우저 파형·재생, 기존 음악 결과와 Suno 프롬프트.
-// admin-premiere-publication-run.mjs가 출력한 루프백 주소에서 실행한다.
-import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+/* global taskSpace, URLSearchParams, URL, Response, Headers, window, location, document, File, DataTransfer, DragEvent, Event, history, fetch, console */
+// Run against the loopback production build with synthetic administrator authentication.
+const { default: assert } = await import("node:assert/strict");
+const { mkdir, writeFile } = await import("node:fs/promises");
+const { tmpdir } = await import("node:os");
+const { join } = await import("node:path");
 
 const base = globalThis.FIXTURE_ORIGIN;
 assert.match(base ?? "", /^http:\/\/127\.0\.0\.1:\d+$/);
-const proof = globalThis.FIXTURE_OUTPUT_DIR ?? join(tmpdir(), "dream-audio-qa");
+const proof = globalThis.FIXTURE_OUTPUT_DIR ?? join(tmpdir(), "dream-audio-embed-qa");
 await mkdir(proof, { recursive: true });
-const task = await taskSpace("Audio analyzer " + Date.now());
+const task = await taskSpace(globalThis.FIXTURE_SPACE ?? "관리자 오디오 원본 작업실");
 const page = task.page("p1");
+console.log({ space: task.spaceId });
 const root = "#admin-music-analysis";
-const until = (fn, label, arg) => page.waitForFunction(fn, arg, { timeout: 8000 }).catch(error => { throw new Error(`${label}: ${error.message}`); });
-const choose = async (selector) => { await page.focus(selector); await page.keyboard.press("Space"); };
-
-// 합성 사인파 WAV(16bit mono 8kHz)를 만들어 끌어다 놓기로 넣는다. kind: "drop" | "input".
-const put = (name, seconds, kind = "drop", type = "audio/wav") => page.evaluate(({ root, name, seconds, kind, type }) => {
-  let blob;
-  if (type === "audio/wav") {
-    const rate = 8000, count = Math.round(rate * seconds), view = new DataView(new ArrayBuffer(44 + count * 2));
-    const text = (offset, value) => [...value].forEach((char, index) => view.setUint8(offset + index, char.charCodeAt(0)));
-    text(0, "RIFF"); view.setUint32(4, 36 + count * 2, true); text(8, "WAVEfmt "); view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true); view.setUint16(22, 1, true); view.setUint32(24, rate, true); view.setUint32(28, rate * 2, true);
-    view.setUint16(32, 2, true); view.setUint16(34, 16, true); text(36, "data"); view.setUint32(40, count * 2, true);
-    for (let index = 0; index < count; index += 1) {
-      const envelope = index / count; // 점점 커지는 소리: 파형 오른쪽이 더 높아야 한다.
-      view.setInt16(44 + index * 2, Math.round(Math.sin(index / 8) * 30000 * envelope), true);
-    }
-    blob = new Blob([view.buffer], { type });
-  } else blob = new Blob(["not audio"], { type });
-  const transfer = new DataTransfer();
-  transfer.items.add(new File([blob], name, { type }));
-  const panel = document.querySelector(root);
-  if (kind === "input") {
-    const input = panel.querySelector("input[type=file]");
-    input.files = transfer.files;
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-    return;
-  }
-  const zone = panel.querySelector("input[type=file]").closest("label").parentElement;
-  zone.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true, dataTransfer: transfer }));
-  zone.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
-}, { root, name, seconds, kind, type });
-
-const state = () => page.evaluate((root) => {
-  const panel = document.querySelector(root);
-  const wave = panel.querySelector("section:has(> audio)");
-  const bars = wave ? [...wave.querySelectorAll("[aria-hidden=true] > span")].map(bar => parseFloat(bar.style.blockSize)).filter(Number.isFinite) : [];
-  return {
-    overflow: document.documentElement.scrollWidth - innerWidth,
-    waveName: wave?.querySelector("h4")?.textContent ?? null,
-    time: wave?.querySelector("span[aria-label^='재생 위치']")?.textContent ?? null,
-    bars: bars.length, rising: bars.length ? bars.slice(-10).reduce((a, b) => a + b, 0) > bars.slice(0, 10).reduce((a, b) => a + b, 0) : null,
-    note: wave?.querySelector("p")?.textContent ?? null,
-    picked: [...panel.querySelectorAll("p")].find(node => node.textContent.startsWith("선택한 파일 ·"))?.textContent ?? null,
-    inputValue: panel.querySelector("input[type=file]").value,
-    issue: [...panel.querySelectorAll("[role=status]")].map(node => node.textContent).join(" | "),
-    preview: panel.querySelector("[aria-label='오디오 프리뷰']")?.innerText.replace(/\s+/g, " ") ?? null,
-    report: [...panel.querySelectorAll("h4")].find(node => node.textContent === "음악 의미 분석 결과")?.parentElement.innerText.replace(/\s+/g, " ") ?? null,
-    prompt: panel.querySelector("textarea[aria-label='Suno용 프롬프트 제안']")?.value ?? null,
-    muted: panel.querySelector("audio")?.muted ?? null,
-    current: panel.querySelector("audio")?.currentTime ?? null,
-  };
-}, root);
-const waveReady = (name, seconds) => until(({ root, name, seconds }) => {
-  const wave = document.querySelector(`${root} section:has(> audio)`);
-  return wave?.querySelector("h4")?.textContent === name && wave.querySelectorAll("[aria-hidden=true] > span[style]").length === 120
-    && wave.querySelector("span[aria-label^='재생 위치']")?.textContent.endsWith(`/ 0:0${seconds}`);
-}, `wave ${name}`, { root, name, seconds });
-const analyze = async () => {
-  await until((root) => document.querySelector(`${root} input[type=checkbox]`), "consent", root);
-  await choose(`loc=css:${root} input[type=checkbox]`);
-  await page.click('loc=role:button[name="음악 의미 분석 실행"]');
-  await until((root) => document.querySelector(`${root} textarea[aria-label='Suno용 프롬프트 제안']`), "report", root);
+const menu = 'nav[aria-label="관리 메뉴"]';
+const project = "0190a0b0-0000-7000-8000-000000000001";
+const scene = "0190a0b0-0000-7000-8000-000000000011";
+const query = new URLSearchParams({ project, scene });
+const open = async path => {
+  const url = base + path;
+  await page.goto(globalThis.FIXTURE_LOGIN_PATH
+    ? `${base}${globalThis.FIXTURE_LOGIN_PATH}${encodeURIComponent(path)}`
+    : url);
 };
+const wait = (callback, args) => page.waitForFunction(callback, args, { timeout: 10000 });
+
+async function installSyntheticAnswers() {
+  await page.evaluate(({ project, scene }) => {
+    const nativeFetch = window.fetch.bind(window);
+    const events = [];
+    const originalPrompt = "합성 Suno 프롬프트";
+    const music = {
+      status: "ready", provider: "gemini",
+      report: { genre: "앰비언트", instruments: ["피아노"], tempoBpm: 96, structure: [{ label: "도입", description: "피아노로 시작" }], sunoPrompt: originalPrompt },
+    };
+    const speech = {
+      status: "ready", kind: "speech", provider: "gemini",
+      report: { summary: "합성 회의 요약", topicsAndKeywords: null, actionItems: [{ task: "체크리스트 정리", assignee: null, dueDate: null }],
+        fullTranscription: [{ speaker: "화자 1", timestamp: "00:01", text: "합성 대화" }] },
+    };
+    const response = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+    window.__embedAudioEvents = events;
+    window.fetch = async (input, init) => {
+      const url = new URL(typeof input === "string" || input instanceof URL ? input : input.url, location.href);
+      const method = init?.method ?? "GET";
+      if (url.origin !== location.origin) {
+        events.push({ external: url.hostname });
+        throw new Error("외부 호출은 검수 범위 밖입니다.");
+      }
+      const path = url.pathname;
+      if (path === "/api/auth/session") return nativeFetch(input, init);
+      if (path === `/api/projects/${project}/production`) {
+        events.push({ path, method });
+        return response({ scenes: [{ id: scene, position: 1, title: "합성 장면" }] });
+      }
+      if (path === "/api/admin/music-semantic" && method === "GET") return response({ semantic: { music: "configured" } });
+      if (path === "/api/admin/music-semantic" || path === "/api/admin/audio-analysis") {
+        const headers = new Headers(init?.headers);
+        const mode = headers.get("x-dream-audio-mode") ?? "music";
+        events.push({ path, method, mode, consent: headers.get("x-dream-music-external-consent"), sent: init?.body?.size });
+        return response(mode === "music"
+          ? { semantic: music }
+          : { schemaVersion: 1, requestedMode: mode, ...speech });
+      }
+      if (method !== "GET") {
+        events.push({ path, method });
+        return response({ error: "fixture_write_disallowed" }, 503);
+      }
+      return nativeFetch(input, init);
+    };
+  }, { project, scene });
+}
+
+async function putWave(name, seconds, drop = false) {
+  await page.evaluate(({ root, name, seconds, drop }) => {
+    const count = seconds * 8000;
+    const view = new DataView(new ArrayBuffer(44 + count * 2));
+    const signature = (offset, text) => [...text].forEach((char, index) => view.setUint8(offset + index, char.charCodeAt(0)));
+    signature(0, "RIFF"); view.setUint32(4, 36 + count * 2, true); signature(8, "WAVEfmt ");
+    view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+    view.setUint32(24, 8000, true); view.setUint32(28, 16000, true);
+    view.setUint16(32, 2, true); view.setUint16(34, 16, true); signature(36, "data"); view.setUint32(40, count * 2, true);
+    for (let i = 0; i < count; i += 1) view.setInt16(44 + i * 2, Math.sin(i / 8) * 24000 * i / count, true);
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([view.buffer], name, { type: "audio/wav" }));
+    const input = document.querySelector(`${root} input[type=file]`);
+    if (drop) {
+      const zone = input.closest("label");
+      zone.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true, dataTransfer: transfer }));
+      zone.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
+    } else {
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }, { root, name, seconds, drop });
+  await wait(({ root, name, seconds }) => {
+    const wave = document.querySelector(`${root} section:has(> audio)`);
+    return wave?.querySelector("h4")?.textContent === name && Math.abs(wave.querySelector("audio").duration - seconds) < 0.01
+      && wave.querySelectorAll("[aria-hidden=true] > span[style]").length === 120;
+  }, { root, name, seconds });
+}
 
 const rows = [];
-for (const width of [320, 390, 1440]) {
-  await page.cdp("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 600 });
-  await page.goto(`${base}/admin?audio=${width}${root}`);
-  await until((root) => document.querySelector(`${root} input[type=file]`), "form", root);
-  assert.match((await state()).preview, /음악 파일을 선택하면 파형을 보고/);
+for (const width of [1440, 390, 320]) {
+  await page.cdp("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: false });
+  await open(`/admin?${query}`);
+  await page.waitForSelector(`${menu} a[href="${root}"]`);
+  await installSyntheticAnswers();
+  await page.focus(`loc=css:${menu} a[href="${root}"]`);
+  await page.keyboard.press("Enter");
+  await wait(root => location.hash === root && document.activeElement?.id === `${root.slice(1)}-title`, root);
+  await page.waitForSelector(`${root} [data-audio-studio=embedded]`);
+  const layout = await page.evaluate(root => {
+    const panel = document.querySelector(root);
+    const studio = panel.querySelector("[data-audio-studio]");
+    const bar = document.querySelector('nav[aria-label="관리 메뉴"]').getBoundingClientRect();
+    const sidebar = studio.querySelector("aside").getBoundingClientRect();
+    const modes = studio.querySelector('[aria-label="분석 모드"]').getBoundingClientRect();
+    const drawer = studio.querySelector("[aria-expanded]");
+    return {
+      main: document.querySelectorAll("main").length, globalHeader: document.querySelectorAll("header").length,
+      oneFile: panel.querySelectorAll("input[type=file]").length, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      below: studio.getBoundingClientRect().top >= bar.bottom, leftRail: sidebar.right < modes.left, mobileDrawer: !!drawer.getClientRects().length,
+      auto: panel.querySelector('[aria-label="분석 모드"] button[aria-pressed=true]').textContent.trim(),
+      report: panel.querySelector('input[type=radio]:checked').value, path: location.pathname,
+    };
+  }, root);
+  assert.deepEqual(layout, { main: 1, globalHeader: 1, oneFile: 1, overflow: 0, below: true, leftRail: width === 1440, mobileDrawer: width !== 1440,
+    auto: "스마트 자동 감지", report: "detail", path: "/admin" });
+  await page.waitForSelector(`${root} a[href="/cloud/projects/${project}/produce?scene=${scene}"]`);
+  await page.screenshot({ path: `${proof}/audio-embedded-${width}.png` });
 
-  // 1) 끌어다 놓기 → 실제 디코딩 파형 120구간(점점 커지는 소리라 오른쪽이 높음)·시간 표시.
-  await put("tone-2.wav", 2);
-  await waveReady("tone-2.wav", 2);
-  const dropped = await state();
-  assert.equal(dropped.time, "0:00 / 0:02");
-  assert.equal(dropped.rising, true);
-  assert.match(dropped.picked, /선택한 파일 · tone-2\.wav · 0\.03 MB/);
-  assert.match(dropped.inputValue, /tone-2\.wav$/); // 끌어다 놓은 파일도 파일 칸에 보인다.
-  assert.match(dropped.note, /브라우저가 이 파일을 디코딩해/);
-
-  // 2) 재생 위치는 키보드로 옮긴다. 음소거는 눌림 상태로 알린다.
+  if (width !== 1440) await page.click('loc=role:button[name="오디오 스튜디오 메뉴"]');
+  await page.click(`loc=css:${root} aside button:has-text("음성 인텔리전스")`);
+  await wait(root => document.querySelector(`${root} [aria-label="분석 모드"] button[aria-pressed=true]`)?.textContent.includes("음성"), root);
+  if (width !== 1440) assert.equal(await page.evaluate(() => document.activeElement.getAttribute("aria-expanded")), "false");
+  await page.click('loc=role:button[name="스마트 자동 감지"]');
+  await putWave("tone-2.wav", 2, true);
   await page.focus(`loc=css:${root} input[type=range]`);
-  for (let step = 0; step < 10; step += 1) await page.keyboard.press("ArrowRight");
-  await until((root) => document.querySelector(`${root} audio`).currentTime > 0.5, "seek", root);
-  await page.click(`loc=css:${root} button[aria-pressed]`);
-  await until((root) => document.querySelector(`${root} audio`).muted && document.querySelector(`${root} button[aria-pressed=true]`), "mute", root);
-  await page.click('loc=role:button[name="처음으로"]');
-  await until((root) => document.querySelector(`${root} audio`).currentTime === 0, "rewind", root);
+  for (let step = 0; step < 8; step += 1) await page.keyboard.press("ArrowRight");
+  await wait(root => document.querySelector(`${root} audio`).currentTime > 0.5, root);
+  assert.equal(await page.evaluate(() => window.__embedAudioEvents.filter(row => row.method === "POST").length), 0);
 
-  // 3) 기존 결과 다섯 값과 편집 가능한 Suno 프롬프트(공개 준비에는 원문).
-  await analyze();
-  const report = await state();
-  assert.match(report.report, /장르 · 악기 앰비언트 피아노/);
-  assert.match(report.report, /추정 템포 96 BPM/);
-  assert.match(report.report, /구간 구조 1 도입 피아노로 시작/);
-  assert.equal(report.prompt, "Premiere fixture music");
-  await page.fill(`loc=css:${root} textarea[aria-label='Suno용 프롬프트 제안']`, "edited suno");
-  await until((root) => [...document.querySelectorAll(`${root} button`)].some(b => b.textContent === "원래대로"), "edited", root);
-  // 같은 파일로 다시 분석하면 편집이 남지 않는다.
+  await page.focus(`loc=css:${root} input[value=basic]`);
+  await page.keyboard.press("Space");
+  await wait(root => document.querySelector(`${root} input[value=basic]`)?.checked, root);
+  await page.waitForSelector(`${root} input[type=checkbox]`);
+  await page.click(`loc=css:${root} input[type=checkbox]`);
+  await page.click('loc=role:button[name="자동 판별 분석 실행"]');
+  await wait(root => document.querySelector(root).textContent.includes("합성 회의 요약"), root);
+
+  await page.click('loc=role:button[name="음성 · 회의록"]');
+  await page.click(`loc=css:${root} input[type=checkbox]`);
+  await page.click('loc=role:button[name="음성 분석 실행"]');
+  await wait(root => document.querySelector(root).textContent.includes("합성 회의 요약"), root);
+
+  await page.click('loc=role:button[name="음악 · Suno v6"]');
+  await page.click(`loc=css:${root} input[type=checkbox]`);
   await page.click('loc=role:button[name="음악 의미 분석 실행"]');
-  await until((root) => document.querySelector(`${root} textarea[aria-label='Suno용 프롬프트 제안']`)?.value === "Premiere fixture music", "rerun", root);
-  assert.ok(report.overflow <= 0, `overflow ${width}`);
-  await page.evaluate((root) => document.querySelector(`${root} [aria-label='오디오 프리뷰']`).scrollIntoView(), root);
-  await page.screenshot({ path: `${proof}/audio-${width}.png` });
+  await wait(root => document.querySelector(`${root} textarea[aria-label="Suno용 프롬프트 제안"]`)?.value === "합성 Suno 프롬프트", root);
+  await page.fill(`loc=css:${root} textarea[aria-label="Suno용 프롬프트 제안"]`, "화면에서 수정한 프롬프트");
+  await page.click('loc=role:button[name="공개 준비"]');
+  await wait(() => location.hash === "#admin-analysis-results");
+  await wait(() => [...document.querySelectorAll("#admin-analysis-results textarea")].some(field => field.value === "합성 Suno 프롬프트"));
 
-  // 4) 다른 파일로 교체(파일 입력): 이름·파형·시간이 바뀌고 이전 결과가 남지 않는다.
-  await put("tone-3.wav", 3, "input");
-  await waveReady("tone-3.wav", 3);
-  const swapped = await state();
-  assert.equal(swapped.time, "0:00 / 0:03");
-  assert.equal(swapped.prompt, null);
-  assert.doesNotMatch(swapped.issue, /Suno/);
-
-  // 5) 지원하지 않는 파일을 놓으면 미리보기 없이 안내하고, 선택 해제하면 입력도 비운다.
-  await put("notes.txt", 0, "drop", "text/plain");
-  await until((root) => document.querySelector(`${root} [aria-label='오디오 프리뷰']`).innerText.includes("음악 파일을 선택하면"), "invalid", root);
-  const invalid = await state();
-  assert.equal(invalid.waveName, null);
-  assert.match(invalid.picked, /notes\.txt/);
-  await page.click('loc=role:button[name="선택 해제"]');
-  await until((root) => ![...document.querySelectorAll(`${root} p`)].some(node => node.textContent.startsWith("선택한 파일 ·")), "cleared", root);
-  assert.equal((await state()).inputValue, "");
-
-  // 6) 0바이트에 가까운 깨진 WAV는 파형 실패를 알리고 화면은 유지한다.
-  await page.evaluate((root) => {
-    const transfer = new DataTransfer();
-    transfer.items.add(new File([new Uint8Array(160)], "broken.wav", { type: "audio/wav" }));
-    const input = document.querySelector(`${root} input[type=file]`);
-    input.files = transfer.files;
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  }, root);
-  await until((root) => document.querySelector(`${root} section:has(> audio)`)?.innerText.includes("파형을 그리지 못했어요"), "broken", root);
-  // 7) 해제 없이 바로 교체: 손상→정상, 길이 다른 정상→정상, 정상→손상. 이전 길이·위치·오류가 남지 않고,
-  //    재생 정보를 확인하기 전에는 재생·위치·음소거를 잠근다.
-  const controls = () => page.evaluate((root) => {
-    const wave = document.querySelector(`${root} section:has(> audio)`);
-    const range = wave.querySelector("input[type=range]");
-    return { name: wave.querySelector("h4").textContent, time: wave.querySelector("span[aria-label^='재생 위치']").textContent,
-      max: Number(range.max), disabled: [range, ...wave.querySelectorAll("button")].map(control => control.disabled),
-      unplayable: wave.innerText.includes("재생할 수 없어요") };
-  }, root);
-  await until((root) => document.querySelector(`${root} section:has(> audio)`)?.innerText.includes("재생할 수 없어요"), "broken unplayable", root);
-  const broken = await controls();
-  assert.deepEqual([broken.time, broken.max, broken.disabled], ["–:– / –:–", 0, [true, true, true, true]]);
-  await put("tone-3.wav", 3, "input");
-  await waveReady("tone-3.wav", 3);
-  const healed = await controls();
-  assert.deepEqual([healed.time, healed.max, healed.disabled, healed.unplayable], ["0:00 / 0:03", 3, [false, false, false, false], false]);
-  await page.focus(`loc=css:${root} input[type=range]`);
-  for (let step = 0; step < 25; step += 1) await page.keyboard.press("ArrowRight");
-  await until((root) => document.querySelector(`${root} audio`).currentTime > 2, "seek past 2s", root);
-  await put("tone-2.wav", 2, "input");
-  await waveReady("tone-2.wav", 2);
-  const shorter = await controls();
-  assert.deepEqual([shorter.time, shorter.max], ["0:00 / 0:02", 2]);
-  assert.equal(await page.evaluate((root) => document.querySelector(`${root} audio`).currentTime, root), 0);
-  await page.evaluate((root) => {
-    const transfer = new DataTransfer();
-    transfer.items.add(new File([new Uint8Array(160)], "broken-2.wav", { type: "audio/wav" }));
-    const input = document.querySelector(`${root} input[type=file]`);
-    input.files = transfer.files;
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  }, root);
-  await until((root) => document.querySelector(`${root} section:has(> audio) h4`)?.textContent === "broken-2.wav", "broken-2 name", root);
-  const immediate = await controls(); // 오류가 오기 전에도 이전 길이를 쓰지 않는다.
-  assert.deepEqual([immediate.time, immediate.max, immediate.disabled], ["–:– / –:–", 0, [true, true, true, true]]);
-  await until((root) => document.querySelector(`${root} section:has(> audio)`)?.innerText.includes("재생할 수 없어요"), "broken-2 unplayable", root);
-  assert.deepEqual((await controls()).disabled, [true, true, true, true]);
-
-  rows.push({ width, overflow: Math.max(0, report.overflow) });
+  const events = await page.evaluate(() => window.__embedAudioEvents);
+  assert.equal(events.some(row => row.external), false);
+  assert.deepEqual(events.filter(row => row.method === "POST").map(row => row.mode), ["auto", "speech", "music"]);
+  assert.equal(events.filter(row => row.method === "POST").every(row => row.sent > 0 && row.consent === "true"), true);
+  await page.evaluate(() => history.back());
+  await wait(root => location.hash === root && document.querySelector(`${root} [data-audio-studio=embedded]`), root);
+  await putWave("tone-3.wav", 3);
+  await page.fill('loc=role:textbox[name="사용자 컨텍스트 (선택 사항)"]', "합성 분석 맥락");
+  await wait(root => document.querySelector(root).textContent.includes("업로드 후 분석"), root);
+  await page.click('loc=role:button[name="파일 교체"]');
+  await wait(root => document.activeElement === document.querySelector(`${root} input[type=file]`), root);
+  assert.equal(await page.evaluate(root => document.querySelector(`${root} textarea`)?.value, root), "합성 분석 맥락");
+  if (width === 1440) {
+    await page.click('loc=role:link[name="API 키 설정"]');
+    await wait(() => location.pathname === "/admin" && location.hash === "#admin-api-integrations");
+    await page.evaluate(() => history.back());
+    await wait(root => location.hash === root && document.querySelector(`${root} [data-audio-studio=embedded]`), root);
+  }
+  rows.push({ width, ...layout, analysis: events.filter(row => row.method === "POST"), external: 0 });
 }
-console.log("AUDIO-RESULT" + JSON.stringify(rows));
+await open("/admin/audio-analysis");
+await page.waitForSelector('[data-audio-studio="standalone"]');
+assert.equal(await page.evaluate(() => document.querySelectorAll("main").length), 1);
+assert.equal(await page.evaluate(() => [...document.querySelectorAll('[data-audio-studio="standalone"] a')].every(a => a.hash === "#admin-api-integrations" && a.pathname === "/admin")), true);
+const denied = await fetch(`${base}/admin/audio-analysis?${query}`, { redirect: "manual" });
+assert.equal(denied.status, 307);
+assert.equal(new URL(denied.headers.get("location"), base).searchParams.get("next"), `/admin/audio-analysis?${query}`);
+await writeFile(`${proof}/verification.json`, JSON.stringify({ rows, standalone: true, denied: 307 }, null, 2));
+console.log({ space: task.spaceId, rows });

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -102,5 +103,21 @@ describe("music semantic integration client", () => {
     expect(send.mock.calls[1]).toMatchObject([MUSIC_SEMANTIC_URI, { method: "POST", body: file, credentials: "same-origin",
       headers: { "x-dream-filename": encodeURIComponent(file.name), [MUSIC_EXTERNAL_CONSENT_HEADER]: "true" } }]);
     expect(renderToStaticMarkup(createElement(AdminMusicSemantic))).toContain("음악 파일을 선택하면 의미 분석을 실행할 수 있어요.");
+  });
+});
+
+describe("P1-07-AUDIO-ORIGINAL-PARITY-UI G2 바로 분석 진행 안내", () => {
+  it("모드별 기존 진행 문장 뒤에 '수십 초' 안내를 붙이고, 경로 한도(75·90초)를 넘는 '몇 분'은 쓰지 않는다", async () => {
+    const { analyzingStatus } = await import("@/components/admin/admin-music-semantic");
+    expect(analyzingStatus("music")).toBe("장르, 악기, 템포와 구간 구조를 분석하는 중이에요. 파일 길이에 따라 수십 초 걸릴 수 있어요.");
+    expect(analyzingStatus("auto")).toBe("음악인지 음성인지 판별한 뒤 분석하는 중이에요. 파일 길이에 따라 수십 초 걸릴 수 있어요.");
+    expect(analyzingStatus("speech")).toBe("요약, 주제, 할 일과 화자별 전사를 분석하는 중이에요. 파일 길이에 따라 수십 초 걸릴 수 있어요.");
+    for (const mode of ["music", "auto", "speech"] as const) expect(analyzingStatus(mode)).not.toMatch(/몇 ?분|\d+ ?분/);
+  });
+  it("진행 안내는 분석 중(busy)에만 role=status 한 줄로 그리고, 단추 쪽 진행 표시는 aria-busy만 쓴다", () => {
+    const source = readFileSync("components/admin/admin-music-semantic.tsx", "utf8");
+    expect(source.match(/analyzingStatus\(mode\)/g)).toHaveLength(1);
+    expect(source).toContain("{busy && <p role=\"status\">{analyzingStatus(mode)}</p>}");
+    expect(readFileSync("components/ui/primitives.tsx", "utf8")).not.toMatch(/loading[^\n]*role="status"/);
   });
 });

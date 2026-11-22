@@ -96,6 +96,11 @@ const authRoutes = ["auth/login", "auth/signup", "auth/reset", "auth/password", 
 // - T297 관리자 게시 GET·POST, T296 참고 분석 POST: 직접 권한·no-store·POST 동일 출처·미연결 실패는 tests/api-auth.test.ts가 검증
 const CLOUD_ONLY: Record<string, string[]> = {
   "../app/api/admin/music-semantic/route.ts": ["GET", "POST"],
+  // P1-07 운영 이식: 오디오 분석·보호 업로드(직접 권한·no-store·동일 출처·미연결 실패는 api-auth와 각 경로 시험이 검증).
+  "../app/api/admin/audio-analysis/route.ts": ["POST"],
+  "../app/api/admin/audio-uploads/route.ts": ["POST"],
+  "../app/api/admin/audio-uploads/[id]/route.ts": ["GET", "POST"],
+  "../app/api/admin/audio-uploads/[id]/chunks/route.ts": ["PUT"],
   "../app/api/admin/reference-analysis/route.ts": ["GET", "POST"],
   "../app/api/admin/reference-publications/route.ts": ["GET", "POST", "DELETE"],
   "../app/api/admin/analysis-credentials/route.ts": ["GET", "PUT"],

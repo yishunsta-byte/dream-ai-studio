@@ -10,11 +10,12 @@ import { AdminAnalysisResults, type PreparedPublication } from "./admin-analysis
 import { imagePublicationDraft } from "./admin-analysis-publication-draft";
 import { StyleDnaReport } from "./admin-style-dna-report";
 import type { StyleDna } from "./admin-style-dna-extension";
-import { AdminMusicSemantic } from "./admin-music-semantic";
-import { AudioWaveform } from "./admin-audio-waveform";
+import { AudioStudio } from "./audio-original/audio-studio";
+import { AdminStudioReturn } from "./admin-studio-return";
 import { PasteUrlField } from "./admin-paste-url";
 import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
 import { imageShareSection } from "./admin-paths";
+import { audioAnalysisPath } from "./audio-analysis-path";
 import {
   analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, SUPPORTED_ORIGINS,
   unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource, type PublicationDraft, type ReadyResult,
@@ -30,7 +31,7 @@ const loginLink = "/admin/login?next=%2Fadmin%23admin-image-publication";
 
 const copy = [
   { kind: "image", description: "이미지의 색감·조명·구도를 분석해 한국어와 영어로 이미지 생성 프롬프트를 만들어요.", caption: "컬러·구도·조명" },
-  { kind: "music", description: "음악의 장르, 악기, 추정 템포와 구간 구조를 살펴봐요.", caption: "장르·악기·템포" },
+  { kind: "music" },
   { kind: "shorts", description: "YouTube 쇼츠의 첫 장면과 시간대별 근거를 확인해요.", caption: "첫 장면·시간대별 근거" },
 ] as const;
 
@@ -249,51 +250,11 @@ function ImageWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   </div>;
 }
 
-const megabytes = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(bytes < 1024 * 1024 ? 2 : 1)} MB`;
-
-// Audio Analyzer v1.01 업로드 화면처럼 끌어다 놓기·교체·해제를 지원한다. 끌어다 놓은 파일도 같은 형식·크기 검사를 거친다.
 function MusicWorkspace({ onPrepare }: ProgramWorkspaceProps) {
-  const [file, setFile] = useState<File>();
-  const [dragging, setDragging] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
-  const issue = file && analysisInputIssue({ kind: "file", media: "music", file });
-  const selected = issue ? undefined : file;
-  const replace = (next?: File) => {
-    if (input.current && next !== input.current.files?.[0]) input.current.value = "";
-    setFile(next);
-  };
-  return <div className={styles.workbench}>
-    <div className={styles.desk}>
-      <section className={styles.control}>
-        <h3>음악 파일</h3>
-        <div className={styles.dropzone} data-dragging={dragging || undefined}
-          onDragOver={event => { if (event.dataTransfer.types.includes("Files")) { event.preventDefault(); setDragging(true); } }}
-          onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
-          onDrop={event => { event.preventDefault(); setDragging(false); const dropped = event.dataTransfer.files[0];
-            // 파일 칸에도 같은 파일을 넣어 '선택된 파일 없음'으로 보이지 않게 한다(지원하지 않는 브라우저는 이름 줄로 안내).
-            if (dropped && input.current) { try { input.current.files = event.dataTransfer.files; } catch { /* 읽기 전용 */ } }
-            if (dropped) replace(dropped); }}>
-          <label className={styles.field}>{file ? "다른 파일로 교체" : "파일 선택"}
-            <input ref={input} type="file" accept=".mp3,.wav,.m4a" aria-invalid={!!issue}
-              onChange={(event) => replace(event.target.files?.[0])} />
-          </label>
-          <p className={styles.note}>음악 파일을 여기로 끌어다 놓아도 돼요. MP3 · WAV · M4A · 최대 {UPLOAD_SIZE_LIMIT_LABEL}</p>
-        </div>
-        {file && <div className={styles.picked}>
-          <p className={styles.note}>선택한 파일 · {file.name} · {megabytes(file.size)}</p>
-          <Button type="button" variant="secondary" size="sm" onClick={() => { replace(undefined); input.current?.focus(); }}>선택 해제</Button>
-        </div>}
-        {issue && <p role="status">{issue}</p>}
-        <AdminMusicSemantic file={selected} onPrepare={onPrepare} />
-      </section>
-    </div>
-    <Preview title="오디오 프리뷰">
-      {selected ? <AudioWaveform file={selected} /> : <div className={styles.previewMessage}>
-        <span className={styles.soundIcon} aria-hidden="true">≋</span>
-        <p>음악 파일을 선택하면 파형을 보고 여기에서 재생할 수 있어요.</p>
-      </div>}
-    </Preview>
-  </div>;
+  return <>
+    <AdminStudioReturn kind="audio" />
+    <AudioStudio embedded onPrepare={onPrepare} />
+  </>;
 }
 
 function ShortsWorkspace({ onPrepare }: ProgramWorkspaceProps) {
@@ -343,15 +304,21 @@ export function AdminPremierePrograms() {
     const id = index === 0 ? imageShareSection : programId;
     const label = index === 0 ? "이미지 분석 결과 공개 준비" : programLabel;
     const active = current === id;
-    const { kind, description, caption } = copy[index];
+    const program = copy[index];
+    const { kind } = program;
     const Workspace = workspaces[index];
     return <section key={id} id={id} tabIndex={-1} aria-labelledby={`${id}-title`} data-program-active={active || undefined}
       data-program={kind} className={`${hub.target} ${styles.program}`}>
       {active && <>
-        <header className={styles.mast}>
-          <div><h2 id={`${id}-title`} tabIndex={-1}>{label}</h2><p>{description}</p></div>
-          <div className={styles.cover} aria-hidden="true"><Icon name={icon} /><span>{caption}</span></div>
-        </header>
+        {program.kind === "music"
+          ? <div className={styles.audioHeading}>
+            <h2 id={`${id}-title`} tabIndex={-1}>{label}</h2>
+            <a className={hub.link} href={audioAnalysisPath}>오디오 분석 작업실(원본 v1.15) 열기 <Icon name="arrow" /></a>
+          </div>
+          : <header className={styles.mast}>
+            <div><h2 id={`${id}-title`} tabIndex={-1}>{label}</h2><p>{program.description}</p></div>
+            <div className={styles.cover} aria-hidden="true"><Icon name={icon} /><span>{program.caption}</span></div>
+          </header>}
         <Workspace onPrepare={prepare} />
       </>}
     </section>;

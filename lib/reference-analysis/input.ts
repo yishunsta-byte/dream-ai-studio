@@ -3,7 +3,7 @@ import { z } from "zod";
 export const referenceMedia = z.enum(["video", "music", "image"]);
 export type ReferenceMedia = z.infer<typeof referenceMedia>;
 export const referencePermission = z.enum(["synthetic", "authorized", "unknown"]);
-const fileName = z.string().min(1).max(255).refine(value =>
+export const referenceFileName = z.string().min(1).max(255).refine(value =>
   value === value.trim() && value !== "." && value !== ".." && !/[\\/:]/.test(value) &&
   [...value].every(character => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127));
 const bodyText = z.string().max(100_000).refine(value => value.trim().length > 0);
@@ -16,7 +16,7 @@ const bodyInput = z.strictObject({
   sourceUrl: urlText.optional(), mediaHint: referenceMedia.optional(),
 });
 const fileInput = z.strictObject({
-  kind: z.literal("file"), name: fileName, sizeBytes: z.number().int().positive(), permission, mime: z.string().max(120).optional(),
+  kind: z.literal("file"), name: referenceFileName, sizeBytes: z.number().int().positive(), permission, mime: z.string().max(120).optional(),
 });
 const urlInput = z.strictObject({
   kind: z.literal("url"), url: urlText, permission, access: z.enum(["unknown", "public", "restricted"]).default("unknown"),
