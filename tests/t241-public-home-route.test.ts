@@ -37,11 +37,11 @@ async function run(path: string) {
 }
 const passed = (response: Response) => response.headers.get("x-middleware-next") === "1";
 
-const EXACT = ["/", ...PUBLIC_SHOWCASE_ASSETS];
-const NEAR = ["/studio", "/index", "/showcase", "/showcase/", "/showcase/t240", "/showcase/t240/", "/showcase/t240/other.png", "/showcase/t240/orchid.png/", "/showcase/t240/ORCHID.png", "/showcase/t240/orchid.png.map", "/showcase/t241/orchid.png", "/fonts/PretendardVariable.woff2", "/api/projects", "/cloud/projects", "/files/x"];
+const EXACT = ["/", "/brand-mark.svg", ...PUBLIC_SHOWCASE_ASSETS];
+const NEAR = ["/studio", "/index", "/showcase", "/showcase/", "/showcase/t240", "/showcase/t240/", "/showcase/t240/other.png", "/showcase/t240/orchid.png/", "/showcase/t240/ORCHID.png", "/showcase/t240/orchid.png.map", "/showcase/t241/orchid.png", "/fonts/PretendardVariable.woff2", "/brand-mark.svg/other", "/brand-mark.svg.map", "/api/projects", "/cloud/projects", "/files/x"];
 
 describe("T-241 공개 경로 판정: 정확한 루트와 고정 이미지 6개만", () => {
-  it("정확한 7개만 익명 공개이고 하위 폴더·비슷한 이름은 아니다", () => {
+  it("공개 페이지와 정적 자산의 정확한 경로만 허용한다", () => {
     expect(PUBLIC_SHOWCASE_ASSETS).toHaveLength(6);
     expect(Object.isFrozen(PUBLIC_SHOWCASE_ASSETS)).toBe(true);
     for (const path of EXACT) { expect(isAnonymousPublicPath(path), path).toBe(true); expect(isPublicPath(path), path).toBe(true); }

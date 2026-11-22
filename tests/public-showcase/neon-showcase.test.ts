@@ -45,7 +45,7 @@ describe("T-240 공개 작품 자료", () => {
     expect(isShowcaseFilter("음악")).toBe(true);
     expect(isShowcaseFilter("공연")).toBe(false);
     expect(isShowcaseFilter(undefined)).toBe(false);
-    expect(creatorInitials("DREAM ORIGINALS")).toBe("DO");
+    expect(creatorInitials("Dream AI Studio")).toBe("DAS");
     expect(creatorInitials("  wave  room ")).toBe("WR");
   });
 });
@@ -112,9 +112,12 @@ describe("T-240 소스 경계", () => {
   it("개인 자료·서버 저장소·인증 모듈을 가져오지 않는다", () => {
     for (const source of [component, lib]) {
       const imports = [...source.matchAll(/from\s+"([^"]+)"/g)].map((match) => match[1]);
-      for (const path of imports) expect(path).toMatch(/^(react|next\/image|next\/link|@\/lib\/public-showcase\/works|\.\/neon-showcase\.module\.css)$/);
+      for (const path of imports) expect(path).toMatch(/^(react|next\/image|next\/link|@\/lib\/public-showcase\/works|@\/lib\/config\/app|@\/components\/ui\/brand-logo|\.\/neon-showcase\.module\.css)$/);
       expect(source).not.toMatch(/fetch\(|process\.env|localStorage|autoPlay/);
     }
+    const brandImports = [...read("components/ui/brand-logo.tsx").matchAll(/from\s+"([^"]+)"/g)].map((match) => match[1]);
+    expect(brandImports).toEqual(["next/image", "@/lib/config/app", "./brand-logo.module.css"]);
+    expect(read("lib/config/app.ts")).not.toMatch(/\b(?:import|process)\b/);
   });
 
   it("모든 CSS 규칙은 .root 범위 안 클래스나 @규칙이고, 동작 줄이기를 지원한다", () => {

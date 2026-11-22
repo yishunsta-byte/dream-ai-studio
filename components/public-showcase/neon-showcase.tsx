@@ -4,6 +4,8 @@
 // 자료는 props로만 받는다(개인 프로젝트·초안·저장 파일을 읽지 않음). 재생 파일이 없으면 정지 이미지와 안내만 보여 준다.
 import Image from "next/image";
 import Link from "next/link";
+import { BrandLogo } from "@/components/ui/brand-logo";
+import { appConfig } from "@/lib/config/app";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { SHOWCASE_FILTERS, creatorInitials, filterWorks, type ShowcaseFilter, type ShowcaseWork } from "@/lib/public-showcase/works";
 import styles from "./neon-showcase.module.css";
@@ -140,8 +142,8 @@ export function NeonShowcase({ works, status = "ready", onRetry, featuredId, col
     <div className={styles.root}>
       <a href={`#${ids.main}`} className={styles.skip}>본문으로 건너뛰기</a>
       <header className={styles.header}>
-        <Link className={styles.brand} href="/" aria-label="Dream SCREEN 처음 화면">
-          <span className={styles.brandSymbol} aria-hidden="true">✦</span>DREAM <em>SCREEN</em>
+        <Link className={styles.brand} href="/" aria-label={`${appConfig.name} 처음 화면`}>
+          <BrandLogo />
         </Link>
         <nav className={styles.nav} aria-label="주 메뉴">
           <a href={`#${ids.main}`} aria-current="page" onClick={(event) => { event.preventDefault(); moveTo(ids.main); }}>발견</a>
@@ -175,10 +177,10 @@ export function NeonShowcase({ works, status = "ready", onRetry, featuredId, col
             </div>
           </section>
         ) : (
-          <section className={styles.heroEmpty}><h1>DREAM SCREEN</h1><p>공개된 작품이 생기면 이곳에 대표 작품을 보여 드릴게요.</p></section>
+          <section className={styles.heroEmpty}><h1>{appConfig.name}</h1><p>공개된 작품이 생기면 이곳에 대표 작품을 보여 드릴게요.</p></section>
         )}
 
-        <div className={styles.ticker}><strong>BEYOND THE ORDINARY.</strong><span>FILMS · MUSIC · VISUAL STORIES</span><span>CURATED BY DREAM</span></div>
+        <div className={styles.ticker}><strong>BEYOND THE ORDINARY.</strong><span>FILMS · MUSIC · VISUAL STORIES</span><span>Curated by {appConfig.name}</span></div>
 
         <section id={ids.browse} tabIndex={-1} aria-labelledby={`${ids.browse}-title`} className={styles.browse}>
           <div className={styles.sectionHeading}>
@@ -225,7 +227,7 @@ export function NeonShowcase({ works, status = "ready", onRetry, featuredId, col
         </section>
 
         <footer className={styles.footer}>
-          <p>DREAM · PUBLIC SHOWCASE{hasSample ? <><br />예시 작품과 크리에이터는 화면 소개용이에요.</> : null}</p>
+          <p>{appConfig.name} · PUBLIC SHOWCASE{hasSample ? <><br />예시 작품과 크리에이터는 화면 소개용이에요.</> : null}</p>
           <div className={styles.footerLinks}>
             <Link className={styles.link} href={loginHref}>크리에이터 로그인 ↗</Link>
             <Link className={`${styles.link} ${styles.adminLink}`} href={adminHref}>관리자 로그인</Link>

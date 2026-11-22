@@ -8,6 +8,7 @@ const pretendard = localFont({ src: "../public/fonts/PretendardVariable.woff2", 
 
 export const metadata: Metadata = {
   title: appConfig.name,
+  icons: { icon: { url: appConfig.brandMark, type: "image/svg+xml" } },
   description: "나만의 AI 콘텐츠 작업실",
 };
 

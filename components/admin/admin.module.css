@@ -30,9 +30,6 @@
 }
 .header { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-6); border-bottom: 1px solid var(--line); background: #100e19; }
 .brand { display: inline-flex; min-height: 44px; max-width: 100%; align-items: center; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); color: var(--fg-strong); text-decoration: none; font-size: var(--text-lg); font-weight: 850; overflow-wrap: anywhere; }
-.brandIdentity { display: inline-flex; min-width: 0; align-items: center; gap: var(--sp-2); }
-.brand em { color: var(--fg-accent); font-style: normal; font-weight: 500; }
-.brandMark { display: grid; flex: none; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #e926bd, #6840e0); color: white; }
 .brandScope { margin-left: var(--sp-1); padding-left: var(--sp-3); border-left: 1px solid var(--line); color: var(--fg-muted); font-size: var(--text-xs); font-weight: 600; }
 .console :is(a, button, input, select, [tabindex]):focus-visible { outline: 2px solid var(--line-focus); outline-offset: 3px; box-shadow: none; }
 .link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; }

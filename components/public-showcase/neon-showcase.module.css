@@ -32,8 +32,6 @@
 
 .header { display: flex; align-items: center; gap: 30px; padding: 18px 36px; max-width: 1600px; margin: auto; }
 .brand { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 850; font-size: 21px; letter-spacing: -0.05em; white-space: nowrap; }
-.brand em { font-style: normal; font-weight: 450; color: var(--accent); }
-.brandSymbol { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: linear-gradient(135deg, #e926bd, #6840e0); color: #fff; font-size: 20px; }
 .nav { display: flex; gap: 23px; align-items: center; }
 .nav a { min-height: 44px; min-width: 44px; justify-content: center; padding: 0 4px; display: flex; align-items: center; font-size: 14px; font-weight: 650; color: var(--muted); }
 .nav a[aria-current="page"] { color: var(--ink); }
@@ -123,7 +121,6 @@
 @media (max-width: 760px) {
   .header { padding: 14px 18px; gap: 12px; flex-wrap: wrap; }
   .brand { font-size: 19px; }
-  .brandSymbol { width: 29px; height: 29px; }
   .header > .btn { margin-left: auto; padding-inline: 12px; font-size: 13px; }
   .nav { order: 3; gap: 20px; }
   .search { order: 4; width: 100%; margin-left: 0; margin-top: 2px; }

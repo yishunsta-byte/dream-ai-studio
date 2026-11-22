@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { authMode, safeNextPath } from "@/lib/auth/config";
 import { LoginForm } from "@/components/auth/login-form";
+import { BrandMark } from "@/components/ui/brand-logo";
+import { appConfig } from "@/lib/config/app";
 import styles from "@/components/auth/login.module.css";
 
-export const metadata: Metadata = { title: "로그인 · Dream AI Studio" };
+export const metadata: Metadata = { title: `로그인 · ${appConfig.name}` };
 
 const ERRORS: Record<string, string> = {
   link: "메일 링크가 만료됐거나 이미 사용됐어요. 다시 요청해 주세요.",
@@ -24,10 +26,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const notice = params.notice ? NOTICES[params.notice] : undefined;
   return <main id="main-content" className={styles.page}>
     <div className={styles.hero}>
-      <span className={styles.badgeIcon} aria-hidden="true">D</span>
-      <span className={styles.eyebrow}>DREAM AI STUDIO</span>
+      <BrandMark size={64} />
+      <span className={styles.eyebrow}>{appConfig.name}</span>
       <h1 className={styles.title}>나만의 콘텐츠 작업실</h1>
-      <p className={styles.lead}>Dream AI Studio 계정(이메일·비밀번호)으로 로그인하세요.</p>
+      <p className={styles.lead}>{appConfig.name} 계정(이메일·비밀번호)으로 로그인하세요.</p>
     </div>
     <div className={styles.panel}>
       <LoginForm next={safeNextPath(params.next)} initialError={error} initialNotice={notice} />

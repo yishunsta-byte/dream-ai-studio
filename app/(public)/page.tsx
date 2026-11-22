@@ -5,7 +5,6 @@ import { NeonShowcase } from "@/components/public-showcase/neon-showcase";
 import { SAMPLE_WORKS } from "@/lib/public-showcase/works";
 
 export const metadata: Metadata = {
-  title: "DREAM SCREEN",
   description: "영상부터 음악까지, 크리에이터의 공개 작품을 둘러보세요.",
 };
 

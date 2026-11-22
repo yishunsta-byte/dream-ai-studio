@@ -1,6 +1,7 @@
 // T-240 공개 메인(NEON SCREEN) 작품 자료.
 // 공개하기로 선택된 완성 작품만 이 모양으로 넘긴다. 개인 프로젝트·초안·저장 파일을 여기서 읽지 않는다.
 // 지금 들어 있는 6개는 화면 소개용 예시(sample: true)이고, 재생할 수 있는 미디어는 연결돼 있지 않다(media: null).
+import { appConfig } from "@/lib/config/app";
 
 export const SHOWCASE_KINDS = ["영상", "음악", "광고", "여행"] as const;
 export type ShowcaseKind = (typeof SHOWCASE_KINDS)[number];
@@ -31,7 +32,7 @@ const wide = (name: string): ShowcaseImage => ({ src: `${IMAGE_ROOT}/${name}.png
 const square = (name: string): ShowcaseImage => ({ src: `${IMAGE_ROOT}/${name}.png`, width: 1254, height: 1254 });
 
 const SAMPLE_LIST: ShowcaseWork[] = [
-  { id: "neon-after-hours", title: "NEON AFTER HOURS", subtitle: "도시가 잠든 뒤, 시작되는 리듬", creator: "DREAM ORIGINALS", kind: "영상", genre: "일렉트로닉", format: "뮤직 필름", description: "네온빛 도시와 사운드의 에너지를 담은 공연 필름 예시예요.", image: wide("neon-rooftop"), sample: true, media: null },
+  { id: "neon-after-hours", title: "NEON AFTER HOURS", subtitle: "도시가 잠든 뒤, 시작되는 리듬", creator: appConfig.name, kind: "영상", genre: "일렉트로닉", format: "뮤직 필름", description: "네온빛 도시와 사운드의 에너지를 담은 공연 필름 예시예요.", image: wide("neon-rooftop"), sample: true, media: null },
   { id: "desert-motion", title: "DESERT MOTION", subtitle: "오렌지빛 속도로 달리다", creator: "MOTION LAB", kind: "광고", genre: "팝", format: "브랜드 필름", description: "선명한 컬러와 사막 풍경으로 꾸민 자동차 광고 예시예요.", image: wide("desert-motion"), sample: true, media: null },
   { id: "the-wild-coast", title: "THE WILD COAST", subtitle: "파도가 들려주는 또 다른 세계", creator: "FIELD NOTES", kind: "여행", genre: "앰비언트", format: "트래블 필름", description: "거대한 해안 풍경을 담은 여행 영상 예시예요.", image: wide("wild-coast"), sample: true, media: null },
   { id: "liquid-bloom", title: "LIQUID BLOOM", subtitle: "소리로 피어나는 새로운 감각", creator: "WAVE ROOM", kind: "음악", genre: "일렉트로닉", format: "일렉트로닉", description: "반짝이는 질감과 몽환적인 색을 주제로 한 일렉트로닉 앨범 예시예요.", image: square("orchid"), sample: true, media: null },

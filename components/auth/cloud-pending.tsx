@@ -1,4 +1,6 @@
 import { Callout } from "@/components/ui/primitives";
+import { BrandMark } from "@/components/ui/brand-logo";
+import { appConfig } from "@/lib/config/app";
 import { AccountMenu } from "./account-menu";
 import { ProtectedContent, SessionBoundary } from "./session-boundary";
 import styles from "./login.module.css";
@@ -7,7 +9,7 @@ import styles from "./login.module.css";
 export function CloudPending({ account }: { account: string | null }) {
   return <main id="main-content" className={styles.page}>
     <div className={styles.panel}>
-      <div className={styles.brand}><span className={styles.logo} aria-hidden="true">D</span><div><strong>Dream AI Studio</strong><span>나만의 콘텐츠 작업실</span></div></div>
+      <div className={styles.brand}><BrandMark size={44} /><div><strong>{appConfig.name}</strong><span>나만의 콘텐츠 작업실</span></div></div>
       <h1 className={styles.title}>클라우드 작업실을 준비하고 있어요</h1>
       {/* T-220: 계정 확인 전·변경 뒤에는 "로그인 정상" 문구와 안내를 가리고 확인 안내만 둔다. */}
       <SessionBoundary account={account}><ProtectedContent>
