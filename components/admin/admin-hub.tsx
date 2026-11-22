@@ -5,7 +5,7 @@ import { Card, StatusPill } from "@/components/ui/primitives";
 import { AdminApiIntegrations } from "./admin-analysis-tools";
 import { AdminProjectsSection, type AdminProjects } from "./admin-projects";
 import { AdminManual } from "./admin-manual";
-import { AdminNavigation, AdminProgramNavigation } from "./admin-navigation";
+import { AdminNavigation } from "./admin-navigation";
 import { apiPlatformLabel, homeSectionId, imageShareSection, styleDnaPath } from "./admin-paths";
 import { AdminPremierePrograms } from "./admin-premiere-programs";
 import { AdminRenderQueue } from "./admin-render-queue";
@@ -25,7 +25,6 @@ export function AdminHub({ email, projects, review, home }: { email: string; pro
   return <div className={styles.workspace}>
     <h1 className="sr-only">관리 화면</h1>
     <AdminNavigation />
-    <AdminProgramNavigation />
     <div className={styles.sections}>
       {/* 관리자 홈 2안: /admin 기본 칸. 기존 분석 결과 공개 준비(#admin-analysis-results)와 다른 칸이다. */}
       <section id={homeSectionId} tabIndex={-1} aria-labelledby="admin-home-heading" className={`${styles.target} ${styles.section} ${styles.defaultPanel}`}>

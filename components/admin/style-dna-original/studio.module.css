@@ -330,3 +330,4 @@
 :global([data-dna-shell]) .studio { margin: -12px; border-radius: 0; min-height: calc(100dvh - 69px); }
 @media (min-width: 640px) { :global([data-dna-shell]) .studio { margin: -20px; } }
 @media (min-width: 768px) { :global([data-dna-shell]) .studio { margin: -24px; min-height: 100dvh; } }
+:global([data-dna-shell="embedded"]) .studio { margin: 0; min-height: 0; border-radius: 12px; }

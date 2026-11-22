@@ -1,4 +1,4 @@
-/* 관리자 홈 2안(운영 대시보드): 작업 상태 카드 → 배너 3개 → 전폭 최근 분석 기록. PC·767px 3열, 그보다 좁으면 1열. */
+/* 관리자 홈 2안(운영 대시보드): 작업 상태 카드와 전폭 최근 분석 기록. */
 .head { display: grid; gap: var(--sp-1); min-width: 0; }
 .head h2 { margin: 0; }
 .head p { margin: 0; }
@@ -18,26 +18,7 @@
 .statValue { font-size: var(--text-lg); color: var(--stat-accent); overflow-wrap: anywhere; }
 .statDetail { font-size: var(--text-xs); color: var(--fg-muted); overflow-wrap: anywhere; }
 
-.programs { display: grid; gap: var(--sp-3); min-width: 0; }
-.programs h3, .recentHead h3 { margin: 0; }
-.banners { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); margin: 0; padding: 0; list-style: none; min-width: 0; }
-.banners li { min-width: 0; }
-.banner {
-  position: relative; display: flex; align-items: flex-end; min-height: 13rem; overflow: hidden; isolation: isolate;
-  border: 1px solid var(--line); border-top: 2px solid var(--banner-accent, var(--accent)); border-radius: var(--radius-lg);
-  background: var(--bg-sunken); color: var(--fg-strong); text-decoration: none;
-}
-.banner[data-tone="image"] { --banner-accent: #e7a6f0; }
-.banner[data-tone="audio"] { --banner-accent: #7fe0d4; }
-.banner[data-tone="shorts"] { --banner-accent: #ffcd9b; }
-.banner::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgb(8 10 18 / 0.05) 20%, rgb(8 10 18 / 0.82) 78%); }
-.bannerImage { z-index: -2; object-fit: cover; }
-.banner:hover { border-color: var(--line-strong); border-top-color: var(--banner-accent); }
-.banner:focus-visible { outline: 2px solid var(--line-focus); outline-offset: 2px; }
-.bannerText { display: grid; gap: var(--sp-1); padding: var(--sp-4); min-width: 0; color: #fff; }
-.bannerText strong { font-size: var(--text-lg); }
-.bannerText small { font-size: var(--text-sm); color: rgb(255 255 255 / 0.85); overflow-wrap: anywhere; }
-.bannerOpen { display: inline-flex; align-items: center; gap: var(--sp-1); margin-top: var(--sp-2); font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--banner-accent); }
+.recentHead h3 { margin: 0; }
 
 .recent { display: grid; gap: var(--sp-3); min-width: 0; padding: var(--sp-4); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--bg-surface); }
 .recent > p { margin: 0; }
@@ -53,10 +34,6 @@
 .recordProblem { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
 .recordProblem p { margin: 0; }
 
-@media (max-width: 767px) {
-  .banners { grid-template-columns: minmax(0, 1fr); }
-  .banner { min-height: 10.5rem; }
-}
 @media (max-width: 479px) {
   .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }
   .stat { padding: var(--sp-2) var(--sp-3); }

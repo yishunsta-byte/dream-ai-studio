@@ -20,26 +20,16 @@ describe("admin hub information architecture", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
     const nav = html.match(/<nav\b[^>]*aria-label="관리 메뉴"[\s\S]*?<\/nav>/)?.[0];
     expect(nav).toBeDefined();
-    const programs = html.match(/<nav\b[^>]*aria-label="분석 프로그램"[\s\S]*?<\/nav>/)?.[0];
-    expect(programs).toBeDefined();
-    // 관리자 홈 2안: '콘텐츠 분석기'는 운영 현황 홈(#admin-home)으로 연다. 기존 #admin-analysis-results는 칸으로 남는다.
-    const operations = ["admin-home", "admin-project-list", "admin-review", "admin-render-queue", "admin-account", "admin-operations-availability", "admin-manual"];
-    // P1-06: 이미지 칸은 기존 결과 공개 준비 전용(#admin-image-publication)으로 남고, #admin-style-dna 주소는 원본 전체 화면으로 옮겨 간다.
-    const analyzers = ["admin-image-publication", "admin-music-analysis", "admin-shorts-analysis", "admin-analysis-results"];
+    const operations = ["admin-image-analysis", "admin-music-analysis", "admin-shorts-analysis", "admin-project-list", "admin-review", "admin-render-queue", "admin-account", "admin-operations-availability", "admin-manual"];
     expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(operations);
-    // P1-06: 이미지 타일은 원본 전체 화면(/admin/style-dna)으로, 음악·쇼츠는 허브 칸으로 연다.
-    expect([...programs!.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/admin/style-dna", "#admin-music-analysis", "#admin-shorts-analysis"]);
     expect(html).toContain('<h1 class="sr-only">관리 화면</h1>');
-    expect(html).toContain(nav! + programs!);
-    expect(programs).toMatch(/<nav\b[^>]*\bhidden(?:="")?/);
-    expect(nav).toContain(">콘텐츠 분석기</a>");
-    expect(html.indexOf(programs!)).toBeLessThan(html.indexOf('id="admin-image-publication"'));
+    expect(nav).not.toContain("콘텐츠 분석기");
+    expect(html.indexOf(nav!)).toBeLessThan(html.indexOf('id="admin-image-analysis"'));
     expect(html).not.toContain(' id="admin-style-dna"');
     expect(html).toMatch(/<nav aria-label="이미지 분석 결과 공개"[^>]*><a [^>]*href="#admin-image-publication"/);
     expect(html).toMatch(/<nav aria-label="이미지 분석 결과 공개"[\s\S]*?href="\/admin\/style-dna"/);
-    expect(nav).toMatch(/href="#admin-home" aria-current="location"/);
-    expect(nav!.match(/aria-current=/g)).toHaveLength(1);
-    for (const id of [...operations, ...analyzers, "admin-api-integrations"]) {
+    expect(nav).not.toContain("aria-current=");
+    for (const id of [...operations, "admin-home", "admin-image-publication", "admin-analysis-results", "admin-api-integrations"]) {
       expect(html.match(new RegExp(`\\bid="${id}"`, "g"))).toHaveLength(1);
       expect(html).toMatch(new RegExp(`<[^>]+id="${id}"[^>]*tabindex="-1"`));
     }
@@ -54,14 +44,9 @@ describe("admin hub information architecture", () => {
 
   it("renders dedicated program destinations and retires the legacy analysis and publication form", () => {
     const html = markup({ kind: "unlinked" }, { kind: "closed" });
-    expect(html).toContain('aria-label="분석 프로그램"');
     expect(html).toContain('aria-label="운영 메뉴"');
-    expect(html).toContain("<strong>이미지 분석</strong>");
-    expect(html).toContain("색감·조명·구도 분석과 한영 프롬프트");
-    expect(html).toContain("장르·악기·템포 분석과 Suno 프롬프트");
-    expect(html).toContain("첫 장면·영상 구성 분석과 연출 프롬프트");
-    expect(html).toContain("음악 분석");
-    expect(html).toContain("쇼츠 분석");
+    expect(html).not.toContain('id="admin-program-navigation"');
+    expect(html).toMatch(/이미지 분석<\/a>[\s\S]*오디오 분석<\/a>[\s\S]*영상 분석<\/a>[\s\S]*내 프로젝트<\/a>/);
     expect(html).toMatch(/id="admin-account"[^>]*>[\s\S]*?<h2 id="admin-menu" tabindex="-1">API키등록·플랫폼연동<\/h2>[\s\S]*?비밀번호 바꾸기[\s\S]*?<section id="admin-api-integrations"[^>]*><h3 id="admin-api-integrations-title" tabindex="-1">API연동<\/h3>/);
     expect(html).not.toMatch(/Style DNA|콘텐츠 분석·공개|>공개 준비<\/button>|id="admin-reference-analysis"/);
     expect(html).toContain("완성본 검수·게시");

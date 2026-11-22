@@ -44,42 +44,18 @@
 .help > p { margin-top: var(--sp-2); }
 .lead { margin: 0 0 var(--sp-3); }
 .workspace { --admin-nav-offset: calc(var(--admin-nav-height, 0px) + 24px); display: grid; gap: var(--sp-4); }
-/* 전역 [id] 스크롤 여백(app/globals.css)과 우선순위가 같으면 CSS 싣는 순서에 따라 고정 메뉴 높이가 빠진다. 한 단계 높여 순서와 상관없게 한다. */
-.programNavigation { min-width: 0; }
-.workspace > .programNavigation { scroll-margin-top: var(--admin-nav-offset); }
 .navigation { padding: var(--sp-1); background: #100e19; border: 1px solid var(--line); border-radius: var(--radius-lg); }
 .navigation[data-sticky="true"] { position: sticky; top: 0; z-index: 2; }
 .navigation ul { display: flex; flex-wrap: wrap; gap: var(--sp-1); padding: 0; margin: 0; list-style: none; }
 .operationLinks li:last-child { margin-inline-start: auto; }
 .operationLinks a { overflow-wrap: anywhere; }
 .operationLinks svg { flex: 0 0 auto; }
-:is(.navigation, .programNavigation) a {
-  display: flex; align-items: center; gap: var(--sp-2); min-height: 44px; padding: var(--sp-2) var(--sp-3);
+.navigation a {
+  display: flex; align-items: center; gap: 6px; min-height: 44px; padding: var(--sp-2);
   border-radius: var(--radius-md); color: var(--fg-muted); text-decoration: none; font-weight: var(--weight-semibold);
 }
-:is(.navigation, .programNavigation) a:hover { background: var(--bg-sunken); color: var(--fg-strong); }
-:is(.navigation, .programNavigation) [aria-current="location"] { background: var(--bg-accent-soft); color: var(--fg-accent); }
-.programLinks {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.programLinks a {
-  height: 100%;
-  min-height: 52px;
-  min-width: 0;
-  scroll-margin-top: var(--admin-nav-offset);
-  border: 1px solid var(--line);
-  background: linear-gradient(145deg, #261a32, #191521);
-  color: var(--fg-strong);
-}
-.programLinks a[aria-current="location"] { color: var(--fg-accent); border-color: var(--fg-accent); background: #32203d; }
-.programLinks svg { color: var(--fg-accent); flex: 0 0 auto; }
-.programLinks span { min-width: 0; display: grid; line-height: 1.32; overflow-wrap: anywhere; }
-.programLinks small { color: var(--fg-muted); font-weight: 500; font-size: var(--text-xs); }
+.navigation a:hover { background: var(--bg-sunken); color: var(--fg-strong); }
+.navigation [aria-current="location"] { background: var(--bg-accent-soft); color: var(--fg-accent); }
 .sections, .section { display: grid; gap: var(--sp-4); min-width: 0; }
 .section h2 { margin: 0; }
 .subsection { scroll-margin-top: var(--admin-nav-offset); }
@@ -137,10 +113,12 @@
   .operationLinks li:last-child { grid-column: -2 / -1; margin-inline-start: 0; }
 }
 @media (max-width: 760px) {
-  .navigation ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  :is(.navigation, .programNavigation) a { padding-inline: var(--sp-2); font-size: var(--text-sm); }
-  .programLinks a { padding-inline: var(--sp-1); gap: var(--sp-1); }
-  .programLinks svg { width: 15px; height: 15px; }
+  .navigation ul { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .operationLinks li { grid-column: span 3; }
+  .operationLinks li:nth-child(-n+3) { grid-column: span 2; }
+  .operationLinks li:last-child { grid-column: -4 / -1; }
+  .navigation a { padding-inline: var(--sp-2); font-size: var(--text-sm); }
+  .operationLinks li:nth-child(-n+3) a { gap: var(--sp-1); padding-inline: var(--sp-1); }
   .columnHead { display: none; }
   .project { grid-template-columns: minmax(0, 1fr) auto; }
   .projectStatus { grid-column: 2; grid-row: 1; justify-self: end; }

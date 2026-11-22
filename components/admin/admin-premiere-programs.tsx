@@ -20,6 +20,7 @@ import {
   unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource, type PublicationDraft, type ReadyResult,
 } from "./admin-reference-analysis-model";
 import { AdminShortsAnalysis } from "./admin-shorts-analysis";
+import { AdminStyleDnaWorkflow } from "./admin-style-dna-workflow";
 import hub from "./admin.module.css";
 import styles from "./admin-premiere-programs.module.css";
 
@@ -335,8 +336,10 @@ export function AdminPremierePrograms() {
     navigateAdminSection(analysisResultsSection);
   }
 
-  return <>{analysisPrograms.map(({ id: programId, label: programLabel, icon }, index) => {
-    // P1-06: 이미지 분석 프로그램은 원본 전체 화면(/admin/style-dna)으로 옮겼다. 여기 남은 이미지 칸은 기존 결과 공개 준비 전용(#admin-image-publication).
+  return <><section id={analysisPrograms[0].id} tabIndex={-1} aria-label={analysisPrograms[0].label} className={hub.target}>
+    {current === analysisPrograms[0].id && <AdminStyleDnaWorkflow layout="embedded" />}
+  </section>{analysisPrograms.map(({ id: programId, label: programLabel, icon }, index) => {
+    // 예전 결과 공개 준비는 별도 칸에서 기존 게시 기능을 사용한다.
     const id = index === 0 ? imageShareSection : programId;
     const label = index === 0 ? "이미지 분석 결과 공개 준비" : programLabel;
     const active = current === id;

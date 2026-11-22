@@ -3,33 +3,25 @@
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import styles from "./admin.module.css";
-import { apiPlatformLabel, homeSectionId, imageShareSection, reviewSectionId, styleDnaPath } from "./admin-paths";
+import { apiPlatformLabel, homeSectionId, imageAnalysisSection, imageShareSection, reviewSectionId, styleDnaPath } from "./admin-paths";
 
-// P1-06: 이미지 타일은 원본 Style DNA v1.39 전체 화면(관리자 보호 경로)으로 연다.
-// 사용자 재확인(2026-11-22, Master msg_a94edde8a427): 기존 이미지 주소(#admin-style-dna·#admin-reference-analysis: 북마크·로그인 뒤 복귀·매뉴얼 링크)도
-// 같은 원본 화면으로 보낸다. 지금 기록 칸을 바꿔(location.replace) 뒤로 가기가 다시 이 주소로 돌아와 되튀지 않게 하고, 옮기는 동안 구 이미지 칸은 활성으로 그리지 않는다.
-// 기존 이미지 분석 결과 공개 준비(ImageWorkspace·onPrepare)는 '완성본 검수·게시'의 링크에서 #admin-image-publication으로만 연다(Master msg_a1ce2d023258).
-// 경로 상수는 서버 컴포넌트도 쓰므로 admin-paths.ts(지시어 없음)에 둔다.
-// 관리자 홈 2안(Master msg_d8399b51662f·msg_5ec7848cc1ad): /admin 기본 칸과 '콘텐츠 분석기' 메뉴는 운영 현황 홈(#admin-home)으로 연다.
-// 홈에서는 분석 프로그램 줄을 숨기고 하단 배너 세 개만 진입점으로 둔다. 기존 #admin-analysis-results(분석 결과 공개 준비·게시·철회)와
-// 프로그램 칸(#admin-music-analysis·#admin-shorts-analysis)은 같은 주소·뒤로 가기·즐겨찾기로 그대로 열리고, 메뉴에서는 '콘텐츠 분석기'가 현재로 보인다.
+// 이전 이미지 북마크는 독립 Style DNA 화면으로, 상단 이미지 분석 메뉴는 관리자 본문의 작업실로 연결한다.
 export const analysisPrograms = [
-  { id: "admin-style-dna", label: "이미지 분석", detail: "색감·조명·구도 분석과 한영 프롬프트", icon: "flask", href: styleDnaPath },
-  { id: "admin-music-analysis", label: "음악 분석", detail: "장르·악기·템포 분석과 Suno 프롬프트", icon: "clock" },
-  { id: "admin-shorts-analysis", label: "쇼츠 분석", detail: "첫 장면·영상 구성 분석과 연출 프롬프트", icon: "play" },
-] as const satisfies readonly { id: string; label: string; detail: string; icon: IconName; href?: string }[];
+  { id: imageAnalysisSection, label: "이미지 분석", icon: "flask" },
+  { id: "admin-music-analysis", label: "오디오 분석", icon: "clock" },
+  { id: "admin-shorts-analysis", label: "영상 분석", icon: "play" },
+] as const satisfies readonly { id: string; label: string; icon: IconName }[];
 
 const legacyImageIds = new Set<string>(["admin-style-dna", "admin-reference-analysis"]);
 function isLegacyImageHash(hash: string) {
   try { return legacyImageIds.has(decodeURIComponent(hash.slice(1))); } catch { return false; }
 }
 const legacyOverviewHash = "#admin-overview";
-const programNavigationId = "admin-program-navigation";
 export const analysisResultsSection = "admin-analysis-results";
 export const accountSettingsId = "admin-account";
 const apiIntegrationsId = "admin-api-integrations";
 const operations = [
-  { id: homeSectionId, label: "콘텐츠 분석기", icon: "flask" },
+  ...analysisPrograms,
   { id: "admin-project-list", label: "내 프로젝트", icon: "folder" },
   { id: "admin-review", label: "완성본 검수·게시", icon: "check" },
   { id: "admin-render-queue", label: "렌더 대기열", icon: "clock" },
@@ -38,11 +30,7 @@ const operations = [
   { id: "admin-manual", label: "사용매뉴얼", icon: "info" },
 ] as const satisfies readonly { id: string; label: string; icon: IconName }[];
 
-const sections = [...analysisPrograms, ...operations, { id: analysisResultsSection }, { id: imageShareSection }];
-
-function isAnalysisSection(id: string) {
-  return id === analysisResultsSection || analysisPrograms.some(program => program.id === id);
-}
+const sections = [...operations, { id: homeSectionId }, { id: analysisResultsSection }, { id: imageShareSection }];
 
 function subscribeLocation(onChange: () => void) {
   window.addEventListener("hashchange", onChange);
@@ -61,8 +49,6 @@ const browserHash = () => window.location.hash;
 function sectionFromHash(hash: string) {
   try {
     const id = decodeURIComponent(hash.slice(1));
-    // 원본 화면으로 옮기는 동안에는 구 이미지 칸 대신 콘텐츠 분석기를 현재로 둔다.
-    if (legacyImageIds.has(id)) return analysisResultsSection;
     if (id === apiIntegrationsId) return accountSettingsId;
     return sections.find((section) => section.id === id)?.id ?? defaultSection();
   } catch {
@@ -72,23 +58,10 @@ function sectionFromHash(hash: string) {
 
 function focusSection(id: string) {
   const section = document.getElementById(id);
-  const heading = section?.querySelector<HTMLElement>("h2, h3") ?? section;
+  const heading = id === imageAnalysisSection ? section : section?.querySelector<HTMLElement>("h2, h3") ?? section;
   if (!heading) return;
   heading.tabIndex = -1;
   heading.focus({ preventScroll: true });
-  const programNavigation = isAnalysisSection(id)
-    ? document.getElementById(programNavigationId)
-    : null;
-  if (programNavigation) {
-    const top = programNavigation.getBoundingClientRect().top;
-    const bottom = heading.getBoundingClientRect().bottom;
-    const offset = parseFloat(getComputedStyle(programNavigation).scrollMarginTop) || 0;
-    const height = Math.min(window.innerHeight, window.visualViewport?.height ?? window.innerHeight);
-    if (bottom - top + offset <= height) {
-      if (top < offset || bottom > height) programNavigation.scrollIntoView({ block: "start" });
-      return;
-    }
-  }
   heading.scrollIntoView({ block: "start" });
 }
 
@@ -107,23 +80,10 @@ export function useAdminSection() {
   return sectionFromHash(useSyncExternalStore(subscribeLocation, browserHash, serverHash));
 }
 
-export function AdminProgramNavigation() {
-  const current = useAdminSection();
-  return <nav id={programNavigationId} className={styles.programNavigation} aria-label="분석 프로그램" hidden={!isAnalysisSection(current)}>
-    <ul className={styles.programLinks}>
-      {analysisPrograms.map((program) => <li key={program.id}>
-        <a href={"href" in program ? program.href : `#${program.id}`} aria-current={program.id === current ? "location" : undefined}>
-          <Icon name={program.icon} /><span><strong>{program.label}</strong><small>{program.detail}</small></span>
-        </a>
-      </li>)}
-    </ul>
-  </nav>;
-}
-
 export function AdminNavigation() {
   const hash = useSyncExternalStore(subscribeLocation, browserHash, serverHash);
   const current = sectionFromHash(hash);
-  const currentMenu = isAnalysisSection(current) ? homeSectionId : current === imageShareSection ? reviewSectionId : current;
+  const currentMenu = current === imageShareSection || current === analysisResultsSection ? reviewSectionId : current;
   const visitedSection = useRef(false);
   const navigation = useRef<HTMLElement>(null);
 

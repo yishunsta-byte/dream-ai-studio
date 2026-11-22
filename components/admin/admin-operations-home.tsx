@@ -1,12 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useSessionBoundary } from "@/components/auth/session-boundary";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/primitives";
 import type { StyleDnaSummary } from "@/lib/reference-analysis/style-dna-contract";
-import { analysisPrograms, analysisResultsSection, useAdminSection } from "./admin-navigation";
+import { analysisResultsSection, useAdminSection } from "./admin-navigation";
 import { homeSectionId, reviewSectionId, styleDnaPath } from "./admin-paths";
 import { stageOf, type PublicationList } from "./publication-model";
 import { readStyleDnaLibrary } from "./style-dna-client";
@@ -14,7 +13,7 @@ import hub from "./admin.module.css";
 import styles from "./admin-operations-home.module.css";
 
 // 관리자 홈 2안(운영 대시보드, Design admin-renewal-options/HANDOFF.md · Master msg_d8399b51662f·msg_5ec7848cc1ad·msg_0e494ddbfe2f).
-// 작업 상태 카드 → 기존 아트워크 배너 3개 → 전폭 최근 분석 기록. 예시 숫자·제목은 쓰지 않는다.
+// 작업 상태 카드와 최근 분석 기록은 실제 조회한 응답으로 표시한다.
 // - 검수 대기: 서버가 같은 인증 뒤 읽은 게시 큐 첫 목록(검수 대기 단계 수). 미연결·실패면 그대로 말한다.
 // - 렌더 진행·재시도 필요: 기존 보호 GET /api/admin/render-queue(내 최근 작업 최대 50건). 전체 건수로 부풀리지 않고 제공 범위를 적는다.
 // - 최근 분석 기록: 기존 보호 GET /api/admin/style-dna(소유자 이미지 보관함)만. 오디오·쇼츠는 저장 기록이 없어 나오지 않는다고 적는다.
@@ -22,11 +21,6 @@ import styles from "./admin-operations-home.module.css";
 
 const RECENT_LIMIT = 5;
 const time = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Seoul" });
-const banners = [
-  { program: "admin-style-dna", title: "이미지 분석", picture: "/showcase/t240/orchid.png", tone: "image" },
-  { program: "admin-music-analysis", title: "오디오 분석", picture: "/showcase/t240/neon-rooftop.png", tone: "audio" },
-  { program: "admin-shorts-analysis", title: "쇼츠 분석", picture: "/showcase/t240/desert-motion.png", tone: "shorts" },
-] as const;
 const jobStatuses = new Set(["queued", "running", "succeeded", "failed", "canceled"]);
 
 export type HomeQueue = { kind: "loading" | "unavailable" | "denied" | "failed" } | { kind: "ready"; total: number; active: number; failed: number };
@@ -126,40 +120,15 @@ function HomeData({ publications }: { publications: PublicationList }) {
       <Stat tone="render" label="렌더 진행" value={queueValue(queue, "active")} detail={queueDetail(queue)} href="#admin-render-queue" />
       <Stat tone="retry" label="재시도 필요" value={queueValue(queue, "failed")} detail={queueDetail(queue)} href="#admin-render-queue" />
     </section>
-    <HomePrograms />
     <section className={styles.recent} aria-labelledby="admin-home-recent">
       <div className={styles.recentHead}>
         <h3 id="admin-home-recent">최근 분석 기록</h3>
         <a className={hub.link} href={`#${analysisResultsSection}`}>분석 결과 공개·게시 관리 <Icon name="arrow" /></a>
       </div>
       <div aria-live="polite"><RecentRecords library={library} retry={() => { setLibrary({ kind: "loading" }); setAttempt(value => value + 1); }} /></div>
-      <p className={hub.note}>이미지 보관함의 최근 {RECENT_LIMIT}건까지 보여줘요. 오디오·쇼츠 분석은 아직 기록을 저장하지 않아 여기에 나오지 않아요.</p>
+      <p className={hub.note}>이미지 보관함의 최근 {RECENT_LIMIT}건까지 보여줘요. 오디오·영상 분석은 아직 기록을 저장하지 않아 여기에 나오지 않아요.</p>
     </section>
   </>;
-}
-
-/** 배너 세 개: 이미지는 원본 Style DNA 전용 화면, 오디오·쇼츠는 지금 작동하는 허브 칸(다음 릴리스에서 전용 주소로). */
-function HomePrograms() {
-  const programs = new Map<string, (typeof analysisPrograms)[number]>(analysisPrograms.map(program => [program.id, program]));
-  return <section className={styles.programs} aria-labelledby="admin-home-programs">
-    <h3 id="admin-home-programs">분석 프로그램</h3>
-    <ul className={styles.banners}>
-      {banners.map(({ program, title, picture, tone }) => {
-        const entry = programs.get(program)!;
-        const href = "href" in entry ? entry.href : `#${entry.id}`;
-        return <li key={program}>
-          <a className={styles.banner} data-tone={tone} href={href}>
-            <Image className={styles.bannerImage} src={picture} alt="" fill sizes="(max-width: 767px) 100vw, 33vw" />
-            <span className={styles.bannerText}>
-              <strong>{title}</strong>
-              <small>{entry.detail}</small>
-              <span className={styles.bannerOpen}>{title} 열기 <Icon name="arrow" /></span>
-            </span>
-          </a>
-        </li>;
-      })}
-    </ul>
-  </section>;
 }
 
 export function AdminOperationsHome({ publications }: { publications: PublicationList }) {
@@ -171,6 +140,6 @@ export function AdminOperationsHome({ publications }: { publications: Publicatio
       <h2 id="admin-home-heading" tabIndex={-1}>관리자 운영 현황</h2>
       <p className={hub.note}>검수·렌더 대기열과 최근 분석 작업을 확인해요.</p>
     </div>
-    {active ? <HomeData key={session?.epoch ?? 0} publications={publications} /> : <HomePrograms />}
+    {active && <HomeData key={session?.epoch ?? 0} publications={publications} />}
   </>;
 }

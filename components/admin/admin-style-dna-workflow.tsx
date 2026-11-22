@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { Button } from "@/components/ui/primitives";
 import { adminLoginPath } from "@/lib/auth/config";
+import { imageAnalysisSection } from "./admin-paths";
 import { styleDnaImageModels, styleDnaRatio, styleDnaTestPromptLimit, type StyleDnaOptions, type StyleDnaRecord, type StyleDnaTestResult } from "@/lib/reference-analysis/style-dna-contract";
 import type { ReadyResult } from "./admin-reference-analysis-model";
 import { nearestAspectRatio, StyleDnaReport } from "./admin-style-dna-report";
@@ -76,13 +77,14 @@ type Pending = { label: string; run: (signal: AbortSignal) => Promise<void> };
 const store = { get: () => { try { return sessionStorage.getItem(LAST); } catch { return null; } },
   set: (id: string | null) => { try { if (id) sessionStorage.setItem(LAST, id); else sessionStorage.removeItem(LAST); } catch { /* 저장 불가면 다시 열기만 빠짐 */ } } };
 
-type Props = { layout?: "panel" | "original"; account?: string };
+type Props = { layout?: "panel" | "original" | "embedded"; account?: string };
 
 export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props = {}) {
   const id = useId();
-  const original = layout === "original";
-  const loginLink = original ? originalLogin : panelLogin;
-  const settingsLink = original ? "/admin#admin-api-integrations" : "#admin-api-integrations";
+  const original = layout !== "panel";
+  const embedded = layout === "embedded";
+  const loginLink = embedded ? adminLoginPath({ next: `/admin#${imageAnalysisSection}` }) : original ? originalLogin : panelLogin;
+  const settingsLink = layout === "original" ? "/admin#admin-api-integrations" : "#admin-api-integrations";
   const [library, setLibrary] = useState<LibraryOutcome | { kind: "loading" }>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [record, setRecord] = useState<StyleDnaRecord>();
@@ -90,7 +92,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   // 사용자가 단계를 고르기 전(null)에는 작업실 장면 링크면 분석, 아니면 보관함(서버 그림은 보관함, 주소는 브라우저에서만 읽는다).
   const [pickedStep, setStep] = useState<Step | null>(null);
   const fromStudio = useSyncExternalStore(noSubscribe, () => !!studioContext(window.location.search), () => false);
-  const step: Step = pickedStep ?? (fromStudio ? "analyze" : "library");
+  const step: Step = pickedStep ?? (embedded || fromStudio ? "analyze" : "library");
   const [opening, setOpening] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [libraryNote, setLibraryNote] = useState<LibraryNote | null>(null);
@@ -663,6 +665,6 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   </section>;
   if (!original) return body;
   // 원본 사이드바: 단계를 바꾸면 진행 중 요청·동의를 푼다(기존 단계 단추와 같은 동작).
-  return <StudioShell step={step} account={account} guideHref="/admin#admin-manual" settingsHref={settingsLink}
+  return <StudioShell embedded={embedded} step={step} account={account} guideHref={embedded ? "#admin-manual" : "/admin#admin-manual"} settingsHref={settingsLink}
     onStep={next => { if (next !== step) { changed(); setStep(next); } }}>{body}</StudioShell>;
 }

@@ -10,6 +10,8 @@
 .side { display: none; }
 .main { flex: 1; min-width: 0; }
 .inner { box-sizing: border-box; max-width: 1760px; margin: 0 auto; padding: 12px; min-width: 0; }
+.embedded { min-width: 0; min-height: 0; border: 1px solid #222d42; border-radius: 12px; }
+.embedded .mobile { position: static; }
 @media (min-width: 640px) { .inner { padding: 20px; } }
 @media (min-width: 768px) {
   .app { flex-direction: row; }
@@ -19,6 +21,9 @@
   }
   .mobile { display: none; }
   .inner { padding: 24px; }
+  .embedded .side { position: static; z-index: auto; width: 210px; height: auto; border-radius: 12px 0 0 12px; }
+  .embedded .brandBox { padding: 16px 12px; }
+  .embedded .inner { padding: 16px; }
 }
 
 /* 브랜드 */

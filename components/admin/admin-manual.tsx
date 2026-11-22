@@ -81,7 +81,7 @@ export function AdminManual() {
       <ol>
         <li>분석 결과에서 <strong>공개 준비</strong>를 누르고 제목·요약·생성 프롬프트를 편집하세요. 링크, 파일 경로, 계정 정보, API 키는 지워 주세요.</li>
         <li>웹 공개 미리보기를 확인하세요. 공개할 권리를 확인하고 동의한 뒤 <strong>공개하기</strong>를 누르세요.</li>
-        <li>공개를 중단하려면 <a className={styles.link} href="#admin-analysis-results">콘텐츠 분석기</a>의 분석 결과 관리에서 항목의 철회를 확인하세요.</li>
+        <li>공개를 중단하려면 <a className={styles.link} href="#admin-analysis-results">분석 결과 관리</a>에서 항목의 철회를 확인하세요.</li>
       </ol>
     </Card>
   </section>;

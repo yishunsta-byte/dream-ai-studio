@@ -28,6 +28,7 @@ type Props = {
   account: string;
   guideHref: string;
   settingsHref: string;
+  embedded?: boolean;
   children: ReactNode;
 };
 
@@ -43,7 +44,7 @@ function Brand({ onStep, confirmed }: { onStep: () => void; confirmed: boolean }
   </div>;
 }
 
-function NavBody({ step, onStep, account, guideHref, settingsHref, confirmed }: Omit<Props, "children"> & { confirmed: boolean }) {
+function NavBody({ step, onStep, account, guideHref, settingsHref, confirmed, embedded }: Omit<Props, "children"> & { confirmed: boolean }) {
   return <nav className={s.nav} aria-label={`${APP_NAME} 메뉴`}>
     <div className={s.group} inert={!confirmed || undefined} style={confirmed ? undefined : { visibility: "hidden" }}>
       <button type="button" className={s.overview} aria-current={step === "library" ? "page" : undefined} onClick={() => onStep("library")}>
@@ -72,12 +73,12 @@ function NavBody({ step, onStep, account, guideHref, settingsHref, confirmed }: 
         <a className={s.util} href={settingsHref}><KeyRound size={15} /><span>🔑 API키등록·플랫폼연동</span></a>
       </div>
     </div>
-    <div className={s.account}>
+    {!embedded && <div className={s.account}>
       <div className={s.accountBox}>
         <p className={s.accountLabel}>로그인 계정</p>
         <AccountMenu email={account} />
       </div>
-    </div>
+    </div>}
   </nav>;
 }
 
@@ -96,7 +97,8 @@ export function StudioShell({ children, ...props }: Props) {
     document.addEventListener("keydown", close);
     return () => document.removeEventListener("keydown", close);
   }, [open]);
-  return <div className={s.app} data-dna-shell="">
+  const Content = props.embedded ? "div" : "main";
+  return <div className={props.embedded ? `${s.app} ${s.embedded}` : s.app} data-dna-shell={props.embedded ? "embedded" : ""}>
     <aside className={s.side} aria-label={`${APP_NAME} 사이드바`}>
       <Brand onStep={() => go("library")} confirmed={confirmed} />
       <NavBody {...props} onStep={go} confirmed={confirmed} />
@@ -118,8 +120,8 @@ export function StudioShell({ children, ...props }: Props) {
         <NavBody {...props} onStep={pick} confirmed={confirmed} />
       </div>}
     </div>
-    <main className={s.main} id="main-content">
-      <div className={s.inner}><ProtectedContent>{children}</ProtectedContent></div>
-    </main>
+    <Content className={s.main} id={props.embedded ? undefined : "main-content"}>
+      <div className={s.inner}>{props.embedded ? children : <ProtectedContent>{children}</ProtectedContent>}</div>
+    </Content>
   </div>;
 }

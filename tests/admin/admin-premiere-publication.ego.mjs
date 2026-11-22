@@ -12,8 +12,7 @@ const task=await taskSpace("Premiere keyboard and publication "+Date.now());
 const page=task.page("p1");
 const publicPage=await task.newPage();
 const runCode=Math.random().toString(36).slice(2,7);
-// 관리자 홈 2안: '콘텐츠 분석기' 메뉴·빈 주소는 운영 현황 홈(#admin-home). 기존 분석 결과(#admin-analysis-results)는 홈의 링크로 열고,
-// 분석 칸에서는 메뉴의 '콘텐츠 분석기'(#admin-home)가 현재다. 홈에서는 분석 프로그램 줄을 숨기고 배너로 음악·쇼츠 칸을 연다.
+// 운영 현황은 기본 주소에서, 분석기 세 개는 같은 관리 메뉴에서 연다.
 const homeId="admin-home";
 const listId="admin-analysis-results";
 const apiId="admin-api-integrations";
@@ -26,7 +25,6 @@ const imageId="admin-image-publication";
 const reviewId="admin-review";
 const musicId="admin-music-analysis";
 const shortsId="admin-shorts-analysis";
-const analyzerIds=[musicId,shortsId];
 const publication="/api/admin/reference-publications";
 const listForm="#"+listId+" form";
 const results=[];
@@ -51,21 +49,16 @@ const view=async (id,hash="#"+id)=>{
     const heading=document.activeElement;
     const rect=heading.getBoundingClientRect();
     const menu=document.querySelector('nav[aria-label="관리 메뉴"]');
-    const programs=document.querySelector('nav[aria-label="분석 프로그램"]');
     const bar=menu.getBoundingClientRect();
     const point=document.elementFromPoint((rect.left+rect.right)/2,(rect.top+rect.bottom)/2);
     return {id,heading:heading.innerText,active:menu.querySelector('[aria-current="location"]')?.hash,
-      activeAnalyzer:programs.querySelector('[aria-current="location"]')?.getAttribute("href")??null,programsVisible:!programs.hidden&&!!programs.getClientRects().length,
       clear:rect.top>=0&&rect.bottom<=innerHeight&&heading.contains(point)&&
         (getComputedStyle(menu).position!=="sticky"||bar.top>1||rect.top>=bar.bottom-1),
       overflow:Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth),
       position:getComputedStyle(menu).position, onlyPanel:[...document.querySelectorAll('[data-active-section="true"]')].map(p=>p.id)};
   },id);
   const activeId=id===apiId?settingsId:id;
-  const isAnalyzer=analyzerIds.includes(id);
-  assert.equal(state.active,"#"+(isAnalyzer||id===listId?homeId:id===imageId?reviewId:activeId));
-  assert.equal(state.activeAnalyzer,isAnalyzer?"#"+id:null);
-  assert.equal(state.programsVisible,isAnalyzer||id===listId);
+  assert.equal(state.active,id===homeId ? undefined : "#"+(id===listId||id===imageId?reviewId:activeId));
   assert.equal(state.overflow,0,JSON.stringify(state));
   assert.equal(state.clear,true,JSON.stringify(state));
   assert.deepEqual(state.onlyPanel,[activeId]);
@@ -82,25 +75,16 @@ const activateMenuLink=async id=>{
     return;
   }
   if(id===listId){
-    await tabTo('nav[aria-label="관리 메뉴"] a[href="#'+homeId+'"]');
-    await page.keyboard.press("Enter");
+    await page.evaluate(id=>{location.hash="#"+id;},homeId);
     await page.waitForFunction(id=>location.hash==="#"+id&&document.getElementById(id)?.dataset.activeSection==="true",homeId,{timeout:5500});
     await tabTo('#'+homeId+' a[href="#'+listId+'"]');
     await page.keyboard.press("Enter");
     return;
   }
-  await tabTo('nav:is([aria-label="관리 메뉴"], [aria-label="분석 프로그램"]) a[href="#'+id+'"]');
+  await tabTo('nav[aria-label="관리 메뉴"] a[href="#'+id+'"]');
   await page.keyboard.press("Enter");
 };
 const move=async id=>{
-  if(analyzerIds.includes(id)&&await page.evaluate(()=>document.querySelector('nav[aria-label="분석 프로그램"]').hidden)){
-    // 홈 배너로 분석 칸을 연다(홈에는 분석 프로그램 줄이 없다).
-    await activateMenuLink(homeId);
-    await view(homeId);
-    await tabTo('#'+homeId+' a[href="#'+id+'"]');
-    await page.keyboard.press("Enter");
-    return view(id);
-  }
   await activateMenuLink(id);
   return view(id);
 };
@@ -171,36 +155,33 @@ try{
     assert.equal(await page.evaluate(()=>location.pathname),"/admin","뒤로 가기 뒤 원본 화면으로 되튀지 않음");
   }
   await open(width,900);
-  assert.equal(await page.evaluate(()=>document.querySelector('nav[aria-label="분석 프로그램"] a[href="/admin/style-dna"]')?.textContent.includes("이미지 분석")??false),true,"이미지 타일 → /admin/style-dna");
+  assert.equal(await page.evaluate(()=>document.querySelector('nav[aria-label="관리 메뉴"] a[href="#admin-image-analysis"]')?.textContent),"이미지 분석");
   assert.equal((await listReads()).length,0);
-  assert.equal(await page.evaluate(()=>document.querySelector('nav[aria-label="분석 프로그램"]').getClientRects().length),0);
+  assert.equal(await page.evaluate(()=>!!document.getElementById("admin-program-navigation")),false);
   await move(listId);
   await text(listId,"공개한 분석 결과");
   assert.equal((await listReads()).length,1);
   const focus=[];
   for(const id of [settingsId,imageId,"admin-project-list",musicId])focus.push(await move(id));
-  // 홈 2안: 음악 칸은 홈 배너로 열었으므로 뒤로 가기는 홈으로 돌아간다.
   await page.evaluate(()=>history.back());
-  focus.push(await view(homeId));
+  focus.push(await view("admin-project-list"));
   await page.evaluate(()=>history.forward());
   focus.push(await view(musicId));
   assert.deepEqual(await page.evaluate(()=>{
     const heading=document.querySelector('main h1');
-    const programs=document.querySelector('nav[aria-label="분석 프로그램"]');
     const operations=document.querySelector('nav[aria-label="관리 메뉴"]');
     const panel=document.querySelector('[data-active-section="true"]');
     const bounds=node=>node.getBoundingClientRect();
     return {
-      inOrder:programs.previousElementSibling===operations&&bounds(operations).bottom<=bounds(programs).top&&bounds(programs).bottom<=bounds(panel).top,
+      inOrder:bounds(operations).bottom<=bounds(panel).top,
       headingOutOfFlow:heading.textContent==='관리 화면'&&bounds(heading).height<=1&&getComputedStyle(heading).position==='absolute',
       heading:panel.querySelector('h2').textContent,
-      firstMenu:operations.querySelector('a').textContent,
-      programs:[...programs.querySelectorAll('strong,small')].map(node=>node.textContent),
+      programs:[...operations.querySelectorAll('a')].slice(0,3).map(node=>node.textContent),
       settings:[...operations.querySelectorAll('a')].filter(link=>link.textContent.includes('설정')||link.textContent.includes('API')).map(link=>link.textContent.trim()),
     };
   }),{
-    inOrder:true,headingOutOfFlow:true,heading:"음악 분석",firstMenu:"콘텐츠 분석기",
-    programs:["이미지 분석","색감·조명·구도 분석과 한영 프롬프트","음악 분석","장르·악기·템포 분석과 Suno 프롬프트","쇼츠 분석","첫 장면·영상 구성 분석과 연출 프롬프트"],
+    inOrder:true,headingOutOfFlow:true,heading:"오디오 분석",
+    programs:["이미지 분석","오디오 분석","영상 분석"],
     settings:["API키등록·플랫폼연동"],
   });
   await page.screenshot({path:proof+"/admin-analyzer-menu-"+width+".png"});
