@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { AdminHub } from "@/components/admin/admin-hub";
+import { AdminOperationsHome } from "@/components/admin/admin-operations-home";
 import type { AdminProjects } from "@/components/admin/admin-projects";
 import { PublicationHttpQueue } from "@/components/admin/publication-http-queue";
 import type { PublicationList } from "@/components/admin/publication-model";
@@ -10,7 +11,7 @@ vi.mock("server-only", () => ({}));
 
 function markup(projects: AdminProjects, review: PublicationList) {
   return renderToStaticMarkup(createElement(AdminHub, {
-    email: "admin@example.invalid", projects, review: createElement(PublicationHttpQueue, { initial: review }),
+    email: "admin@example.invalid", projects, home: createElement(AdminOperationsHome, { publications: review }), review: createElement(PublicationHttpQueue, { initial: review }),
   }));
 }
 
@@ -21,9 +22,10 @@ describe("admin hub information architecture", () => {
     expect(nav).toBeDefined();
     const programs = html.match(/<nav\b[^>]*aria-label="분석 프로그램"[\s\S]*?<\/nav>/)?.[0];
     expect(programs).toBeDefined();
-    const operations = ["admin-analysis-results", "admin-project-list", "admin-review", "admin-render-queue", "admin-account", "admin-operations-availability", "admin-manual"];
+    // 관리자 홈 2안: '콘텐츠 분석기'는 운영 현황 홈(#admin-home)으로 연다. 기존 #admin-analysis-results는 칸으로 남는다.
+    const operations = ["admin-home", "admin-project-list", "admin-review", "admin-render-queue", "admin-account", "admin-operations-availability", "admin-manual"];
     // P1-06: 이미지 칸은 기존 결과 공개 준비 전용(#admin-image-publication)으로 남고, #admin-style-dna 주소는 원본 전체 화면으로 옮겨 간다.
-    const analyzers = ["admin-image-publication", "admin-music-analysis", "admin-shorts-analysis"];
+    const analyzers = ["admin-image-publication", "admin-music-analysis", "admin-shorts-analysis", "admin-analysis-results"];
     expect([...nav!.matchAll(/href="#([^"]+)"/g)].map((match) => match[1])).toEqual(operations);
     // P1-06: 이미지 타일은 원본 전체 화면(/admin/style-dna)으로, 음악·쇼츠는 허브 칸으로 연다.
     expect([...programs!.matchAll(/href="([^"]+)"/g)].map((match) => match[1])).toEqual(["/admin/style-dna", "#admin-music-analysis", "#admin-shorts-analysis"]);
@@ -35,7 +37,7 @@ describe("admin hub information architecture", () => {
     expect(html).not.toContain(' id="admin-style-dna"');
     expect(html).toMatch(/<nav aria-label="이미지 분석 결과 공개"[^>]*><a [^>]*href="#admin-image-publication"/);
     expect(html).toMatch(/<nav aria-label="이미지 분석 결과 공개"[\s\S]*?href="\/admin\/style-dna"/);
-    expect(nav).toMatch(/href="#admin-project-list" aria-current="location"/);
+    expect(nav).toMatch(/href="#admin-home" aria-current="location"/);
     expect(nav!.match(/aria-current=/g)).toHaveLength(1);
     for (const id of [...operations, ...analyzers, "admin-api-integrations"]) {
       expect(html.match(new RegExp(`\\bid="${id}"`, "g"))).toHaveLength(1);

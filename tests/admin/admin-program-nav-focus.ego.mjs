@@ -11,10 +11,12 @@ const task = await taskSpace("Program navigation focus " + Date.now());
 const page = task.page("p1");
 const menu = id => `nav[aria-label="관리 메뉴"] a[href="#${id}"]`;
 const program = id => `nav[aria-label="분석 프로그램"] a[href="#${id}"]`;
+// 관리자 홈 2안: '콘텐츠 분석기'는 운영 현황 홈(#admin-home, 분석 프로그램 줄 없음)으로 열고, 홈 배너로 음악 칸을 연다.
+const banner = id => `#admin-home a[href="#${id}"]`;
 const steps = [
-  ["설정→분석 결과", menu("admin-analysis-results"), "admin-analysis-results", true],
+  ["설정→콘텐츠 분석기(홈)", menu("admin-home"), "admin-home", false],
   // P1-06: 이미지 타일은 허브 칸(#admin-style-dna)이 아니라 원본 전체 화면(/admin/style-dna)으로 연다(아래에서 주소만 확인). 분석 칸 사이 이동은 음악·쇼츠로 잰다.
-  ["분석 결과→음악", program("admin-music-analysis"), "admin-music-analysis", true],
+  ["홈 배너→음악", banner("admin-music-analysis"), "admin-music-analysis", true],
   ["음악→쇼츠", program("admin-shorts-analysis"), "admin-shorts-analysis", true],
   ["쇼츠→설정", menu("admin-account"), "admin-account", false],
   ["설정→내 프로젝트", menu("admin-project-list"), "admin-project-list", false],
@@ -24,8 +26,8 @@ const rows = [];
 for (const width of [320, 390, 768, 1440]) {
   await page.cdp("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 600 });
   await page.goto(`${base}/admin?programFocus=${width}#admin-overview`);
-  await page.waitForFunction(() => location.hash === "#admin-project-list"
-    && document.activeElement?.id === "admin-projects"
+  await page.waitForFunction(() => location.hash === "#admin-home"
+    && document.activeElement?.id === "admin-home-heading"
     && !document.querySelector('a[href="#admin-overview"], #admin-overview'), null, { timeout: 10000 });
   await page.goto(`${base}/admin?programFocus=${width}#admin-account`);
   await page.waitForFunction(() => document.querySelector("[data-admin-ready]") && document.querySelector('nav[aria-label="관리 메뉴"]')?.dataset.sticky, null, { timeout: 10000 });

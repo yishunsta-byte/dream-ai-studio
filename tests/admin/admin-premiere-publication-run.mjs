@@ -10,6 +10,7 @@ const port=Number(process.env.DREAM_PREMIERE_FIXTURE_PORT ?? 0);
 const require=createRequire(new URL("../../package.json",import.meta.url));
 const app=`
 import {AdminHub} from "@/components/admin/admin-hub";
+import {AdminOperationsHome} from "@/components/admin/admin-operations-home";
 import {PublicationHttpQueue} from "@/components/admin/publication-http-queue";
 import {PublishedAnalysisResults, type PublishedAnalysisItem} from "@/components/reference-analysis/published-analysis-results";
 import styles from "@/components/admin/admin.module.css";
@@ -17,7 +18,7 @@ import "@/app/globals.css";
 const account = "premiere-fixture@example.invalid";
 const application=<div className={styles.console}>
   <header className={styles.header}><a className={styles.brand} href="/admin">DREAM <em>SCREEN</em></a><span>분석 결과 공개 검수 · 예시 저장</span></header>
-  <main className="content"><AdminHub email={account} projects={{kind:"unlinked"}} review={<PublicationHttpQueue initial={{kind:"closed"}}/>}/></main>
+  <main className="content"><AdminHub email={account} projects={{kind:"unlinked"}} home={<AdminOperationsHome publications={{kind:"closed"}}/>} review={<PublicationHttpQueue initial={{kind:"closed"}}/>}/></main>
 </div>;
 `;
 const transport=`
@@ -109,8 +110,9 @@ window.fetch=async(raw,init)=>{
 };
 `;
 const plugins=[{name:"fixture-server-boundaries",setup(builder){
-  builder.onResolve({filter:/^(next\/link|@\/lib\/cloud\/project-read-page)$/},args=>({path:args.path,namespace:"fixture"}));
-  builder.onLoad({filter:/.*/,namespace:"fixture"},args=>({loader:"tsx",resolveDir:repo,contents:args.path==="next/link"
+  builder.onResolve({filter:/^(next\/link|next\/image|@\/lib\/cloud\/project-read-page)$/},args=>({path:args.path,namespace:"fixture"}));
+  // 관리자 홈 2안 배너: next/image는 Next 밖에서 묶으면 컴포넌트가 아니므로 같은 속성의 <img>로 대신한다.
+  builder.onLoad({filter:/.*/,namespace:"fixture"},args=>({loader:"tsx",resolveDir:repo,contents:args.path==="next/image"?"import { createElement } from 'react'; export default function Image({ src, alt, fill, sizes, priority, loading, fetchPriority, ...rest }) { void priority; void fetchPriority; return createElement('img', { src, alt, sizes, loading: loading ?? 'lazy', decoding: 'async', style: fill ? { position: 'absolute', inset: 0, width: '100%', height: '100%' } : undefined, ...rest }); }":args.path==="next/link"
     ?"import { createElement } from 'react'; export default function Link({ href, ...rest }) { return createElement('a', { href, ...rest }); }"
     :"export async function readCloudProjects() { throw new Error('Storage is outside this UI fixture'); }"}));
 }}];
