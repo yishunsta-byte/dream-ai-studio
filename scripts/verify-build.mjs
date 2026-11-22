@@ -12,7 +12,9 @@ export function renderTrace(project,file){const local=relative(resolve(project),
 // through a link too) are named on their own. They run only as child processes of the local worker.
 const NATIVE_TOOL=/(^|\/)(ffmpeg|ffprobe)(\.exe)?$/i;
 export function toolTrace(project,file,runtime=project){const target=resolve(file),actual=canonical(target);if(NATIVE_TOOL.test(target.replaceAll("\\","/"))||NATIVE_TOOL.test(actual.replaceAll("\\","/")))return true;for(const base of new Set([resolve(project),canonical(project),resolve(runtime),canonical(runtime)])){const folder=join(base,".tools");if(inside(folder,target)||inside(canonical(folder),actual))return true;}return false;}
-const ANALYSIS_MANIFEST = "app/api/admin/reference-analysis/route.js.nft.json";
+// P1-07 운영 이식: 고정 FFmpeg 묶음은 참고 분석·오디오 바로 분석·오디오 큰 파일 완료 함수에만 들어간다.
+const ANALYSIS_MANIFESTS = ["app/api/admin/reference-analysis/route.js.nft.json", "app/api/admin/audio-analysis/route.js.nft.json",
+  "app/api/admin/audio-uploads/[id]/route.js.nft.json"];
 const ANALYSIS_BINARIES = ["bin/ffmpeg", "bin/ffmpeg.bin", "bin/ffprobe", "bin/ffprobe.bin"];
 const ANALYSIS_LIB = /^lib\/lib(?:avcodec|avdevice|avfilter|avformat|avutil|swresample|swscale)\.so(?:\.\d+){0,3}$/;
 const isAnalysisTool = (name) => ANALYSIS_BINARIES.includes(name) || ANALYSIS_LIB.test(name);
@@ -21,7 +23,7 @@ const isAnalysisTool = (name) => ANALYSIS_BINARIES.includes(name) || ANALYSIS_LI
 export function verifyBuild(project=process.cwd(),runtime=process.env.DREAM_DATA_ROOT?.trim()||project){const root=resolve(project),data=resolve(runtime),server=join(root,".next/server");let traces=0;const found=[];
   const analysisRoot = join(root, "node_modules", ".dream-reference-media");
   const actualAnalysisRoot = join(canonical(root), "node_modules", ".dream-reference-media");
-  const mediaFiles = new Set();
+  const mediaFiles = new Map(ANALYSIS_MANIFESTS.map((manifest) => [manifest, new Set()]));
   const shown=(target)=>{for(const [base,label] of [[root,"<app>"],[data,"<data>"]]){const local=relative(base,target);if(local!==".."&&!local.startsWith(`..${sep}`)&&!isAbsolute(local))return `${label}/${local.replaceAll("\\","/")}`;}return "<outside>/"+target.split(sep).slice(-2).join("/");};
   for(const filename of readdirSync(server,{recursive:true})){if(!filename.endsWith(".nft.json"))continue;traces++;const manifest=join(server,filename);for(const file of JSON.parse(readFileSync(manifest,"utf8")).files??[]){const target=resolve(dirname(manifest),file);
     const trace=filename.replaceAll("\\","/");
@@ -30,9 +32,9 @@ export function verifyBuild(project=process.cwd(),runtime=process.env.DREAM_DATA
     if(analysisTarget){
       const entry=relative(analysisRoot,target).replaceAll("\\","/");
       const realEntry=relative(actualAnalysisRoot,actual).replaceAll("\\","/");
-      if(trace!==ANALYSIS_MANIFEST||!isAnalysisTool(entry)||!isAnalysisTool(realEntry)||privateTrace(root,target,data)){
+      if(!ANALYSIS_MANIFESTS.includes(trace)||!isAnalysisTool(entry)||!isAnalysisTool(realEntry)||privateTrace(root,target,data)){
         found.push({kind:"tool",trace,file:shown(target)});
-      }else{mediaFiles.add(entry);}
+      }else{mediaFiles.get(trace).add(entry);}
       continue;
     }
     const kind=toolTrace(root,target,data)?"tool":privateTrace(root,target,data)?"private":renderTrace(root,target)?"render":null;if(kind)found.push({kind,trace,file:shown(target)});}}
@@ -42,7 +44,7 @@ export function verifyBuild(project=process.cwd(),runtime=process.env.DREAM_DATA
     if(kinds.has("private"))throw new Error("빌드 파일 목록에 로컬 데이터나 비밀 설정이 포함되어 중단했어요.");
     if(kinds.has("tool"))throw new Error("빌드 파일 목록에 이 PC의 실행 도구(.tools·ffmpeg·ffprobe)가 포함되어 중단했어요.");
     throw new Error("빌드 파일 목록에 영상 만들기 도구(렌더러·번들러·브라우저)가 포함되어 중단했어요.");}
-  if(process.env.VERCEL&&!ANALYSIS_BINARIES.every((file)=>mediaFiles.has(file)))throw new Error("관리자 콘텐츠 분석 함수에 FFmpeg와 FFprobe 도구가 모두 포함돼야 합니다.");
+  if(process.env.VERCEL&&![...mediaFiles.values()].every((files)=>ANALYSIS_BINARIES.every((file)=>files.has(file))))throw new Error("관리자 콘텐츠·오디오 분석 함수에 FFmpeg와 FFprobe 도구가 모두 포함돼야 합니다.");
   return traces;}
 // T-182: 화면에 내려가는 파일(.next/static)에 서비스 키가 섞이면 누구나 RLS를 우회할 수 있다.
 // 환경변수 값이 그대로 있거나, role이 service_role인 JWT가 보이면 실패한다.

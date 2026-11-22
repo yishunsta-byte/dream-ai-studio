@@ -122,7 +122,9 @@ const routeModules = import.meta.glob<Record<string, unknown>>("../app/api/**/ro
 // inheriting a public exemption or disappearing from the authentication tests.
 const publicAuthRoutes = ["auth/login", "auth/signup", "auth/reset"];
 const selfAuthenticatedRoutes = ["auth/password"];
-const referenceRoutes = ["admin/reference-analysis", "admin/reference-publications", "admin/music-semantic", "admin/shorts-analysis"];
+const referenceRoutes = ["admin/reference-analysis", "admin/reference-publications", "admin/music-semantic", "admin/shorts-analysis",
+  // P1-07 운영 이식: 오디오 분석·보호 업로드 경로.
+  "admin/audio-analysis", "admin/audio-uploads", "admin/audio-uploads/[id]", "admin/audio-uploads/[id]/chunks"];
 const guardedRoutes = [
   "admin/analysis-credentials", "admin/analysis-credentials/test", "admin/publications", "admin/render-queue", ...referenceRoutes,
   "assets/[id]", "assets/link", "assets/upload", "auth/logout", "auth/session",
