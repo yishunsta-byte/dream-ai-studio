@@ -1,4 +1,8 @@
 import { z } from "zod";
+import { styleDnaEngine } from "./style-dna-engine-credential-contract";
+
+const imageSemanticProvider = z.enum(["gemini", ...styleDnaEngine.options]);
+export type ImageSemanticProvider = z.infer<typeof imageSemanticProvider>;
 
 export const imageSemanticCategories = ["people", "objects", "actions", "context", "composition", "lighting"] as const;
 export type ImageSemanticCategory = typeof imageSemanticCategories[number];
@@ -15,7 +19,7 @@ const finding = z.discriminatedUnion("certainty", [
 export const imageSemanticResultSchema = z.discriminatedUnion("status", [
   z.strictObject({
     status: z.enum(["ready", "partial"]),
-    provider: z.literal("gemini"),
+    provider: imageSemanticProvider,
     findings: z.array(finding).length(imageSemanticCategories.length)
       .refine((fields) => new Set(fields.map(field => field.category)).size === fields.length),
     prompts: z.strictObject({ ko: imageSemanticPrompt.optional(), en: imageSemanticPrompt.optional() }),
