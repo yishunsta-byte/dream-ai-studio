@@ -158,7 +158,7 @@ try {
     await until((RF) => !!eval(RF), "refine old", RF);
     v = await refine();
     assert.deepEqual([v.titles, v.historyEmpty], [["보관된 도심 인물 사진"], "아직 보정한 적이 없습니다."]);
-    assert.deepEqual([v.warn, v.consentDisabled, v.engine[1][1], v.run[1]], ["이미지 분석 모델이 등록되지 않았어요. 계정설정 및 API 연동에서 등록해 주세요.", true, "등록 안 됨", true]);
+    assert.deepEqual([v.warn, v.consentDisabled, v.engine[1][1], v.run[1]], ["이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요.", true, "등록 안 됨", true]);
     assert.equal(v.overflow, 0);
     const external = await page.evaluate(() => window.__premiere.requests().filter((item) => !item.path.startsWith("/")).length);
     assert.equal(external, 0);

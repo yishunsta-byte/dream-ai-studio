@@ -24,7 +24,13 @@ afterEach(() => vi.unstubAllGlobals());
 describe("image analysis engine registration", () => {
   it("renders a protected registration entry without rendering keys or actions to test connections", () => {
     const html = renderToStaticMarkup(createElement(AdminPlatformIntegrations, { email: "fixture@example.invalid" }));
-    expect(html).toContain("보안 키 금고");
+    expect(html).toContain("<h1>API키등록·플랫폼연동</h1>");
+    expect(html).not.toContain("보안 키 금고");
+    const headings = ["AI 분석 엔진", "이미지·음악·영상 생성 API", "YouTube Data API v3 등록", "내 채널 및 저장소 연동 방법"];
+    const indexes = headings.map(heading => html.indexOf(`>${heading}</h3>`));
+    expect(indexes.every((position, index) => position >= 0 && (index === 0 || position > indexes[index - 1]))).toBe(true);
+    expect(html).toContain('aria-label="threads_content_publish 복사"');
+    expect(html).toContain("계정 연결 준비 중");
     expect(html).toContain("OpenAI 키·모델");
     expect(html).toContain("Claude 키·모델");
     expect(html).toContain("Gemini 키·모델");

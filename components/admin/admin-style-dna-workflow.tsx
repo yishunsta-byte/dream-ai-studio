@@ -57,7 +57,7 @@ const messages: Record<StyleDnaCode, string> = {
   stale_revision: "다른 곳에서 새 보정 버전이 먼저 저장됐어요. 최신 기록을 다시 읽었어요.",
   request_conflict: "같은 요청 번호에 다른 내용이 있어요. 다시 동의하고 새로 실행해 주세요.",
   limit_reached: "보관 한도(100개)에 닿았어요.",
-  not_configured: "이미지 분석 모델이 등록되지 않았어요. 계정설정 및 API 연동에서 먼저 등록해 주세요.",
+  not_configured: "이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 먼저 등록해 주세요.",
   storage_unavailable: "Style DNA 저장소가 준비되지 않았어요.",
   model_error: "Gemini가 결과를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.",
   timed_out: "Gemini 응답 시간이 지났어요. 잠시 뒤 다시 시도해 주세요.",
@@ -174,8 +174,8 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
     const off = value !== "gemini" && !engines?.[value]?.configured;
     return { value, label: `${engineLabel(value)}${off ? " (키 미등록)" : ""}`, disabled: off };
   });
-  const engineWarn = !settings || engineReady ? null : engine === "gemini" ? "이미지 분석 모델이 등록되지 않았어요. 계정설정 및 API 연동에서 등록해 주세요."
-    : `${engineLabel(engine)} 키가 등록되지 않았거나 바뀌었어요. 계정설정 및 API 연동에서 확인하거나 다른 AI를 선택해 주세요.`;
+  const engineWarn = !settings || engineReady ? null : engine === "gemini" ? "이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요."
+    : `${engineLabel(engine)} 키가 등록되지 않았거나 바뀌었어요. API키등록·플랫폼연동에서 확인하거나 다른 AI를 선택해 주세요.`;
   const agreed = (target: Step) => target === "test" ? ready && consent?.step === "test" && consent.version === version
     : engineReady && consent?.step === target && consent.version === engineVersion && consent.engine === engineKey;
   const agree = (target: Step, checked: boolean) => {
@@ -453,7 +453,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
       {{ login: "로그인이 끝났어요.", forbidden: "이 계정에는 Style DNA 권한이 없어요.", unavailable: "Style DNA 저장소가 준비되지 않았어요.", failed: "보관함을 읽지 못했어요." }[library.kind]}
       {library.kind === "login" ? <> <a className={panel.link} href={loginLink}>관리자 로그인</a></> : <> <button type="button" className={panel.link} onClick={reloadLibrary}>다시 확인</button></>}</p>}
     {/* 원본 전체 화면에는 이 설정 줄이 없다(엔진·모델은 분석 화면에서 고른다). 미등록일 때만 안내로 남긴다. */}
-    {settings && (!original || !ready) && <p className={panel.note} aria-label="Style DNA 설정">{ready ? `분석 모델 ${settings.analysisModel} · Gemini 등록 버전 ${version}` : "이미지 분석 모델이 등록되지 않아 실행할 수 없어요. 계정설정 및 API 연동에서 등록해 주세요."}
+    {settings && (!original || !ready) && <p className={panel.note} aria-label="Style DNA 설정">{ready ? `분석 모델 ${settings.analysisModel} · Gemini 등록 버전 ${version}` : "이미지 분석 모델이 등록되지 않아 실행할 수 없어요. API키등록·플랫폼연동에서 등록해 주세요."}
       {` · 시험 생성 모델 ${settings.testModels.map(model => model.label).join(", ")}`}</p>}
 
 
@@ -563,7 +563,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
                   <option value={engineModel ?? ""}>{engineModel ?? "등록 안 됨"}</option></select></label>
               </div>
               {engineWarn && <p className={studio.engineWarn} role="note">{engineWarn}</p>}
-              <p className={studio.engineNote} id={`${id}-engine`}>계정설정 및 API 연동에 등록한 {engineShort} 키로 호출되며 요금은 그 계정에 청구돼요. 시험 이미지 생성은 언제나 Gemini로 해요.</p>
+              <p className={studio.engineNote} id={`${id}-engine`}>API키등록·플랫폼연동에 등록한 {engineShort} 키로 호출되며 요금은 그 계정에 청구돼요. 시험 이미지 생성은 언제나 Gemini로 해요.</p>
             </div>
           </section>
         </form>

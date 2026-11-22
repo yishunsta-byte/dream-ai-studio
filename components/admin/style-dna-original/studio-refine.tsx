@@ -70,7 +70,7 @@ export function StudioRefine({ id, image, view, revisions, feedback, limit, quic
             <label>모델<select value={engine.model ?? ""} disabled aria-describedby={`${id}-refine-engine`}><option value={engine.model ?? ""}>{engine.model ?? "등록 안 됨"}</option></select></label>
           </div>
           {engine.warn && <p className={r.warn} role="note">{engine.warn}</p>}
-          <p className={r.note} id={`${id}-refine-engine`}>계정설정 및 API 연동에 등록한 {engine.short} 키로 호출되며 요금은 그 계정에 청구돼요.</p>
+          <p className={r.note} id={`${id}-refine-engine`}>API키등록·플랫폼연동에 등록한 {engine.short} 키로 호출되며 요금은 그 계정에 청구돼요.</p>
           <label className={r.consent}><input type="checkbox" checked={agreed} disabled={!ready || busy} onChange={event => onConsent(event.target.checked)} />
             현재 버전 {latest.revision}의 프롬프트와 피드백을 {engine.short}({engine.model ?? "모델 미등록"})에 보내 새 보정 버전을 만드는 데 동의해요(호출 1건).</label>
           <button type="submit" className={r.primary} disabled={!canRun}>

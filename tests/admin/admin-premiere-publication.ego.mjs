@@ -201,7 +201,7 @@ try{
   }),{
     inOrder:true,headingOutOfFlow:true,heading:"음악 분석",firstMenu:"콘텐츠 분석기",
     programs:["이미지 분석","색감·조명·구도 분석과 한영 프롬프트","음악 분석","장르·악기·템포 분석과 Suno 프롬프트","쇼츠 분석","첫 장면·영상 구성 분석과 연출 프롬프트"],
-    settings:["계정설정 및 API 연동"],
+    settings:["API키등록·플랫폼연동"],
   });
   await page.screenshot({path:proof+"/admin-analyzer-menu-"+width+".png"});
   await move(operationsId);

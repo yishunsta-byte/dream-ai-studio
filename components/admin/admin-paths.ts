@@ -8,3 +8,4 @@ export const imageShareSection = "admin-image-publication";
 export const homeSectionId = "admin-home";
 /** 완성본 검수·게시 칸. */
 export const reviewSectionId = "admin-review";
+export const apiPlatformLabel = "API키등록·플랫폼연동";

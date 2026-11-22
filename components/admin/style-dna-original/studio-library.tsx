@@ -58,7 +58,7 @@ export function StudioLibrary({ state, limit, current, opening, when, onOpen, on
     {state.kind === "loading" ? <p className={l.loading} role="status"><Loader2 size={16} className={l.spin} aria-hidden /> 불러오는 중…</p>
       : state.kind === "ok" && !state.items.length ? <div className={`${l.card} ${l.empty}`}>
         <p className={l.emptyTitle}>아직 분석한 이미지가 없습니다.</p>
-        <p>1단계에서 이미지를 올리면 카메라·조명·색상·스타일을 분석해 마스터 프롬프트를 만들어 드립니다. 먼저 <a href={settingsHref}>계정설정 및 API 연동</a>에서 Gemini(또는 OpenAI·Claude) 키를 등록해주세요.</p>
+        <p>1단계에서 이미지를 올리면 카메라·조명·색상·스타일을 분석해 마스터 프롬프트를 만들어 드립니다. 먼저 <a href={settingsHref}>API키등록·플랫폼연동</a>에서 Gemini(또는 OpenAI·Claude) 키를 등록해주세요.</p>
         <div><button type="button" className={l.primary} onClick={onNew}><span>첫 이미지 분석하기</span></button></div>
       </div>
       : state.kind === "ok" && <ul className={l.grid}>

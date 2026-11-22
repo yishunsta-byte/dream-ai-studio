@@ -12,7 +12,7 @@ const labels: Record<ImageSemanticCategory, string> = {
 };
 
 const notes: Record<Extract<ImageSemanticResult, { status: "unavailable" }>["reason"], string> = {
-  not_configured: "Gemini 설정이 필요해요. 계정설정 및 API 연동에서 상태를 확인하세요.",
+  not_configured: "Gemini 설정이 필요해요. API키등록·플랫폼연동에서 상태를 확인하세요.",
   image_preparation_failed: "모델에 보낼 이미지를 준비하지 못했어요.",
   provider_error: "Gemini가 요청을 처리하지 못했어요. 잠시 뒤 다시 실행해 주세요.",
   invalid_response: "Gemini에서 사용할 수 있는 분석 결과를 받지 못했어요.",

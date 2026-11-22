@@ -221,7 +221,7 @@ try {
     v = await studio();
     assert.deepEqual(await page.evaluate((ST) => { const st = eval(ST); const box = [...st.querySelectorAll("form[aria-label='분석 설정'] input[type=checkbox]")].find((item) => /동의해요/.test(item.closest("label").textContent));
       return [st.querySelector("[aria-label='시스템 가이던스'] [role=note]:not(details *)")?.textContent ?? null, box.disabled, [...st.querySelectorAll("[aria-label='시스템 가이던스'] select")].at(-1).selectedOptions[0].textContent]; }, ST),
-      ["이미지 분석 모델이 등록되지 않았어요. 계정설정 및 API 연동에서 등록해 주세요.", true, "등록 안 됨"]);
+      ["이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요.", true, "등록 안 됨"]);
     assert.equal(v.runDisabled, true);
     if (width === 390 || width === 1574) await shot(`studio-no-key-${width}.png`);
     row.external = (await page.evaluate(() => window.__premiere.requests().filter((item) => !item.path.startsWith("/")).length));

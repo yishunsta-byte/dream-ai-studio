@@ -50,7 +50,7 @@ export function AdminManual() {
         <h3>Gemini API연동</h3>
         <ol>
           <li>Google AI Studio에서 연동할 프로젝트의 Gemini API 키를 준비하세요.</li>
-          <li><a className={styles.link} href="#admin-api-integrations">계정설정 및 API 연동</a>의 <strong>Gemini 설정</strong>에서 이미지·쇼츠용 키와 음악용 키, 분석기별 모델 ID를 넣고 <strong>저장</strong>을 누르세요.</li>
+          <li><a className={styles.link} href="#admin-api-integrations">API키등록·플랫폼연동</a>의 <strong>Gemini 설정</strong>에서 이미지·쇼츠용 키와 음악용 키, 분석기별 모델 ID를 넣고 <strong>저장</strong>을 누르세요.</li>
           <li>저장할 때 Gemini에서 키와 모델 정보를 확인하고, 확인되면 서버에 저장돼요. 실제 분석 결과는 각 분석기에서 실행해 확인하세요.</li>
         </ol>
         <details>

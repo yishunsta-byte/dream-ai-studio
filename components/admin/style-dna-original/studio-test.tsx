@@ -124,7 +124,7 @@ export function StudioTest(p: Props) {
         <button type="submit" className={r.primary} disabled={!p.canRun || !p.agreed || p.busy}>
           {p.running ? <Loader2 size={16} className={r.spin} aria-hidden /> : <FlaskConical size={16} aria-hidden />}
           {p.running ? "DNA 합성 시뮬레이션 중…" : "공정 시작 (이미지 1장 합성)"}</button>
-        {p.missing && <p className={t.error} role="note">이미지 생성에는 Google Gemini API 키가 필요합니다. 계정설정 및 API 연동에서 등록해 주세요.</p>}
+        {p.missing && <p className={t.error} role="note">이미지 생성에는 Google Gemini API 키가 필요합니다. API키등록·플랫폼연동에서 등록해 주세요.</p>}
         <p className={t.paid}>생성 1회마다 등록한 Gemini 이미지 호출 1건(유료)이 발생합니다.</p>
       </form>
 

@@ -6,7 +6,7 @@ import { AdminApiIntegrations } from "./admin-analysis-tools";
 import { AdminProjectsSection, type AdminProjects } from "./admin-projects";
 import { AdminManual } from "./admin-manual";
 import { AdminNavigation, AdminProgramNavigation } from "./admin-navigation";
-import { homeSectionId, imageShareSection, styleDnaPath } from "./admin-paths";
+import { apiPlatformLabel, homeSectionId, imageShareSection, styleDnaPath } from "./admin-paths";
 import { AdminPremierePrograms } from "./admin-premiere-programs";
 import { AdminRenderQueue } from "./admin-render-queue";
 import styles from "./admin.module.css";
@@ -49,7 +49,7 @@ export function AdminHub({ email, projects, review, home }: { email: string; pro
       </section>
 
       <section id="admin-account" tabIndex={-1} aria-labelledby="admin-menu" className={`${styles.target} ${styles.section}`}>
-        <h2 id="admin-menu" tabIndex={-1}>계정설정 및 API 연동</h2>
+        <h2 id="admin-menu" tabIndex={-1}>{apiPlatformLabel}</h2>
         <Card className={styles.accountCard}>
           <p className={styles.note}>로그인 계정 <strong>{email}</strong></p>
           <Link className={styles.link} href="/account/password">비밀번호 바꾸기 <Icon name="arrow" /></Link>

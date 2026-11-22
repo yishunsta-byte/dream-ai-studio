@@ -62,7 +62,7 @@ describe("admin hub information architecture", () => {
     expect(html).toContain("첫 장면·영상 구성 분석과 연출 프롬프트");
     expect(html).toContain("음악 분석");
     expect(html).toContain("쇼츠 분석");
-    expect(html).toMatch(/id="admin-account"[^>]*>[\s\S]*?<h2 id="admin-menu" tabindex="-1">계정설정 및 API 연동<\/h2>[\s\S]*?비밀번호 바꾸기[\s\S]*?<section id="admin-api-integrations"[^>]*><h3 id="admin-api-integrations-title" tabindex="-1">API연동<\/h3>/);
+    expect(html).toMatch(/id="admin-account"[^>]*>[\s\S]*?<h2 id="admin-menu" tabindex="-1">API키등록·플랫폼연동<\/h2>[\s\S]*?비밀번호 바꾸기[\s\S]*?<section id="admin-api-integrations"[^>]*><h3 id="admin-api-integrations-title" tabindex="-1">API연동<\/h3>/);
     expect(html).not.toMatch(/Style DNA|콘텐츠 분석·공개|>공개 준비<\/button>|id="admin-reference-analysis"/);
     expect(html).toContain("완성본 검수·게시");
     expect(html).toContain("분석 결과 관리");

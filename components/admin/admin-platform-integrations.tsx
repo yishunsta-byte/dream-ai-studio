@@ -5,6 +5,8 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { Card, StatusPill } from "@/components/ui/primitives";
 import { AdminIntegrationCredentials } from "./admin-integration-credentials";
+import { apiPlatformLabel } from "./admin-paths";
+import { AdminPlatformGuides } from "./admin-platform-guides";
 import { YouTubeSettingsCard } from "./admin-youtube-settings";
 import admin from "./admin.module.css";
 import styles from "./admin-platform-integrations.module.css";
@@ -31,32 +33,8 @@ const platformGroups = [
     use: "쇼츠 연출과 장면 프롬프트를 복사해 영상 생성 플랫폼에 붙여넣으세요." },
 ] as const;
 
-const platformGuides = [
-  { name: "Threads", description: "Meta 개발자 콘솔에서 Threads 사용 사례를 추가하고 Threads 계정을 OAuth로 연결해요. 게시에는 threads_basic과 threads_content_publish 권한이 필요해요.",
-    href: "https://developers.facebook.com/documentation/threads/" },
-  { name: "Instagram", description: "Instagram 비즈니스 또는 크리에이터 계정으로 로그인해요. Meta 앱에서 Instagram Login을 설정하고 콘텐츠 게시 권한을 승인해요.",
-    href: "https://developers.facebook.com/documentation/instagram-platform/content-publishing" },
-  { name: "YouTube", description: "공개 검색은 이 페이지에서 등록한 Data API 키를 사용해요. 내 채널에 올리려면 Google Cloud에서 OAuth 웹 클라이언트를 만든 뒤 YouTube 업로드 권한을 별도로 승인해요.",
-    href: "https://developers.google.com/youtube/data/guides/authentication" },
-  { name: "Google Drive", description: "Google Cloud에서 Drive API와 OAuth 웹 클라이언트를 설정해요. 앱에서 만든 파일과 사용자가 선택한 파일에만 접근하는 drive.file 권한을 사용해요.",
-    href: "https://developers.google.com/workspace/drive/api/guides/api-specific-auth" },
-] as const;
-
 export function AdminIntegrationSettings() {
   return <div className={styles.vault}>
-    <header className={styles.vaultHeader}>
-      <Icon name="lock" />
-      <div><h2>보안 키 금고</h2><p>프로그램 실행에 필요한 API 키와 모델을 관리하세요.</p></div>
-    </header>
-
-    <section className={styles.vaultSection} aria-labelledby="youtube-data-title">
-      <div className={styles.sectionHeader}>
-        <div><h3 id="youtube-data-title">YouTube Data API v3 등록</h3><p>공개 쇼츠 검색과 채널·조회수 데이터에 사용해요.</p></div>
-        <a className={styles.setupLink} href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">Google 키 발급</a>
-      </div>
-      <YouTubeSettingsCard />
-    </section>
-
     <section className={styles.vaultSection} aria-labelledby="image-engine-title">
       <div className={styles.sectionHeader}>
         <div><h3 id="image-engine-title">AI 분석 엔진</h3><p>OpenAI·Claude·Gemini 중 선택해 키와 최신 모델을 등록하세요.</p></div>
@@ -87,16 +65,19 @@ export function AdminIntegrationSettings() {
       </ul>
     </section>
 
+    <section className={styles.vaultSection} aria-labelledby="youtube-data-title">
+      <div className={styles.sectionHeader}>
+        <div><h3 id="youtube-data-title">YouTube Data API v3 등록</h3><p>공개 쇼츠 검색과 채널·조회수 데이터에 사용해요.</p></div>
+        <a className={styles.setupLink} href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">Google 키 발급</a>
+      </div>
+      <YouTubeSettingsCard />
+    </section>
+
     <section className={styles.vaultSection} aria-labelledby="publishing-platforms-title">
       <div className={styles.sectionHeader}>
-        <div><h3 id="publishing-platforms-title">내 채널 및 저장소 연동 방법</h3><p>플랫폼별 OAuth 앱과 계정 승인 준비 절차예요.</p></div>
+        <div><h3 id="publishing-platforms-title">내 채널 및 저장소 연동 방법</h3><p>플랫폼을 열어 설정 순서와 필요한 권한을 확인하세요.</p></div>
       </div>
-      <ul className={styles.platforms}>
-        {platformGuides.map(({ name, description, href }) => <li key={name}>
-          <div><h4>{name}</h4><p>{description}</p></div>
-          <a className={styles.setupLink} href={href} target="_blank" rel="noreferrer">{name} 설정 가이드</a>
-        </li>)}
-      </ul>
+      <AdminPlatformGuides />
     </section>
   </div>;
 }
@@ -115,8 +96,8 @@ export function AdminPlatformIntegrations({ email }: { email: string }) {
         <ProtectedContent>
           <div className={styles.page}>
             <header className={styles.pageHeading}>
-              <a className={styles.back} href="/admin#admin-api-integrations">계정설정으로 돌아가기</a>
-              <h1>API 및 플랫폼 연동</h1>
+              <a className={styles.back} href="/admin#admin-api-integrations">관리자 메뉴로 돌아가기</a>
+              <h1>{apiPlatformLabel}</h1>
             </header>
             <AdminIntegrationSettings />
           </div>

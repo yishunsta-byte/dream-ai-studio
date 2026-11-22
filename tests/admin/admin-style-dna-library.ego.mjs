@@ -183,7 +183,7 @@ try {
     await go(`w=${width}`);
     await settled();
     v = await view();
-    assert.deepEqual(v.empty, ["아직 분석한 이미지가 없습니다.", "1단계에서 이미지를 올리면 카메라·조명·색상·스타일을 분석해 마스터 프롬프트를 만들어 드립니다. 먼저 계정설정 및 API 연동에서 Gemini(또는 OpenAI·Claude) 키를 등록해주세요."]);
+    assert.deepEqual(v.empty, ["아직 분석한 이미지가 없습니다.", "1단계에서 이미지를 올리면 카메라·조명·색상·스타일을 분석해 마스터 프롬프트를 만들어 드립니다. 먼저 API키등록·플랫폼연동에서 Gemini(또는 OpenAI·Claude) 키를 등록해주세요."]);
     assert.equal(v.emptyLink, "#admin-api-integrations");
     assert.equal(v.tab[0], "보관함 0");
     min45(v.ratios, `빈 보관함 ${width}`);

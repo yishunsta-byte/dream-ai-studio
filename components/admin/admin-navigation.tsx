@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import styles from "./admin.module.css";
-import { homeSectionId, imageShareSection, reviewSectionId, styleDnaPath } from "./admin-paths";
+import { apiPlatformLabel, homeSectionId, imageShareSection, reviewSectionId, styleDnaPath } from "./admin-paths";
 
 // P1-06: 이미지 타일은 원본 Style DNA v1.39 전체 화면(관리자 보호 경로)으로 연다.
 // 사용자 재확인(2026-11-22, Master msg_a94edde8a427): 기존 이미지 주소(#admin-style-dna·#admin-reference-analysis: 북마크·로그인 뒤 복귀·매뉴얼 링크)도
@@ -33,7 +33,7 @@ const operations = [
   { id: "admin-project-list", label: "내 프로젝트", icon: "folder" },
   { id: "admin-review", label: "완성본 검수·게시", icon: "check" },
   { id: "admin-render-queue", label: "렌더 대기열", icon: "clock" },
-  { id: accountSettingsId, label: "계정설정 및 API 연동", icon: "settings" },
+  { id: accountSettingsId, label: apiPlatformLabel, icon: "settings" },
   { id: "admin-operations-availability", label: "운영 연결 범위", icon: "lock" },
   { id: "admin-manual", label: "사용매뉴얼", icon: "info" },
 ] as const satisfies readonly { id: string; label: string; icon: IconName }[];
