@@ -1,0 +1,99 @@
+/* P1-06 3단계 원본(v1.39) '결과 테스트 및 이미지 합성'. 바탕·카드·동의·주 단추·입력은 2단계(studio-refine.module.css)와 같은 실행 값을 쓴다.
+   원본 클래스 + 원본 globals.css '다크 아틀리에 덮어쓰기'의 실제 실행 값:
+   카드 머리 선 border-slate-100(덮어쓰기 없음) #f1f5f9, 제목 text-slate-900→#f8fafc, Field 라벨 slate-300 #cbd5e1·도움말 slate-400 #94a3b8,
+   입력·선택→#182030/#f8fafc/#2e3b55, 참조 위젯 border-slate-200→#222d42·bg-slate-50/60(밝은 반투명)·제목 slate-800, 연결됨 emerald-50/700/300·없음 slate-100/500/200,
+   결과 이미지 bg-slate-100 #f1f5f9, 빈 미리보기 border-dashed #222d42·bg-slate-50 #f8fafc, 비율 slate-400 font-mono.
+   예외(가독성, 원본 실행 대비가 4.5:1 미만인 곳만):
+   - 남색 카드 위 보라 글자(직접 편집 전환 violet-600 3.0:1, 개별 이미지 보기 violet-700 2.4:1) → violet-300 #c4b5fd
+   - 참조 위젯(slate-50/60이 남색과 섞여 약 #9ca0a6): 설명 slate-500·변경 violet-600·초기화 rose-500(2:1대) → slate-900 #0f172a·violet-950 #2e1065·rose-900 #881337
+   - 빈 미리보기 문구 slate-400(밝은 바탕 2.6:1) → slate-600 #475569
+   - 유료 안내 slate-500(#131824 위 3.6:1) → #94a3b8
+   - 색감 일치율 카드 bg-violet-50/40(남색 위 중간 회색 #6d707c: 어떤 글자도 4.5:1 미만) → 남색 카드 + violet-100 테두리, 수치 violet-300, 설명 #94a3b8 */
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+/* 원본 lg:grid-cols-[380px_minmax(0,1fr)] — lg는 원본 그리드 폭 720px(1·2단계와 같은 스크롤 막대 보정 −15px). */
+@container (min-width: 705px) { .grid { grid-template-columns: 380px minmax(0, 1fr); } }
+
+.panelHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+.panelHead > span { font-size: 12px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: #f8fafc; }
+.textButton { min-height: 28px; padding: 0; border: 0; background: none; color: #c4b5fd; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.textButton:hover:not(:disabled) { color: #ddd6fe; text-decoration: underline; }
+.textButton:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > span { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 700; color: #cbd5e1; }
+.field > small { font-size: 11px; line-height: 1.5; color: #94a3b8; overflow-wrap: anywhere; }
+.count { font-size: 10.5px; font-weight: 400; color: #94a3b8; }
+.field textarea, .field select { width: 100%; min-width: 0; border-radius: 12px; border: 1px solid #2e3b55; background: #182030; color: #f8fafc; font: inherit; font-size: 14px; }
+.field select { min-height: 42px; padding: 10px 12px; }
+.field textarea { min-height: 80px; padding: 10px 14px; resize: vertical; line-height: 1.5; }
+.field textarea.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+.field textarea.tall { min-height: 144px; }
+.field textarea::placeholder { color: #94a3b8; }
+.field textarea:focus, .field select:focus { border-color: #06b6d4; outline: none; box-shadow: 0 0 0 3px rgb(6 182 212 / 0.2); }
+/* 원본은 Field를 한 줄에 하나씩 쌓는다(380px 열에서 두 칸이면 모델 이름이 잘림). */
+.pair { display: grid; gap: 12px; }
+
+.reference { display: grid; gap: 8px; padding: 12px; border-radius: 12px; border: 1px solid #222d42; background: rgb(248 250 252 / 0.6); }
+.referenceHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.referenceHead > span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #1e293b; }
+.referenceHead > span svg { color: #6d28d9; }
+.reference > p { margin: 0; font-size: 10.5px; line-height: 1.35; color: #0f172a; }
+.attached, .detached { min-height: 24px; padding: 2px 8px; border-radius: 6px; border: 1px solid; font: inherit; font-size: 10.5px; font-weight: 700; cursor: pointer; }
+.attached { border-color: #6ee7b7; background: #ecfdf5; color: #047857; }
+.detached { border-color: #e2e8f0; background: #f1f5f9; color: #475569; }
+.attached:disabled, .detached:disabled { opacity: 0.5; cursor: not-allowed; }
+.referenceRow { display: flex; align-items: center; gap: 8px; padding-top: 4px; flex-wrap: wrap; }
+.referenceRow img { width: 40px; height: 40px; border-radius: 8px; border: 1px solid #222d42; object-fit: cover; }
+.referencePick { position: relative; display: inline-flex; align-items: center; min-height: 28px; font-size: 11px; font-weight: 700; color: #2e1065; cursor: pointer; }
+.referencePick:hover, .referencePick:focus-within { text-decoration: underline; }
+.referencePick input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.referencePick:focus-within { outline: 2px solid #2e1065; outline-offset: 2px; border-radius: 4px; }
+.reset { min-height: 28px; padding: 0; border: 0; background: none; color: #881337; font: inherit; font-size: 11px; cursor: pointer; }
+.reset:hover:not(:disabled) { text-decoration: underline; }
+
+.error { margin: 0; padding: 14px; border-radius: 12px; border: 1px solid rgb(136 19 55 / 0.4); background: rgb(76 5 25 / 0.3); font-size: 12px; font-weight: 600; color: #fda4af; }
+.paid { margin: 0; font-size: 11px; line-height: 1.35; color: #94a3b8; }
+
+.results { display: grid; gap: 16px; min-width: 0; }
+.singles { display: grid; gap: 16px; }
+.singles[hidden] { display: none; }
+@media (min-width: 640px) { .singles { grid-template-columns: 1fr 1fr; } }
+.cardHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cardHead h5 { margin: 0; font-size: 14px; font-weight: 700; color: #f8fafc; }
+.ratio { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; color: #94a3b8; }
+.shot { display: block; width: 100%; height: auto; max-height: 320px; border-radius: 12px; border: 1px solid #222d42; background: #f1f5f9; object-fit: contain; }
+.shotButton { display: block; width: 100%; padding: 0; border: 0; border-radius: 12px; background: none; cursor: zoom-in; }
+.shotButton:hover .shot { opacity: 0.95; }
+.icon { display: inline-flex; min-width: 28px; min-height: 28px; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 8px;
+  background: none; color: #94a3b8; cursor: pointer; }
+.icon:hover { color: #e2e8f0; }
+.placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; aspect-ratio: 1; max-height: 320px; padding: 24px;
+  border-radius: 12px; border: 2px dashed #222d42; background: #f8fafc; color: #475569; font-size: 12px; text-align: center; }
+.placeholder svg { color: #cbd5e1; }
+
+.match { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-color: rgb(237 233 254 / 0.35); }
+.matchLabel { margin: 0; font-size: 11px; font-weight: 700; color: #94a3b8; }
+.matchValue { margin: 0; font-size: 30px; font-weight: 900; line-height: 1.2; color: #c4b5fd; }
+.matchNote { margin: 0; font-size: 11px; color: #94a3b8; }
+.matchActions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.download { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 10px 20px; border-radius: 12px;
+  background: linear-gradient(to right, #0e7490, #6d28d9); color: #fff; font-size: 12px; font-weight: 700; text-decoration: none;
+  box-shadow: 0 4px 6px -1px rgb(6 182 212 / 0.2), 0 2px 4px -2px rgb(6 182 212 / 0.2); }
+.download:hover { background: linear-gradient(to right, #155e75, #5b21b6); }
+
+.tests { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.tests label { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 10px; border-radius: 8px; border: 1px solid #222d42; background: #0c0f17;
+  font-size: 12px; color: #e2e8f0; cursor: pointer; flex-wrap: wrap; }
+.tests label:has(input:checked) { border-color: #06b6d4; }
+.tests span { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; }
+.tests time { font-size: 10.5px; color: #94a3b8; }
+
+.overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgb(15 23 42 / 0.8); backdrop-filter: blur(12px); cursor: zoom-out; }
+.zoom { position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 90vw; max-height: 90vh; cursor: default; }
+.zoom img { max-width: 88vw; max-height: 82vh; width: auto; height: auto; border-radius: 12px; object-fit: contain; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); }
+.close { position: fixed; top: 20px; right: 20px; display: inline-flex; padding: 8px; border: 0; border-radius: 999px; background: rgb(255 255 255 / 0.1); color: #fff; cursor: pointer; }
+.close:hover { background: rgb(255 255 255 / 0.2); }
+.zoomDownload { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 12px; background: #7c3aed; color: #fff;
+  font-size: 12px; font-weight: 700; text-decoration: none; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+.zoomDownload:hover { background: #6d28d9; }

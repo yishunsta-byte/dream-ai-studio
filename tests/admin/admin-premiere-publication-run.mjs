@@ -158,6 +158,8 @@ const server=createServer(async (request,response)=>{
   }
   if(path==="/admin"||path==="/") return response.writeHead(200,{"content-type":"text/html; charset=utf-8","content-security-policy":"default-src 'self'; connect-src 'self'; img-src 'self' blob: data:; media-src blob: 'self'; style-src 'self' 'unsafe-inline'"}).end(
     '<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>프리미어 스튜디오 관리자 검수</title><link rel="stylesheet" href="/fixture.css"><div id="root">'+markup+'</div><script src="/fixture.js" defer></script>');
+  // P1-06: 기존 이미지 해시가 옮겨 가는 원본 전체 화면 주소. 이 대역은 허브만 그리므로 자리 표시 화면만 준다(화면 자체는 admin-hub-fixture-run.mjs ?page=style-dna).
+  if(path==="/admin/style-dna") return response.writeHead(200,{"content-type":"text/html; charset=utf-8"}).end('<!doctype html><html lang="ko"><meta charset="utf-8"><title>이미지 스타일 분석기</title><main data-original-style-dna>원본 Style DNA 자리</main></html>');
   if(path==="/fixture.js") return response.writeHead(200,{"content-type":"application/javascript"}).end(js);
   if(path==="/fixture.css") return response.writeHead(200,{"content-type":"text/css"}).end(css);
   if(previews.has(path)) {

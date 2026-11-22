@@ -4,13 +4,23 @@ import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react"
 import { Icon, type IconName } from "@/components/ui/Icon";
 import styles from "./admin.module.css";
 
+// P1-06: 이미지 타일은 원본 Style DNA v1.39 전체 화면(관리자 보호 경로)으로 연다.
+// 사용자 재확인(2026-11-22, Master msg_a94edde8a427): 기존 이미지 주소(#admin-style-dna·#admin-reference-analysis: 북마크·로그인 뒤 복귀·매뉴얼 링크)도
+// 같은 원본 화면으로 보낸다. 지금 기록 칸을 바꿔(location.replace) 뒤로 가기가 다시 이 주소로 돌아와 되튀지 않게 하고, 옮기는 동안 구 이미지 칸은 활성으로 그리지 않는다.
+export const styleDnaPath = "/admin/style-dna";
+// 기존 이미지 분석 결과 공개 준비(ImageWorkspace·onPrepare)는 '완성본 검수·게시'의 링크에서 이 해시로만 연다(Master msg_a1ce2d023258).
+export const imageShareSection = "admin-image-publication";
+export const reviewSectionId = "admin-review";
 export const analysisPrograms = [
-  { id: "admin-style-dna", label: "이미지 분석", detail: "색감·조명·구도 분석과 한영 프롬프트", icon: "flask" },
+  { id: "admin-style-dna", label: "이미지 분석", detail: "색감·조명·구도 분석과 한영 프롬프트", icon: "flask", href: styleDnaPath },
   { id: "admin-music-analysis", label: "음악 분석", detail: "장르·악기·템포 분석과 Suno 프롬프트", icon: "clock" },
   { id: "admin-shorts-analysis", label: "쇼츠 분석", detail: "첫 장면·영상 구성 분석과 연출 프롬프트", icon: "play" },
-] as const satisfies readonly { id: string; label: string; detail: string; icon: IconName }[];
+] as const satisfies readonly { id: string; label: string; detail: string; icon: IconName; href?: string }[];
 
-const legacyAnalysisHash = "#admin-reference-analysis";
+const legacyImageIds = new Set<string>(["admin-style-dna", "admin-reference-analysis"]);
+function isLegacyImageHash(hash: string) {
+  try { return legacyImageIds.has(decodeURIComponent(hash.slice(1))); } catch { return false; }
+}
 const legacyOverviewHash = "#admin-overview";
 const programNavigationId = "admin-program-navigation";
 export const analysisResultsSection = "admin-analysis-results";
@@ -26,7 +36,7 @@ const operations = [
   { id: "admin-manual", label: "사용매뉴얼", icon: "info" },
 ] as const satisfies readonly { id: string; label: string; icon: IconName }[];
 
-const sections = [...analysisPrograms, ...operations];
+const sections = [...analysisPrograms, ...operations, { id: imageShareSection }];
 
 function isAnalysisSection(id: string) {
   return id === analysisResultsSection || analysisPrograms.some(program => program.id === id);
@@ -49,7 +59,8 @@ const browserHash = () => window.location.hash;
 function sectionFromHash(hash: string) {
   try {
     const id = decodeURIComponent(hash.slice(1));
-    if (`#${id}` === legacyAnalysisHash) return analysisPrograms[0].id;
+    // 원본 화면으로 옮기는 동안에는 구 이미지 칸 대신 콘텐츠 분석기를 현재로 둔다.
+    if (legacyImageIds.has(id)) return analysisResultsSection;
     if (id === apiIntegrationsId) return accountSettingsId;
     return sections.find((section) => section.id === id)?.id ?? defaultSection();
   } catch {
@@ -98,9 +109,9 @@ export function AdminProgramNavigation() {
   const current = useAdminSection();
   return <nav id={programNavigationId} className={styles.programNavigation} aria-label="분석 프로그램" hidden={!isAnalysisSection(current)}>
     <ul className={styles.programLinks}>
-      {analysisPrograms.map(({ id, label, detail, icon }) => <li key={id}>
-        <a href={`#${id}`} aria-current={id === current ? "location" : undefined}>
-          <Icon name={icon} /><span><strong>{label}</strong><small>{detail}</small></span>
+      {analysisPrograms.map((program) => <li key={program.id}>
+        <a href={"href" in program ? program.href : `#${program.id}`} aria-current={program.id === current ? "location" : undefined}>
+          <Icon name={program.icon} /><span><strong>{program.label}</strong><small>{program.detail}</small></span>
         </a>
       </li>)}
     </ul>
@@ -110,7 +121,7 @@ export function AdminProgramNavigation() {
 export function AdminNavigation() {
   const hash = useSyncExternalStore(subscribeLocation, browserHash, serverHash);
   const current = sectionFromHash(hash);
-  const currentMenu = isAnalysisSection(current) ? analysisResultsSection : current;
+  const currentMenu = isAnalysisSection(current) ? analysisResultsSection : current === imageShareSection ? reviewSectionId : current;
   const visitedSection = useRef(false);
   const navigation = useRef<HTMLElement>(null);
 
@@ -185,8 +196,13 @@ export function AdminNavigation() {
     return () => { section.removeAttribute("data-active-section"); };
   }, [current]);
 
+  useLayoutEffect(() => {
+    if (isLegacyImageHash(hash)) window.location.replace(styleDnaPath);
+  }, [hash]);
+
   useEffect(() => {
-    if (hash === legacyAnalysisHash || hash === legacyOverviewHash) {
+    if (isLegacyImageHash(hash)) return;
+    if (hash === legacyOverviewHash) {
       history.replaceState(history.state, "", `#${current}`);
     }
     const destination = hash === `#${apiIntegrationsId}` ? apiIntegrationsId : current;

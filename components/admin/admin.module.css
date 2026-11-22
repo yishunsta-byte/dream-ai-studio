@@ -174,3 +174,6 @@
   .renderQueueRows li { grid-template-columns: minmax(0, 1fr) auto; }
   .renderQueueRows time { grid-column: 1 / -1; }
 }
+
+/* P1-06: 완성본 검수·게시 위 이미지 분석 결과 공개 준비·원본 분석기 링크 */
+.reviewLinks { display: flex; flex-wrap: wrap; gap: 0 var(--sp-4); margin-bottom: var(--sp-3); }
