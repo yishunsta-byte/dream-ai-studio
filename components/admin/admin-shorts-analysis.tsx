@@ -9,6 +9,7 @@ import { shortsPublicationDraft } from "./admin-analysis-publication-draft";
 import type { PublicationDraft } from "./admin-reference-analysis-model";
 import styles from "./admin-reference-analysis.module.css";
 import { ShortsReport, ShortsSteps } from "./admin-shorts-report";
+import { AdminShortsSearch } from "./admin-shorts-search";
 import { ADMIN_SETTINGS_HREF, SettingsLink, type SettingsHref } from "./admin-settings-link";
 
 const errors: Record<string, string> = {
@@ -32,6 +33,7 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare, set
   const urlField = useRef<HTMLInputElement>(null);
   const active = useRef<AbortController | null>(null);
   const [url, setUrl] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [consent, setConsent] = useState(false);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState("");
@@ -139,6 +141,16 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare, set
 
   return <section className={styles.panel} data-appearance={appearance} aria-labelledby={`${id}-title`}>
     <div className={styles.surface}>
+      {appearance === "premiere" && <details className={styles.promptEditor} onToggle={event => setSearchOpen(event.currentTarget.open)}>
+        <summary>공개 쇼츠 검색</summary>
+        {searchOpen && <AdminShortsSearch picked={url.trim()} onPick={next => {
+          reset();
+          setUrl(next);
+          setConsent(false);
+          onSourceChange?.(next);
+          urlField.current?.focus();
+        }} />}
+      </details>}
       <form className={styles.form} onSubmit={event => { event.preventDefault(); void analyze(); }}>
         <h3 id={`${id}-title`}>YouTube 쇼츠 분석</h3>
         <ShortsSteps current={result ? 1 : 0} />

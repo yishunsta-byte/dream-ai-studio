@@ -9,6 +9,7 @@ import {
   type CredentialTest, type CredentialTestCode,
 } from "./gemini-credentials-client";
 import styles from "./admin-gemini-settings.module.css";
+import { geminiAnalysisModels } from "./admin-model-suggestions";
 
 // P0 Gemini 설정(Design msg_72dad930c7d0, Backend msg_bb18c2ae5fd0·msg_cb4ee4e63485):
 // 환경·저장 상태 → 키(이미지·쇼츠 공용 / 음악 별도) → 모델 ID → 설정 저장 → 분석기별 연결 시험.
@@ -319,12 +320,15 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
       </fieldset>
       <fieldset className={styles.fieldset} disabled={!ready || saving}>
         <legend>모델 ID</legend>
+        <datalist id={`${base}-gemini-models`}>
+          {geminiAnalysisModels.map(model => <option key={model} value={model} />)}
+        </datalist>
         <div className={styles.grid}>
           {programOrder.map(program => {
             const field = id(`models.${program}`);
             return <div className={styles.field} key={program}>
               <label htmlFor={field}>{programText[program]} 모델 ID</label>
-              <input id={field} name={`models.${program}`} type="text" autoComplete="off" spellCheck={false} autoCapitalize="off" maxLength={128}
+              <input id={field} name={`models.${program}`} type="text" list={`${base}-gemini-models`} autoComplete="off" spellCheck={false} autoCapitalize="off" maxLength={128}
                 value={models[program]} aria-invalid={!!errors[field]} aria-describedby={describe(field)}
                 onChange={event => { const value = event.target.value; setModels(previous => ({ ...previous, [program]: value })); }} />
               {fieldError(field)}

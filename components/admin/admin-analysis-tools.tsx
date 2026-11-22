@@ -2,8 +2,8 @@
 
 import { MUSIC_SEMANTIC_URI } from "@/lib/reference-analysis/music-semantic-contract";
 import { SHORTS_ANALYSIS_URI } from "@/lib/reference-analysis/shorts-analysis-contract";
-import { GeminiSettingsCard } from "./admin-gemini-settings";
 import { accountSettingsId, useAdminSection } from "./admin-navigation";
+import { AdminIntegrationSettings } from "./admin-platform-integrations";
 import { ANALYSIS_URI } from "./admin-reference-analysis-model";
 
 // 분석 화면이 쓰는 분석기별 설정 조회(분석 실행 전 상태 표시용).
@@ -51,6 +51,6 @@ export function AdminApiIntegrations() {
   const current = useAdminSection();
   return <>
     <h3 id="admin-api-integrations-title" tabIndex={-1}>API연동</h3>
-    {current === accountSettingsId && <GeminiSettingsCard />}
+    {current === accountSettingsId && <AdminIntegrationSettings />}
   </>;
 }

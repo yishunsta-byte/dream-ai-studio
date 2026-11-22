@@ -14,7 +14,8 @@ const forEngine = (provider: StyleDnaEngine) => setting.refine(item => !item.con
 const settings = z.strictObject({ providers: z.strictObject({ openai: forEngine("openai"), anthropic: forEngine("anthropic") }) });
 const saved = z.strictObject({ provider: styleDnaEngine, setting: stored });
 
-type RequestIssue = "login" | "forbidden" | "storage" | "stale" | "invalid" | "failed";
+type RequestIssue = "login" | "forbidden" | "storage" | "stale" | "invalid" | "failed" |
+  "invalid_key" | "model_not_found" | "quota_exceeded" | "timed_out";
 export type StyleDnaEngineSetting = z.infer<typeof setting>;
 export type StyleDnaEngineSettings = z.infer<typeof settings>["providers"];
 type Outcome<T> = { kind: "ok"; value: T } | { kind: RequestIssue };
@@ -33,6 +34,13 @@ async function read<T>(schema: z.ZodType<T>, init: RequestInit): Promise<Outcome
       return { kind: issue.success ? "storage" : "failed" };
     }
     if (response.status === 409) return { kind: "stale" };
+    if (response.status === 422) {
+      const issue = z.object({ code: z.enum(["invalid_key", "model_not_found"]) })
+        .safeParse(await response.json().catch(() => undefined));
+      if (issue.success) return { kind: issue.data.code };
+    }
+    if (response.status === 429) return { kind: "quota_exceeded" };
+    if (response.status === 504) return { kind: "timed_out" };
     if (response.status === 400 || response.status === 413) return { kind: "invalid" };
     if (!response.ok) return { kind: "failed" };
     const result = schema.safeParse(await response.json());

@@ -101,6 +101,8 @@ const CLOUD_ONLY: Record<string, string[]> = {
   "../app/api/admin/analysis-credentials/route.ts": ["GET", "PUT"],
   "../app/api/admin/analysis-credentials/test/route.ts": ["POST"],
   "../app/api/admin/shorts-analysis/route.ts": ["GET", "POST"],
+  "../app/api/admin/shorts-search/route.ts": ["POST"],
+  "../app/api/admin/youtube-credentials/route.ts": ["GET", "PUT"],
   "../app/api/admin/render-queue/route.ts": ["GET"],
   "../app/api/projects/route.ts": ["GET"], "../app/api/projects/[id]/route.ts": ["GET"],
   "../app/api/admin/publications/route.ts": ["GET", "POST"],

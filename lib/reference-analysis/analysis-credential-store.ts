@@ -14,6 +14,12 @@ type KeyRing = { primary: string; keys: Readonly<Record<string, Buffer>> };
 type Metadata = { group: CredentialGroup; models: CredentialModels; version: number; updatedAt: string;
   lastTest: Partial<Record<GeminiProgram, CredentialTest>> };
 type Opened = Metadata & { apiKey: string };
+type YouTubeMetadata = Pick<Metadata, "version" | "updatedAt">;
+export type YouTubeCredentialStore = {
+  metadata(owner: string): Promise<YouTubeMetadata | undefined>;
+  open(owner: string): Promise<(YouTubeMetadata & { apiKey: string }) | undefined>;
+  write(owner: string, apiKey: string, expectedVersion: number): Promise<YouTubeMetadata | undefined>;
+};
 export type GeminiCredentialStore = {
   metadata(owner: string): Promise<Metadata[]>;
   open(owner: string, group: CredentialGroup): Promise<Opened | undefined>;
@@ -31,6 +37,7 @@ export type StyleDnaEngineCredentialStore = {
 
 const role = "dream_gemini_app";
 const table = "dream_gemini_credentials.credentials";
+const youtubeTable = "dream_gemini_credentials.youtube_credentials";
 const engineTable = "dream_gemini_credentials.style_dna_engine_credentials";
 const unavailable = () => new Error("Analysis credential store unavailable");
 const metadataColumns = "provider_group,models,version,updated_at,key_id,last_test";
@@ -72,6 +79,9 @@ function metadata(row: Row, ring: KeyRing): Metadata {
 const aad = (owner: string, group: CredentialGroup, version: number, models: CredentialModels, keyId: string) =>
   Buffer.from(JSON.stringify(["dream-gemini-credential-v1", owner, group, version, models, keyId]));
 
+const youtubeAad = (owner: string, version: number, keyId: string) =>
+  Buffer.from(JSON.stringify(["dream-youtube-credential-v1", owner.toLowerCase(), version, keyId]));
+
 const engineAad = (owner: string, provider: StyleDnaEngine, version: number, model: string, keyId: string) =>
   Buffer.from(JSON.stringify(["dream-style-dna-engine-credential-v1", owner.toLowerCase(), provider, version, model, keyId]));
 
@@ -94,9 +104,13 @@ function openKey({ nonce, ciphertext, tag }: Record<string, unknown>, key: Buffe
   finally { bytes.fill(0); }
 }
 
-function engineMetadata(row: z.infer<typeof engineRow>, ring: KeyRing): RegisteredEngine {
+function keyVersionMetadata(row: z.infer<typeof keyRow>, ring: KeyRing): YouTubeMetadata {
   keyFor(ring, row.key_id);
-  return { configured: true, modelId: row.model_id, version: row.version, updatedAt: row.updated_at.toISOString() };
+  return { version: row.version, updatedAt: row.updated_at.toISOString() };
+}
+
+function engineMetadata(row: z.infer<typeof engineRow>, ring: KeyRing): RegisteredEngine {
+  return { ...keyVersionMetadata(row, ring), configured: true, modelId: row.model_id };
 }
 
 function openEngineKey(owner: string, raw: Record<string, unknown>, row: z.infer<typeof engineRow>, ring: KeyRing) {
@@ -173,6 +187,29 @@ export function createAnalysisCredentialStores(pool: PoolLike, ring: KeyRing) {
       return rows[0] ? credentialTestResult.parse(rows[0].result) : undefined;
     }),
   };
+  const youtube: YouTubeCredentialStore = {
+    metadata: owner => transaction(owner, true, async client => {
+      const { rows } = await client.query(`SELECT version,updated_at,key_id FROM ${youtubeTable} WHERE owner_id=$1`, [owner]);
+      return rows[0] && keyVersionMetadata(keyRow.parse(rows[0]), ring);
+    }),
+    open: owner => transaction(owner, true, async client => {
+      const { rows } = await client.query(`SELECT version,updated_at,key_id,nonce,ciphertext,tag FROM ${youtubeTable} WHERE owner_id=$1`, [owner]);
+      if (!rows[0]) return undefined;
+      const row = keyRow.parse(rows[0]);
+      return { ...keyVersionMetadata(row, ring),
+        apiKey: openKey(rows[0], keyFor(ring, row.key_id), youtubeAad(owner, row.version, row.key_id)) };
+    }),
+    write: (owner, apiKey, expectedVersion) => transaction(owner, false, async client => {
+      const version = expectedVersion + 1;
+      const args = [owner, version, ...sealKey(apiKey, ring, youtubeAad(owner, version, ring.primary))];
+      const result = expectedVersion === 0
+        ? await client.query(`INSERT INTO ${youtubeTable}(owner_id,version,key_id,nonce,ciphertext,tag)
+            VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (owner_id) DO NOTHING RETURNING version,updated_at,key_id`, args)
+        : await client.query(`UPDATE ${youtubeTable} SET version=$2,key_id=$3,nonce=$4,ciphertext=$5,tag=$6,updated_at=clock_timestamp()
+            WHERE owner_id=$1 AND version=$7 RETURNING version,updated_at,key_id`, [...args, expectedVersion]);
+      return result.rows[0] && keyVersionMetadata(keyRow.parse(result.rows[0]), ring);
+    }),
+  };
   const engines: StyleDnaEngineCredentialStore = {
     metadata: owner => transaction(owner, true, async client => {
       const { rows } = await client.query(`SELECT ${engineColumns} FROM ${engineTable} WHERE owner_id=$1`, [owner]);
@@ -213,7 +250,7 @@ export function createAnalysisCredentialStores(pool: PoolLike, ring: KeyRing) {
       return result.rows[0] ? engineMetadata(engineRow.parse(result.rows[0]), ring) : "stale";
     }),
   };
-  return { gemini, engines };
+  return { gemini, youtube, engines };
 }
 
 export function createGeminiCredentialStore(pool: PoolLike, ring: KeyRing): GeminiCredentialStore {
@@ -252,6 +289,10 @@ function openRuntimeAnalysisCredentialStores() {
 
 export function openRuntimeGeminiCredentialStore(): GeminiCredentialStore | null {
   return openRuntimeAnalysisCredentialStores()?.gemini ?? null;
+}
+
+export function openRuntimeYouTubeCredentialStore(): YouTubeCredentialStore | null {
+  return openRuntimeAnalysisCredentialStores()?.youtube ?? null;
 }
 
 export function openRuntimeStyleDnaEngineCredentialStore(): StyleDnaEngineCredentialStore | null {
