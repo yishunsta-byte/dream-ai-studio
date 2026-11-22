@@ -34,6 +34,7 @@ describe("admin hub information architecture", () => {
     expect(html.indexOf(programs!)).toBeLessThan(html.indexOf('id="admin-image-publication"'));
     expect(html).not.toContain(' id="admin-style-dna"');
     expect(html).toMatch(/<nav aria-label="이미지 분석 결과 공개"[^>]*><a [^>]*href="#admin-image-publication"/);
+    expect(html).toMatch(/<nav aria-label="이미지 분석 결과 공개"[\s\S]*?href="\/admin\/style-dna"/);
     expect(nav).toMatch(/href="#admin-project-list" aria-current="location"/);
     expect(nav!.match(/aria-current=/g)).toHaveLength(1);
     for (const id of [...operations, ...analyzers, "admin-api-integrations"]) {

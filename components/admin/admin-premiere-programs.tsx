@@ -13,7 +13,8 @@ import type { StyleDna } from "./admin-style-dna-extension";
 import { AdminMusicSemantic } from "./admin-music-semantic";
 import { AudioWaveform } from "./admin-audio-waveform";
 import { PasteUrlField } from "./admin-paste-url";
-import { analysisPrograms, analysisResultsSection, imageShareSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
+import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
+import { imageShareSection } from "./admin-paths";
 import {
   analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, SUPPORTED_ORIGINS,
   unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource, type PublicationDraft, type ReadyResult,

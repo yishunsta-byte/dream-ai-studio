@@ -3,14 +3,13 @@
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import styles from "./admin.module.css";
+import { imageShareSection, reviewSectionId, styleDnaPath } from "./admin-paths";
 
 // P1-06: 이미지 타일은 원본 Style DNA v1.39 전체 화면(관리자 보호 경로)으로 연다.
 // 사용자 재확인(2026-11-22, Master msg_a94edde8a427): 기존 이미지 주소(#admin-style-dna·#admin-reference-analysis: 북마크·로그인 뒤 복귀·매뉴얼 링크)도
 // 같은 원본 화면으로 보낸다. 지금 기록 칸을 바꿔(location.replace) 뒤로 가기가 다시 이 주소로 돌아와 되튀지 않게 하고, 옮기는 동안 구 이미지 칸은 활성으로 그리지 않는다.
-export const styleDnaPath = "/admin/style-dna";
-// 기존 이미지 분석 결과 공개 준비(ImageWorkspace·onPrepare)는 '완성본 검수·게시'의 링크에서 이 해시로만 연다(Master msg_a1ce2d023258).
-export const imageShareSection = "admin-image-publication";
-export const reviewSectionId = "admin-review";
+// 기존 이미지 분석 결과 공개 준비(ImageWorkspace·onPrepare)는 '완성본 검수·게시'의 링크에서 #admin-image-publication으로만 연다(Master msg_a1ce2d023258).
+// 경로 상수는 서버 컴포넌트도 쓰므로 admin-paths.ts(지시어 없음)에 둔다.
 export const analysisPrograms = [
   { id: "admin-style-dna", label: "이미지 분석", detail: "색감·조명·구도 분석과 한영 프롬프트", icon: "flask", href: styleDnaPath },
   { id: "admin-music-analysis", label: "음악 분석", detail: "장르·악기·템포 분석과 Suno 프롬프트", icon: "clock" },
