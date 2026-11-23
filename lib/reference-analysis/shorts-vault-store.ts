@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash } from "node:crypto";
+import { createHash, X509Certificate } from "node:crypto";
 import { Pool, type PoolClient } from "pg";
 import { z } from "zod";
 import { supabasePublicConfig } from "../auth/config";
@@ -30,6 +30,11 @@ const project = (row: ProjectRow): ShortsVaultProject => ({ ...projectSummary(ro
 
 const live = "expires_at > clock_timestamp()";
 
+/** 전용 역할 확인 실패. 진단에서 고정 이름으로만 구분한다(메시지는 기록하지 않는다). */
+class ShortsVaultRoleError extends Error {
+  constructor() { super("Invalid Shorts vault role"); }
+}
+
 // P1-08-SHORTS-VAULT-CONTENT-SEARCH-API: 검색어($2)를 필드마다 따로 비교한다(필드를 이어 붙이지 않음).
 // strpos는 문자 그대로의 부분 문자열 비교라 %·_·\ 같은 와일드카드 문자도 글자 그대로 찾는다. 대소문자는 양쪽 lower()로 맞춘다
 // (데이터베이스 기본 정렬 규칙을 따른다: C 로캘은 ASCII만, 유니코드 로캘은 그 규칙대로). 검색어는 매개변수로만 넘긴다.
@@ -54,7 +59,7 @@ export function createShortsVaultStore(pool: Pick<Pool, "connect">) {
       const identity = await client.query(`SELECT current_user=session_user AND current_user=$1 AND
         NOT (r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb OR r.rolreplication OR r.rolinherit) AND
         NOT EXISTS (SELECT 1 FROM pg_auth_members m WHERE m.member=r.oid) AS ok FROM pg_roles r WHERE r.rolname=current_user`, [appRole]);
-      if (!identity.rows[0]?.ok) throw new Error("Invalid Shorts vault role");
+      if (!identity.rows[0]?.ok) throw new ShortsVaultRoleError();
       await client.query("SELECT set_config('dream_shorts_vault.owner_id',$1,true)", [id]);
       const result = await run(client);
       await client.query("COMMIT");
@@ -163,23 +168,87 @@ export function createShortsVaultStore(pool: Pick<Pool, "connect">) {
 
 export type ShortsVaultStore = ReturnType<typeof createShortsVaultStore>;
 let runtimeStore: ShortsVaultStore | undefined;
-/** Style DNA와 같은 연결 규칙: 같은 Supabase 프로젝트의 직접(5432) 또는 풀러(5432/6543) 주소, 전용 역할, 검증 TLS. */
-export function openShortsVaultStore(env: Readonly<Record<string, string | undefined>> = process.env): ShortsVaultStore | null {
-  if (runtimeStore) return runtimeStore;
+type ShortsVaultEnv = Readonly<Record<string, string | undefined>>;
+
+/** P1-08-SHORTS-VAULT-STORAGE-DIAGNOSTICS: 연결 설정 거절 이유. 값·주소·계정은 담지 않는 고정 이름만 쓴다. */
+export type ShortsVaultConfigIssue = "url_missing" | "public_config_missing" | "url_unparseable" | "url_protocol" |
+  "url_host" | "url_user" | "url_path" | "url_password_missing" | "url_extra";
+type ShortsVaultConnection = { hostname: string; port: number; user: string; password: string };
+
+/** Style DNA와 같은 연결 규칙: 같은 Supabase 프로젝트의 직접(5432) 또는 풀러(5432/6543) 주소, 전용 역할, 쿼리·해시 없음. */
+function readShortsVaultConnection(env: ShortsVaultEnv): { connection: ShortsVaultConnection } | { issue: ShortsVaultConfigIssue } {
   const raw = env.DREAM_SHORTS_VAULT_DB_URL;
-  if (!raw) return null;
+  if (!raw) return { issue: "url_missing" };
   const ref = supabasePublicConfig(env)?.url.match(/^https:\/\/([a-z0-9]{20})\.supabase\.co$/)?.[1];
-  if (!ref) return null;
-  let url: URL;
-  try { url = new URL(raw); } catch { return null; }
+  if (!ref) return { issue: "public_config_missing" };
+  let url: URL, user: string, password: string;
+  try {
+    url = new URL(raw);
+    user = decodeURIComponent(url.username);
+    password = decodeURIComponent(url.password);
+  } catch { return { issue: "url_unparseable" }; }
+  if (!["postgres:", "postgresql:"].includes(url.protocol)) return { issue: "url_protocol" };
   const { hostname } = url;
-  const user = decodeURIComponent(url.username), password = decodeURIComponent(url.password);
-  const direct = hostname === `db.${ref}.supabase.co` && url.port === "5432" && user === appRole;
-  const pooled = /^aws-\d+-[a-z0-9-]+\.pooler\.supabase\.com$/.test(hostname) && ["5432", "6543"].includes(url.port) && user === `${appRole}.${ref}`;
-  if (!["postgres:", "postgresql:"].includes(url.protocol) || (!direct && !pooled) || url.pathname !== "/postgres" ||
-    !password || url.search || url.hash) return null;
-  const ca = env.DREAM_SHORTS_VAULT_DB_CA?.trim();
-  const pool = new Pool({ host: hostname, port: Number(url.port), database: "postgres", user, password,
+  const directTarget = hostname === `db.${ref}.supabase.co` && url.port === "5432";
+  const pooledTarget = /^aws-\d+-[a-z0-9-]+\.pooler\.supabase\.com$/.test(hostname) && ["5432", "6543"].includes(url.port);
+  if (!directTarget && !pooledTarget) return { issue: "url_host" };
+  if (user !== (directTarget ? appRole : `${appRole}.${ref}`)) return { issue: "url_user" };
+  if (url.pathname !== "/postgres") return { issue: "url_path" };
+  if (!password) return { issue: "url_password_missing" };
+  if (url.search || url.hash) return { issue: "url_extra" };
+  return { connection: { hostname, port: Number(url.port), user, password } };
+}
+
+const readCa = (env: ShortsVaultEnv) => env.DREAM_SHORTS_VAULT_DB_CA?.trim() || undefined;
+
+/** 진단 전용: 설정 거절 이유와 CA 상태(없음·읽힘·못 읽음). 저장소 동작은 바꾸지 않는다. */
+export function inspectShortsVaultConfig(env: ShortsVaultEnv = process.env):
+  { issue: ShortsVaultConfigIssue | null; ca: "absent" | "parsed" | "unparseable" } {
+  const read = readShortsVaultConnection(env);
+  const ca = readCa(env);
+  let caState: "absent" | "parsed" | "unparseable" = "absent";
+  if (ca) { try { new X509Certificate(ca); caState = "parsed"; } catch { caState = "unparseable"; } }
+  return { issue: "issue" in read ? read.issue : null, ca: caState };
+}
+
+export type ShortsVaultFailure = { stage: "tls" | "network" | "auth" | "database" | "role_check" | "other"; reason: string };
+const tlsVerifyCodes = new Set(["UNABLE_TO_GET_ISSUER_CERT", "UNABLE_TO_GET_ISSUER_CERT_LOCALLY", "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "SELF_SIGNED_CERT_IN_CHAIN", "DEPTH_ZERO_SELF_SIGNED_CERT", "CERT_HAS_EXPIRED", "CERT_NOT_YET_VALID", "CERT_UNTRUSTED",
+  "CERT_SIGNATURE_FAILURE", "CERT_REJECTED", "HOSTNAME_MISMATCH", "ERR_TLS_CERT_ALTNAME_INVALID"]);
+// Map 조회라 constructor·__proto__ 같은 상속 이름은 맞지 않고 기타로 떨어진다.
+const networkReasons = new Map<string, string>([["ENOTFOUND", "dns"], ["EAI_AGAIN", "dns"], ["ECONNREFUSED", "refused"],
+  ["ECONNRESET", "reset"], ["EPIPE", "reset"], ["ETIMEDOUT", "timeout"], ["EHOSTUNREACH", "unreachable"], ["ENETUNREACH", "unreachable"]]);
+const sqlstateReasons = new Map<string, ShortsVaultFailure>([
+  ["28P01", { stage: "auth", reason: "password_rejected" }], ["28000", { stage: "auth", reason: "authorization_rejected" }],
+  ["3D000", { stage: "database", reason: "database_missing" }], ["3F000", { stage: "database", reason: "schema_missing" }],
+  ["42P01", { stage: "database", reason: "table_missing" }], ["42501", { stage: "database", reason: "permission_denied" }],
+  ["53300", { stage: "database", reason: "too_many_connections" }], ["57014", { stage: "database", reason: "statement_timeout" }],
+  ["55P03", { stage: "database", reason: "lock_timeout" }], ["XX000", { stage: "database", reason: "internal_error" }],
+]);
+
+/** 진단 전용: 오류를 표준 code allowlist로만 나눈다. 메시지·스택·값은 보지 않고, 모르는 것은 other로 둔다. */
+export function classifyShortsVaultFailure(error: unknown): ShortsVaultFailure {
+  if (error instanceof ShortsVaultRoleError) return { stage: "role_check", reason: "role_mismatch" };
+  const code = typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : "";
+  if (tlsVerifyCodes.has(code)) return { stage: "tls", reason: code.toLowerCase() };
+  if (/^ERR_(TLS|SSL|OSSL)_[A-Z0-9_]+$/.test(code)) return { stage: "tls", reason: "tls_library_error" };
+  const network = networkReasons.get(code);
+  if (network) return { stage: "network", reason: network };
+  const sqlstate = sqlstateReasons.get(code);
+  if (sqlstate) return { ...sqlstate };
+  if (/^08[0-9A-Z]{3}$/.test(code)) return { stage: "network", reason: "connection_exception" };
+  if (/^[0-9A-Z]{5}$/.test(code)) return { stage: "database", reason: "other_sqlstate" };
+  return { stage: "other", reason: "unclassified" };
+}
+
+/** 같은 Supabase 프로젝트의 전용 역할만, 검증 TLS로 연다. 규칙은 readShortsVaultConnection 하나에만 둔다. */
+export function openShortsVaultStore(env: ShortsVaultEnv = process.env): ShortsVaultStore | null {
+  if (runtimeStore) return runtimeStore;
+  const read = readShortsVaultConnection(env);
+  if (!("connection" in read)) return null;
+  const { hostname, port, user, password } = read.connection;
+  const ca = readCa(env);
+  const pool = new Pool({ host: hostname, port, database: "postgres", user, password,
     ssl: { rejectUnauthorized: true, servername: hostname, ...(ca && { ca }) }, max: 3, idleTimeoutMillis: 10_000,
     connectionTimeoutMillis: 4000, allowExitOnIdle: true });
   pool.on("error", () => { /* Keep idle connection failures private. */ });

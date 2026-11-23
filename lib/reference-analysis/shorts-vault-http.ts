@@ -5,11 +5,22 @@ import {
   hasShortsVaultSecret, shortsVaultId, shortsVaultProjectBodyLimit, shortsVaultProjectCreate, shortsVaultProjectReplace,
   shortsVaultPromptSearch, shortsVaultPromptSetBodyLimit, shortsVaultPromptSetCreate, shortsVaultSearchBodyLimit,
 } from "./shorts-vault-contract";
-import { openShortsVaultStore, type ShortsVaultOutcome, type ShortsVaultStore } from "./shorts-vault-store";
+import {
+  classifyShortsVaultFailure, inspectShortsVaultConfig, openShortsVaultStore, type ShortsVaultOutcome, type ShortsVaultStore,
+} from "./shorts-vault-store";
 import { createYouTubeAdminAccess, youtubeHttpDefaults, youtubeJson } from "./youtube-credential-http";
 
+/**
+ * P1-08-SHORTS-VAULT-STORAGE-DIAGNOSTICS: 503 원인을 서버 기록에만 고정 이름으로 남긴다.
+ * 관측 지점인 목록 조회(listProjects·listPromptSets)에서만 남기고, 검색·열기·쓰기·삭제는 예전처럼 기록하지 않는다.
+ * 기록 항목은 stage·reason(·설정 단계의 ca 상태)뿐이고 URL·비밀번호·사용자 ID·호스트·CA·오류 메시지·스택·본문은 넣지 않는다.
+ * 외부 응답은 그대로 503 {code:"storage_unavailable"}이다.
+ */
+export type ShortsVaultDiagnostic = { stage: string; reason: string; ca?: "absent" | "parsed" | "unparseable" };
 const defaults = { authenticate: youtubeHttpDefaults.authenticate, env: youtubeHttpDefaults.env,
-  store: (): ShortsVaultStore | null => openShortsVaultStore() };
+  store: (): ShortsVaultStore | null => openShortsVaultStore(),
+  inspect: () => inspectShortsVaultConfig(),
+  report: (entry: ShortsVaultDiagnostic) => { console.warn("shorts_vault_storage_unavailable", entry); } };
 export type ShortsVaultOverrides = Partial<typeof defaults>;
 type Route = { params: Promise<{ id: string }> };
 const problem = (code: string, status: number) => youtubeJson({ code }, status);
@@ -22,12 +33,26 @@ const reply = ({ status, body }: ShortsVaultOutcome) => youtubeJson(body, status
 export function createShortsVaultHttp(overrides: ShortsVaultOverrides = {}) {
   const deps = { ...defaults, ...overrides };
   const access = createYouTubeAdminAccess(deps);
+  // 진단 기록이 실패해도 응답 계약은 그대로 둔다.
+  const diagnose = (entry: ShortsVaultDiagnostic) => { try { deps.report(entry); } catch { /* ignore */ } };
 
-  const withStore = (handle: (owner: string, store: ShortsVaultStore) => Promise<Response>) =>
+  const withStore = (handle: (owner: string, store: ShortsVaultStore) => Promise<Response>, diagnostic = false) =>
     access.withAdmin(async owner => {
       const store = deps.store();
-      if (!store) return problem("storage_unavailable", 503);
-      try { return await handle(owner, store); } catch { return problem("storage_unavailable", 503); }
+      if (!store) {
+        if (diagnostic) {
+          const { issue, ca } = deps.inspect();
+          diagnose({ stage: "config", reason: issue ?? "store_unavailable", ca });
+        }
+        return problem("storage_unavailable", 503);
+      }
+      try { return await handle(owner, store); } catch (error) {
+        if (diagnostic) {
+          const failure = classifyShortsVaultFailure(error);
+          diagnose(failure.stage === "tls" ? { ...failure, ca: deps.inspect().ca } : failure);
+        }
+        return problem("storage_unavailable", 503);
+      }
     });
 
   const withId = async (route: Route) => {
@@ -50,7 +75,7 @@ export function createShortsVaultHttp(overrides: ShortsVaultOverrides = {}) {
   }
 
   return {
-    listPromptSets: () => withStore(async (owner, store) => youtubeJson({ promptSets: await store.listPromptSets(owner) })),
+    listPromptSets: () => withStore(async (owner, store) => youtubeJson({ promptSets: await store.listPromptSets(owner) }), true),
 
     createPromptSet: (request: Request) => withStore(async (owner, store) => {
       const input = await body(request, shortsVaultPromptSetCreate, shortsVaultPromptSetBodyLimit);
@@ -81,7 +106,7 @@ export function createShortsVaultHttp(overrides: ShortsVaultOverrides = {}) {
         : problem("not_found", 404);
     }),
 
-    listProjects: () => withStore(async (owner, store) => youtubeJson({ projects: await store.listProjects(owner) })),
+    listProjects: () => withStore(async (owner, store) => youtubeJson({ projects: await store.listProjects(owner) }), true),
 
     createProject: (request: Request) => withStore(async (owner, store) => {
       const input = await body(request, shortsVaultProjectCreate, shortsVaultProjectBodyLimit);
