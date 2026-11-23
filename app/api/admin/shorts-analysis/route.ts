@@ -2,7 +2,7 @@ import { createShortsAnalysisHttp } from "@/lib/reference-analysis/shorts-analys
 import { currentGeminiSettings } from "@/lib/reference-analysis/analysis-gemini-settings";
 
 export const runtime = "nodejs";
-export const maxDuration = 35;
+export const maxDuration = 120;
 
 const handlers = createShortsAnalysisHttp({ loadSettings: owner => currentGeminiSettings(owner, "shorts") });
 export const GET = handlers.get;

@@ -346,11 +346,121 @@ describe("Shorts admin multi-video analysis", () => {
       const response = await create(slow)(request({ urls: urlsFor(3), authorized: true }));
       expect(response.status).toBe(504);
       expect(await response.json()).toEqual({ error: "timed_out" });
-      expect(timeoutSpy).toHaveBeenCalledWith(28_000);
+      expect(timeoutSpy).toHaveBeenCalledWith(110_000);
       expect(slow).toHaveBeenCalledTimes(1);
-      expect(slow.mock.calls[0][1]?.signal).toBe(expired);
+      // 요청 취소 신호와 묶인 신호가 넘어가므로 같은 객체가 아니라 끊긴 상태인지 본다.
+      expect(slow.mock.calls[0][1]?.signal?.aborted).toBe(true);
+      expect(slow.mock.calls[0][1]?.signal?.reason).toBe(expired.reason);
     } finally {
       timeoutSpy.mockRestore();
     }
+  });
+});
+
+// P1-08-SHORTS-DIRECT-TIMEOUT-CANCEL: 화면 취소(영상 변경·이탈)는 공급자 호출과 본문 읽기를 멈추고 499 request_cancelled로 시간 초과(504)와 구분한다.
+describe("Shorts admin analysis request cancellation", () => {
+  const multiUrls = [`https://www.youtube.com/shorts/${id}`, "https://youtu.be/B2c3D4e5F6-"];
+  const multiFindings = { ...findings, segments: [1, 2].map(video => ({ video, timestamp: `00:0${video}`, evidence: `영상 ${video}의 첫 동작` })) };
+  const create = (provider: typeof fetch) =>
+    createShortsAnalysisHttp({ authenticate, env: { ...settings, DREAM_REFERENCE_SHORTS_GEMINI_MODEL: "gemini-2.5-flash" }, fetch: provider }).post;
+  const cancellable = (body: unknown, signal: AbortSignal) => new Request(request(body), { signal });
+  const cancelled = JSON.stringify({ error: "request_cancelled" });
+
+  it("does not call Gemini when the request was already cancelled", async () => {
+    const provider = vi.fn<typeof fetch>();
+    for (const body of [input, { urls: multiUrls, authorized: true }]) {
+      const response = await create(provider)(cancellable(body, AbortSignal.abort()));
+      expect(response.status).toBe(499);
+      expect(await response.text()).toBe(cancelled);
+    }
+    expect(provider).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["single", input],
+    ["multi", { urls: multiUrls, authorized: true }],
+  ] as const)("stops the %s Gemini connection when the request is cancelled mid-flight and reports 499, not a timeout", async (_kind, body) => {
+    const started = Promise.withResolvers<AbortSignal>();
+    const provider = vi.fn<typeof fetch>().mockImplementation((_url, init) => {
+      const signal = init!.signal!;
+      started.resolve(signal);
+      return new Promise((_resolve, reject) => signal.addEventListener("abort", () => reject(signal.reason), { once: true }));
+    });
+    const timeoutSpy = vi.spyOn(AbortSignal, "timeout");
+    try {
+      const controller = new AbortController();
+      const pending = create(provider)(cancellable(body, controller.signal));
+      const sent = await started.promise;
+      expect(sent.aborted).toBe(false);
+      controller.abort();
+      const response = await pending;
+      expect(sent.aborted).toBe(true);
+      expect(response.status).toBe(499);
+      expect(await response.text()).toBe(cancelled);
+      expect(provider).toHaveBeenCalledTimes(1);
+      expect(timeoutSpy).toHaveBeenCalledWith(110_000);
+    } finally {
+      timeoutSpy.mockRestore();
+    }
+  });
+
+  it("stops reading the Gemini body when the request is cancelled after the headers arrived", async () => {
+    const reading = Promise.withResolvers<void>();
+    const encoder = new TextEncoder();
+    const stalled = new ReadableStream<Uint8Array>({
+      start(stream) { stream.enqueue(encoder.encode('{"candidates":[')); },
+      pull() { reading.resolve(); return new Promise(() => {}); },
+    });
+    const provider = vi.fn<typeof fetch>().mockResolvedValue(new Response(stalled, { headers: { "content-type": "application/json" } }));
+    const controller = new AbortController();
+    const pending = create(provider)(cancellable(input, controller.signal));
+    await reading.promise;
+    controller.abort();
+    const response = await pending;
+    expect(response.status).toBe(499);
+    expect(await response.text()).toBe(cancelled);
+    expect(provider).toHaveBeenCalledTimes(1);
+  });
+
+  it("never reports success after the request was cancelled, even if Gemini ignores the signal", async () => {
+    for (const [body, output] of [[input, findings], [{ urls: multiUrls, authorized: true }, multiFindings]] as const) {
+      const started = Promise.withResolvers<void>();
+      const release = Promise.withResolvers<void>();
+      const provider = vi.fn<typeof fetch>().mockImplementation(async () => {
+        started.resolve();
+        await release.promise;
+        return modelResponse(output);
+      });
+      const controller = new AbortController();
+      const pending = create(provider)(cancellable(body, controller.signal));
+      await started.promise;
+      controller.abort();
+      release.resolve();
+      const response = await pending;
+      expect(response.status).toBe(499);
+      const text = await response.text();
+      expect(text).toBe(cancelled);
+      expect(text).not.toContain("result");
+      expect(provider).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("keeps normal single and multi results, and provider failures, unchanged when the request stays open", async () => {
+    const provider = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(modelResponse(findings))
+      .mockResolvedValueOnce(modelResponse(multiFindings))
+      .mockRejectedValueOnce(new TypeError("socket closed"));
+    const controller = new AbortController();
+    const single = await create(provider)(cancellable(input, controller.signal));
+    expect(single.status).toBe(200);
+    expect(await single.json()).toEqual({ result: { evidence: "youtube_video", findings } });
+    const multi = await create(provider)(cancellable({ urls: multiUrls, authorized: true }, controller.signal));
+    expect(multi.status).toBe(200);
+    expect(await multi.json()).toEqual({ result: { evidence: "youtube_video", videoIds: [id, "B2c3D4e5F6-"], findings: multiFindings } });
+    const failed = await create(provider)(cancellable(input, controller.signal));
+    expect(failed.status).toBe(502);
+    expect(await failed.json()).toEqual({ error: "provider_error" });
+    expect(provider).toHaveBeenCalledTimes(3);
+    for (const [, init] of provider.mock.calls) expect(init?.signal?.aborted).toBe(false);
   });
 });
