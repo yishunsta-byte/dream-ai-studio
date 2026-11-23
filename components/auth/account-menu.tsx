@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/primitives";
+import { logoutLoginPath } from "@/lib/auth/config";
 import { requestLogout } from "@/lib/auth/logout-client";
 import { announceSessionChange } from "@/lib/auth/session-sync";
 import { useSessionWatch, type SessionView } from "./use-session-watch";
@@ -28,8 +29,11 @@ export function AccountMenu({ email, showEmailOnMobile = false }: { email: strin
     setBusy(true); setProblem(null);
     const result = await requestLogout();
     // 이 브라우저 로그인이 지워졌으면(완료·부분) 다른 탭에 알리고 로그인 화면으로, 남아 있으면 그대로 두고 알린다.
-    if (result.state === "ended") { announceSessionChange(); window.location.assign("/login"); return; }
-    if (result.state === "partial") { announceSessionChange(); window.location.assign("/login?notice=logout-partial"); return; }
+    if (result.state !== "failed") {
+      announceSessionChange();
+      window.location.assign(logoutLoginPath(window.location.pathname, result.state));
+      return;
+    }
     setProblem(result.message); setBusy(false);
   }
   const confirmed = view === "current";

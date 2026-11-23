@@ -65,6 +65,11 @@ export function adminLoginPath(params: { next?: string; error?: "forbidden" | "u
   return text ? `${ADMIN_LOGIN}?${text}` : ADMIN_LOGIN;
 }
 
+export function logoutLoginPath(pathname: string, state: "ended" | "partial") {
+  const destination = isAdminPath(pathname) ? ADMIN_LOGIN : "/login";
+  return state === "partial" ? `${destination}?notice=logout-partial` : destination;
+}
+
 // 비밀번호 재설정의 돌아갈 곳(T-245). 요청·주소에서 받은 값은 정해 둔 이름("admin")일 때만 쓰고, 그 밖은 일반 흐름이다.
 // 임의 URL·next·머리글을 돌아갈 곳으로 믿지 않는다. 경로는 모두 여기서 고정 문자열로 만든다.
 export type PasswordContext = "admin";

@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { createElement, isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ADMIN_HOME, ADMIN_LOGIN, adminLoginPath, adminNextPath, isAdminPath, isAnonymousPublicPath, isPublicPath } from "@/lib/auth/config";
+import { ADMIN_HOME, ADMIN_LOGIN, adminLoginPath, adminNextPath, isAdminPath, isAnonymousPublicPath, isPublicPath, logoutLoginPath } from "@/lib/auth/config";
 
 // T-243 관리자 로그인·관리 허브. mock Auth 시험이며 실제 Supabase 계정으로 실행한 것이 아니다.
 // 기대값 근거: 새 권한·계정 없이 기존 로그인 + 서버 getUser + 허용 이메일만 쓴다. /admin/login만 공개, /admin 아래는 보호.
@@ -55,6 +55,16 @@ describe("T-243 경로 판정", () => {
     for (const bad of [undefined, "", "//evil.test", "https://evil.test/admin", "/\t/evil.test", "/\\evil.test", "/studio", "/adminx", "/admin/login", "/admin/login?next=/admin", "/login"]) expect(adminNextPath(bad), String(bad)).toBe(ADMIN_HOME);
     expect(adminLoginPath({ next: "//evil.test" })).toBe("/admin/login?next=%2Fadmin");
     expect(adminLoginPath({ error: "forbidden" })).toBe("/admin/login?error=forbidden");
+  });
+
+  it.each([
+    ["/admin", "/admin/login"],
+    ["/admin/shorts-analysis", "/admin/login"],
+    ["/studio", "/login"],
+    ["/adminx", "/login"],
+  ])("%s에서 로그아웃하면 해당 로그인 화면으로 돌아간다", (path, login) => {
+    expect(logoutLoginPath(path, "ended")).toBe(login);
+    expect(logoutLoginPath(path, "partial")).toBe(`${login}?notice=logout-partial`);
   });
 });
 
@@ -144,6 +154,10 @@ describe("T-243 관리자 로그인 화면", () => {
     const markup = await loginPage();
     expect(markup).toContain("관리자 로그인은 운영 사이트에서 써요");
     expect(markup).not.toContain('type="password"');
+  });
+  it("관리자 로그인은 다른 기기의 로그아웃이 확인되지 않았음을 알린다", async () => {
+    ready();
+    expect(await loginPage({ notice: "logout-partial" })).toContain("다른 기기의 로그인까지 끝났는지는 확인하지 못했어요.");
   });
   it("두 화면 모두 검색 노출 금지, 로그인 뒤 목적지는 adminNextPath로만 정한다", () => {
     for (const path of ["app/admin/page.tsx", "app/admin/login/page.tsx"]) expect(readFileSync(path, "utf8"), path).toMatch(/robots: \{ index: false, follow: false \}/);
