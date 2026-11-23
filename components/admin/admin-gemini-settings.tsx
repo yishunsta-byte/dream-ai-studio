@@ -9,6 +9,7 @@ import {
   type CredentialTest, type CredentialTestCode,
 } from "./gemini-credentials-client";
 import styles from "./admin-gemini-settings.module.css";
+import { AdminModelOptions } from "./admin-model-options";
 import { geminiAnalysisModels } from "./admin-model-suggestions";
 
 // P0 Gemini 설정(Design msg_72dad930c7d0, Backend msg_bb18c2ae5fd0·msg_cb4ee4e63485):
@@ -86,6 +87,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
   const ready = settings.storage === "ready";
   const savedModels = (): Models => ({ image: settings.programs.image.modelId ?? "", music: settings.programs.music.modelId ?? "", shorts: settings.programs.shorts.modelId ?? "" });
   const [models, setModels] = useState(savedModels);
+  const [modelProgram, setModelProgram] = useState<CredentialProgram>("image");
   const [keyOpen, setKeyOpen] = useState<Record<CredentialGroup, boolean>>({ reference: false, music: false });
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -319,16 +321,31 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
         </div>
       </fieldset>
       <fieldset className={styles.fieldset} disabled={!ready || saving}>
-        <legend>모델 ID</legend>
-        <datalist id={`${base}-gemini-models`}>
-          {geminiAnalysisModels.map(model => <option key={model} value={model} />)}
-        </datalist>
+        <legend>분석 모델</legend>
+        <label htmlFor={id("model-program")}>모델 적용 대상</label>
+        <select id={id("model-program")} className={styles.modelProgram} value={modelProgram}
+          onChange={event => {
+            const next = programOrder.find(program => program === event.target.value);
+            if (next) setModelProgram(next);
+          }}>
+          {programOrder.map(program => <option key={program} value={program}>{programText[program]}</option>)}
+        </select>
+        <AdminModelOptions name={`${base}-choices`} label={`Gemini ${programText[modelProgram]} 모델 선택`}
+          options={geminiAnalysisModels} value={models[modelProgram]}
+          onChange={model => {
+            setModels(previous => ({ ...previous, [modelProgram]: model }));
+            const field = id(`models.${modelProgram}`);
+            setErrors(previous => ({ ...previous, [field]: undefined }));
+          }} />
+        {settings.programs[modelProgram].modelId && <p className={styles.help}>
+          저장된 모델 <strong>{settings.programs[modelProgram].modelId}</strong>
+        </p>}
         <div className={styles.grid}>
           {programOrder.map(program => {
             const field = id(`models.${program}`);
             return <div className={styles.field} key={program}>
               <label htmlFor={field}>{programText[program]} 모델 ID</label>
-              <input id={field} name={`models.${program}`} type="text" list={`${base}-gemini-models`} autoComplete="off" spellCheck={false} autoCapitalize="off" maxLength={128}
+              <input id={field} name={`models.${program}`} type="text" autoComplete="off" spellCheck={false} autoCapitalize="off" maxLength={128}
                 value={models[program]} aria-invalid={!!errors[field]} aria-describedby={describe(field)}
                 onChange={event => { const value = event.target.value; setModels(previous => ({ ...previous, [program]: value })); }} />
               {fieldError(field)}
@@ -338,7 +355,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
       </fieldset>
       </div>
       {ready && <p ref={noticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone={notice?.tone}>{notice?.text ?? ""}</p>}
-      <div><Button type="submit" loading={saving} loadingLabel="Gemini에서 확인 중" disabled={!ready}>설정 저장</Button></div>
+      <div><Button type="submit" loading={saving} loadingLabel="Gemini에서 확인 중" disabled={!ready}>저장</Button></div>
     </form>
     <section className={styles.tests} aria-labelledby={`${base}-tests`}>
       <h5 id={`${base}-tests`}>연결 시험</h5>
@@ -396,10 +413,11 @@ export function GeminiSettingsCard() {
     return outcome.kind === "ok" ? outcome.value : null;
   }
 
-  return <Card className={styles.card}>
+  return <Card className={styles.card} data-provider="gemini">
     <div className={styles.head}>
-      <h4>Gemini 설정</h4>
-      <p className={styles.help}>분석기에 쓸 Gemini 키와 모델 ID를 서버에 저장해요. 저장할 때 Gemini에서 키와 모델 정보를 확인하고, 분석기별 연결은 연결 시험으로 확인해요.</p>
+      <h4>Gemini 키·모델</h4>
+      <p className={styles.help}>이미지·음악·쇼츠 분석</p>
+      <a className={styles.link} href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Gemini API 키 발급 ↗</a>
     </div>
     <div aria-live="polite">
       {read.kind === "loading" && <p role="status">Gemini 설정을 불러오고 있어요.</p>}

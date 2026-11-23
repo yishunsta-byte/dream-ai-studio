@@ -25,7 +25,14 @@
 .vault h3, .vault h4 { margin: 0; color: var(--vault-ink); }
 .vault h3 { font-size: clamp(16px, 2vw, 21px); }
 .vault p { margin: 0; color: var(--vault-muted); overflow-wrap: anywhere; }
-.vaultSection, .provider { display: grid; gap: 14px; min-width: 0; }
+.vaultSection { display: grid; gap: 14px; min-width: 0; }
+.analysisPlatform {
+  --vault-surface: #111c2a;
+  --vault-input: #101823;
+  --vault-accent: #78ddf4;
+  border-color: #2c657c;
+  background: #102130;
+}
 .sectionHeader {
   display: flex;
   justify-content: space-between;
@@ -36,10 +43,11 @@
   border-bottom: 1px solid var(--vault-line);
 }
 .sectionHeader p { margin-top: 4px; }
-.engineButtons { display: flex; flex-wrap: wrap; gap: 8px; }
 .setupLink { display: inline-flex; align-items: center; min-height: 42px; color: var(--vault-accent); }
-.engineIntro { font-size: var(--text-sm); }
-.engineCards { display: grid; gap: 12px; }
+.engineCards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; min-width: 0; }
+@media (max-width: 880px) {
+  .engineCards { grid-template-columns: minmax(0, 1fr); }
+}
 .analyzerGrid, .platforms { margin: 0; padding: 0; list-style: none; }
 .analyzerGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .analyzerGrid > li { min-width: 0; }

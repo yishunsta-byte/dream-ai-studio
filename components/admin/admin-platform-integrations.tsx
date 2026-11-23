@@ -36,9 +36,9 @@ const platformGroups = [
 export function AdminIntegrationSettings() {
   return <div className={styles.vault}>
     <AdminSettingsShortcuts />
-    <section className={styles.vaultSection} aria-labelledby="image-engine-title">
+    <section className={`${styles.vaultSection} ${styles.analysisPlatform}`} aria-labelledby="image-engine-title">
       <div className={styles.sectionHeader}>
-        <div><h3 id="image-engine-title">AI 분석 엔진</h3><p>OpenAI·Claude·Gemini 중 선택해 키와 최신 모델을 등록하세요.</p></div>
+        <div><h3 id="image-engine-title">AI 분석 엔진</h3><p>플랫폼별로 API 키를 등록하고 모델을 선택한 뒤 저장하세요.</p></div>
       </div>
       <AdminIntegrationCredentials />
       <ul className={styles.analyzerGrid}>

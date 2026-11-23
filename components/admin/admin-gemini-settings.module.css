@@ -13,11 +13,11 @@
 }
 .card :is(h4, h5, p, dl, dd, ul) { margin: 0; }
 .card :is(h4, h5, legend) { color: var(--studio-ink); }
-.card button[type="submit"] { background: var(--studio-action); border-color: var(--studio-action); color: var(--vault-input, #FFFFFF); }
+.card button[type="submit"] { background: var(--studio-action); border-color: var(--studio-action); color: var(--vault-input, #FFFFFF); min-width: 5em; }
 .card button:not([type="submit"]) { background: var(--studio-surface); border: 1px solid var(--studio-action); color: var(--studio-action); }
 .card button:disabled { opacity: 0.5; cursor: not-allowed; }
 /* 관리자 공용 .console 초점 규칙보다 앞서도록 카드 선택자를 두 번 쓴다. */
-.card.card :is(input, button, a, [tabindex="-1"]):focus-visible { outline: 3px solid var(--studio-action); outline-offset: 2px; box-shadow: none; }
+.card.card :is(input, select, button, a, [tabindex="-1"]):focus-visible { outline: 3px solid var(--studio-action); outline-offset: 2px; box-shadow: none; }
 .card.card [tabindex="-1"]:is(:focus, :focus-visible) { outline: 3px solid var(--studio-action); outline-offset: 2px; box-shadow: none; border-color: transparent; }
 .head { display: grid; gap: var(--sp-1, 4px); border-left: 4px solid var(--studio-mint); padding-left: var(--sp-3, 12px); }
 .help { color: var(--studio-muted); font-size: var(--text-sm); }
@@ -53,6 +53,29 @@
 .unavailable { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 8px) var(--sp-3, 12px); }
 .unavailable .notice { flex: 1 1 100%; }
 .failed { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 8px) var(--sp-3, 12px); }
+.card .columns { grid-template-columns: minmax(0, 1fr); }
+.card .tests li { grid-template-columns: minmax(0, 1fr); justify-items: start; }
+.card:is([data-provider="openai"], [data-provider="anthropic"]) .status {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.card[data-provider] .status dd[data-tone="success"] { color: #8ee9c7; }
+.card[data-provider] .status dd[data-tone="warning"] { color: #ffd18a; }
+.card[data-provider] .error { color: #ffacac; }
+.card[data-provider] .field input[aria-invalid="true"] { border-color: #ffacac; }
+.modelOptions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; width: 100%; }
+.modelOption {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; min-width: 0; padding: 5px 8px;
+  border: 1px solid var(--studio-line); border-radius: 7px; background: #1b2231; color: var(--studio-ink);
+  font-weight: 650; overflow-wrap: anywhere; cursor: pointer;
+}
+.modelOption:has(input:checked) { background: #10384d; border-color: var(--studio-action); }
+.modelOption input[type="radio"] {
+  appearance: auto; flex: none; margin: 0; padding: 0; width: 16px; height: 16px; min-height: 0; accent-color: var(--studio-action);
+}
+.modelProgram {
+  width: 100%; min-width: 0; min-height: 44px; padding: 5px 8px; font: inherit;
+  background: var(--studio-surface); color: var(--studio-ink); border: 1px solid var(--studio-line); border-radius: 7px;
+}
 @media (max-width: 720px) {
   .columns { grid-template-columns: minmax(0, 1fr); }
   .tests li { grid-template-columns: minmax(0, 1fr); justify-items: start; }
