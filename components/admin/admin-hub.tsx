@@ -7,7 +7,7 @@ import { AdminProjectsSection, type AdminProjects } from "./admin-projects";
 import { AdminManual } from "./admin-manual";
 import { AdminNavigation } from "./admin-navigation";
 import { apiPlatformLabel, homeSectionId, imageShareSection, styleDnaPath } from "./admin-paths";
-import { AdminPremierePrograms } from "./admin-premiere-programs";
+import { AdminPremierePrograms, ShortsAccount } from "./admin-premiere-programs";
 import { AdminRenderQueue } from "./admin-render-queue";
 import styles from "./admin.module.css";
 
@@ -33,7 +33,7 @@ export function AdminHub({ email, projects, review, home }: { email: string; pro
       <div id="admin-project-list" role="group" aria-label="내 프로젝트" className={styles.target} tabIndex={-1}>
         <AdminProjectsSection state={projects} />
       </div>
-      <AdminPremierePrograms />
+      <ShortsAccount account={email}><AdminPremierePrograms /></ShortsAccount>
       <div id="admin-review" role="group" aria-label="완성본 검수·게시" className={styles.target} tabIndex={-1}>
         {/* P1-06: 이미지 분석은 원본 전체 화면으로 옮겼고, 기존 이미지 분석 결과 공개 준비는 여기서 연다. */}
         <nav aria-label="이미지 분석 결과 공개" className={styles.reviewLinks}>

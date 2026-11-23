@@ -107,10 +107,27 @@ const CLOUD_ONLY: Record<string, string[]> = {
   "../app/api/admin/analysis-credentials/test/route.ts": ["POST"],
   "../app/api/admin/shorts-analysis/route.ts": ["GET", "POST"],
   "../app/api/admin/shorts-search/route.ts": ["POST"],
+  "../app/api/admin/shorts-metadata-analysis/route.ts": ["POST"],
+  "../app/api/admin/shorts-ideas/route.ts": ["POST"],
+  "../app/api/admin/shorts-script/route.ts": ["POST"],
+  "../app/api/admin/shorts-scene-prompt/route.ts": ["POST"],
+  "../app/api/admin/shorts-bgm-prompt/route.ts": ["POST"],
+  "../app/api/admin/shorts-vault/prompts/route.ts": ["GET", "POST"],
+  "../app/api/admin/shorts-vault/prompts/[id]/route.ts": ["GET", "DELETE"],
+  "../app/api/admin/shorts-vault/prompts/search/route.ts": ["POST"],
+  "../app/api/admin/shorts-vault/projects/route.ts": ["GET", "POST"],
+  "../app/api/admin/shorts-vault/projects/[id]/route.ts": ["GET", "PUT", "DELETE"],
   "../app/api/admin/youtube-credentials/route.ts": ["GET", "PUT"],
   "../app/api/admin/render-queue/route.ts": ["GET"],
   "../app/api/projects/route.ts": ["GET"], "../app/api/projects/[id]/route.ts": ["GET"],
   "../app/api/admin/publications/route.ts": ["GET", "POST"],
+  // Style DNA methods use their own administrator guard, covered by api-auth.test.ts.
+  "../app/api/admin/style-dna/route.ts": ["GET", "POST"],
+  "../app/api/admin/style-dna/[id]/route.ts": ["GET", "PATCH", "DELETE"],
+  "../app/api/admin/style-dna/[id]/media/[media]/route.ts": ["GET"],
+  "../app/api/admin/style-dna/[id]/refine/route.ts": ["POST"],
+  "../app/api/admin/style-dna/[id]/test-image/route.ts": ["POST"],
+  "../app/api/admin/style-dna/engine-credentials/route.ts": ["GET", "PUT"],
 };
 const legacyMethods = (path: string, loaded: Record<string, unknown>) => methods.filter((m) => typeof loaded[m] === "function" && !(CLOUD_ONLY[path] ?? []).includes(m));
 const legacyRoutes = Object.entries(routeModules).filter(([path]) => !authRoutes.includes(path));

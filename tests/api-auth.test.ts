@@ -128,6 +128,9 @@ const referenceRoutes = ["admin/reference-analysis", "admin/reference-publicatio
 const guardedRoutes = [
   "admin/analysis-credentials", "admin/analysis-credentials/test", "admin/publications", "admin/render-queue", ...referenceRoutes,
   "admin/shorts-search", "admin/youtube-credentials",
+  "admin/shorts-metadata-analysis", "admin/shorts-ideas", "admin/shorts-script", "admin/shorts-scene-prompt", "admin/shorts-bgm-prompt",
+  "admin/shorts-vault/prompts", "admin/shorts-vault/prompts/[id]", "admin/shorts-vault/prompts/search",
+  "admin/shorts-vault/projects", "admin/shorts-vault/projects/[id]",
   "admin/style-dna", "admin/style-dna/[id]", "admin/style-dna/[id]/media/[media]", "admin/style-dna/[id]/refine",
   "admin/style-dna/[id]/test-image", "admin/style-dna/engine-credentials",
   "assets/[id]", "assets/link", "assets/upload", "auth/logout", "auth/session",

@@ -16,6 +16,8 @@ const errors: Record<string, string> = {
   invalid_input: "공개 YouTube 쇼츠 또는 시청 주소를 확인해 주세요.",
   not_configured: "쇼츠 분석 모델이 연결되면 이 기능을 사용할 수 있어요.",
   provider_error: "Gemini가 영상을 분석하지 못했어요. 공개 영상인지 확인해 주세요.",
+  invalid_key: "Gemini가 키를 받아 주지 않았어요. API연동에서 Gemini 키와 쇼츠 모델을 확인해 주세요.",
+  quota_exceeded: "Gemini 사용 한도에 걸렸어요. 잠시 뒤 다시 시도하거나 API연동에서 키의 사용 한도를 확인해 주세요.",
   invalid_response: "분석 결과 형식이 올바르지 않아요. 잠시 후 다시 시도해 주세요.",
   timed_out: "영상 응답이 지연됐어요. 잠시 후 다시 시도해 주세요.",
 };
@@ -23,16 +25,23 @@ const errors: Record<string, string> = {
 type Availability = { kind: "checking" } | { kind: "configured" } | { kind: "not_configured" }
   | { kind: "failed"; message: string };
 
-export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare, settingsHref = ADMIN_SETTINGS_HREF }: {
+export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare, settingsHref = ADMIN_SETTINGS_HREF, initialUrl, onResult, steps = true }: {
   onSourceChange?: (url: string) => void; appearance?: "premiere"; onPrepare?: (draft: PublicationDraft) => void;
   /** 미설정 안내의 설정 링크. 생략하면 관리자 API연동, null이면 숨김. */
   settingsHref?: SettingsHref;
+  /** P1-08 원본 쇼츠 전용 화면: 검색에서 고른 주소를 주소 칸 첫 값으로만 넣는다(동의는 비운 채, 분석은 사용자가 동의하고 누를 때만).
+   *  바꾸려면 부르는 쪽이 key로 새로 그린다. 생략하면 빈 칸(기존 호출 그대로). */
+  initialUrl?: string;
+  /** P1-08 원본 쇼츠 전용 화면: 분석이 끝나 결과를 보일 때 한 번 알린다(③ 소재 발굴의 근거). 생략하면 기존 호출 그대로. */
+  onResult?: (value: { videoId: string; result: ShortsAnalysisResult }) => void;
+  /** 옛 1~6단계 표시(3~6 준비 중). 원본 쇼츠 셸은 자체 단계 메뉴가 있어 false로 끈다. 생략하면 기존 호출 그대로 보인다. */
+  steps?: boolean;
 } = {}) {
   const id = useId();
   const retryStatusId = `${id}-retry-status`;
   const urlField = useRef<HTMLInputElement>(null);
   const active = useRef<AbortController | null>(null);
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(initialUrl ?? "");
   const [searchOpen, setSearchOpen] = useState(false);
   const [consent, setConsent] = useState(false);
   const [running, setRunning] = useState(false);
@@ -128,6 +137,7 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare, set
       if (parsed.success) {
         setResult({ value: parsed.data, videoId });
         setNotice("쇼츠 분석을 완료했어요.");
+        onResult?.({ videoId, result: parsed.data });
       } else setNotice(errors.invalid_response);
     } catch {
       if (!controller.signal.aborted) setNotice("현재 쇼츠 분석에 연결할 수 없어요.");
@@ -153,7 +163,7 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare, set
       </details>}
       <form className={styles.form} onSubmit={event => { event.preventDefault(); void analyze(); }}>
         <h3 id={`${id}-title`}>YouTube 쇼츠 분석</h3>
-        <ShortsSteps current={result ? 1 : 0} />
+        {steps && <ShortsSteps current={result ? 1 : 0} />}
         {availability.kind !== "configured" && <div className={styles.promptEditor}>
           <p className={styles.status} role="status">
             {availability.kind === "checking" ? "쇼츠 모델 설정을 확인하는 중이에요."

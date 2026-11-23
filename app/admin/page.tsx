@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AccountMenu } from "@/components/auth/account-menu";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { ProtectedContent, SessionBoundary } from "@/components/auth/session-boundary";
+import { ShortsTabGuard } from "@/components/admin/shorts-original/shorts-tab-guard";
 import { AdminHub } from "@/components/admin/admin-hub";
 import { AdminOperationsHome } from "@/components/admin/admin-operations-home";
 import { loadAdminProjects } from "@/components/admin/admin-projects";
@@ -33,6 +34,7 @@ export default async function AdminPage() {
   // T297: 같은 인증 판정(getRenderAuth 캐시) 뒤에만 게시 큐 첫 목록을 읽는다. 운영 저장소가 없으면 closed(미연결 안내).
   const publications = await createAdminPublicationHttp({ resolveAuth: getRenderAuth }).list();
   return <SessionBoundary account={account}>
+    <ShortsTabGuard />
     <div className={styles.console}>
       <header className={styles.header}>
         <Link className={styles.brand} href="/admin">

@@ -61,12 +61,20 @@ describe("연결 inventory(정적)", () => {
       .filter((path) => path !== "components/auth/account-menu.tsx" && /<AccountMenu\b/.test(read(path)));
     // T-243: 관리 허브(app/admin/page.tsx)가 AccountMenu를 새로 그려 목록에 들어온다. 같은 경계·ProtectedContent 조건을 그대로 요구한다.
     // P1-06: 원본 Style DNA 전체 화면 껍데기(사이드바 계정 메뉴)도 같은 조건: 페이지가 경계를 두고, 껍데기의 main 안에서 본문을 가린다.
-    expect(users.sort()).toEqual(["app/(cloud)/layout.tsx", "app/admin/audio-analysis/page.tsx", "app/admin/page.tsx", "components/admin/admin-platform-integrations.tsx", "components/admin/style-dna-original/studio-shell.tsx", "components/auth/cloud-pending.tsx", "components/studio-shell.tsx"]);
+    expect(users.sort()).toEqual([
+      "app/(cloud)/layout.tsx", "app/admin/audio-analysis/page.tsx", "app/admin/page.tsx", "components/admin/admin-platform-integrations.tsx",
+      "components/admin/shorts-original/shorts-studio.tsx", "components/admin/style-dna-original/studio-shell.tsx",
+      "components/auth/cloud-pending.tsx", "components/studio-shell.tsx",
+    ]);
     const integrations = read("components/admin/admin-platform-integrations.tsx");
     expect(integrations).toMatch(/<SessionBoundary account=\{email\}>/);
     expect(integrations).toMatch(/<main id="main-content"[^>]*>\s*<ProtectedContent>/);
     expect(read("app/admin/style-dna/page.tsx")).toMatch(/<SessionBoundary account=\{account\}>\s*<AdminStyleDnaWorkflow layout="original"/);
-    expect(read("components/admin/style-dna-original/studio-shell.tsx")).toMatch(/<main [^>]*id="main-content">\s*<div className=\{s\.inner\}><ProtectedContent>\{children\}<\/ProtectedContent><\/div>/);
+    const dnaShell = read("components/admin/style-dna-original/studio-shell.tsx");
+    expect(dnaShell).toMatch(/const Content = props\.embedded \? "div" : "main";/);
+    expect(dnaShell).toMatch(/<Content className=\{s\.main\} id=\{props\.embedded \? undefined : "main-content"\}>\s*<div className=\{s\.inner\}>\{props\.embedded \? children : <ProtectedContent>\{children\}<\/ProtectedContent>\}<\/div>/);
+    expect(read("app/admin/shorts-analysis/page.tsx")).toMatch(/<SessionBoundary account=\{account\}>\s*<ShortsStudio account=\{account\} \/>/);
+    expect(read("components/admin/shorts-original/shorts-studio.tsx")).toMatch(/<main className=\{s\.main\} id="main-content">\s*<div className=\{s\.inner\}><ProtectedContent>/);
     // P1-07 운영 이식: 오디오 전용 화면도 같은 경계·ProtectedContent 조건.
     for (const path of ["app/(cloud)/layout.tsx", "app/admin/audio-analysis/page.tsx", "app/admin/page.tsx", "components/auth/cloud-pending.tsx"]) {
       const source = read(path);

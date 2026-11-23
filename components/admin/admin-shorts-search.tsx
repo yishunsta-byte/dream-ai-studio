@@ -6,6 +6,7 @@ import { adminLoginPath } from "@/lib/auth/config";
 import { readYouTubeKey, recordKeyCheck, keyStatusText, useKeyCheck, useLatestKey, type KeyRead } from "./youtube-key-client";
 import { searchYouTubeShorts, type SearchCode, type YouTubeShortCandidate } from "./youtube-search-client";
 import { ADMIN_SETTINGS_HREF, SettingsLink } from "./admin-settings-link";
+import { arrangeShorts, gradeRule, ratioText, viewsPerHour, vphText, vsGrade, vsTenths, type ShortsView } from "./shorts-metrics";
 import panel from "./admin-reference-analysis.module.css";
 import styles from "./admin-shorts-search.module.css";
 
@@ -20,7 +21,14 @@ const orders = [
 ] as const;
 type Order = (typeof orders)[number]["value"];
 type Query = { query: string; order: Order; dateFrom: string; dateTo: string };
-type Results = Query & { items: YouTubeShortCandidate[]; credentialVersion: number };
+type Results = Query & { items: YouTubeShortCandidate[]; credentialVersion: number; measuredAt: number };
+// 받은 결과의 보기 순서(검색 요청 없음). '검색 순서'는 YouTube가 돌려준 순서 그대로다.
+const views = [
+  { value: "search", label: "검색 순서 그대로" },
+  { value: "ratio", label: "구독자 대비 조회수(V/S) 높은 순" },
+  { value: "vph", label: "시간당 조회수(VPH) 높은 순" },
+] as const;
+const clock = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Seoul" });
 type Notice = { tone: "status" | "alert"; text: string; settings?: boolean; login?: boolean; refresh?: "stale" | "not_configured" };
 const number = new Intl.NumberFormat("ko-KR");
 const day = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeZone: "Asia/Seoul" });
@@ -72,6 +80,7 @@ export function AdminShortsSearch({ onPick, picked }: { onPick: (url: string, ti
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [results, setResults] = useState<Results>();
+  const [view, setView] = useState<ShortsView>("search");
   const active = useRef<AbortController | null>(null);
   const queryField = useRef<HTMLInputElement>(null);
   const seen = useKeyCheck();
@@ -110,7 +119,7 @@ export function AdminShortsSearch({ onPick, picked }: { onPick: (url: string, ti
     setRunning(false);
     if (outcome.kind === "ok") {
       recordKeyCheck(outcome.credentialVersion, "accepted");
-      setResults({ ...sent, items: outcome.items, credentialVersion: outcome.credentialVersion });
+      setResults({ ...sent, items: outcome.items, credentialVersion: outcome.credentialVersion, measuredAt: Date.now() });
       setNotice({ tone: "status", text: outcome.items.length ? `공개 쇼츠 후보 ${outcome.items.length}개를 찾았어요.` : "검색 결과가 없어요. 다른 검색어나 기간으로 다시 검색해 보세요." });
       return;
     }
@@ -196,8 +205,20 @@ export function AdminShortsSearch({ onPick, picked }: { onPick: (url: string, ti
       {results && <section className={styles.results} aria-labelledby={`${id}-results`}>
         <h4 id={`${id}-results`}>&lsquo;{results.query}&rsquo; 검색 결과 {results.items.length}개 · {orders.find(item => item.value === results.order)!.label}{rangeText(results)}</h4>
         <p className={panel.note}>YouTube 공개 메타데이터예요. 숨겨진 지표는 &lsquo;비공개&rsquo;로 보여 줘요. 고르기만 해서는 분석·저장·게시하지 않아요.</p>
+        {results.items.length > 0 && <>
+          <p className={panel.note}>{gradeRule} VPH는 검색 시각({clock.format(results.measuredAt)}) 기준으로 조회수를 게시 후 지난 시간(최소 1시간)으로 나눈 시간당 조회수예요. 조회수가 비공개이거나 게시 시각이 검색 시각보다 늦으면 계산 불가예요.</p>
+          <label className={`${panel.field} ${styles.view}`} htmlFor={`${id}-view`}>
+            결과 보기 순서
+            <select id={`${id}-view`} value={view} onChange={event => setView(event.target.value as ShortsView)}>
+              {views.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </label>
+          <p className={styles.hidden} role="status">{view === "search" ? "" : `${views.find(item => item.value === view)!.label}으로 받은 결과만 다시 늘어놓았어요. 다시 검색하지 않아요.`}</p>
+        </>}
         {results.items.length === 0 ? <p className={panel.status}>검색 결과가 없어요.</p> : <ol className={styles.list}>
-          {results.items.map(item => {
+          {arrangeShorts(results.items, view, results.measuredAt).map(item => {
+            const tenths = vsTenths(item);
+            const grade = vsGrade(tenths);
             const thumb = safeThumbnail(item.thumbnailUrl);
             const chosen = picked === watchUrl(item.id);
             return <li key={item.id} className={styles.item} data-picked={chosen || undefined}>
@@ -209,11 +230,14 @@ export function AdminShortsSearch({ onPick, picked }: { onPick: (url: string, ti
               <div className={styles.body}>
                 <h5>{item.title}</h5>
                 <p className={panel.note}>{item.channelTitle} · <time dateTime={item.publishedAt}>{day.format(new Date(item.publishedAt))}</time> · {durationText(item.durationSeconds)}</p>
+                <p className={styles.grade} data-grade={grade}><span className={styles.hidden}>등급 </span>{grade}</p>
                 <dl className={styles.metrics}>
                   <div><dt>조회수</dt><dd>{metricText(item.views)}</dd></div>
                   <div><dt>좋아요</dt><dd>{metricText(item.likes)}</dd></div>
                   <div><dt>댓글</dt><dd>{metricText(item.comments)}</dd></div>
                   <div><dt>구독자</dt><dd>{metricText(item.subscribers)}</dd></div>
+                  <div><dt>조회÷구독</dt><dd>{ratioText(tenths)}</dd></div>
+                  <div><dt>VPH</dt><dd>{vphText(viewsPerHour(item, results.measuredAt))}</dd></div>
                 </dl>
                 <Button type="button" variant="secondary" size="sm" aria-label={`${item.title} 영상을 쇼츠 분석 주소 칸에 넣기`} aria-pressed={chosen}
                   onClick={() => onPick(watchUrl(item.id), item.title, results.query)}>{chosen ? "주소 칸에 넣음" : "이 영상 고르기"}</Button>

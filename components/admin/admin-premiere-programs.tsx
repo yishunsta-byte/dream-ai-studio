@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/primitives";
 import type { ImageSemanticResult } from "@/lib/reference-analysis/image-semantic-result";
@@ -16,6 +16,8 @@ import { PasteUrlField } from "./admin-paste-url";
 import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
 import { imageShareSection } from "./admin-paths";
 import { audioAnalysisPath } from "./audio-analysis-path";
+import { shortsAnalysisPath } from "./shorts-original/shorts-paths";
+import { ShortsStudio } from "./shorts-original/shorts-studio";
 import {
   analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, SUPPORTED_ORIGINS,
   unavailableMessage, UPLOAD_SIZE_LIMIT_LABEL, URL_SIZE_LIMIT_LABEL, type AnalysisSource, type PublicationDraft, type ReadyResult,
@@ -32,7 +34,7 @@ const loginLink = "/admin/login?next=%2Fadmin%23admin-image-publication";
 const copy = [
   { kind: "image", description: "이미지의 색감·조명·구도를 분석해 한국어와 영어로 이미지 생성 프롬프트를 만들어요.", caption: "컬러·구도·조명" },
   { kind: "music" },
-  { kind: "shorts", description: "YouTube 쇼츠의 첫 장면과 시간대별 근거를 확인해요.", caption: "첫 장면·시간대별 근거" },
+  { kind: "shorts" },
 ] as const;
 
 type Size = { width: number; height: number };
@@ -257,21 +259,35 @@ function MusicWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   </>;
 }
 
+// P1-08-SHORTS-SESSION-RESTORE-OWNER: 관리 허브(AdminHub)가 서버 인증으로 확인한 로그인 이메일을 끼운 쇼츠 작업실까지 넘긴다.
+// 쇼츠 작업실은 이 계정과 세션 경계 확인이 있을 때만 탭 저장을 읽고 쓴다. 권한 판단에는 쓰지 않는다(서버가 요청마다 판정).
+const ShortsAccountContext = createContext<string | null>(null);
+export function ShortsAccount({ account, children }: { account: string; children: ReactNode }) {
+  return <ShortsAccountContext.Provider value={account}>{children}</ShortsAccountContext.Provider>;
+}
+
 function ShortsWorkspace({ onPrepare }: ProgramWorkspaceProps) {
   const [url, setUrl] = useState("");
   const id = youtubeVideoId(url.trim());
-  return <div className={styles.workbench}>
-    <div className={styles.desk}>
-      <div className={styles.control}><AdminShortsAnalysis onSourceChange={setUrl} onPrepare={onPrepare} appearance="premiere" /></div>
-    </div>
-    <Preview title="세로 영상 프리뷰">
-      <div className={styles.filmFrame} aria-hidden="true"><Icon name="play" /></div>
-      <div className={styles.previewMessage}>
-        {id ? <a className={hub.link} href={`https://www.youtube.com/watch?v=${id}`} target="_blank" rel="noreferrer">YouTube에서 원본 열기 <Icon name="arrow" /></a>
-          : <p>공개 영상 주소를 입력하면 원본을 열 수 있어요.</p>}
+  const account = useContext(ShortsAccountContext);
+  return <>
+    <ShortsStudio layout="embedded" account={account ?? undefined} />
+    <details className={styles.guide} data-shorts-publication>
+      <summary>영상 한 편 공개 준비</summary>
+      <div className={styles.workbench}>
+        <div className={styles.desk}>
+          <div className={styles.control}><AdminShortsAnalysis onSourceChange={setUrl} onPrepare={onPrepare} appearance="premiere" /></div>
+        </div>
+        <Preview title="세로 영상 프리뷰">
+          <div className={styles.filmFrame} aria-hidden="true"><Icon name="play" /></div>
+          <div className={styles.previewMessage}>
+            {id ? <a className={hub.link} href={`https://www.youtube.com/watch?v=${id}`} target="_blank" rel="noreferrer">YouTube에서 원본 열기 <Icon name="arrow" /></a>
+              : <p>공개 영상 주소를 입력하면 원본을 열 수 있어요.</p>}
+          </div>
+        </Preview>
       </div>
-    </Preview>
-  </div>;
+    </details>
+  </>;
 }
 
 const workspaces = [ImageWorkspace, MusicWorkspace, ShortsWorkspace] as const;
@@ -310,10 +326,12 @@ export function AdminPremierePrograms() {
     return <section key={id} id={id} tabIndex={-1} aria-labelledby={`${id}-title`} data-program-active={active || undefined}
       data-program={kind} className={`${hub.target} ${styles.program}`}>
       {active && <>
-        {program.kind === "music"
-          ? <div className={styles.audioHeading}>
+        {program.kind !== "image"
+          ? <div className={styles.programHeading}>
             <h2 id={`${id}-title`} tabIndex={-1}>{label}</h2>
-            <a className={hub.link} href={audioAnalysisPath}>오디오 분석 작업실(원본 v1.15) 열기 <Icon name="arrow" /></a>
+            {program.kind === "music"
+              ? <a className={hub.link} href={audioAnalysisPath}>오디오 분석 작업실(원본 v1.15) 열기 <Icon name="arrow" /></a>
+              : <a className={hub.link} href={shortsAnalysisPath}>쇼츠 분석 작업실(원본 v2.01) 열기</a>}
           </div>
           : <header className={styles.mast}>
             <div><h2 id={`${id}-title`} tabIndex={-1}>{label}</h2><p>{program.description}</p></div>
