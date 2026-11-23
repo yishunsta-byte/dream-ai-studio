@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { AdminAudioUpload } from "@/components/admin/admin-audio-upload";
+import { AdminAudioUpload, uploadProblemText } from "@/components/admin/admin-audio-upload";
 import { AUDIO_ACCEPT, createAudioUploadClient, directAudioIssue, guidance, largeAudioIssue } from "@/components/admin/audio-upload-client";
 import { audioFormatFromFilename } from "@/lib/reference-analysis/admin-audio-upload-contract";
 import { adminAudioChunkBytes, adminAudioUploadLimit, adminAudioUploadsPath, audioUploadCommand, audioUploadStart } from "@/lib/reference-analysis/admin-audio-upload-contract";
@@ -65,6 +65,12 @@ describe("P1-07 대용량 오디오 업로드 클라이언트", () => {
     expect(await reply(json({ code: "stale_credential", upload: view({ status: "uploaded", receivedBytes: 5 * 1024 * 1024 }) }, 409)))
       .toMatchObject({ kind: "problem", status: 409, code: "stale_credential", upload: { status: "uploaded" } });
     expect(await reply(json({ code: "storage_unavailable" }, 503))).toEqual({ kind: "problem", status: 503, code: "storage_unavailable" });
+    // P1-07-AUDIO-UPLOAD-STORAGE-FEEDBACK: 관리자 감싸개의 일시 장애 응답 { error: "unavailable" }만 코드로 읽는다(code가 있으면 code가 먼저).
+    expect(await reply(json({ error: "unavailable" }, 503))).toEqual({ kind: "problem", status: 503, code: "unavailable" });
+    expect(await reply(json({ code: "expired", error: "unavailable" }, 410))).toEqual({ kind: "problem", status: 410, code: "expired" });
+    // 그 밖의 error 원문은 코드로 옮기지 않는다(대소문자·공백이 다른 값, 다른 낱말, 문자열이 아닌 값).
+    for (const error of ["AUTH_REQUIRED", "Unavailable", " unavailable", "unavailable ", "<b>서버 원문</b>", 503, null])
+      expect(await reply(json({ error }, 503))).toEqual({ kind: "problem", status: 503, code: "" });
     expect(await reply(new TypeError("Failed to fetch"))).toEqual({ kind: "lost" });
     expect(await reply(new Response("not json", { status: 200 }))).toEqual({ kind: "lost" });
     // 받은 크기가 전체보다 크거나, 상세 v2 보고서·잘못된 보고서·모르는 상태면 확인 실패(유실)로 본다.
@@ -135,5 +141,17 @@ describe("P1-07 대용량 오디오 업로드 클라이언트", () => {
     expect(html).toContain("음악 분석 설정을 확인하는 중이에요.");
     expect(html).not.toContain("서버에 올리기");
     expect(send).not.toHaveBeenCalled();
+  });
+  it("P1-07-AUDIO-UPLOAD-STORAGE-FEEDBACK: 503 일시 장애는 고정 업로드 안내, 다른 실패 문구는 그대로", () => {
+    const fixed = "서버가 지금 업로드를 처리할 수 없어요. 잠시 뒤 다시 시도해 주세요.";
+    expect(uploadProblemText(503, "unavailable")).toBe(fixed);
+    // 기존 코드·상태 문구는 바뀌지 않는다.
+    expect(uploadProblemText(503, "storage_unavailable")).toBe("업로드 저장소를 지금 쓸 수 없어요. 잠시 뒤 다시 시도해 주세요.");
+    expect(uploadProblemText(410, "expired")).toBe("접수 보관 기한이 지나 서버가 정리했어요. 새로 올려 주세요.");
+    expect(uploadProblemText(401, "")).toBe("다시 로그인한 뒤 시도해 주세요.");
+    expect(uploadProblemText(403, "")).toBe("관리자 권한과 현재 사이트에서 보낸 요청인지 확인해 주세요.");
+    // 코드가 없는 503과 모르는 코드는 예전 일반 안내 그대로(서버 원문을 보이지 않는다).
+    expect(uploadProblemText(503, "")).toBe("응답을 확인하지 못했어요. 다시 시도해 주세요.");
+    expect(uploadProblemText(500, "<b>서버 원문</b>")).toBe("응답을 확인하지 못했어요. 다시 시도해 주세요.");
   });
 });

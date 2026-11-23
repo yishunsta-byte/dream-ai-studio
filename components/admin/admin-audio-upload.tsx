@@ -34,6 +34,8 @@ const codeText: Record<string, string> = {
   stale_credential: "음악 분석 설정이 바뀌었어요. 최신 설정을 다시 읽었어요.",
   not_configured: "음악 분석 모델이 설정되지 않았어요.",
   storage_unavailable: "업로드 저장소를 지금 쓸 수 없어요. 잠시 뒤 다시 시도해 주세요.",
+  // 관리자 감싸개의 일시 장애(로그인 확인·저장소 열기 예외, 503). 서버 원문은 보이지 않고 이 고정 안내만 보인다.
+  unavailable: "서버가 지금 업로드를 처리할 수 없어요. 잠시 뒤 다시 시도해 주세요.",
   upload_limit: "끝나지 않은 업로드가 많아요. 다른 업로드를 끝내거나 취소한 뒤 다시 시도해 주세요.",
   too_large: "업로드는 100 MiB까지 가능해요.",
   invalid_input: "파일 이름·크기나 분석 입력을 확인해 주세요.",
@@ -55,7 +57,8 @@ const statusText: Record<number, string> = {
   401: "다시 로그인한 뒤 시도해 주세요.",
   403: "관리자 권한과 현재 사이트에서 보낸 요청인지 확인해 주세요.",
 };
-const problemText = (status: number, code: string) => codeText[code] ?? statusText[status] ?? "응답을 확인하지 못했어요. 다시 시도해 주세요.";
+/** 실패 응답(상태·코드)의 화면 안내. 아는 코드 → 상태 → 일반 안내 순서. */
+export const uploadProblemText = (status: number, code: string) => codeText[code] ?? statusText[status] ?? "응답을 확인하지 못했어요. 다시 시도해 주세요.";
 const terminal = (upload?: AudioUploadView) => !!upload && ["completed", "failed", "cancelled", "expired"].includes(upload.status);
 const cleanupText = {
   none: "Gemini로 보낸 파일은 없어요.",
@@ -169,7 +172,7 @@ function UploadBody({ file, client, settingsHref, mode = "music", detail = false
     else if (current.status === "completed") say("status", "분석을 마쳤어요.");
     else if (current.status === "cancelled") say("status", "업로드를 취소했어요.");
     else if (current.status === "expired") say("alert", codeText.expired);
-    else say("alert", `${problemText(0, current.code ?? "")} 이 접수는 끝났어요. 다시 분석하려면 ‘새로 올리기’를 눌러 주세요.`);
+    else say("alert", `${uploadProblemText(0, current.code ?? "")} 이 접수는 끝났어요. 다시 분석하려면 ‘새로 올리기’를 눌러 주세요.`);
   }
   function problem(reply: Extract<UploadReply, { kind: "problem" }>) {
     if (reply.upload) setUpload(reply.upload);
@@ -178,7 +181,7 @@ function UploadBody({ file, client, settingsHref, mode = "music", detail = false
     const stuck = reply.code === "stale_credential" && reply.upload && !terminal(reply.upload)
       ? " 이 접수는 이전 설정으로 만들어져 이어서 쓸 수 없어요. 취소한 뒤 새로 올려 주세요." : "";
     const again = reply.code === "stale_credential" ? " 확인한 뒤 다시 동의해 주세요." : "";
-    say("alert", problemText(reply.status, reply.code) + again + stuck);
+    say("alert", uploadProblemText(reply.status, reply.code) + again + stuck);
   }
 
   // 서버가 받은 위치(receivedBytes)부터 chunkBytes씩 보낸다. 끊김·위치 차이는 상태를 읽어 잇고, 연달아 세 번 넘게 진척이 없으면 멈춘다.

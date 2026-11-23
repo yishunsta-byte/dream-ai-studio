@@ -70,7 +70,8 @@ export function createAudioUploadClient(send: typeof fetch = (...args) => fetch(
     const upload = "upload" in record ? readUpload(record.upload) : undefined;
     if (upload === null) return { kind: "lost" };
     if (response.ok) return upload ? { kind: "ok", status: response.status, upload } : { kind: "lost" };
-    const code = typeof record.code === "string" ? record.code.slice(0, 80) : "";
+    // 명시 code가 먼저다. code가 없을 때는 관리자 감싸개의 일시 장애 응답({ error: "unavailable" })만 코드로 읽고, 다른 error 원문은 버린다.
+    const code = typeof record.code === "string" ? record.code.slice(0, 80) : record.error === "unavailable" ? "unavailable" : "";
     return { kind: "problem", status: response.status, code, ...(upload && { upload }) };
   }
   const at = (id: string) => `${adminAudioUploadsPath}/${encodeURIComponent(id)}`;
