@@ -208,7 +208,9 @@ export function AdminNavigation() {
   return <nav ref={navigation} className={styles.navigation} aria-label="관리 메뉴" hidden={!shown || undefined} inert={!shown || undefined}>
     <ul className={styles.operationLinks} aria-label="운영 메뉴">
       {operations.map(({ id, label, emoji }) => <li key={id} className={id === "admin-manual" ? styles.manualNav : undefined}>
-        <a href={`#${id}`} aria-current={id === currentMenu ? "location" : undefined}>
+        {/* P1-00-ADMIN-PLATFORM-CONSOLE-OPTION3: 분석 프로그램 세 개는 보라 배경·개별 테두리(3안). 현재 위치는 aria-current로 따로 표시한다. */}
+        <a href={`#${id}`} aria-current={id === currentMenu ? "location" : undefined}
+          data-analysis={analysisPrograms.some(program => program.id === id) || undefined}>
           <span className={styles.navEmoji} data-emoji={emoji} aria-hidden="true" />{label}
         </a>
       </li>)}

@@ -53,21 +53,70 @@
 .platforms li + li { border-top: 1px solid var(--vault-line); }
 .platforms li > div { flex: 1 1 22rem; min-width: 0; }
 .platforms li p { margin-top: 4px; }
-.guideList { display: grid; gap: 10px; }
-.guide { min-width: 0; border: 1px solid var(--vault-line); border-radius: var(--radius-md); background: var(--vault-input); overflow: hidden; }
-.guide[open] { border-color: #52698a; }
-.guideSummary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; min-height: 55px; padding: 12px 14px; cursor: pointer; list-style: none; }
-.guideSummary::-webkit-details-marker { display: none; }
-.guideSummary > span:first-child { flex: 1 1 120px; }
-.guideSummary::after { content: ""; width: 8px; height: 8px; flex: none; margin: 0 3px 4px 1px; border: solid var(--vault-muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
-.guide[open] .guideSummary::after { margin-bottom: 0; transform: rotate(225deg); }
-.guidePurpose { display: block; margin-top: 2px; color: var(--vault-muted); font-size: var(--text-sm); }
-.guideStatus { color: var(--vault-accent); font-size: var(--text-xs); }
-.guideBody { display: grid; justify-items: start; gap: 6px; padding: 14px; border-top: 1px solid var(--vault-line); background: #182437; }
-.guideSteps { box-sizing: border-box; display: grid; gap: 15px; width: 100%; margin: 0; padding-inline-start: 1.45em; min-width: 0; }
-.guideSteps > li { padding-inline-start: 3px; min-width: 0; }
-.guideSteps > li::marker { color: var(--vault-accent); font-weight: 750; }
-.guideSteps p { margin: 3px 0 0; font-size: var(--text-sm); }
+/* P1-00-ADMIN-PLATFORM-CONSOLE-OPTION3 배정 2: 설정 맨 위 바로가기(시안 3안 상단 두 단추 모양)와 플랫폼 칸 끝 복귀 단추. */
+.shortcuts { display: flex; flex-wrap: wrap; gap: 6px; }
+.shortcuts button, .backToKeys {
+  min-height: 44px; padding: 9px 13px; border: 1px solid #3c3a56; border-radius: 7px;
+  background: #191a2b; color: #d5ddeb; font: inherit; font-weight: 650; cursor: pointer;
+}
+.shortcuts button:hover, .backToKeys:hover { border-color: #dac7ff; background: #2a2742; color: #dac7ff; }
+.backToKeys { justify-self: start; }
+/* P1-00-ADMIN-PLATFORM-CONSOLE-OPTION3(3안 연동 콘솔): 왼쪽 플랫폼 목록·오른쪽 상세, 720px 이하는 목록을 위 2열로. 보라 계열은 시안 3안 값. */
+.platformConsole {
+  --console-panel: #191a2b;
+  --console-deep: #141521;
+  --console-line: #3c3a56;
+  --console-accent: #dac7ff;
+  --console-muted: #c2bfd5;
+  display: grid; grid-template-columns: minmax(220px, .31fr) minmax(0, 1fr); align-items: start; gap: 14px; min-width: 0;
+}
+.platformPicker { display: grid; gap: 8px; min-width: 0; padding: 9px; border: 1px solid var(--console-line); border-radius: 12px; background: #141525; }
+.platformPicker [role="tab"] {
+  display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 60px; padding: 10px; text-align: start;
+  border: 1px solid var(--console-line); border-radius: 9px; background: var(--console-panel); color: #f3f5ff; font: inherit; cursor: pointer;
+}
+.platformPicker [role="tab"]:hover, .platformPicker [aria-selected="true"] { border-color: var(--console-accent); background: #2a2742; }
+.platformPicker [aria-selected="true"] { box-shadow: inset 3px 0 var(--console-accent); }
+.platformName { flex: 1 1 auto; min-width: 0; }
+.platformName strong, .platformName small { display: block; overflow-wrap: anywhere; }
+.platformName small { margin-top: 2px; color: var(--console-muted); font-size: var(--text-xs); line-height: 1.35; }
+.platformIcon { display: inline-grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border-radius: 8px; background: #25303e; color: #ecf9ff; font-weight: 800; font-size: 16px; }
+.platformIcon[data-platform-icon="instagram"] { background: #542b55; color: #ffd7f1; }
+.platformIcon[data-platform-icon="youtube"] { background: #572936; color: #ffe3e2; }
+.platformIcon[data-platform-icon="drive"] { background: #224838; color: #bdffd6; }
+.listStatus, .platformStatus { flex: none; border: 1px solid #745b32; border-radius: 999px; background: #392d22; color: #ffdb9f; font-weight: 700; white-space: nowrap; }
+.listStatus { padding: 1px 5px; font-size: .66rem; }
+.platformStatus { padding: 3px 9px; font-size: var(--text-xs); }
+.platformPanels { min-width: 0; }
+.platformPanel { display: grid; gap: 11px; min-width: 0; padding: clamp(13px, 2vw, 23px); border: 1px solid var(--console-line); border-radius: 14px; background: var(--console-panel); }
+.platformPanel[hidden] { display: none; }
+.platformHeading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid #55476b; }
+.platformHeading > div { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.platformHeading h4 { font-size: clamp(18px, 2vw, 21px); line-height: 1.15; }
+.platformHeading p { margin-top: 4px; }
+.vault .lookupNote { padding: 7px 10px; border: 1px solid var(--console-line); border-radius: 8px; color: var(--console-muted); }
+.lookupNote button, .platformGuideLink { color: var(--console-accent); font-weight: 700; }
+.lookupNote button { min-height: 44px; padding: 4px 8px; border: 1px solid var(--console-line); border-radius: 6px; background: #1f1d33; font: inherit; cursor: pointer; }
+.platformBox { min-width: 0; padding: 13px; border: 1px solid var(--console-line); border-radius: 10px; background: var(--console-deep); }
+.platformSteps { border-color: #5d4b79; }
+.platformBox h5 { margin: 0 0 11px; color: #f1f4ff; font-size: .98rem; }
+.platformFields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.platformFields label { display: grid; gap: 4px; min-width: 0; color: #d8e4f7; font-size: var(--text-sm); }
+.platformFields input {
+  width: 100%; min-width: 0; min-height: 40px; padding: 6px 9px; border: 1px solid var(--console-line); border-radius: 6px;
+  background: #1c1c2c; color: #f1f4ff; font: inherit; opacity: 1; cursor: not-allowed;
+}
+.platformFields input::placeholder { color: #aab9ce; opacity: 1; }
+.vault .platformHint { margin-top: 6px; color: var(--console-muted); font-size: var(--text-sm); }
+.platformSteps ol { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; counter-reset: guide; }
+.platformSteps li { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: start; gap: 8px; counter-increment: guide; }
+.platformSteps li::before {
+  content: counter(guide); display: grid; place-items: center; width: 22px; height: 22px;
+  border: 1px solid var(--console-line); border-radius: 50%; color: var(--console-accent); font-size: .74rem; font-weight: 800;
+}
+.platformSteps li > div { min-width: 0; }
+.vault .platformSteps p { margin-top: 3px; color: var(--console-muted); font-size: var(--text-sm); }
+.platformGuideLink { display: inline-flex; align-items: center; justify-self: start; gap: 4px; min-height: 44px; text-underline-offset: 4px; }
 .copyField { display: grid; min-width: 0; margin-top: 6px; }
 .copyValue { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 5px 3px 9px; min-width: 0; border: 1px solid #425675; border-radius: var(--radius-sm); background: #0e1828; }
 .copyValue code { min-width: 0; overflow-wrap: anywhere; font-size: .83rem; color: #eef6ff; }
@@ -76,4 +125,22 @@
 
 @media (max-width: 650px) {
   .analyzerGrid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  .platformConsole { grid-template-columns: minmax(0, 1fr); }
+  .platformPicker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .platformPicker [aria-selected="true"] { box-shadow: inset 0 -3px var(--console-accent); }
+  .listStatus { display: none; }
+}
+@media (max-width: 560px) {
+  .platformFields { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 420px) {
+  .platformPicker [role="tab"] { gap: 6px; min-height: 58px; padding: 6px; }
+  .platformName small { font-size: .71rem; }
+  .platformIcon { flex-basis: 27px; width: 27px; height: 27px; }
+}
+/* 320px 관리 화면 칸(목록 탭 한 칸 약 114px)에서는 아이콘 옆 글자 칸이 좁아 'Instagram'이 글자 중간에서 끊겼다. 아이콘을 이름 위로 올린다. */
+@media (max-width: 360px) {
+  .platformPicker [role="tab"] { flex-direction: column; align-items: flex-start; }
 }

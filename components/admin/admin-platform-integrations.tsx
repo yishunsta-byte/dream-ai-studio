@@ -6,7 +6,7 @@ import { BrandLogo } from "@/components/ui/brand-logo";
 import { Card, StatusPill } from "@/components/ui/primitives";
 import { AdminIntegrationCredentials } from "./admin-integration-credentials";
 import { apiPlatformLabel } from "./admin-paths";
-import { AdminPlatformGuides } from "./admin-platform-guides";
+import { AdminPlatformGuides, AdminSettingsShortcuts, BackToAnalysisKeys } from "./admin-platform-guides";
 import { YouTubeSettingsCard } from "./admin-youtube-settings";
 import admin from "./admin.module.css";
 import styles from "./admin-platform-integrations.module.css";
@@ -35,6 +35,7 @@ const platformGroups = [
 
 export function AdminIntegrationSettings() {
   return <div className={styles.vault}>
+    <AdminSettingsShortcuts />
     <section className={styles.vaultSection} aria-labelledby="image-engine-title">
       <div className={styles.sectionHeader}>
         <div><h3 id="image-engine-title">AI 분석 엔진</h3><p>OpenAI·Claude·Gemini 중 선택해 키와 최신 모델을 등록하세요.</p></div>
@@ -75,9 +76,10 @@ export function AdminIntegrationSettings() {
 
     <section className={styles.vaultSection} aria-labelledby="publishing-platforms-title">
       <div className={styles.sectionHeader}>
-        <div><h3 id="publishing-platforms-title">내 채널 및 저장소 연동 방법</h3><p>플랫폼을 열어 설정 순서와 필요한 권한을 확인하세요.</p></div>
+        <div><h3 id="publishing-platforms-title">내 채널 및 저장소 연동 방법</h3><p>플랫폼을 고르면 연결에 필요한 항목과 설정 순서, 필요한 권한을 볼 수 있어요.</p></div>
       </div>
       <AdminPlatformGuides />
+      <BackToAnalysisKeys />
     </section>
   </div>;
 }
