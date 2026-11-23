@@ -86,4 +86,21 @@
 }
 .panel[data-appearance="premiere"] .options label:has(:checked),
 .panel[data-appearance="premiere"] .inference { background: #302449; border-color: var(--lab-mint); }
-.panel[data-appearance="premiere"] .actions .run { background: linear-gradient(105deg, #d3c6f9, #9eafe8); color: #171127; }
+.panel[data-appearance="premiere"] .actions button {
+  background: #163735; border-color: #51998b; color: #adf4e5;
+}
+.panel[data-appearance="premiere"] .actions .run {
+  background: #61dbc4; border-color: #61dbc4; color: #092622;
+}
+.panel[data-appearance="premiere"] .actions button:hover:not(:disabled, [aria-disabled="true"]) {
+  background: #28514a; color: #d3fff5;
+}
+.panel[data-appearance="premiere"] .actions .run:hover:not(:disabled) {
+  background: #8aecda; color: #092622;
+}
+.panel[data-appearance="premiere"] .actions button:focus-visible {
+  outline: 2px solid #8aecda; outline-offset: 3px;
+}
+.panel[data-appearance="premiere"] .actions button:is(:disabled, [aria-disabled="true"]) {
+  background: #273d3a; border-color: #45655f; color: #9ebbb5; opacity: 1;
+}

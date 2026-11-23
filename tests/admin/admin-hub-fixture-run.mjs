@@ -4,6 +4,7 @@
 import { build } from "esbuild";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
+import { readFileSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
 const repo = fileURLToPath(new URL("../../", import.meta.url));
 const port = Number(process.env.DREAM_ADMIN_HUB_FIXTURE_PORT ?? 0);
@@ -19,7 +20,7 @@ import {AdminStyleDnaWorkflow} from "@/components/admin/admin-style-dna-workflow
 const account = "hub-fixture@example.invalid";
 // 실제 /admin 페이지처럼 .console(관리 화면 어두운 색 변수) 안에 그린다. ?theme=light면 감싸지 않아 앱 기본(밝은) 변수로 대조한다.
 const light = typeof location !== "undefined" && new URLSearchParams(location.search).get("theme") === "light";
-const hub=<main className="content"><AdminHub email={account} projects={{kind:"unlinked"}} home={<AdminOperationsHome publications={{kind:"closed"}}/>} review={<PublicationHttpQueue initial={{kind:"closed"}}/>}/></main>;
+const hub=<AdminHub email={account} projects={{kind:"unlinked"}} home={<AdminOperationsHome publications={{kind:"closed"}}/>} review={<PublicationHttpQueue initial={{kind:"closed"}}/>}/>;
 // P1-06 원본 Style DNA 전체 화면(/admin/style-dna 페이지 본문): ?page=style-dna. 실제 페이지처럼 공통 세션 경계 안에 그린다.
 const pageName = () => typeof location !== "undefined" ? new URLSearchParams(location.search).get("page") : (globalThis as {__fixturePage?:string}).__fixturePage ?? null;
 // ?page=style-dna-panel: 같은 작업 화면을 c7886a1 관리자 칸(#admin-style-dna) 모양으로 그린다(c7886a1 Style DNA 시험을 그대로 다시 쓰는 용도).
@@ -27,6 +28,9 @@ const makeApplication = () => pageName()==="style-dna"
   ? <SessionBoundary account={account}><AdminStyleDnaWorkflow layout="original" account={account}/></SessionBoundary>
   : pageName()==="style-dna-panel"
   ? <div className={styles.console}><main className="content"><section id="admin-style-dna" tabIndex={-1}><AdminStyleDnaWorkflow/></section></main></div>
+  // P1-00 관리자 헤더 배정 2: ?page=hub-session은 실제 /admin처럼 공통 세션 경계 안에 관리 화면을 그린다(머리 메뉴 세션 가림 확인용).
+  : pageName()==="hub-session"
+  ? <SessionBoundary account={account}><div className={styles.console}>{hub}</div></SessionBoundary>
   : light ? hub : <div className={styles.console}>{hub}</div>;
 const application=makeApplication();
 `;
@@ -780,6 +784,11 @@ const server = createServer((request, response) => {
     '<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>관리 화면 대역 검수</title><link rel="stylesheet" href="/fixture.css"><body><div id="root">' + pageMarkup + '</div><script src="/fixture.js"></script></body></html>');
   if (path === "/fixture.js") return response.writeHead(200, { "content-type": "application/javascript" }).end(js);
   if (path === "/fixture.css") return response.writeHead(200, { "content-type": "text/css" }).end(css);
+  if (/^\/[a-z0-9/_-]+\.(svg|webp|png|jpg)$/i.test(path)) {
+    const file = new URL("../../public" + path, import.meta.url);
+    const types = { svg: "image/svg+xml", webp: "image/webp", png: "image/png", jpg: "image/jpeg" };
+    if (existsSync(file)) return response.writeHead(200, { "content-type": types[path.split(".").at(-1)] }).end(readFileSync(file));
+  }
   // P1-06 Style DNA 원본·시험 이미지 대역(실제 바이트 대신 크기를 맞춘 SVG). 원본은 청록, 시험 결과는 주황 계열.
   const sdMedia = /^[/]api[/]admin[/]style-dna[/][^/]+[/]media[/]([^/]+)$/.exec(path);
   if (sdMedia) {

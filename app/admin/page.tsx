@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AccountMenu } from "@/components/auth/account-menu";
-import { BrandLogo } from "@/components/ui/brand-logo";
-import { ProtectedContent, SessionBoundary } from "@/components/auth/session-boundary";
+import { SessionBoundary } from "@/components/auth/session-boundary";
 import { ShortsTabGuard } from "@/components/admin/shorts-original/shorts-tab-guard";
 import { AdminHub } from "@/components/admin/admin-hub";
 import { AdminOperationsHome } from "@/components/admin/admin-operations-home";
@@ -36,19 +33,8 @@ export default async function AdminPage() {
   return <SessionBoundary account={account}>
     <ShortsTabGuard />
     <div className={styles.console}>
-      <header className={styles.header}>
-        <Link className={styles.brand} href="/admin">
-          <BrandLogo markSize={30} />
-          <span className={styles.brandScope}>운영 관리자</span>
-        </Link>
-        <AccountMenu email={account} />
-      </header>
-      <main id="main-content" className="content">
-        <ProtectedContent>
-          <AdminHub email={account} projects={projects} home={<AdminOperationsHome publications={publications} />}
-            review={<PublicationHttpQueue initial={publications} />} />
-        </ProtectedContent>
-      </main>
+      <AdminHub email={account} projects={projects} home={<AdminOperationsHome publications={publications} />}
+        review={<PublicationHttpQueue initial={publications} />} />
     </div>
   </SessionBoundary>;
 }

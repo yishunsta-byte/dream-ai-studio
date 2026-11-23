@@ -16,7 +16,7 @@ const NOT_CONFIRMED: Record<Exclude<SessionView, "current">, string> = {
   stale: "다른 창에서 로그인 계정이 바뀌었어요. 화면을 새로 고쳐 주세요.",
 };
 
-export function AccountMenu({ email }: { email: string }) {
+export function AccountMenu({ email, showEmailOnMobile = false }: { email: string; showEmailOnMobile?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   // 공통 경계(SessionBoundary) 안이면 그 감시 상태를 함께 쓴다(본문과 같은 판정). 경계 밖이면 자체 감시(T-213 동작).
@@ -33,7 +33,7 @@ export function AccountMenu({ email }: { email: string }) {
     setProblem(result.message); setBusy(false);
   }
   const confirmed = view === "current";
-  return <div className={styles.account}>
+  return <div className={styles.account} data-show-email={showEmailOnMobile || undefined}>
     {confirmed
       ? <span className={styles.email} title={email}><span className="sr-only">로그인한 계정 </span>{email}</span>
       : <span className={styles.accountNotice} role="status">{NOT_CONFIRMED[view]}</span>}

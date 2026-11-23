@@ -17,8 +17,7 @@ import styles from "@/components/admin/admin.module.css";
 import "@/app/globals.css";
 const account = "premiere-fixture@example.invalid";
 const application=<div className={styles.console}>
-  <header className={styles.header}><a className={styles.brand} href="/admin">DREAM <em>SCREEN</em></a><span>분석 결과 공개 검수 · 예시 저장</span></header>
-  <main className="content"><AdminHub email={account} projects={{kind:"unlinked"}} home={<AdminOperationsHome publications={{kind:"closed"}}/>} review={<PublicationHttpQueue initial={{kind:"closed"}}/>}/></main>
+  <AdminHub email={account} projects={{kind:"unlinked"}} home={<AdminOperationsHome publications={{kind:"closed"}}/>} review={<PublicationHttpQueue initial={{kind:"closed"}}/>}/>
 </div>;
 `;
 const transport=`

@@ -747,7 +747,8 @@ describe("P1-08-SHORTS-SESSION-RESTORE-OWNER 배정 3: 계정 전환 첫 커밋�
   it("관리 허브는 세션 경계 바로 안, 보호 본문 밖에 쇼츠 탭 기록 감시 부품을 둔다", () => {
     const page = read("app/admin/page.tsx");
     expect(page).toMatch(/<SessionBoundary account=\{account\}>\s*<ShortsTabGuard \/>\s*<div className=\{styles\.console\}>/);
-    expect(page.indexOf("<ShortsTabGuard />")).toBeLessThan(page.indexOf("<ProtectedContent>"));
+    expect(page).toMatch(/<ShortsTabGuard \/>\s*<div className=\{styles\.console\}>\s*<AdminHub /);
+    expect(read("components/admin/admin-hub.tsx")).toMatch(/<main[^>]*>\s*<h1[^>]*>[^<]+<\/h1>\s*<ProtectedContent>/);
     expect(page.match(/<ShortsTabGuard \/>/g)).toHaveLength(1);
   });
   it("감시 부품은 확정(cleared)일 때만 쇼츠 탭 기록을 지우고, 아무것도 그리지 않는다", async () => {

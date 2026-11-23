@@ -222,7 +222,15 @@ describe("T297 화면·라우트 소스", () => {
   it("관리자 화면은 인증 판정 뒤 같은 캐시 인증으로 첫 목록을 읽고, 보호 영역 안에 큐를 그린다", () => {
     const page = readFileSync("app/admin/page.tsx", "utf8");
     expect(page.indexOf("createAdminPublicationHttp({ resolveAuth: getRenderAuth }).list()")).toBeGreaterThan(page.indexOf('if (auth.kind === "denied")'));
-    expect(page).toMatch(/<ProtectedContent>\s*<AdminHub email=\{account\} projects=\{projects\} home=\{<AdminOperationsHome publications=\{publications\} \/>\}\s*review=\{<PublicationHttpQueue initial=\{publications\} \/>\} \/>\s*<\/ProtectedContent>/);
+    // P1-00 관리자 헤더: 머리·본문 보호는 AdminHub 안으로 옮겼다. 페이지는 같은 세션 경계 안에서 첫 목록을 큐로 넘기고,
+    // AdminHub는 main 안 ProtectedContent로 게시 큐(review)를 포함한 본문 전체를 감싼다.
+    expect(page).toMatch(/<SessionBoundary account=\{account\}>\s*<ShortsTabGuard \/>\s*<div className=\{styles\.console\}>\s*<AdminHub email=\{account\} projects=\{projects\} home=\{<AdminOperationsHome publications=\{publications\} \/>\}\s*review=\{<PublicationHttpQueue initial=\{publications\} \/>\} \/>/);
+    const hub = readFileSync("components/admin/admin-hub.tsx", "utf8");
+    expect(hub).toMatch(/<main id="main-content" className="content">\s*<h1 className="sr-only">관리 화면<\/h1>\s*<ProtectedContent>\s*<div className=\{styles\.sections\}>/);
+    const body = hub.slice(hub.indexOf("<ProtectedContent>"), hub.indexOf("</ProtectedContent>"));
+    expect(body).toContain("{review}");
+    expect(body).toContain("{home}");
+    expect(hub.indexOf("</ProtectedContent>")).toBeGreaterThan(hub.indexOf("<AdminManual />"));
   });
   it("라우트는 서버 경계만 부르고 nodejs·동적이다", () => {
     const route = readFileSync("app/api/admin/publications/route.ts", "utf8");

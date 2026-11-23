@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
-import { Icon, type IconName } from "@/components/ui/Icon";
+import type { IconName } from "@/components/ui/Icon";
+import { useSessionBoundary } from "@/components/auth/session-boundary";
 import styles from "./admin.module.css";
 import { apiPlatformLabel, homeSectionId, imageAnalysisSection, imageShareSection, reviewSectionId, styleDnaPath } from "./admin-paths";
 
@@ -21,14 +22,16 @@ export const analysisResultsSection = "admin-analysis-results";
 export const accountSettingsId = "admin-account";
 const apiIntegrationsId = "admin-api-integrations";
 const operations = [
-  ...analysisPrograms,
-  { id: "admin-project-list", label: "내 프로젝트", icon: "folder" },
-  { id: "admin-review", label: "완성본 검수·게시", icon: "check" },
-  { id: "admin-render-queue", label: "렌더 대기열", icon: "clock" },
-  { id: accountSettingsId, label: apiPlatformLabel, icon: "settings" },
-  { id: "admin-operations-availability", label: "운영 연결 범위", icon: "lock" },
-  { id: "admin-manual", label: "사용매뉴얼", icon: "info" },
-] as const satisfies readonly { id: string; label: string; icon: IconName }[];
+  { ...analysisPrograms[0], emoji: "🖼️" },
+  { ...analysisPrograms[1], emoji: "🎧" },
+  { ...analysisPrograms[2], emoji: "🎬" },
+  { id: "admin-project-list", label: "내 프로젝트", emoji: "📁" },
+  { id: "admin-review", label: "완성본 검수·게시", emoji: "✅" },
+  { id: "admin-render-queue", label: "렌더 대기열", emoji: "⏳" },
+  { id: accountSettingsId, label: apiPlatformLabel, emoji: "🔑" },
+  { id: "admin-operations-availability", label: "운영 연결 범위", emoji: "🔗" },
+  { id: "admin-manual", label: "사용매뉴얼", emoji: "📘" },
+] as const satisfies readonly { id: string; label: string; emoji: string }[];
 
 const sections = [...operations, { id: homeSectionId }, { id: analysisResultsSection }, { id: imageShareSection }];
 
@@ -86,11 +89,34 @@ export function AdminNavigation() {
   const currentMenu = current === imageShareSection || current === analysisResultsSection ? reviewSectionId : current;
   const visitedSection = useRef(false);
   const navigation = useRef<HTMLElement>(null);
+  // P1-00 배정 2: 메뉴가 머리(ProtectedContent 밖)로 올라갔으므로, 세션이 확인되지 않은 동안(확인 중·오프라인·재확인 실패·계정 변경)
+  // 공용 경계 상태로 메뉴도 본문처럼 hidden+inert로 막는다(표시·탭·클릭 차단). 새 안내는 만들지 않고, 메뉴에 있던 초점은
+  // 본문 가림 안내(ProtectedContent의 [data-session-notice])로 옮겼다가 같은 계정이 다시 확인되면 그 메뉴 링크로 돌려준다.
+  const session = useSessionBoundary();
+  const shown = !session || session.view === "current";
+  const parkedFocus = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
     const menu = navigation.current;
-    const workspace = menu?.parentElement;
-    if (!menu || !workspace) return;
+    if (!menu) return;
+    const active = document.activeElement;
+    if (!shown) {
+      if (!(active instanceof HTMLElement) || !menu.contains(active)) return;
+      parkedFocus.current = active;
+      const notice = document.querySelector<HTMLElement>("[data-session-notice]");
+      if (notice) notice.focus(); else active.blur();
+      return;
+    }
+    const target = parkedFocus.current;
+    parkedFocus.current = null;
+    if (target?.isConnected && menu.contains(target) && (!active || active === document.body)) target.focus({ preventScroll: true });
+  }, [shown]);
+
+  useLayoutEffect(() => {
+    const menu = navigation.current;
+    const header = menu?.closest("header");
+    const workspace = menu?.closest<HTMLElement>("[data-admin-workspace]");
+    if (!menu || !header || !workspace) return;
 
     const viewport = window.visualViewport;
     let focusFrame = 0;
@@ -102,9 +128,9 @@ export function AdminNavigation() {
       checkViewport = false;
       const element = document.activeElement;
       if (!(element instanceof HTMLElement) || !workspace.contains(element) || menu.contains(element)) return;
-      const header = menu.getBoundingClientRect();
+      const headerBounds = header.getBoundingClientRect();
       const target = element.getBoundingClientRect();
-      const covered = menu.dataset.sticky === "true" && header.top <= 1 && target.top < header.bottom && target.bottom > header.top;
+      const covered = menu.dataset.sticky === "true" && headerBounds.top <= 1 && target.top < headerBounds.bottom && target.bottom > headerBounds.top;
       if (covered || (resized && (target.top < 0 || target.bottom > viewportHeight))) {
         element.scrollIntoView({ block: "start", inline: "nearest" });
       }
@@ -113,10 +139,11 @@ export function AdminNavigation() {
       if (!focusFrame) focusFrame = requestAnimationFrame(revealFocusedControl);
     };
     const updateOffset = () => {
-      const height = Math.ceil(menu.getBoundingClientRect().height);
+      const height = Math.ceil(header.getBoundingClientRect().height);
       viewportHeight = Math.min(window.innerHeight, viewport?.height ?? window.innerHeight);
       const sticky = height > 0 && height <= viewportHeight / 2;
       menu.dataset.sticky = String(sticky);
+      header.dataset.sticky = String(sticky);
       workspace.style.setProperty("--admin-nav-height", `${sticky ? height : 0}px`);
       checkViewport = true;
       scheduleReveal();
@@ -124,7 +151,7 @@ export function AdminNavigation() {
 
     updateOffset();
     const observer = new ResizeObserver(updateOffset);
-    observer.observe(menu);
+    observer.observe(header);
     window.addEventListener("resize", updateOffset);
     viewport?.addEventListener("resize", updateOffset);
     workspace.addEventListener("focusin", scheduleReveal);
@@ -146,11 +173,12 @@ export function AdminNavigation() {
       cancelAnimationFrame(focusFrame);
       workspace.style.removeProperty("--admin-nav-height");
       delete menu.dataset.sticky;
+      delete header.dataset.sticky;
     };
   }, []);
 
   useLayoutEffect(() => {
-    const workspace = navigation.current?.parentElement;
+    const workspace = navigation.current?.closest("[data-admin-workspace]");
     const section = document.getElementById(current);
     if (!workspace || !section) return;
     workspace.setAttribute("data-admin-ready", "true");
@@ -177,11 +205,11 @@ export function AdminNavigation() {
     return () => cancelAnimationFrame(frame);
   }, [current, hash]);
 
-  return <nav ref={navigation} className={styles.navigation} aria-label="관리 메뉴">
+  return <nav ref={navigation} className={styles.navigation} aria-label="관리 메뉴" hidden={!shown || undefined} inert={!shown || undefined}>
     <ul className={styles.operationLinks} aria-label="운영 메뉴">
-      {operations.map(({ id, label, icon }) => <li key={id}>
+      {operations.map(({ id, label, emoji }) => <li key={id} className={id === "admin-manual" ? styles.manualNav : undefined}>
         <a href={`#${id}`} aria-current={id === currentMenu ? "location" : undefined}>
-          <Icon name={icon} />{label}
+          <span className={styles.navEmoji} data-emoji={emoji} aria-hidden="true" />{label}
         </a>
       </li>)}
     </ul>

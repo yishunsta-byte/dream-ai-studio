@@ -42,6 +42,10 @@
 .account { display:flex; align-items:center; gap:var(--sp-2); margin-left:auto; min-width:0; }
 .email { min-width:0; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--fg-muted); font-size:var(--text-sm); }
 
+@media (min-width: 1381px) { .account[data-show-email] .email { max-width: 152px; } }
+/* P1-00-ADMIN-HEADER-320-OVERFLOW: 좁은 관리 머리에서 이메일만 줄고 로그아웃 단추는 줄거나 글자가 꺾이지 않는다. */
+.account[data-show-email] > button { flex-shrink: 0; white-space: nowrap; }
+
 /* 클라우드 준비 중 화면(T-183) */
 .brand { display:flex; align-items:center; gap:var(--sp-3); }
 .brand div { display:flex; flex-direction:column; min-width:0; }
@@ -52,7 +56,7 @@
 @media(max-width:600px) {
   .page { justify-content:flex-start; padding-top:var(--sp-8); }
   .panel { padding:var(--sp-5) var(--sp-4); }
-  .account .email { display:none; }
+  .account:not([data-show-email]) .email { display:none; }
 }
 .accountError { color:var(--st-danger-fg); font-size:var(--text-sm); max-width:260px; }
 @media(max-width:600px) { .accountError { position:absolute; right:var(--sp-4); top:100%; max-width:calc(100vw - 32px); padding:var(--sp-2) var(--sp-3); background:var(--bg-surface); border:1px solid var(--st-danger-line); border-radius:var(--radius-sm); box-shadow:var(--shadow-2); z-index:20; } }

@@ -70,7 +70,7 @@ function NavBody({ step, onStep, account, guideHref, settingsHref, confirmed, em
       </div>
       <div className={s.utility}>
         <a className={`${s.util} ${s.guide}`} href={guideHref}><BookOpen size={15} /><span>📖 연동 &amp; 사용 매뉴얼</span></a>
-        <a className={s.util} href={settingsHref}><KeyRound size={15} /><span>🔑 API키등록·플랫폼연동</span></a>
+        {!embedded && <a className={s.util} href={settingsHref}><KeyRound size={15} /><span>🔑 API키등록·플랫폼연동</span></a>}
       </div>
     </div>
     {!embedded && <div className={s.account}>

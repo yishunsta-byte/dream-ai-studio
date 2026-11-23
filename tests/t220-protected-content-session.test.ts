@@ -59,10 +59,10 @@ describe("연결 inventory(정적)", () => {
     const users = Object.keys(import.meta.glob(["../app/**/*.tsx", "../components/**/*.tsx"]))
       .map((path) => path.replace("../", ""))
       .filter((path) => path !== "components/auth/account-menu.tsx" && /<AccountMenu\b/.test(read(path)));
-    // T-243: 관리 허브(app/admin/page.tsx)가 AccountMenu를 새로 그려 목록에 들어온다. 같은 경계·ProtectedContent 조건을 그대로 요구한다.
+    // 관리 허브로 옮긴 계정 메뉴와 쇼츠 단독 메뉴도 같은 보호 조건을 적용한다.
     // P1-06: 원본 Style DNA 전체 화면 껍데기(사이드바 계정 메뉴)도 같은 조건: 페이지가 경계를 두고, 껍데기의 main 안에서 본문을 가린다.
     expect(users.sort()).toEqual([
-      "app/(cloud)/layout.tsx", "app/admin/audio-analysis/page.tsx", "app/admin/page.tsx", "components/admin/admin-platform-integrations.tsx",
+      "app/(cloud)/layout.tsx", "app/admin/audio-analysis/page.tsx", "components/admin/admin-hub.tsx", "components/admin/admin-platform-integrations.tsx",
       "components/admin/shorts-original/shorts-studio.tsx", "components/admin/style-dna-original/studio-shell.tsx",
       "components/auth/cloud-pending.tsx", "components/studio-shell.tsx",
     ]);
@@ -76,7 +76,17 @@ describe("연결 inventory(정적)", () => {
     expect(read("app/admin/shorts-analysis/page.tsx")).toMatch(/<SessionBoundary account=\{account\}>\s*<ShortsStudio account=\{account\} \/>/);
     expect(read("components/admin/shorts-original/shorts-studio.tsx")).toMatch(/<main className=\{s\.main\} id="main-content">\s*<div className=\{s\.inner\}><ProtectedContent>/);
     // P1-07 운영 이식: 오디오 전용 화면도 같은 경계·ProtectedContent 조건.
-    for (const path of ["app/(cloud)/layout.tsx", "app/admin/audio-analysis/page.tsx", "app/admin/page.tsx", "components/auth/cloud-pending.tsx"]) {
+    // P1-00 관리자 헤더: 관리 허브의 계정 메뉴·main·ProtectedContent는 AdminHub로 옮겼다. 경계는 페이지가 AdminHub를 감싸서 둔다.
+    // 상단 관리 메뉴는 머리(ProtectedContent 밖)에 있으므로 같은 경계 상태로 hidden+inert가 되어야 한다.
+    expect(read("app/admin/page.tsx")).toMatch(/<SessionBoundary account=\{account\}>\s*<ShortsTabGuard \/>\s*<div className=\{styles\.console\}>\s*<AdminHub /);
+    const hub = read("components/admin/admin-hub.tsx");
+    expect(hub).toMatch(/<ProtectedContent>[^]*<ShortsAccount account=\{email\}><AdminPremierePrograms \/><\/ShortsAccount>/);
+    expect(hub).toMatch(/<header className=\{styles\.hubHeader\}>[\s\S]*<AdminNavigation \/>[\s\S]*<AccountMenu email=\{email\} showEmailOnMobile \/>[\s\S]*<\/header>\s*<main id="main-content" className="content">\s*<h1 className="sr-only">관리 화면<\/h1>\s*<ProtectedContent>/);
+    const nav = read("components/admin/admin-navigation.tsx");
+    expect(nav).toContain("const session = useSessionBoundary();");
+    expect(nav).toContain('const shown = !session || session.view === "current";');
+    expect(nav).toMatch(/<nav ref=\{navigation\} className=\{styles\.navigation\} aria-label="관리 메뉴" hidden=\{!shown \|\| undefined\} inert=\{!shown \|\| undefined\}>/);
+    for (const path of ["app/(cloud)/layout.tsx", "app/admin/audio-analysis/page.tsx", "components/auth/cloud-pending.tsx"]) {
       const source = read(path);
       expect(source, path).toMatch(/<SessionBoundary account=\{account\}>/);
       expect(source, path).toMatch(/<ProtectedContent>/);
