@@ -54,7 +54,7 @@ function failureText(outcome: Exclude<CredentialOutcome, { kind: "ok" } | { kind
 
 function fieldMessage(field: CredentialField, code: "invalid_input" | "invalid_key" | "model_not_found" | "required") {
   if (field === "apiKey") return code === "invalid_key" ? "Gemini가 이 키를 받아들이지 않았어요. 키를 확인해 주세요."
-    : code === "required" ? "처음 저장할 때는 API 키가 필요해요." : "키 형식을 확인해 주세요. 영문·숫자·밑줄·하이픈 16~256자예요.";
+    : code === "required" ? "처음 저장할 때는 API 키가 필요해요." : "키 형식을 확인해 주세요. Google AI Studio에서 복사한 키 전체를 붙여넣어 주세요. AQ.로 시작하는 키는 점도 포함해 주세요.";
   if (code === "model_not_found") return "Gemini에서 이 모델을 찾지 못했거나 이 키로 쓸 수 없어요.";
   return "모델 ID는 영문·숫자로 시작하고 영문·숫자·점·밑줄·하이픈만 128자까지 쓸 수 있어요(models/ 없이).";
 }

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CREDENTIALS_URI, TEST_URI, isKeyFormat, isModelId, readCredentialSettings, saveCredentialSettings, testCredential } from "@/components/admin/gemini-credentials-client";
+import { credentialKey, credentialWrite } from "@/lib/reference-analysis/analysis-credential-contract";
 
 // Backend 계약(msg_bb18c2ae5fd0)에 맞춘 화면 쪽 통신: 상태 분류, 요청 모양, 키 비노출.
 const settings = {
@@ -97,8 +98,24 @@ describe("Gemini 설정 통신", () => {
   });
 
   it("키 형식 규칙은 서버 계약과 같다", () => {
-    for (const ok of ["a".repeat(16), "AIza_SYNTHETIC-123456", "x".repeat(256)]) expect(isKeyFormat(ok), ok).toBe(true);
-    for (const bad of ["short", "a".repeat(15), "x".repeat(257), "has space 1234567890", "slash/1234567890123"]) expect(isKeyFormat(bad), bad).toBe(false);
+    for (const ok of ["a".repeat(16), "AIza_SYNTHETIC-123456", "x".repeat(256), "AQ." + "x".repeat(253)]) expect(isKeyFormat(ok), ok).toBe(true);
+    for (const bad of ["short", "a".repeat(15), "x".repeat(257), "has space 1234567890", "slash/1234567890123",
+      "AQ.", "AQ." + "x".repeat(254), "AQ.part.more-12345678", "Other.prefix-1234567", "AQ.line\r\nbreak-123456"]) {
+      expect(isKeyFormat(bad), bad).toBe(false);
+    }
+  });
+
+  it("Gemini 인증 키는 두 묶음에서 점까지 보존하고 공용 키 형식은 그대로 쓴다", () => {
+    const apiKey = "AQ.synthetic-key_12345";
+    expect(isKeyFormat(apiKey)).toBe(true);
+    expect(credentialKey.safeParse(apiKey).success).toBe(false);
+    const groups = [
+      { group: "reference", models: { image: "gemini-4-neon", shorts: "gemini-4-neon" } },
+      { group: "music", models: { music: "gemini-4-neon" } },
+    ];
+    for (const group of groups) {
+      expect(credentialWrite.parse({ ...group, expectedVersion: 0, apiKey: ` ${apiKey} ` }).apiKey).toBe(apiKey);
+    }
   });
 
   it("모델 ID 규칙은 계약과 같다", () => {

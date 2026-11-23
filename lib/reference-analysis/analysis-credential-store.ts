@@ -4,7 +4,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { Pool, type PoolClient } from "pg";
 import { z } from "zod";
 import { supabasePublicConfig } from "../auth/config";
-import { credentialGroup, credentialKey, credentialModels, credentialTestMap, credentialTestResult, modelId,
+import { credentialGroup, credentialKey, credentialModels, credentialTestMap, credentialTestResult, geminiCredentialKey, modelId,
   type CredentialGroup, type CredentialModels, type CredentialTest, type GeminiProgram } from "./analysis-credential-contract";
 import { isStyleDnaEngineModel, styleDnaEngine, type StyleDnaEngine, type StyleDnaEngineBasis, type StyleDnaEngineCredentialMetadata,
   type StyleDnaEngineCredentialWrite } from "./style-dna-engine-credential-contract";
@@ -85,22 +85,22 @@ const youtubeAad = (owner: string, version: number, keyId: string) =>
 const engineAad = (owner: string, provider: StyleDnaEngine, version: number, model: string, keyId: string) =>
   Buffer.from(JSON.stringify(["dream-style-dna-engine-credential-v1", owner.toLowerCase(), provider, version, model, keyId]));
 
-function sealKey(apiKey: string, ring: KeyRing, associatedData: Buffer) {
+function sealKey(apiKey: string, ring: KeyRing, associatedData: Buffer, keyFormat = credentialKey) {
   const nonce = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", keyFor(ring, ring.primary), nonce);
   cipher.setAAD(associatedData);
-  const ciphertext = Buffer.concat([cipher.update(credentialKey.parse(apiKey), "utf8"), cipher.final()]);
+  const ciphertext = Buffer.concat([cipher.update(keyFormat.parse(apiKey), "utf8"), cipher.final()]);
   return [ring.primary, nonce, ciphertext, cipher.getAuthTag()] as const;
 }
 
-function openKey({ nonce, ciphertext, tag }: Record<string, unknown>, key: Buffer, associatedData: Buffer) {
+function openKey({ nonce, ciphertext, tag }: Record<string, unknown>, key: Buffer, associatedData: Buffer, keyFormat = credentialKey) {
   if (!Buffer.isBuffer(nonce) || nonce.length !== 12 || !Buffer.isBuffer(ciphertext) || ciphertext.length > 256 ||
       !Buffer.isBuffer(tag) || tag.length !== 16) throw unavailable();
   const cipher = createDecipheriv("aes-256-gcm", key, nonce);
   cipher.setAAD(associatedData);
   cipher.setAuthTag(tag);
   const bytes = Buffer.concat([cipher.update(ciphertext), cipher.final()]);
-  try { return credentialKey.parse(bytes.toString("utf8")); }
+  try { return keyFormat.parse(bytes.toString("utf8")); }
   finally { bytes.fill(0); }
 }
 
@@ -162,12 +162,12 @@ export function createAnalysisCredentialStores(pool: PoolLike, ring: KeyRing) {
       const row = rowShape.parse(rows[0]);
       const saved = metadata(row, ring);
       return { ...saved, apiKey: openKey(rows[0], keyFor(ring, row.key_id),
-        aad(owner.toLowerCase(), group, row.version, saved.models, row.key_id)) };
+        aad(owner.toLowerCase(), group, row.version, saved.models, row.key_id), geminiCredentialKey) };
     }),
     write: (owner, { group, models, apiKey }, expectedVersion) => transaction(owner, false, async client => {
       const parsedModels = credentialModels(group, models);
       const version = expectedVersion + 1;
-      const sealed = sealKey(apiKey, ring, aad(owner.toLowerCase(), group, version, parsedModels, ring.primary));
+      const sealed = sealKey(apiKey, ring, aad(owner.toLowerCase(), group, version, parsedModels, ring.primary), geminiCredentialKey);
       const args = [owner, group, version, JSON.stringify(parsedModels), ...sealed];
       const result = expectedVersion === 0
         ? await client.query(`INSERT INTO ${table}(owner_id,provider_group,version,models,key_id,nonce,ciphertext,tag)

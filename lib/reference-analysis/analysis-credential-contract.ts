@@ -8,12 +8,13 @@ export type CredentialModels = Partial<Record<GeminiProgram, string>>;
 
 export const modelId = z.string().trim().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/);
 export const credentialKey = z.string().trim().regex(/^[a-zA-Z0-9_-]{16,256}$/);
+export const geminiCredentialKey = z.string().trim().min(16).max(256).regex(/^(?:AQ\.)?[a-zA-Z0-9_-]+$/);
 const expectedVersion = z.number().int().min(0).max(2_147_483_646);
 const referenceModels = z.strictObject({ image: modelId, shorts: modelId });
 const musicModels = z.strictObject({ music: modelId });
 export const credentialWrite = z.discriminatedUnion("group", [
-  z.strictObject({ group: z.literal("reference"), expectedVersion, apiKey: credentialKey.optional(), models: referenceModels }),
-  z.strictObject({ group: z.literal("music"), expectedVersion, apiKey: credentialKey.optional(), models: musicModels }),
+  z.strictObject({ group: z.literal("reference"), expectedVersion, apiKey: geminiCredentialKey.optional(), models: referenceModels }),
+  z.strictObject({ group: z.literal("music"), expectedVersion, apiKey: geminiCredentialKey.optional(), models: musicModels }),
 ]);
 export type CredentialWrite = z.infer<typeof credentialWrite>;
 

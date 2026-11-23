@@ -14,8 +14,8 @@ import { createShortsAnalysisHttp } from "../../lib/reference-analysis/shorts-an
 
 const origin = "http://127.0.0.1:41417";
 const fakeRef = "synthetic_reference_key_00000001";
-const fakeMusic = "synthetic_music_key_000000001";
-const rotatedRef = "synthetic_reference_key_00000002";
+const fakeMusic = "AQ.synthetic_music_key_000000001";
+const rotatedRef = "AQ.synthetic_reference_key_00000002";
 const badKey = "synthetic_rejected_key_00000001";
 const key1 = randomBytes(32).toString("base64url");
 const key2 = randomBytes(32).toString("base64url");
@@ -141,6 +141,8 @@ export async function verifyAdminGeminiCredentialStore(admin: Client, config: Po
     assert.equal(durable.groups.reference.version, 1);
     assert.equal(durable.programs.image.lastTest.checkedAt, verified.checkedAt);
     assert.equal(durable.programs.music.lastTest.code, "provider_error");
+    assert.equal((await restarted.open(ownerA, "reference"))?.apiKey, fakeRef);
+    assert.equal((await restarted.open(ownerA, "music"))?.apiKey, fakeMusic);
     const replace = { ...refWrite, expectedVersion: 1, apiKey: rotatedRef };
     const competing = await Promise.all([next.put(request(replace)), next.put(request(replace))]);
     assert.deepEqual(competing.map(r => r.status).sort(), [200, 409]);

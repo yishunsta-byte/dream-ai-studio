@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  analysisCredentialPath, credentialKey, credentialTestResult, geminiPrograms, modelId,
+  analysisCredentialPath, credentialTestResult, geminiCredentialKey, geminiPrograms, modelId,
   type CredentialGroup as ContractGroup, type GeminiProgram,
 } from "@/lib/reference-analysis/analysis-credential-contract";
 
@@ -16,7 +16,7 @@ export type CredentialGroup = ContractGroup;
 export type CredentialProgram = GeminiProgram;
 export const isModelId = (value: string) => modelId.safeParse(value).success;
 // 키 값은 형식만 보고 바로 요청 본문으로만 쓴다.
-export const isKeyFormat = (value: string) => credentialKey.safeParse(value).success;
+export const isKeyFormat = (value: string) => geminiCredentialKey.safeParse(value).success;
 
 const iso = z.iso.datetime({ offset: true });
 const program = z.object({ configured: z.boolean(), source: z.enum(["stored", "environment", "none"]), modelId: z.string().max(128).nullable(),
