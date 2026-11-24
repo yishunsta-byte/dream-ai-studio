@@ -37,7 +37,7 @@
 .field input[aria-invalid="true"] { border: 2px solid var(--studio-bad-fg); }
 .field input:disabled { background: var(--studio-neutral-bg); color: var(--studio-muted); cursor: not-allowed; }
 .keyStored { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 8px); }
-.notice:empty { display: none; }
+.notice:empty { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
 .state, .notice, .status dd[data-tone] { border-radius: var(--radius-md); }
 .state, .notice:not(:empty) { padding: var(--sp-1, 4px) var(--sp-2, 8px); font-size: var(--text-sm); background: var(--studio-neutral-bg); color: var(--studio-ink); }
 :is(.state, .notice)[data-tone="success"] { background: var(--studio-ok-bg); color: var(--studio-ok-fg); }
@@ -77,7 +77,9 @@
 }
 .providerKeys, .providerModels, .providerModelId, .providerActions { min-width: 0; align-self: start; }
 .providerModelId > fieldset { gap: var(--sp-1, 4px); }
-.providerNotice:has(.notice:empty) { display: none; }
+.providerNotice { display: grid; gap: var(--sp-2, 8px); min-width: 0; }
+.providerNotice:has(> .notice:empty):not(:has(> .saveScope)) { display: contents; }
+.saveScope { color: var(--studio-ink); font-size: var(--text-sm); overflow-wrap: anywhere; }
 .providerTools { min-width: 0; }
 .providerTools summary { cursor: pointer; color: var(--studio-action); padding-block: 10px; font-weight: var(--weight-semibold); }
 .providerTools[open] summary { margin-bottom: 8px; }

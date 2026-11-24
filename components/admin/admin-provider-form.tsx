@@ -11,7 +11,7 @@ export function AdminProviderHeader({ name, usage, keyUrl }: { name: string; usa
   </div>;
 }
 
-export function AdminProviderForm({ label, busy, onSubmit, target, keys, models, modelId, notice, children }: {
+export function AdminProviderForm({ label, busy, onSubmit, target, keys, models, modelId, notice, saveScope, children }: {
   label: string;
   busy: boolean;
   onSubmit: FormEventHandler<HTMLFormElement>;
@@ -20,6 +20,7 @@ export function AdminProviderForm({ label, busy, onSubmit, target, keys, models,
   models: ReactNode;
   modelId: ReactNode;
   notice: ReactNode;
+  saveScope?: { id: string; text: string };
   children: ReactNode;
 }) {
   return <form className={`${styles.form} ${styles.providerForm}`} onSubmit={onSubmit}
@@ -28,7 +29,10 @@ export function AdminProviderForm({ label, busy, onSubmit, target, keys, models,
     <div className={styles.providerKeys} data-form-part="keys">{keys}</div>
     <div className={styles.providerModels} data-form-part="models">{models}</div>
     <div className={styles.providerModelId} data-form-part="model-id">{modelId}</div>
-    <div className={styles.providerNotice}>{notice}</div>
+    <div className={styles.providerNotice}>
+      {notice}
+      {saveScope && <p id={saveScope.id} className={styles.saveScope}>{saveScope.text}</p>}
+    </div>
     <div className={styles.providerActions} data-form-part="actions">{children}</div>
   </form>;
 }

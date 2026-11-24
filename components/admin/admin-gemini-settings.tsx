@@ -91,6 +91,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
   const [modelProgram, setModelProgram] = useState<CredentialProgram>("image");
   const selectedGroup = groupOf[modelProgram];
   const [keyOpen, setKeyOpen] = useState<Record<CredentialGroup, boolean>>({ reference: false, music: false });
+  const [keyDrafts, setKeyDrafts] = useState<Record<CredentialGroup, boolean>>({ reference: false, music: false });
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [notice, setNotice] = useState<Notice | null>(null);
   const [saving, setSaving] = useState(false);
@@ -150,7 +151,17 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
     pendingFocus.current = field;
   }
   const track = () => { const controller = new AbortController(); requests.current.add(controller); return controller; };
-  const clearKey = (group: CredentialGroup) => { const input = keyRef(group).current; if (input) input.value = ""; };
+  function clearKey(group: CredentialGroup) {
+    const input = keyRef(group).current;
+    if (input) input.value = "";
+    setKeyDrafts(previous => ({ ...previous, [group]: false }));
+  }
+  function changeNames(group: CredentialGroup, hasKey: boolean) {
+    const names = credentialGroups[group]
+      .filter(program => models[program].trim() !== (settings.programs[program].modelId ?? ""))
+      .map(program => `${programText[program]} 모델`);
+    return hasKey ? [groupText[group].key, ...names] : names;
+  }
   const writePending = (next: Partial<Record<CredentialGroup, boolean>>) => { pendingRef.current = next; setPending(next); };
 
   // 최신 설정을 서버에서 다시 읽는다. 반영했으면 기다리던 모든 묶음의 복구를 끝내고 무엇을 불러왔는지 알린다.
@@ -172,26 +183,30 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
     event.preventDefault();
     if (saving || !ready) return;
     const local: Record<string, string> = {};
-    const plans: { group: CredentialGroup; apiKey: string; models: Partial<Models> }[] = [];
+    const plans: { group: CredentialGroup; apiKey: string; models: Partial<Models>; changes: string[] }[] = [];
     for (const group of groupOrder) {
       const programs = credentialGroups[group];
       const apiKey = showKey(group) ? keyRef(group).current?.value.trim() ?? "" : "";
-      const changed = programs.some(program => models[program].trim() !== (settings.programs[program].modelId ?? ""));
-      if (!apiKey && !changed) continue;
+      const changes = changeNames(group, !!apiKey);
+      if (!changes.length) continue;
       if (settings.groups[group].version === 0 && !apiKey) local[keyId(group)] = fieldMessage("apiKey", "required");
       else if (apiKey && !isKeyFormat(apiKey)) local[keyId(group)] = fieldMessage("apiKey", "invalid_input");
       for (const program of programs) if (!isModelId(models[program].trim())) local[id(`models.${program}`)] = fieldMessage(`models.${program}`, "invalid_input");
-      plans.push({ group, apiKey, models: Object.fromEntries(programs.map(program => [program, models[program].trim()])) });
+      plans.push({ group, apiKey, changes, models: Object.fromEntries(programs.map(program => [program, models[program].trim()])) });
     }
     setErrors(local);
     const firstInvalid = Object.keys(local)[0];
-    if (firstInvalid) { revealField(firstInvalid); setNotice(null); return; }
+    if (firstInvalid) {
+      revealField(firstInvalid);
+      setNotice({ tone: "warning", text: `입력 확인 후 다시 저장해 주세요. 저장 대상은 ${plans.flatMap(plan => plan.changes).join(", ")}이에요.` });
+      return;
+    }
     pendingFocus.current = "notice";
     if (!plans.length) { setNotice({ tone: "warning", text: "바뀐 내용이 없어요. 키를 넣거나 모델 ID를 바꾼 뒤 저장해 주세요." }); return; }
     pendingFocus.current = null;
     setNotice(null);
     setSaving(true);
-    const saved: CredentialGroup[] = [];
+    const saved: string[] = [];
     // 각 묶음은 사용자가 보고 고친 버전으로 보낸다. 앞 묶음 저장 응답에 실린 다른 묶음의 새 버전을 쓰면 다른 탭의 변경을 덮어쓴다.
     const basis = { reference: settings.groups.reference.version, music: settings.groups.music.version };
     for (const plan of plans) {
@@ -204,30 +219,31 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
       if (outcome.kind === "ok") {
         clearKey(plan.group);
         setKeyOpen(previous => ({ ...previous, [plan.group]: false }));
-        saved.push(plan.group);
+        saved.push(...plan.changes);
         onSaved(outcome.value);
         continue;
       }
       setSaving(false);
-      const done = saved.length ? `${saved.map(group => groupText[group].name).join("·")} 설정은 저장했어요. ` : "";
+      const done = saved.length ? `저장 완료 · ${saved.join(", ")}. ` : "";
+      const failed = `저장 실패 · ${plan.changes.join(", ")}.`;
       if (outcome.kind === "field") {
         const target = outcome.field === "apiKey" ? keyId(plan.group) : id(outcome.field);
         if (outcome.field === "apiKey") setKeyOpen(previous => ({ ...previous, [plan.group]: true }));
         setErrors({ [target]: fieldMessage(outcome.field, outcome.code) });
         revealField(target);
-        setNotice(done ? { tone: "warning", text: `${done}${groupText[plan.group].name} 설정은 저장하지 못했어요.` } : null);
+        setNotice({ tone: "warning", text: `${done}${failed}` });
         return;
       }
       if (outcome.kind === "login" || outcome.kind === "forbidden") groupOrder.forEach(clearKey);
       if (outcome.kind === "login") { onLogin(); return; }
       if (outcome.kind === "stale") await reloadLatest();
       pendingFocus.current = "notice";
-      setNotice({ tone: outcome.kind === "stale" || outcome.kind === "forbidden" ? "warning" : "danger", text: done + failureText(outcome) });
+      setNotice({ tone: outcome.kind === "stale" || outcome.kind === "forbidden" ? "warning" : "danger", text: `${done}${failed} ${failureText(outcome)}` });
       return;
     }
     setSaving(false);
     pendingFocus.current = "notice";
-    setNotice({ tone: "success", text: `저장했어요. Gemini에서 ${plans.some(plan => plan.apiKey) ? "키와 " : ""}모델 정보를 확인했어요. 아래에서 연결 시험을 해 보세요.` });
+    setNotice({ tone: "success", text: `저장 완료 · ${saved.join(", ")}. Gemini 연결 시험에서 저장한 설정을 확인할 수 있어요.` });
   }
 
   // 기다리는 묶음의 최신 설정을 다시 읽는다. 시험은 자동으로 다시 하지 않는다.
@@ -276,6 +292,11 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
 
   const storage = keyState(settings, selectedGroup);
   const updated = settings.groups[selectedGroup].updatedAt;
+  const changes = groupOrder.flatMap(group => changeNames(group, keyDrafts[group]));
+  const saveScope = ready && changes.length ? {
+    id: id("save-scope"),
+    text: `저장을 누르면 이 카드에서 바꾼 모든 설정이 저장돼요. 저장 대상 · ${changes.join(", ")}`,
+  } : undefined;
 
   return <>
     <dl className={styles.status} aria-label="Gemini 키 저장 상태">
@@ -303,7 +324,11 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
               : <span className={styles.help}>{groupText[group].key}</span>}
             {showKey(group) ? <>
               <input ref={keyRef(group)} id={key} name={`${group}-api-key`} type="password" autoComplete="off" spellCheck={false} autoCapitalize="off"
-                maxLength={256} aria-invalid={!!errors[key]} aria-describedby={describe(key, "help")} />
+                maxLength={256} aria-invalid={!!errors[key]} aria-describedby={describe(key, "help")}
+                onChange={event => {
+                  const hasDraft = !!event.currentTarget.value.trim();
+                  setKeyDrafts(previous => previous[group] === hasDraft ? previous : { ...previous, [group]: hasDraft });
+                }} />
               <p id={`${key}-help`} className={styles.help}>{stored ? "비워 두면 저장된 키를 그대로 써요. " : ""}저장한 키는 다시 보여 주지 않아요.</p>
               {fieldError(key)}
               {stored && <Button type="button" variant="ghost" size="sm" onClick={() => {
@@ -344,6 +369,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
           </div>;
         })}
       </fieldset>}
+      saveScope={saveScope}
       notice={ready ? <p ref={noticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone={notice?.tone}>{notice?.text ?? ""}</p>
         : <div className={styles.unavailable}>
           <p ref={noticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone="warning">
@@ -361,7 +387,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
           }}>저장소 다시 확인</Button>
           <a className={styles.link} href="#admin-manual">설정 방법 보기</a>
         </div>}>
-      <Button type="submit" loading={saving} loadingLabel="Gemini에서 확인 중" disabled={!ready}>저장</Button>
+      <Button type="submit" loading={saving} loadingLabel="Gemini에서 확인 중" disabled={!ready} aria-describedby={saveScope?.id}>저장</Button>
     </AdminProviderForm>
     <details className={styles.providerTools}>
       <summary>Gemini 연결 시험</summary>
