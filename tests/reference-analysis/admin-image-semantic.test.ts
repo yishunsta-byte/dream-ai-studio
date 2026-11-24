@@ -1,10 +1,11 @@
 import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 import { createAdminReferenceHttp } from "../../lib/reference-analysis/admin-reference-http";
-import { createGeminiImageAnalysis } from "../../lib/reference-analysis/image-semantic-gemini";
+import { createGeminiImageAnalysis, geminiImageAnalyzer } from "../../lib/reference-analysis/image-semantic-gemini";
 import { imageSemanticCategories } from "../../lib/reference-analysis/image-semantic-result";
 import { referenceUploadByteLimit } from "../../lib/reference-analysis/input";
 import { analyzeLocalMediaUpload, analyzeLocalMediaUrl } from "../../lib/reference-analysis/local-media-url";
+import { createStyleDnaProvider } from "../../lib/reference-analysis/style-dna-provider";
 
 vi.mock("server-only", () => ({}));
 
@@ -52,6 +53,31 @@ function candidate(value: unknown) {
 }
 
 describe("관리자 Style DNA 이미지 의미 분석", () => {
+  it("Style DNA 업로드는 전용 60초·45초 한도를 사용하고 일반 이미지 분석은 15초를 유지한다", async () => {
+    const bytes = Buffer.from(await syntheticImage());
+    const send = vi.fn<typeof fetch>(async () => candidate({
+      findings: Object.fromEntries(imageSemanticCategories.map(category =>
+        [category, { description: `${category} 분석`, basis: "가운데 위치" }])),
+      ko: "중앙에 배치한 사진", en: "A photograph with centered composition",
+    }));
+    const config = { key: privateKey, model: versionedModel };
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    try {
+      await expect(geminiImageAnalyzer(config, send)(bytes, new AbortController().signal)).resolves.toMatchObject({ status: "ready" });
+      expect(timeout).toHaveBeenCalledWith(15_000);
+      timeout.mockClear();
+
+      await expect(createStyleDnaProvider(send).analyze({ kind: "file", name: "synthetic.png", bytes }, {
+        mode: "replicate", guidance: "", mutationLevel: 30, includeImageTag: false, targetModel: "gemini-nano-banana-2.1",
+      }, config)).resolves.toMatchObject({ semantic: { status: "ready" } });
+      expect(timeout).toHaveBeenCalledWith(60_000);
+      expect(timeout).toHaveBeenCalledWith(45_000);
+      expect(timeout).not.toHaveBeenCalledWith(15_000);
+    } finally {
+      timeout.mockRestore();
+    }
+  });
+
   it("기존 파일 응답은 외부 호출 없이 유지하고 요청한 파일만 리사이즈해 전송한다", async () => {
     const modelResult = {
       findings: Object.fromEntries(imageSemanticCategories.map(category =>

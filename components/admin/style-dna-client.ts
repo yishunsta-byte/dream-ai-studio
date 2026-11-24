@@ -139,7 +139,10 @@ async function send<T>(path: string, request: { body: BodyInit; json: boolean },
       const value = pick(body);
       return value ? { kind: "ok", value } : { kind: "error", code: "failed", status: response.status };
     }
-    return { kind: "error", code: response.status === 202 ? "in_progress" : codeOf(body), status: response.status };
+    const code = response.status === 202 ? "in_progress" : codeOf(body);
+    // A gateway timeout may occur before or after the server saves the result.
+    if (response.status === 504 && code === "failed") return { kind: "lost" };
+    return { kind: "error", code, status: response.status };
   }
 }
 const pickRecord = (body: unknown) => (body as { record?: unknown } | null)?.record;

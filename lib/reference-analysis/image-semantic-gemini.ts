@@ -114,7 +114,7 @@ function requestImageAnalysis(config: GeminiSettings, send: typeof fetch, styleI
   const style = styleInstructions !== undefined;
   const schema = style ? styleDnaAnalysisResponseJson : responseJsonSchema;
   return async (source: string | Buffer, deadline: AbortSignal): Promise<ImageAnalysis> => {
-    const signal = AbortSignal.any([deadline, AbortSignal.timeout(15_000)]);
+    const signal = AbortSignal.any([deadline, AbortSignal.timeout(style ? 45_000 : 15_000)]);
 
     let image: Buffer;
     try {
@@ -154,7 +154,7 @@ function requestImageAnalysis(config: GeminiSettings, send: typeof fetch, styleI
       let payload: unknown;
       if (style) {
         const bounded = await readBounded(response.body, 128 * 1024, signal);
-        if (!bounded) return unavailable("invalid_response");
+        if (!bounded) return unavailable(signal.aborted ? "timed_out" : "invalid_response");
         payload = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bounded));
       } else payload = await response.json();
       signal.throwIfAborted();

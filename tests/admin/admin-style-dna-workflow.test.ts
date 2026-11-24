@@ -73,6 +73,21 @@ describe("P1-06 Style DNA 작업실(화면 쪽 통신)", () => {
     await expect(testStyleDna("x", "{}", 1, { signal: controller.signal })).rejects.toThrow();
   });
 
+  it("게이트웨이 504 뒤에는 같은 분석 요청을 확인하고 앱의 시간 초과는 결과가 확정된 오류로 처리한다", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response("Gateway timeout", { status: 504 }))
+      .mockResolvedValueOnce(reply(201, { record: record() }))
+      .mockResolvedValueOnce(reply(504, { code: "timed_out" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const request = analyzeRequest({ kind: "url", url: "https://example.com/a.png" }, options, op);
+
+    await expect(analyzeStyleDna(request)).resolves.toEqual({ kind: "lost" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await expect(analyzeStyleDna(request)).resolves.toMatchObject({ kind: "ok" });
+    expect(fetchMock.mock.calls[1][1].body).toBe(fetchMock.mock.calls[0][1].body);
+    await expect(analyzeStyleDna(request)).resolves.toEqual({ kind: "error", code: "timed_out", status: 504 });
+  });
+
   it("보관함·기록 읽기: 설정·로그인·저장소 없음·다른 기록 ID를 나눈다", async () => {
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce(reply(200, { items: [], settings: { storage: "ready", credentialVersion: 3, analysisModel: "m", testModels: [] } }))

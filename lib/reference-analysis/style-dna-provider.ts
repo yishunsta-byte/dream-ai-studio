@@ -21,6 +21,7 @@ export type MeasuredStyleDnaImage = { bytes: Buffer } & Omit<StyleDnaMedia, "hre
 export type StyleDnaAnalysisSettings = GeminiSettings | ExternalStyleDnaSettings;
 const imageLimits = { limitInputPixels: 12_000_000, failOn: "warning" } as const;
 const maxGeneratedBytes = 8 * 1024 * 1024;
+const analysisTimeoutMs = 60_000;
 const formats = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" } as const;
 const attachedImageTag = "[첨부 이미지]";
 export class StyleDnaProviderError extends Error {
@@ -135,10 +136,10 @@ export function createStyleDnaProvider(send: typeof fetch = fetch) {
         styleDna = analyzed.styleDna;
         return analyzed.semantic;
       };
-      const observation = source.kind === "url" ? await analyzeLocalMediaUrl(source.url, undefined, undefined, "image", useSource)
+      const observation = source.kind === "url" ? await analyzeLocalMediaUrl(source.url, undefined, undefined, "image", useSource, analysisTimeoutMs)
         : await analyzeLocalMediaUpload(new Request("https://style-dna.invalid", {
           method: "POST", body: new Uint8Array(source.bytes),
-        }), source.name, "image", useSource);
+        }), source.name, "image", useSource, analysisTimeoutMs);
       if (oversized) throw new MediaUrlError("too_large", "이미지 용량을 확인해 주세요.", 413);
       if (engineFailure) throw new StyleDnaProviderError(engineFailure);
       const { semantic, schemaVersion, status, media, proposals } = observation;

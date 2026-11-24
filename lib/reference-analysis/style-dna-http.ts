@@ -6,7 +6,7 @@ import { readLimitedText, rejectForeignWrite } from "../public-showcase/admin-pu
 import { openRuntimeGeminiCredentialStore, openRuntimeStyleDnaEngineCredentialStore } from "./analysis-credential-store";
 import type { GeminiSettings } from "./analysis-gemini-settings";
 import { referenceFileFormat, referenceUploadByteLimit } from "./input";
-import { MediaUrlError } from "./media-url-error";
+import { AnalysisStageError, MediaUrlError } from "./media-url-error";
 import { styleDnaAnalyze, styleDnaAnalyzeSource, styleDnaCompare, styleDnaId, styleDnaImageModels, styleDnaPath, styleDnaRatio, styleDnaRefine,
   styleDnaTest, styleDnaTestWithReference, type StyleDnaMedia, type StyleDnaRecord, type StyleDnaRevision, type StyleDnaTestBasis,
   type StyleDnaTestOptions, type StyleDnaTestResult } from "./style-dna-contract";
@@ -35,7 +35,14 @@ async function runWork(work: Work, settings: StyleDnaAnalysisSettings, engine?: 
   try { return await work(settings, engine); }
   catch (error) {
     if (error instanceof MediaUrlError) return failure(error.code, error.status ?? 400);
-    if (error instanceof StyleDnaProviderError) return failure(error.code, providerStatus[error.code]);
+    if (error instanceof AnalysisStageError && error.detail === "timed_out") {
+      console.warn("style_dna_timed_out", { stage: error.stage });
+      return failure("timed_out", 504);
+    }
+    if (error instanceof StyleDnaProviderError) {
+      if (error.code === "timed_out") console.warn("style_dna_timed_out", { stage: "provider" });
+      return failure(error.code, providerStatus[error.code]);
+    }
     return failure("model_error", 502);
   }
 }

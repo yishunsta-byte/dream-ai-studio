@@ -22,8 +22,8 @@ function checkFormat(name: string, selectedMedia?: ReferenceMedia) {
   }
 }
 
-function analysisDeadline(requestSignal?: AbortSignal) {
-  const deadline = AbortSignal.timeout(30_000);
+function analysisDeadline(requestSignal?: AbortSignal, timeoutMs = 30_000) {
+  const deadline = AbortSignal.timeout(timeoutMs);
   const signal = requestSignal ? AbortSignal.any([deadline, requestSignal]) : deadline;
   return {
     signal,
@@ -37,7 +37,7 @@ function analysisDeadline(requestSignal?: AbortSignal) {
 
 export async function analyzeLocalMediaUrl(
   input: string, operatorOrigin?: string, requestSignal?: AbortSignal, selectedMedia?: ReferenceMedia,
-  analyzeImageSemantics?: AnalyzeImageSemantics,
+  analyzeImageSemantics?: AnalyzeImageSemantics, timeoutMs?: number,
 ) {
   let url: URL;
   try { url = new URL(input); }
@@ -52,7 +52,7 @@ export async function analyzeLocalMediaUrl(
   const name = "source" + extname(url.pathname).toLowerCase();
   checkFormat(name, selectedMedia);
 
-  const deadline = analysisDeadline(requestSignal);
+  const deadline = analysisDeadline(requestSignal, timeoutMs);
   let response: Response;
   try { response = await fetch(url, { redirect: "error", credentials: "omit", cache: "no-store", signal: deadline.signal }); }
   catch (error) { throw new AnalysisStageError("fetch", deadline.interruption() ?? errorKind(error)); }
@@ -70,7 +70,7 @@ export async function analyzeLocalMediaUrl(
 }
 
 export async function analyzeLocalMediaUpload(
-  request: Request, filename: string, selectedMedia: ReferenceMedia, analyzeImageSemantics?: AnalyzeImageSemantics,
+  request: Request, filename: string, selectedMedia: ReferenceMedia, analyzeImageSemantics?: AnalyzeImageSemantics, timeoutMs?: number,
 ) {
   // Reuse the filename rules, then discard the client-supplied stem before touching disk.
   const classified = classifyReferenceInput({ kind: "file", name: filename, sizeBytes: 1, permission: "authorized" });
@@ -90,7 +90,7 @@ export async function analyzeLocalMediaUpload(
 
   // Use the transport signal while receiving the body. After EOF, Next may
   // end it early, so local decoding uses the original analysis deadline.
-  return analyzeBody(request.body, name, referenceUploadByteLimit, analysisDeadline(), selectedMedia, request.signal, analyzeImageSemantics);
+  return analyzeBody(request.body, name, referenceUploadByteLimit, analysisDeadline(undefined, timeoutMs), selectedMedia, request.signal, analyzeImageSemantics);
 }
 
 async function analyzeBody(

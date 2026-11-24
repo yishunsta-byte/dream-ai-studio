@@ -445,15 +445,28 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
     : { kind: "error", text: { login: "로그인이 끝났어요.", forbidden: "이 계정에는 Style DNA 권한이 없어요.", unavailable: "Style DNA 저장소가 준비되지 않았어요.",
       failed: "보관함을 불러오지 못했습니다." }[library.kind], ...(library.kind === "login" ? { login: loginLink } : { retry: reloadLibrary }) };
   const stage = mutationStage(mutationLevel);
+  const libraryFeedback = library.kind === "loading" ? <p className={panel.status} role="status">보관함과 설정을 확인하는 중이에요.</p>
+    : library.kind !== "ok" ? <p className={panel.status} role="alert">
+      {{ login: "로그인이 끝났어요.", forbidden: "이 계정에는 Style DNA 권한이 없어요.", unavailable: "Style DNA 저장소가 준비되지 않았어요.", failed: "보관함을 읽지 못했어요." }[library.kind]}
+      {library.kind === "login" ? <> <a className={panel.link} href={loginLink}>관리자 로그인</a></> : <> <button type="button" className={panel.link} onClick={reloadLibrary}>다시 확인</button></>}
+    </p> : null;
+  const analyzeHint = step === "analyze" && !busy && !notice
+    ? engineWarn ?? (analyzeReady && engineReady && !agreed("analyze") ? `${engineShort} 전송 동의에 체크하면 분석을 시작할 수 있어요.` : null)
+    : null;
+  const operationFeedback = <>
+    <p id={`${id}-operation-status`} className={panel.status} role={notice?.tone === "alert" ? "alert" : "status"}>
+      {running ? `${running} 중이에요.` : notice?.text ?? analyzeHint ?? ""}
+      {!running && notice?.login && <> <a className={panel.link} href={loginLink}>관리자 로그인</a></>}
+      {!running && pending && <> <button type="button" className={panel.link} onClick={() => void retry()}>결과 다시 확인</button></>}
+    </p>
+    {running && <div className={panel.actions}><Button type="button" variant="secondary" onClick={() => { stop(); setPending(null); setNotice({ tone: "status", text: "요청을 멈췄어요. 이미 저장됐는지는 보관함에서 확인할 수 있어요." }); }}>멈추기</Button></div>}
+  </>;
 
   const body = <section className={`${panel.panel} ${styles.workflow}`} data-layout={layout} aria-labelledby={`${id}-title`}>
     {original ? <h1 id={`${id}-title`} className={styles.srOnly}>{{ library: "보관함", analyze: "1단계 이미지 분석", refine: "2단계 프롬프트 보정", test: "3단계 결과 테스트" }[step]}</h1>
       : <div className={panel.head}><h3 id={`${id}-title`}>Style DNA 작업실 · 분석 → 보정 → 결과 테스트</h3></div>}
     {!original && <p className={panel.note}>원본 Style DNA v1.39의 세 단계를 이어서 써요. 분석·보정·시험 결과는 내 보관함에 저장되고 다시 열 수 있어요. 각 실행은 따로 동의해야 Gemini를 불러요.</p>}
-    {step !== "library" && library.kind === "loading" && <p className={panel.status} role="status">보관함과 설정을 확인하는 중이에요.</p>}
-    {step !== "library" && library.kind !== "loading" && library.kind !== "ok" && <p className={panel.status} role="alert">
-      {{ login: "로그인이 끝났어요.", forbidden: "이 계정에는 Style DNA 권한이 없어요.", unavailable: "Style DNA 저장소가 준비되지 않았어요.", failed: "보관함을 읽지 못했어요." }[library.kind]}
-      {library.kind === "login" ? <> <a className={panel.link} href={loginLink}>관리자 로그인</a></> : <> <button type="button" className={panel.link} onClick={reloadLibrary}>다시 확인</button></>}</p>}
+    {step !== "library" && step !== "analyze" && libraryFeedback}
     {/* 원본 전체 화면에는 이 설정 줄이 없다(엔진·모델은 분석 화면에서 고른다). 미등록일 때만 안내로 남긴다. */}
     {settings && (!original || !ready) && <p className={panel.note} aria-label="Style DNA 설정">{ready ? `분석 모델 ${settings.analysisModel} · Gemini 등록 버전 ${version}` : "이미지 분석 모델이 등록되지 않아 실행할 수 없어요. API키등록·플랫폼연동에서 등록해 주세요."}
       {` · 시험 생성 모델 ${settings.testModels.map(model => model.label).join(", ")}`}</p>}
@@ -523,8 +536,10 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
             <label className={studio.consent}><input type="checkbox" checked={agreed("analyze")} disabled={!engineReady || busy}
               onChange={event => agree("analyze", event.target.checked)} />
               분석할 권리가 있으며, 이미지 사본과 아래 옵션을 {engineShort}에 보내 분석하고 결과를 내 보관함에 저장하는 데 동의해요.</label>
-            <button type="submit" className={studio.primary} disabled={!analyzeReady || !agreed("analyze") || busy}>
+            <button type="submit" className={studio.primary} aria-describedby={`${id}-operation-status`} disabled={!analyzeReady || !agreed("analyze") || busy}>
               {analyzing ? <Loader2 size={16} className={studio.spin} /> : <Sparkles size={16} />}{analyzing ? "이미지 시퀀싱 중..." : "이미지 시퀀싱 시작"}</button>
+            {libraryFeedback}
+            {operationFeedback}
             {(fileProblem || urlProblem) && <p className={studio.error} role="alert">{fileProblem || urlProblem}</p>}
           </section>
 
@@ -564,7 +579,6 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
                 <label>모델<select value={engineModel ?? ""} disabled aria-describedby={`${id}-engine`}>
                   <option value={engineModel ?? ""}>{engineModel ?? "등록 안 됨"}</option></select></label>
               </div>
-              {engineWarn && <p className={studio.engineWarn} role="note">{engineWarn}</p>}
               <p className={studio.engineNote} id={`${id}-engine`}>API키등록·플랫폼연동에 등록한 {engineShort} 키로 호출되며 요금은 그 계정에 청구돼요. 시험 이미지 생성은 언제나 Gemini로 해요.</p>
             </div>
           </section>
@@ -655,12 +669,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
           document.querySelector('[aria-label="결과 테스트"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
         }} />} />}
 
-    <p className={panel.status} role={notice?.tone === "alert" ? "alert" : "status"}>
-      {running ? `${running} 중이에요.` : notice?.text ?? ""}
-      {!running && notice?.login && <> <a className={panel.link} href={loginLink}>관리자 로그인</a></>}
-      {!running && pending && <> <button type="button" className={panel.link} onClick={() => void retry()}>결과 다시 확인</button></>}
-    </p>
-    {running && <div className={panel.actions}><Button type="button" variant="secondary" onClick={() => { stop(); setPending(null); setNotice({ tone: "status", text: "요청을 멈췄어요. 이미 저장됐는지는 보관함에서 확인할 수 있어요." }); }}>멈추기</Button></div>}
+    {step !== "analyze" && operationFeedback}
     <p className={panel.status} role="status">{copied}</p>
   </section>;
   if (!original) return body;
