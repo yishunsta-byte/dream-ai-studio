@@ -10,11 +10,12 @@ export function activeManagedMenus<T extends { id: string; availability: string 
 }
 /** 주제별 쇼츠 길이 선택지(주인님: 10~60초 10초 단위). 메뉴 설정에 lengthOptions가 오면 그것을 쓴다. */
 export const topicLengthChoices = [10, 20, 30, 40, 50, 60] as const;
-/** 핵심 메시지 글자 수 상한 판정(배정 2). options = 설정의 keyMessageLength 선택지. 글자는 코드포인트로 센다. 넘으면 저장을 막되 글은 자르지 않는다. */
+/** 핵심 메시지 글자 수 상한 판정(배정 2·3). options = 설정의 keyMessageLength 선택지. 서버(Backend 76436c1)와 같게 trim() 뒤 length로 센다
+ *  (앞뒤 공백 제외, 이모지 같은 써로게이트 쌍은 2자). 넘으면 저장을 막되 글은 자르지 않는다. */
 export function keyMessageCheck(options: readonly string[] | undefined, limit: unknown, message: unknown) {
   const value = Number(limit);
   const max = options?.includes(String(limit)) && Number.isSafeInteger(value) && value > 0 ? value : undefined;
-  const count = [...String(message ?? "")].length;
+  const count = String(message ?? "").trim().length;
   return { max, count, over: max !== undefined && count > max };
 }
 export function lengthChoices(menu: { id: string } & Record<string, unknown>): readonly number[] | undefined {
