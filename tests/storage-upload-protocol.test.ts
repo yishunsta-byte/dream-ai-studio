@@ -1,8 +1,16 @@
-import { describe, expect, it } from "vitest";
-import { identitySchema, ProtocolError, type UploadModel, type UploadCommand } from "@/lib/storage/uploads/schema";
+import { describe, expect, it, vi } from "vitest";
+import { identitySchema, ProtocolError, type Observation, type UploadModel, type UploadCommand } from "@/lib/storage/uploads/schema";
+import { observationFailure } from "@/lib/storage/uploads/observation";
 import { admission, capabilityHorizon, checkedModel, cleanupInstruction, operationResult, publicationInstruction, reserveUpload, transition } from "@/lib/storage/uploads/state";
 import { canonicalJson, checkedReceipt, makeReceipt, protocolDigest } from "@/lib/storage/uploads/receipt";
 import { beginCreation, creationFingerprint, creationResult, reserveCreationLedger, retireCreation, settleCreation } from "@/lib/storage/uploads/operation";
+import { reverifyCommand, type ReverifyDecision } from "@/lib/storage/uploads/reverify";
+import { actorFromVerifiedUserId } from "@/lib/db/postgres/types";
+import { StorageReadError } from "@/lib/storage/supabase/errors";
+import type { RegisteredSourceObserver } from "@/lib/storage/supabase/reader";
+import { prepareReverifyRead } from "@/lib/storage/supabase/reverify-read";
+
+vi.mock("server-only", () => ({}));
 
 const uid = (n: number) => `019b9000-0000-7000-8000-${n.toString(16).padStart(12, "0")}`;
 const owner = uid(1), worker = uid(2), gc = uid(3), policy = uid(4), stranger = uid(5), objectId = uid(6), assetId = uid(7);
@@ -17,9 +25,16 @@ const fresh = () => reserveUpload({ ownerId: owner, objectId, assetId, intentId:
   maxIssues: 2, verifiers: [worker], collectors: [gc], policyManagers: [policy], policyEpoch: 1, policyDigest: pd, incoming }, { principalId: owner, now: 0, expectedRevision: 0 });
 const apply = (s: UploadModel, a: UploadCommand, principalId = worker, now = 1) => transition(s, a, ctx(s, principalId, now));
 const complete = (operationId = op1, kind: "initial" | "reverify" = "initial", authorizationUntil = 90): Extract<UploadCommand, { type: "complete" }> => ({ type: "complete", operationId, kind, authorizationUntil, fingerprint: fp });
-const finalize = (operationId = op1, receiptId = r1, notAfter = 20): Extract<UploadCommand, { type: "finalize" }> => ({ type: "finalize", operationId, fingerprint: fp,
-  expectedFence: 1, receiptId, identity, source: operationId === op1 ? incoming : { bucket: identity.bucket, key: identity.key, providerVersion: null }, media,
+const finalSource = { bucket: identity.bucket, key: identity.key, providerVersion: null };
+// Observation v1 of the standard synthetic bytes: op1 is the initial read of incoming, every other operation a reverify of the final key.
+const observed = (kind: "initial" | "reverify" = "initial", source: typeof incoming = kind === "initial" ? incoming : finalSource): Observation => ({
+  v: 1, kind, source, bytes: { sha256: identity.sha256, sizeBytes: identity.sizeBytes }, format: { mime: identity.mime, kind: identity.kind }, media,
+  published: kind === "initial" ? { sha256: identity.sha256, sizeBytes: identity.sizeBytes } : null, tools: { verifierVersion: "verifier-v1", toolVersion: "probe-v1" } });
+const legacyFinalize = (operationId = op1, receiptId = r1, notAfter = 20): Extract<UploadCommand, { type: "finalize" }> => ({ type: "finalize", operationId, fingerprint: fp,
+  expectedFence: 1, receiptId, identity, source: operationId === op1 ? incoming : finalSource, media,
   notAfter, verifierVersion: "verifier-v1", toolVersion: "probe-v1" });
+const finalize = (operationId = op1, receiptId = r1, notAfter = 20): Extract<UploadCommand, { type: "finalize" }> =>
+  ({ ...legacyFinalize(operationId, receiptId, notAfter), observation: observed(operationId === op1 ? "initial" : "reverify") });
 function prepared() {
   let s = apply(fresh(), complete(), owner);
   s = apply(s, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 0, leaseUntil: 80 });
@@ -606,5 +621,277 @@ describe("B19-FIX4 retained causal prefixes and reclaim ordering", () => {
     const action = { type: "observeCleanup" as const, cleanupId, expectedBarrierFence: 1, absent: true, writerQuiescent: true, identityDigest: protocolDigest("object-identity", null) };
     s = apply(s, action, gc, 101); s = apply(s, action, gc, 102);
     expect(checkedModel(s).cleanup!.claimedRevision).toBe(4); expect(s.closure).toEqual(first);
+  });
+});
+
+describe("P2 verifier observation v1 before receipt issuance", () => {
+  const reverifyLeased = () => {
+    const s = apply(registered(), complete(op2, "reverify", 200), owner, 2);
+    return apply(s, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 150 }, worker, 2);
+  };
+  const reject = (operationId: string, failureCode: Extract<UploadCommand, { type: "rejectVerification" }>["failureCode"], observation?: Observation) =>
+    ({ type: "rejectVerification" as const, operationId, fingerprint: fp, expectedFence: 1, failureCode, ...(observation ? { observation } : {}) });
+  const change = (base: Observation, patch: Partial<Observation>): Observation => ({ ...base, ...patch });
+
+  it("issues initial and reverify receipts only from a matching observation; receipt body and digest contract are unchanged", () => {
+    const s = registered();
+    expect(s.receipts).toHaveLength(1);
+    const receipt = s.receipts[0];
+    expect(Object.keys(receipt.body).sort()).toEqual(["fence", "generation", "id", "identity", "media", "notAfter", "objectId", "operationId", "policyDigest",
+      "policyEpoch", "source", "toolVersion", "verifiedAt", "verifierId", "verifierVersion"]);
+    expect(checkedReceipt(receipt)).toEqual(makeReceipt(receipt.body));
+    const again = apply(reverifyLeased(), finalize(op2, r2, 190), worker, 3);
+    expect(again.receipts.map(r => r.body.generation)).toEqual([1, 2]);
+    expect(again.receipts[1].body.source).toEqual(finalSource);
+    expect(again.currentReceiptId).toBe(r2);
+    expect(again.receipts[0]).toEqual(receipt);
+  });
+
+  it("refuses a new receipt without an observation, before any state change", () => {
+    fails("OBSERVATION", () => apply(prepared(), legacyFinalize()));
+    fails("OBSERVATION", () => apply(reverifyLeased(), legacyFinalize(op2, r2, 190), worker, 3));
+  });
+
+  const initialMismatches: [string, Observation, ReturnType<typeof observationFailure>][] = [
+    ["format undetected", change(observed(), { format: null }), "INVALID_BYTES"],
+    ["size", change(observed(), { bytes: { sha256: identity.sha256, sizeBytes: 124 } }), "SIZE_MISMATCH"],
+    ["hash", change(observed(), { bytes: { sha256: "d".repeat(64), sizeBytes: 123 } }), "HASH_MISMATCH"],
+    ["mime", change(observed(), { format: { mime: "image/jpeg", kind: "image" } }), "MIME_MISMATCH"],
+    ["kind", change(observed(), { format: { mime: "image/png", kind: "video" } }), "MIME_MISMATCH"],
+    ["undecodable", change(observed(), { media: null }), "MEDIA_INVALID"],
+    ["image with duration", change(observed(), { media: { ...media, durationMs: 5 } }), "MEDIA_INVALID"],
+    ["published size", change(observed(), { published: { sha256: identity.sha256, sizeBytes: 122 } }), "SIZE_MISMATCH"],
+    ["published hash", change(observed(), { published: { sha256: "e".repeat(64), sizeBytes: 123 } }), "HASH_MISMATCH"],
+  ];
+  it.each(initialMismatches)("refuses initial issuance on %s mismatch and names the failure code", (_name, observation, code) => {
+    expect(observationFailure(identity, null, observation)).toBe(code);
+    fails("OBSERVATION", () => apply(prepared(), { ...finalize(), observation }));
+  });
+
+  it("refuses issuance when the observation does not describe this read or this receipt", () => {
+    const base = observed();
+    for (const observation of [
+      change(base, { kind: "reverify" }), change(base, { source: finalSource }), change(base, { published: null }),
+      change(base, { tools: { verifierVersion: "verifier-v2", toolVersion: "probe-v1" } }), change(base, { media: { width: 3, height: 2, durationMs: null } }),
+    ]) fails("OBSERVATION", () => apply(prepared(), { ...finalize(), observation }));
+    const reverify = reverifyLeased();
+    for (const observation of [observed("initial", finalSource), change(observed("reverify"), { source: incoming }),
+      change(observed("reverify"), { published: { sha256: identity.sha256, sizeBytes: 123 } }), change(observed("reverify"), { bytes: { sha256: "d".repeat(64), sizeBytes: 123 } }),
+      change(observed("reverify"), { media: { width: 2, height: 3, durationMs: null } })])
+      fails("OBSERVATION", () => apply(reverify, { ...finalize(op2, r2, 190), observation }, worker, 3));
+    expect(observationFailure(identity, media, change(observed("reverify"), { media: { width: 2, height: 3, durationMs: null } }))).toBe("MEDIA_INVALID");
+  });
+
+  it("keeps the fixed failure precedence", () => {
+    const all = change(observed(), { bytes: { sha256: "d".repeat(64), sizeBytes: 9 }, format: { mime: "image/jpeg", kind: "image" }, media: null,
+      published: { sha256: "e".repeat(64), sizeBytes: 8 } });
+    expect(observationFailure(identity, null, change(all, { format: null }))).toBe("INVALID_BYTES");
+    expect(observationFailure(identity, null, all)).toBe("SIZE_MISMATCH");
+    expect(observationFailure(identity, null, change(all, { bytes: { sha256: "d".repeat(64), sizeBytes: 123 } }))).toBe("HASH_MISMATCH");
+    expect(observationFailure(identity, null, change(all, { bytes: { sha256: identity.sha256, sizeBytes: 123 } }))).toBe("MIME_MISMATCH");
+    expect(observationFailure(identity, null, observed())).toBeNull();
+    expect(observationFailure(null, null, change(observed(), { format: { mime: "image/gif", kind: "image" } }))).toBe("MIME_MISMATCH");
+    expect(observationFailure(null, null, change(observed(), { format: { mime: "image/png", kind: "other" } }))).toBe("MIME_MISMATCH");
+    expect(observationFailure(null, null, observed())).toBeNull();
+  });
+
+  it("preserves exact replay and reading of a terminal finalized before observations existed", () => {
+    // The terminal digest is still the pre-observation formula over the persisted receipt fields, byte for byte.
+    const legacy = registered();
+    expect(legacy.operations[0].terminalPayloadDigest).toBe(protocolDigest("finalize-request", legacyFinalize()));
+    checkedModel(structuredClone(legacy));
+    expect(transition(legacy, legacyFinalize(), { principalId: worker, now: 999, expectedRevision: 0 })).toEqual(legacy);
+    expect(transition(legacy, finalize(), { principalId: worker, now: 999, expectedRevision: 0 })).toEqual(legacy);
+    fails("CONFLICT", () => transition(legacy, { ...legacyFinalize(), notAfter: 21 }, { principalId: worker, now: 999, expectedRevision: 0 }));
+    expect(checkedReceipt(legacy.receipts[0]).body.id).toBe(r1);
+    expect(admission(legacy, { principalId: owner, now: 10, expectedRevision: legacy.revision }).receipt.body.id).toBe(r1);
+    // Replay never issues: a replay carrying a different observation still returns only the stored terminal.
+    const replay = transition(legacy, { ...finalize(), observation: change(observed(), { bytes: { sha256: "d".repeat(64), sizeBytes: 1 } }) },
+      { principalId: worker, now: 999, expectedRevision: 0 });
+    expect(replay).toEqual(legacy);
+    expect(replay.receipts).toHaveLength(1);
+    // A legacy terminal can still be the base of a new observed reverify.
+    let s = apply(legacy, complete(op2, "reverify", 200), owner, 2);
+    s = apply(s, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 150 }, worker, 2);
+    expect(apply(s, finalize(op2, r2, 190), worker, 3).receipts.map(r => r.body.generation)).toEqual([1, 2]);
+  });
+
+  it("accepts a rejection whose observation names exactly the first mismatch, and never issues a receipt", () => {
+    const hash = change(observed("reverify"), { bytes: { sha256: "d".repeat(64), sizeBytes: 123 } });
+    fails("OBSERVATION", () => apply(reverifyLeased(), reject(op2, "SIZE_MISMATCH", hash), worker, 3));
+    fails("OBSERVATION", () => apply(reverifyLeased(), reject(op2, "HASH_MISMATCH", observed("reverify")), worker, 3));
+    fails("OBSERVATION", () => apply(reverifyLeased(), reject(op2, "HASH_MISMATCH", change(hash, { source: incoming })), worker, 3));
+    const revoked = apply(reverifyLeased(), reject(op2, "HASH_MISMATCH", hash), worker, 3);
+    expect(revoked.receipts).toHaveLength(1);
+    expect(revoked.currentReceiptId).toBe(r1);
+    expect(revoked.revoked).toBe(true);
+    fails("STATE", () => admission(revoked, { principalId: owner, now: 4, expectedRevision: revoked.revision }));
+    // The failure digest keeps the pre-observation formula; replay returns the stored failure, a different code conflicts.
+    expect(revoked.operations[1].terminalPayloadDigest).toBe(protocolDigest("verification-failure", reject(op2, "HASH_MISMATCH")));
+    expect(transition(revoked, reject(op2, "HASH_MISMATCH", hash), { principalId: worker, now: 999, expectedRevision: 0 })).toEqual(revoked);
+    expect(transition(revoked, reject(op2, "HASH_MISMATCH"), { principalId: worker, now: 999, expectedRevision: 0 })).toEqual(revoked);
+    fails("CONFLICT", () => transition(revoked, reject(op2, "SIZE_MISMATCH"), { principalId: worker, now: 999, expectedRevision: 0 }));
+    // Initial rejection before an identity exists: only identity-free causes can be named.
+    let s = apply(fresh(), complete(), owner);
+    s = apply(s, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 0, leaseUntil: 80 });
+    fails("OBSERVATION", () => apply(s, reject(op1, "HASH_MISMATCH", change(observed(), { published: null }))));
+    const closedModel = apply(s, reject(op1, "INVALID_BYTES", change(observed(), { format: null, published: null })));
+    expect(closedModel.receipts).toHaveLength(0);
+    expect(closedModel.closure?.reason).toBe("verification_failure");
+    // Rejections without an observation keep the pre-observation contract.
+    expect(apply(reverifyLeased(), reject(op2, "MEDIA_INVALID"), worker, 3).revoked).toBe(true);
+  });
+});
+describe("P2 registered-object reverify command preparation", () => {
+  const leased = () => {
+    const s = apply(registered(), complete(op2, "reverify", 200), owner, 2);
+    return apply(s, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 150 }, worker, 2);
+  };
+  type Read = { status: "observed"; source: { bucket: string; key: string; providerVersion: string | null }; bytes: { sha256: string; sizeBytes: number };
+    format: { mime: string; kind: string } | null; media: typeof media | { width: number; height: number; durationMs: number | null } | null } | { status: "unavailable" };
+  const good: Read = { status: "observed", source: finalSource, bytes: { sha256: identity.sha256, sizeBytes: identity.sizeBytes }, format: { mime: identity.mime, kind: identity.kind }, media };
+  const request = (read: Read = good, patch: Record<string, unknown> = {}) => ({ operationId: op2, fingerprint: fp, expectedFence: 1, receiptId: r2, notAfter: 190,
+    verifierVersion: "verifier-v1", toolVersion: "probe-v1", read, ...patch });
+  const decide = (s: UploadModel, read?: Read, patch?: Record<string, unknown>, principalId = worker, now = 3) => reverifyCommand(s, request(read, patch), ctx(s, principalId, now));
+  const observedRead = (patch: Partial<Extract<Read, { status: "observed" }>>): Read => ({ ...(good as Extract<Read, { status: "observed" }>), ...patch });
+
+  it("prepares exactly the existing finalize for a matching observation, and the transition issues the receipt", () => {
+    const s = leased(), before = structuredClone(s), decision = decide(s);
+    expect(decision).toEqual({ action: "finalize", command: finalize(op2, r2, 190) });
+    expect(Object.isFrozen(decision)).toBe(true);
+    expect(s).toEqual(before);
+    const issued = apply(s, (decision as Extract<ReverifyDecision, { action: "finalize" }>).command, worker, 3);
+    expect(issued.currentReceiptId).toBe(r2);expect(issued.receipts.at(-1)?.body.source).toEqual(finalSource);expect(issued.revoked).toBe(false);
+  });
+  it.each([
+    ["size and hash both differ -> size first", { bytes: { sha256: "d".repeat(64), sizeBytes: 124 } }, "SIZE_MISMATCH"],
+    ["hash differs", { bytes: { sha256: "d".repeat(64), sizeBytes: identity.sizeBytes } }, "HASH_MISMATCH"],
+    ["other format", { format: { mime: "image/jpeg", kind: "image" } }, "MIME_MISMATCH"],
+    ["other media", { media: { width: 3, height: 2, durationMs: null } }, "MEDIA_INVALID"],
+    ["undecodable media", { media: null }, "MEDIA_INVALID"],
+    ["undetectable bytes", { format: null, media: null }, "INVALID_BYTES"],
+  ] as const)("prepares the existing failure code for a confirmed mismatch (%s)", (_label, patch, code) => {
+    const s = leased(), decision = decide(s, observedRead(patch as Partial<Extract<Read, { status: "observed" }>>));
+    expect(decision.action).toBe("rejectVerification");
+    const command = (decision as Extract<ReverifyDecision, { action: "rejectVerification" }>).command;
+    expect(command).toMatchObject({ type: "rejectVerification", operationId: op2, fingerprint: fp, expectedFence: 1, failureCode: code });
+    expect(command.observation).toMatchObject({ v: 1, kind: "reverify", source: finalSource, published: null, tools: { verifierVersion: "verifier-v1", toolVersion: "probe-v1" } });
+    const after = apply(s, command, worker, 3);
+    expect(after.revoked).toBe(true);expect(after.currentReceiptId).toBe(r1);expect(after.receipts).toHaveLength(1);
+    expect(after.operations.find(o => o.id === op2)?.failureCode).toBe(code);
+  });
+  it("returns no receipt and no permanent failure for a transient read failure", () => {
+    const s = leased();
+    expect(decide(s, { status: "unavailable" })).toEqual({ action: "none", reason: "TRANSIENT_READ" });
+    expect(s.operations.find(o => o.id === op2)?.status).toBe("pending");
+  });
+  it.each([
+    ["other key", { source: { ...finalSource, key: `${owner}/assets/${uid(99)}/${"a".repeat(64)}.png` } }],
+    ["other bucket", { source: { ...finalSource, bucket: "unit-other" } }],
+    ["incoming original", { source: incoming }],
+    ["claimed provider version", { source: { ...finalSource, providerVersion: "v1" } }],
+  ] as const)("refuses an observation whose source is not exactly the registered one (%s)", (_label, patch) => {
+    fails("OBSERVATION", () => decide(leased(), observedRead(patch as Partial<Extract<Read, { status: "observed" }>>)));
+  });
+  it("never binds a read to a registered source whose provider version it cannot prove", () => {
+    const versioned = { ...identity, providerVersion: "v1" };
+    let s = apply(fresh(), complete(), owner);
+    s = apply(s, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 0, leaseUntil: 80 });
+    s = apply(s, { type: "reservePublication", operationId: op1, fingerprint: fp, expectedFence: 1, identity: versioned });
+    s = apply(s, { ...finalize(), identity: versioned });
+    s = apply(s, complete(op2, "reverify", 200), owner, 2);
+    s = apply(s, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 150 }, worker, 2);
+    fails("OBSERVATION", () => decide(s));
+    fails("OBSERVATION", () => decide(s, observedRead({ source: { ...finalSource, providerVersion: "v1" } })));
+    expect(decide(s, { status: "unavailable" }).action).toBe("none");
+  });
+  it("uses the existing transition checks for worker, lease window, fence, policy and operation binding", () => {
+    fails("AUTHORITY", () => decide(leased(), good, {}, stranger));
+    fails("EXPIRED", () => decide(leased(), good, {}, worker, 150));
+    fails("FENCE", () => decide(leased(), good, { expectedFence: 2 }));
+    const unclaimed = apply(registered(), complete(op2, "reverify", 200), owner, 2);
+    fails("FENCE", () => decide(unclaimed));
+    const advanced = apply(leased(), { type: "advancePolicy", epoch: 2, policyDigest: "e".repeat(64) }, policy, 3);
+    fails("STATE", () => decide(advanced, good, {}, worker, 4));
+    fails("CONFLICT", () => decide(leased(), good, { fingerprint: "b".repeat(64) }));
+    fails("CONFLICT", () => decide(leased(), good, { receiptId: r1 }));
+    fails("STATE", () => decide(leased(), good, { notAfter: 3 }));
+    fails("STATE", () => decide(registered(), good, { operationId: op1 }));
+    fails("INPUT", () => decide(leased(), good, { extra: true }));
+    fails("INPUT", () => decide(leased(), { status: "observed" } as unknown as Read));
+  });
+  it("answers an already-ended operation from its stored terminal result without a new command", () => {
+    const s = leased();
+    const issued = apply(s, (decide(s) as Extract<ReverifyDecision, { action: "finalize" }>).command, worker, 3);
+    const replay = decide(issued, good, {}, worker, 4);
+    expect(replay).toMatchObject({ action: "terminal", result: { status: "succeeded", failureCode: null, receipt: { body: { id: r2 } } } });
+    expect(decide(issued, { status: "unavailable" }, {}, worker, 4).action).toBe("terminal");
+    const failed = apply(s, (decide(s, observedRead({ format: null, media: null })) as Extract<ReverifyDecision, { action: "rejectVerification" }>).command, worker, 3);
+    expect(decide(failed, good, {}, worker, 4)).toEqual({ action: "terminal", result: { status: "failed", failureCode: "INVALID_BYTES", receipt: null } });
+    const canceled = apply(s, complete(uid(15), "reverify", 200), owner, 3);
+    expect(decide(canceled, good, {}, worker, 4)).toEqual({ action: "terminal", result: { status: "canceled", failureCode: null, receipt: null } });
+  });
+});
+describe("P2 registered-object reverify read preparation (synthetic reader)", () => {
+  const leased = () => {
+    const s = apply(registered(), complete(op2, "reverify", 200), owner, 2);
+    return apply(s, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 150 }, worker, 2);
+  };
+  const reader = (result: () => unknown) => {
+    const calls: unknown[][] = [];
+    return { calls, observer: { observeRegisteredSource: async (...args: unknown[]) => { calls.push(args); return result(); } } as unknown as RegisteredSourceObserver };
+  };
+  const actor = actorFromVerifiedUserId(owner);
+  const measured = { source: finalSource, bytes: { sha256: identity.sha256, sizeBytes: identity.sizeBytes }, format: { mime: identity.mime, kind: identity.kind }, media };
+  const command = (s: UploadModel, read: unknown, now = 3) => reverifyCommand(s, { operationId: op2, fingerprint: fp, expectedFence: 1, receiptId: r2, notAfter: 190,
+    verifierVersion: "verifier-v1", toolVersion: "probe-v1", read }, ctx(s, worker, now));
+
+  it("asks the reader for the registered identity at its exact registered source and feeds that one result to the command", async () => {
+    const s = leased(), r = reader(() => Object.freeze({ ...measured })), signal = new AbortController().signal;
+    const prepared = await prepareReverifyRead(r.observer, actor, s, op2, signal);
+    expect(r.calls).toEqual([[actor, { asset: { ownerId: owner, id: assetId, kind: "image", mime: "image/png", objectKey: identity.key, sha256: identity.sha256,
+      sizeBytes: identity.sizeBytes }, source: finalSource }, signal]]);
+    expect(prepared).toEqual({ read: { status: "observed", ...measured }, transientCode: null });
+    expect(Object.isFrozen(prepared) && Object.isFrozen(prepared.read)).toBe(true);
+    expect(command(s, prepared.read)).toEqual({ action: "finalize", command: finalize(op2, r2, 190) });
+  });
+  it("carries a measured mismatch to the existing failure code", async () => {
+    const r = reader(() => ({ ...measured, bytes: { sha256: "d".repeat(64), sizeBytes: identity.sizeBytes } }));
+    const prepared = await prepareReverifyRead(r.observer, actor, leased(), op2);
+    expect(command(leased(), prepared.read)).toMatchObject({ action: "rejectVerification", command: { failureCode: "HASH_MISMATCH" } });
+  });
+  it.each(["STORAGE_NOT_FOUND", "STORAGE_UNAVAILABLE", "STORAGE_TIMEOUT", "STORAGE_INTEGRITY", "STORAGE_TEMP"] as const)(
+    "turns %s into a retry: no receipt and no permanent failure command", async code => {
+      const s = leased(), prepared = await prepareReverifyRead(reader(() => { throw new StorageReadError(code); }).observer, actor, s, op2);
+      expect(prepared).toEqual({ read: { status: "unavailable" }, transientCode: code });
+      expect(command(s, prepared.read)).toEqual({ action: "none", reason: "TRANSIENT_READ" });
+    });
+  it.each(["STORAGE_CONFIG", "STORAGE_INPUT", "STORAGE_OWNER", "STORAGE_PRIVATE", "STORAGE_AUTH", "STORAGE_TYPE", "STORAGE_LIMIT", "STORAGE_ABORTED"] as const)(
+    "rethrows %s unchanged instead of retrying it", async code => {
+      await expect(prepareReverifyRead(reader(() => { throw new StorageReadError(code); }).observer, actor, leased(), op2)).rejects.toMatchObject({ code });
+    });
+  it("rethrows a non-storage error unchanged", async () => {
+    const failure = new Error("unexpected");
+    await expect(prepareReverifyRead(reader(() => { throw failure; }).observer, actor, leased(), op2)).rejects.toBe(failure);
+  });
+  it("refuses before any read when the operation is not a pending reverify of a registered object", async () => {
+    const r = reader(() => measured), s = leased();
+    const ended = apply(s, finalize(op2, r2, 190), worker, 3);
+    for (const [model, operationId] of [[ended, op2], [s, op1], [s, uid(99)], [prepared(), op1], [s, 42]] as const)
+      await expect(prepareReverifyRead(r.observer, actor, model, operationId)).rejects.toMatchObject({ code: "STATE" });
+    await expect(prepareReverifyRead(r.observer, actor, { ...s, revision: -1 }, op2)).rejects.toBeInstanceOf(ProtocolError);
+    expect(r.calls).toEqual([]);
+  });
+  it("hands a version-carrying registered source to the reader unchanged, so the reader refuses it before any request", async () => {
+    const versioned = { ...identity, providerVersion: "v1" };
+    let s = apply(fresh(), complete(), owner);
+    s = apply(s, { type: "claim", operationId: op1, fingerprint: fp, expectedFence: 0, leaseUntil: 80 });
+    s = apply(s, { type: "reservePublication", operationId: op1, fingerprint: fp, expectedFence: 1, identity: versioned });
+    s = apply(s, { ...finalize(), identity: versioned });
+    s = apply(s, complete(op2, "reverify", 200), owner, 2);
+    s = apply(s, { type: "claim", operationId: op2, fingerprint: fp, expectedFence: 0, leaseUntil: 150 }, worker, 2);
+    const r = reader(() => measured);
+    await prepareReverifyRead(r.observer, actor, s, op2);
+    expect((r.calls[0][1] as { source: unknown }).source).toEqual({ ...finalSource, providerVersion: "v1" });
   });
 });

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { checkedReceipt, makeReceipt, protocolDigest } from "./receipt";
+import { requireIssuableObservation, requireRejectionObservation } from "./observation";
 import { commandSchema, contextSchema, frozen, parse, requireProtocol as need, uploadModelSchema, type UploadModel, type UploadCommand, type Context } from "./schema";
 
 const same = (a: unknown, b: unknown) => protocolDigest("tuple", a) === protocolDigest("tuple", b);
@@ -225,7 +226,7 @@ export function transition(input: unknown, command: unknown, context: unknown): 
   }
   if (a.type === "rejectVerification") {
     verifier(); const o = op(a.operationId, a.fingerprint);
-    if (o.status === "failed") { need(o.terminalPayloadDigest === protocolDigest("verification-failure", a), "CONFLICT"); return frozen(s); }
+    if (o.status === "failed") { need(o.terminalPayloadDigest === rejectionDigest(a), "CONFLICT"); return frozen(s); }
   }
   if (a.type === "claimCleanup") {
     collector(); if (s.cleanup) { need(s.cleanup.id === a.cleanupId, "CONFLICT"); return frozen(s); }
@@ -292,12 +293,17 @@ export function transition(input: unknown, command: unknown, context: unknown): 
       const r = makeReceipt({ id: a.receiptId, objectId: s.objectId, identity: s.identity, operationId: o.id,
         generation: o.generation, fence: o.fence, policyEpoch: o.policyEpoch, policyDigest: o.policyDigest, source: a.source, media: a.media, verifiedAt: c.now, notAfter: a.notAfter,
         verifierId: c.principalId, verifierVersion: a.verifierVersion, toolVersion: a.toolVersion });
+      // New issuance only (exact replay returned earlier): the verifier's observation must match before any state changes.
+      requireIssuableObservation({ observation: a.observation, operationKind: o.kind, identity: s.identity, expectedSource, expectedMedia: s.media,
+        media: a.media, versions: { verifierVersion: a.verifierVersion, toolVersion: a.toolVersion } });
       s.receipts.push(r); s.media = a.media; s.currentReceiptId = r.body.id; s.lifecycle = "registered"; s.revoked = false; s.stateRevision++;
       o.status = "succeeded"; o.receiptId = r.body.id; o.terminalPayloadDigest = finalizeDigest(a); o.completedAt = c.now; o.completedStateRevision = s.stateRevision; o.completedRevision = s.revision + 1; break;
     }
     case "rejectVerification": {
       const o = leased(a.operationId, a.fingerprint, a.expectedFence);
-      o.status = "failed"; o.failureCode = a.failureCode; o.terminalPayloadDigest = protocolDigest("verification-failure", a);
+      requireRejectionObservation({ observation: a.observation, operationKind: o.kind, identity: s.identity, expectedMedia: s.media, failureCode: a.failureCode,
+        expectedSource: o.kind === "initial" ? s.incoming : s.identity && { bucket: s.identity.bucket, key: s.identity.key, providerVersion: s.identity.providerVersion } });
+      o.status = "failed"; o.failureCode = a.failureCode; o.terminalPayloadDigest = rejectionDigest(a);
       o.completedAt = c.now; o.completedRevision = s.revision + 1;
       if (o.kind === "initial") {
         s.closed = true; s.closure = { revision: s.revision + 1, at: c.now, principalId: c.principalId, authorizers: [...o.claimVerifiers], reason: "verification_failure", operationId: o.id };
@@ -356,7 +362,11 @@ export function transition(input: unknown, command: unknown, context: unknown): 
   s.revision++;
   return frozen(checkedModel(s));
 }
-function finalizeDigest(a: Extract<UploadCommand, { type: "finalize" }>) { return protocolDigest("finalize-request", a); }
+// Terminal digests cover only what the model persists (receipt fields / failure code), so checkedModel can recompute them and
+// pre-observation terminals keep byte-identical digests. The observation gates new issuance; replay returns the stored terminal only.
+const withoutObservation = (a: object) => Object.fromEntries(Object.entries(a).filter(([key]) => key !== "observation"));
+function finalizeDigest(a: Extract<UploadCommand, { type: "finalize" }>) { return protocolDigest("finalize-request", withoutObservation(a)); }
+function rejectionDigest(a: Extract<UploadCommand, { type: "rejectVerification" }>) { return protocolDigest("verification-failure", withoutObservation(a)); }
 function claimSnapshot(o: UploadModel["operations"][number]) {
   need(o.workerId !== null && o.claimedAt !== null && o.leaseUntil !== null, "INPUT");
   return { workerId: o.workerId, fence: o.fence, claimedAt: o.claimedAt, leaseUntil: o.leaseUntil,
