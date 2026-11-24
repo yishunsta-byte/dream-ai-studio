@@ -10,7 +10,7 @@
 
 ### 진행 상황과 담당
 
-#### 현재 개발 상태와 남은 작업 · 2026-11-25 03:49 KST
+#### 현재 개발 상태와 남은 작업 · 2026-11-25 04:00 KST
 
 **이미지 렌즈·초점 거리 격리 합본 검수 통과.** Front `msg_6a1fd0541f65`의 `ddfa570`와 Backend `e530c4c`를 운영 `82263a9` 위에 합친 `961e4ae2fdf603f72b80ba7128ca65473b662ed8`의 7경로는 객체·모드가 원본과 일치한다. 관련 시험 768건과 빌드 검사를 통과했다. 합성 브라우저에서 폭 320·390·1280·1574px의 렌즈·초점 거리 추정 표시, 근거 안내, 값이 없는 경우의 대시를 확인했다. 격리 검수의 운영 기준은 `82263a9`였다. [Front 보고](D:/starwork/review-scratch/style-dna-lens-focus-estimate-display-front-1125/report.md). [합본 시험](D:/starwork/review-scratch/master-style-dna-lens-focus-combined-1125/focus.log). [브라우저 검수](D:/starwork/review-scratch/master-style-dna-lens-focus-combined-1125/fixture-browser.log).
 
@@ -78,6 +78,10 @@ Codex(Shots) `msg_00f211fb01da`의 `6703b14` 최신 통합 후보는 15경로에
 
 **CMD-20261125-024 · Seedream·Kling 문구 운영 반영 및 실제 분석.** `msg_03d4494e4845`로 주인님의 검수 후 운영 반영과 Seedream 5.5 대상 최초 분석 한 번 승인을 확인했다. `P1-06-STYLE-DNA-PROMPT-REFINEMENT-PRODUCTION`은 `8bd1b91`에 `dab8aba`의 두 파일을 합쳐 검수한 SHA를 일반 푸시한다. Vercel Production Current 확인 뒤 `wild-coast.png` 한 장, 분석 Gemini, 대상 Seedream 5.5로 최초 분석 한 번을 수행한다. 응답 코드·시간과 자연어 문장 준수 여부를 기록한다. Front는 화면 시험의 실행 순서 의존성을 같은 문구 작업과 별도 사본에서 시험 파일만 수정한다.
 
+Master가 관련 시험 583개와 운영 빌드를 통과한 `6619ba9`를 푸시했다. `msg_43119ae4a1a5`와 보고서에서 Vercel Production Current의 SHA 일치, 포그라운드 Seedream 5.5 대상 최초 분석 1회, HTTP 201·61.5초를 대조했다. 실행 모델은 `gemini-4-neon`이다. 영어 프롬프트는 78단어·문장 세 개이며 유지할 구도와 조명을 명시했다. 이전 FLUX.2 결과와 문장 구성이 달랐다. 비용 금액은 응답에 없었다. [Vercel 배포](https://vercel.com/yishunsta-6158/dream-ai-studio/EZz9g4HTAGL2jLroKv3LvbtDADRi). [Front 운영 증거](D:/starwork/review-scratch/unified-master-source-1125/seedream-production-report.md).
+
+화면 시험 순서 보완 `ef7c7d8`은 앞 시험이 열어 둔 마지막 기록 때문에 다음 시험의 시작 화면이 바뀌던 문제를 합성 브라우저의 시험 상태 초기화로 해결했다. Front가 엔진→워크플로 순서의 변경 전 실패와 변경 후 통과, 기본 순서 7개 통과를 확인했다. Master는 시험 파일 한 개의 객체 일치·문법·린트를 확인해 `5cf1e2b`로 이었다.
+
 **MASTER-INSPECTION-20261125-0201 · 정기 점검.** Orca에서 Front의 인계 범위와 Backend 사본의 응답 계약을 확인했다. Front 배정 2를 전송했고, Backend 모델 작업과 그 뒤 주제별 쇼츠 장면 조회의 대기 상태를 대조했다. 열린 관리자 직접 조치 3건과 기존 미확정 전송 2건을 확인했다. 포그라운드 요청에 따라 기존 Orca Backend 터미널을 선택했다.
 
 **MASTER-INSPECTION-20261125-0231 · 정기 점검.** 운영 원격 `e1efc33`과 Controller·Orca 수신을 대조했다. Front의 비교 지점 보완 사본에서 허용 범위 화면·시험 3개 파일, Backend 장면 조회 사본에서 허용 범위 조회·SQL·시험 7개 파일의 작업 중 변경을 확인했다. 고정 후보와 인계 보고는 대기다. 모델 목록 화면 재검수는 Front 비교 작업이 인계된 뒤 진행한다. 열린 직접 조치 3건과 기존 미확정 전송 2건을 확인했다.
@@ -85,6 +89,8 @@ Codex(Shots) `msg_00f211fb01da`의 `6703b14` 최신 통합 후보는 15경로에
 **MASTER-INSPECTION-20261125-0300 · 정기 점검.** 03:00:20 KST에 운영 원격 `d272ed2`와 Vercel 성공, Controller PID `80180`, 기존 Orca 수신을 대조했다. 점검 알림 `msg_57a9de6b78b6` 외 미처리 인계가 없는 상태였다. Front의 모델 목록·공식 문구와 Backend의 장면 결과·설치 호환이 각각 진행 중이다. 열린 관리자 조치 3건과 기존 전달 미확정 2건을 확인했다. 각 담당 후보를 기다리며 중복 배정을 만들지 않았다.
 
 **MASTER-INSPECTION-20261125-0341 · 정기 점검.** 03:41:24 KST에 통합 운영 `eb5475d`, Controller PID `80180`, Orca 인계 6건과 열린 관리자 조치 3건을 대조했다. 임시 원격 브랜치 정리를 확인했고, Codex(Shots)와 Codex(Tester)의 후속 기준을 `master`로 맞췄다. 문구 후보는 독립 증거와 함께 승인 대상으로 남았다.
+
+**MASTER-INSPECTION-20261125-0400 · 정기 점검.** 04:00:41 KST에 운영 `6619ba9`, Controller PID `80180`과 Seedream 완료 인계를 확인했다. 열린 관리자 직접 조치 3건을 확인했고 Front의 합성 화면 순서 보완은 제품 코드 검수와 분리했다.
 
 **CMD-20261125-005 · 순서대로 진행 및 첫 작품 목표 변경.** 주인님이 8번을 ‘주제별 일반 쇼츠’로 지정했다. 1차 첫 작품은 선택한 주제·대상·메시지를 중심으로 기획하고, 같은 프로젝트에서 9:16 내보내기·재생·승인된 게시와 철회, 복원, 시간·비용을 검수한다. 관리형 템플릿 설정·새 프로젝트·기획 경로에 현재 `shopping-shorts` 제한이 있다. 2번 통합 단계에서 주제별 일반 쇼츠의 새 프로젝트·기획·장면 연결 조건을 정리하며 기존 프로젝트의 읽기·쓰기 호환성을 보존한다.
 
@@ -1053,7 +1059,7 @@ Front 완료 `msg_421aa877859d`, SHA-256 `efb16e5c770f32a0fff645494289ef14aeab46
 | --- | --- | --- |
 | 관리자 화면 | 운영 반영 | 원격 `master`와 기존 운영 배포 기록은 `9526f5c`다. 앞선 로그인 검수에서 `/admin` 상단 이미지·오디오·영상 메뉴를 확인했다. 이번 비로그인 실측은 홈과 관리자 로그인 200, 관리자·분석기·연동 진입 307이다. 로그인 뒤 분석 실행은 이번 점검에서 새로 확인하지 않았다. |
 | API 키·플랫폼 | 등록·안내 운영 반영 | `/admin/integrations`에 분석 엔진 OpenAI·Claude·Gemini, YouTube Data API 키 등록과 Threads·Instagram·YouTube·Google Drive 연결 안내가 있다. YouTube 채널 OAuth는 보호 후보까지 확인했다. 전체 플랫폼 OAuth와 실제 생성 API 연결은 아직 확인되지 않았다. |
-| 이미지 분석 | 운영 및 실사용 전체 검수 완료 | 운영 `961e4ae`에서 원본 분석·프롬프트 보정·시험 이미지 생성이 각각 201, 비교 지점 보관이 200이었다. `81943e2`에서 FLUX.2 대상 최초 분석도 201로 프롬프트를 확인했다. [전체 흐름 증거](D:/starwork/review-scratch/style-dna-live-e2e-1125/report.md). [FLUX.2 운영 증거](D:/starwork/review-scratch/master-style-dna-all-prompt-targets-1125/production-report.md). |
+| 이미지 분석 | 운영 및 실사용 전체 검수 완료 | 운영 `961e4ae`에서 원본 분석·프롬프트 보정·시험 이미지 생성이 각각 201, 비교 지점 보관이 200이었다. `81943e2`의 FLUX.2와 `6619ba9`의 Seedream 5.5 최초 분석은 각각 201이며 모델별 문구를 확인했다. [전체 흐름 증거](D:/starwork/review-scratch/style-dna-live-e2e-1125/report.md). [FLUX.2 운영 증거](D:/starwork/review-scratch/master-style-dna-all-prompt-targets-1125/production-report.md). [Seedream 운영 증거](D:/starwork/review-scratch/unified-master-source-1125/seedream-production-report.md). |
 | 오디오 분석 | 상세 보고서·대용량 보호 통합 | 자동 판별·음성·음악 보고서와 100 MiB 업로드·복구는 격리 검수를 통과했다. 기존 운영 Supabase의 업로드 스키마 설치는 이전 기록에 확인돼 있고, 운영 연결 설정·제한 역할 확인이 남았다. 정리 SQL과 되돌림은 보호 통합 `58f952f`에 있으며 실제 파일을 사용한 격리 PG17 시험 14건이 통과했다. 운영 예약은 적용 전이다. |
 | 쇼츠 분석 | 원본 단계·보관함 보호 통합 | 검색과 분석부터 소재·전략·대본·프롬프트, 작업 이어하기를 통합했다. 보관함 내용 검색은 화면·API가 같은 120 유니코드 코드 포인트 기준을 사용한다. 고정본 `ce377a5`에서 59파일 1,052건과 Webpack·산출물 검증이 통과했다. `1b36b72`에는 최대 3개 선택·묶음 분석 화면과 API를 통합했다. 전체 3,007건·빌드 통과, 외부 설정 의존 319건 건너뜀. 검색은 실제 Next·합성 로그인에서 비로그인 401과 DB 미연결 503 화면을 확인했다. `f26ec18`에는 시간 제한 안에서 실패 시 원문을 유지하는 한 문장 보정을 추가했으며 관련 시험 1,131건과 빌드가 통과했다. 기존 쇼츠 6단계는 운영 중이다. ② 상세 보고서 후보 `56588c9`의 S4 취소 초점·대비는 작성자 검증 완료, 독립 재검 배정 2 PASS. `89e10c0` 로컬 통합 체크포인트 검증 완료. |
 | 공통 프로젝트·기획 | 격리 통합, 운영 연결 대기 | 같은 프로젝트의 기획 저장·명시 승인과 45장면 가져오기에 격리 검수 근거가 있다. 이미지·오디오·쇼츠 결과의 실제 운영 저장과 재조회는 기존 메인 Supabase에서 연결을 확인해야 한다. |
