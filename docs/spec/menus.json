@@ -95,6 +95,45 @@
       "unconfirmed": []
     },
     {
+      "id": "topic-shorts",
+      "label": "주제별 쇼츠",
+      "group": "shortform",
+      "phase": "P2",
+      "availability": "active",
+      "description": "고른 주제와 보는 사람, 전할 핵심 메시지로 짧은 세로 영상을 만듭니다. 이미지·영상 자료는 있으면 함께 씁니다.",
+      "source": ["CMD-20261125-005: 주제별 쇼츠(첫 작품 목표)", "MASTER_DEVELOPMENT_PLAN: 주제별 쇼츠 프로젝트 진입 조건"],
+      "defaultAspect": "9:16",
+      "defaultLengthSec": 30,
+      "lengthOptions": [10, 20, 30, 40, 50, 60],
+      "inputs": [
+        { "id": "topic",           "label": "주제",                 "type": "text",     "required": true,  "maxLength": 80 },
+        { "id": "keyMessageLength", "label": "핵심 메시지 글자 수", "type": "select",   "required": false, "options": ["50", "100", "200", "300"], "default": "100", "help": "핵심 메시지를 이 글자 수 안에서 씁니다" },
+        { "id": "keyMessage",      "label": "핵심 메시지",          "type": "textarea", "required": true,  "maxLength": 300, "help": "보는 사람이 끝까지 보고 기억할 한두 문장" },
+        { "id": "referenceAssets", "label": "참고 이미지·영상 자료", "type": "assets",   "required": false, "accept": ["image", "video"] }
+      ],
+      "planSteps": [
+        { "id": "hook",    "label": "첫 장면 훅",   "help": "첫 1~3초" },
+        { "id": "message", "label": "핵심 메시지" },
+        { "id": "support", "label": "근거·예시",    "help": "출처가 있는 사실만" },
+        { "id": "close",   "label": "마무리·행동 유도" }
+      ],
+      "reviseOptions": [
+        { "id": "copy", "label": "문구" }, { "id": "order", "label": "장면 순서" },
+        { "id": "timing", "label": "초 단위 시간" }, { "id": "visual", "label": "화면 연출" }
+      ],
+      "review": [
+        { "id": "topic.message-clear", "label": "핵심 메시지가 분명하게 전달된다", "required": true },
+        { "id": "topic.sourced-facts", "label": "사실·수치에 확인한 출처가 있다",   "required": true }
+      ],
+      "outputs": [
+        { "id": "video",  "label": "MP4 (9:16 완성 영상)", "format": "mp4" },
+        { "id": "scenes", "label": "원본·중간본·선택 장면" },
+        { "id": "prompts","label": "프롬프트·생성 기록" },
+        { "id": "script", "label": "대본·자막" }
+      ],
+      "unconfirmed": ["주제별 세부 제작 매뉴얼은 원본 표에 아직 없어 공통 숏폼 기준을 씁니다"]
+    },
+    {
       "id": "travel-shorts",
       "label": "여행숏츠",
       "group": "shortform",

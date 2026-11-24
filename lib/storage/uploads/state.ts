@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { checkedReceipt, makeReceipt, protocolDigest } from "./receipt";
-import { commandSchema, contextSchema, frozen, parse, requireProtocol as need, uploadModelSchema, type UploadModel, type UploadCommand, type Context } from "./schema";
+import { requireIssuableObservation, requireRejectionObservation } from "./observation";
+import { commandSchema, contextSchema, counter, digestSchema, frozen, parse, recordId, requireProtocol as need, uploadModelSchema, type UploadModel, type UploadCommand, type Context } from "./schema";
 
 const same = (a: unknown, b: unknown) => protocolDigest("tuple", a) === protocolDigest("tuple", b);
 const closed = (s: UploadModel) => s.lifecycle === "cleanup_claimed" || s.lifecycle === "tombstoned";
@@ -200,15 +201,32 @@ export function reserveUpload(input: unknown, context: unknown): UploadModel {
 
 // Pure proposal over a caller-supplied authoritative snapshot. A future executor
 // must atomically persist CAS+outbox under B16 lock order; returning is NOT COMMIT.
-export function transition(input: unknown, command: unknown, context: unknown): UploadModel {
-  const s = checkedModel(input), a = parse(commandSchema, command), c = parse(contextSchema, context);
-  const owner = () => need(c.principalId === s.ownerId, "OWNER");
+// Verifier guards shared by transition and the read-free verificationLease (one definition, same codes and order).
+function verifierGuards(s: UploadModel, c: Context) {
   const verifier = () => need(s.verifiers.includes(c.principalId), "AUTHORITY");
-  const collector = () => need(s.collectors.includes(c.principalId), "AUTHORITY");
-  const manager = () => need(s.policyManagers.includes(c.principalId), "AUTHORITY");
   const op = (id: string, fingerprint: string) => {
     const o = s.operations.find(o => o.id === id); need(o, "STATE"); need(o.fingerprint === fingerprint, "CONFLICT"); return o;
   };
+  const live = (id: string, fingerprint: string) => {
+    const o = op(id, fingerprint);
+    need(!s.closed && !closed(s) && o.status === "pending" && o.generation === s.activeGeneration && o.policyEpoch === s.policyEpoch && o.policyDigest === s.policyDigest, "STATE");
+    need(c.now < o.authorizationUntil, "EXPIRED");
+    if (o.kind === "initial") need(!s.closed && c.now < s.intentExpiresAt, "EXPIRED");
+    return o;
+  };
+  const leased = (id: string, fingerprint: string, expectedFence: number) => {
+    verifier(); const o = live(id, fingerprint);
+    need(o.fence === expectedFence && o.workerId === c.principalId, "FENCE");
+    need(o.leaseUntil !== null && o.claimedAt !== null && c.now >= o.claimedAt && c.now < o.leaseUntil, "EXPIRED"); return o;
+  };
+  return { verifier, op, live, leased };
+}
+export function transition(input: unknown, command: unknown, context: unknown): UploadModel {
+  const s = checkedModel(input), a = parse(commandSchema, command), c = parse(contextSchema, context);
+  const owner = () => need(c.principalId === s.ownerId, "OWNER");
+  const collector = () => need(s.collectors.includes(c.principalId), "AUTHORITY");
+  const manager = () => need(s.policyManagers.includes(c.principalId), "AUTHORITY");
+  const { verifier, op, live, leased } = verifierGuards(s, c);
   // Exact terminal replay is intentionally BEFORE CAS, lease, policy, expiry.
   // It never modifies current availability or grants a new IO instruction.
   if (a.type === "complete") {
@@ -225,25 +243,13 @@ export function transition(input: unknown, command: unknown, context: unknown): 
   }
   if (a.type === "rejectVerification") {
     verifier(); const o = op(a.operationId, a.fingerprint);
-    if (o.status === "failed") { need(o.terminalPayloadDigest === protocolDigest("verification-failure", a), "CONFLICT"); return frozen(s); }
+    if (o.status === "failed") { need(o.terminalPayloadDigest === rejectionDigest(a), "CONFLICT"); return frozen(s); }
   }
   if (a.type === "claimCleanup") {
     collector(); if (s.cleanup) { need(s.cleanup.id === a.cleanupId, "CONFLICT"); return frozen(s); }
   }
   need(c.expectedRevision === s.revision, "CONFLICT");
   need(c.now >= s.reservedAt, "EXPIRED");
-  const live = (id: string, fingerprint: string) => {
-    const o = op(id, fingerprint);
-    need(!s.closed && !closed(s) && o.status === "pending" && o.generation === s.activeGeneration && o.policyEpoch === s.policyEpoch && o.policyDigest === s.policyDigest, "STATE");
-    need(c.now < o.authorizationUntil, "EXPIRED");
-    if (o.kind === "initial") need(!s.closed && c.now < s.intentExpiresAt, "EXPIRED");
-    return o;
-  };
-  const leased = (id: string, fingerprint: string, expectedFence: number) => {
-    verifier(); const o = live(id, fingerprint);
-    need(o.fence === expectedFence && o.workerId === c.principalId, "FENCE");
-    need(o.leaseUntil !== null && o.claimedAt !== null && c.now >= o.claimedAt && c.now < o.leaseUntil, "EXPIRED"); return o;
-  };
   switch (a.type) {
     case "complete": {
       need(!closed(s), "STATE");
@@ -292,12 +298,17 @@ export function transition(input: unknown, command: unknown, context: unknown): 
       const r = makeReceipt({ id: a.receiptId, objectId: s.objectId, identity: s.identity, operationId: o.id,
         generation: o.generation, fence: o.fence, policyEpoch: o.policyEpoch, policyDigest: o.policyDigest, source: a.source, media: a.media, verifiedAt: c.now, notAfter: a.notAfter,
         verifierId: c.principalId, verifierVersion: a.verifierVersion, toolVersion: a.toolVersion });
+      // New issuance only (exact replay returned earlier): the verifier's observation must match before any state changes.
+      requireIssuableObservation({ observation: a.observation, operationKind: o.kind, identity: s.identity, expectedSource, expectedMedia: s.media,
+        media: a.media, versions: { verifierVersion: a.verifierVersion, toolVersion: a.toolVersion } });
       s.receipts.push(r); s.media = a.media; s.currentReceiptId = r.body.id; s.lifecycle = "registered"; s.revoked = false; s.stateRevision++;
       o.status = "succeeded"; o.receiptId = r.body.id; o.terminalPayloadDigest = finalizeDigest(a); o.completedAt = c.now; o.completedStateRevision = s.stateRevision; o.completedRevision = s.revision + 1; break;
     }
     case "rejectVerification": {
       const o = leased(a.operationId, a.fingerprint, a.expectedFence);
-      o.status = "failed"; o.failureCode = a.failureCode; o.terminalPayloadDigest = protocolDigest("verification-failure", a);
+      requireRejectionObservation({ observation: a.observation, operationKind: o.kind, identity: s.identity, expectedMedia: s.media, failureCode: a.failureCode,
+        expectedSource: o.kind === "initial" ? s.incoming : s.identity && { bucket: s.identity.bucket, key: s.identity.key, providerVersion: s.identity.providerVersion } });
+      o.status = "failed"; o.failureCode = a.failureCode; o.terminalPayloadDigest = rejectionDigest(a);
       o.completedAt = c.now; o.completedRevision = s.revision + 1;
       if (o.kind === "initial") {
         s.closed = true; s.closure = { revision: s.revision + 1, at: c.now, principalId: c.principalId, authorizers: [...o.claimVerifiers], reason: "verification_failure", operationId: o.id };
@@ -356,7 +367,11 @@ export function transition(input: unknown, command: unknown, context: unknown): 
   s.revision++;
   return frozen(checkedModel(s));
 }
-function finalizeDigest(a: Extract<UploadCommand, { type: "finalize" }>) { return protocolDigest("finalize-request", a); }
+// Terminal digests cover only what the model persists (receipt fields / failure code), so checkedModel can recompute them and
+// pre-observation terminals keep byte-identical digests. The observation gates new issuance; replay returns the stored terminal only.
+const withoutObservation = (a: object) => Object.fromEntries(Object.entries(a).filter(([key]) => key !== "observation"));
+function finalizeDigest(a: Extract<UploadCommand, { type: "finalize" }>) { return protocolDigest("finalize-request", withoutObservation(a)); }
+function rejectionDigest(a: Extract<UploadCommand, { type: "rejectVerification" }>) { return protocolDigest("verification-failure", withoutObservation(a)); }
 function claimSnapshot(o: UploadModel["operations"][number]) {
   need(o.workerId !== null && o.claimedAt !== null && o.leaseUntil !== null, "INPUT");
   return { workerId: o.workerId, fence: o.fence, claimedAt: o.claimedAt, leaseUntil: o.leaseUntil,
@@ -396,6 +411,18 @@ export function cleanupInstruction(input: unknown, context: unknown, commitKnowl
   need(s.cleanup && closed(s), "STATE");
   need(c.now >= s.cleanup.claimedAt && (s.cleanup.observation === null || c.now >= s.cleanup.observation.at), "EXPIRED");
   return frozen({ objectId: s.objectId, identity: s.identity, cleanup: s.cleanup });
+}
+// Read-free check that a worker still holds a usable verifier lease: authority, current revision, live pending operation
+// (generation, policy epoch/digest, authorization), fence, worker and lease window, plus for a reverify the registered
+// lifecycle and unchanged state revision a receipt would need. Same guards as finalize/rejectVerification; changes nothing.
+const leaseQuery = z.strictObject({ operationId: recordId, fingerprint: digestSchema, expectedFence: counter.min(1) });
+export function verificationLease(input: unknown, query: unknown, context: unknown) {
+  const s = checkedModel(input), q = parse(leaseQuery, query), c: Context = parse(contextSchema, context);
+  const { verifier, leased } = verifierGuards(s, c);
+  verifier(); need(c.expectedRevision === s.revision, "CONFLICT"); need(c.now >= s.reservedAt, "EXPIRED");
+  const o = leased(q.operationId, q.fingerprint, q.expectedFence);
+  if (o.kind === "reverify") need(s.lifecycle === "registered" && s.stateRevision === o.expectedStateRevision, "STATE");
+  return frozen({ operationId: o.id, kind: o.kind, fence: o.fence, leaseUntil: o.leaseUntil!, authorizationUntil: o.authorizationUntil, revision: s.revision });
 }
 export function admission(input: unknown, context: unknown) {
   const s = checkedModel(input), c = parse(contextSchema, context);
