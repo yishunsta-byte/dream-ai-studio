@@ -46,7 +46,8 @@ try {
   await command("git", ["rev-parse", "HEAD"], "base.txt");
   const base = (await readFile(join(root, "base.txt"), "utf8")).trim();
   await command("git", ["archive", "--format=tar", "-o", join(root, "source.tar"), base], "archive.log");
-  await command("tar.exe", ["-xf", join(root, "source.tar"), "-C", app], "extract.log");
+  // Windows 기본 bsdtar를 경로로 고정한다. Git Bash의 GNU tar가 먼저 잡히면 "D:" 경로를 원격 주소로 읽어 풀기 전에 멈춘다.
+  await command(join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe"), ["-xf", join(root, "source.tar"), "-C", app], "extract.log");
   const overlays = {};
   const t207 = ["lib/cloud/project-read-page.ts", "components/cloud/project-list-readonly.tsx", "components/cloud/project-detail-readonly.tsx",
     "app/(cloud)/layout.tsx", "app/(cloud)/cloud.module.css", "app/(cloud)/cloud/projects/(list)/page.tsx",
@@ -119,7 +120,9 @@ try {
   const runtime = join(root, "fake-runtime");
   const cloudEnv = { ...env, NEXT_TELEMETRY_DISABLED: "1", DREAM_AUTH_MODE: "supabase", DREAM_ALLOWED_EMAILS: "a@example.invalid,b@example.invalid", NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${authPort}`, NEXT_PUBLIC_SUPABASE_ANON_KEY: "synthetic-public", DREAM_SITE_URL: baseUrl, DREAM_DATA_ROOT: runtime, DREAM_PROJECT_READ_BACKEND: "postgres", DATABASE_URL: apiUrl, NODE_EXTRA_CA_CERTS: join(root, "server.crt"), DREAM_T207_SERVER_SENTINEL: "synthetic-server-secret-never-in-response" };
   console.log("T207 production build in isolated copy");
-  await command(process.execPath, [join(app, "node_modules/next/dist/bin/next"), "build"], "build.log", { cwd: app, env: { ...cloudEnv } });
+  // 격리 사본은 작업공간의 node_modules를 cp로 가져온다. 작업공간 node_modules가 연결(junction)이면 사본에도 프로젝트 밖을 가리키는 링크가 생기고,
+  // Turbopack은 그 링크를 따라가지 않아 "Could not find the Next.js package"로 멈춘다. 이 검증기의 격리 빌드만 Webpack으로 고정한다(프로젝트 기본 빌드 설정은 그대로).
+  await command(process.execPath, [join(app, "node_modules/next/dist/bin/next"), "build", "--webpack"], "build.log", { cwd: app, env: { ...cloudEnv } });
   nextOutput = await open(join(root, "next.log"), "a");
   async function startNext(serverEnv) {
     next = spawn(process.execPath, [join(app, "node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)], { cwd: app, windowsHide: true, stdio: ["ignore", nextOutput.fd, nextOutput.fd], env: serverEnv });
@@ -204,8 +207,19 @@ try {
   await admin.query("UPDATE dream.projects SET template_snapshot_json=$2 WHERE id=$1", [PB, snapshot]);
   const recovered = await request(`/cloud/projects/${PB}`, jars.B); assert.equal(recovered.status, 200); assert(recovered.text.includes(titles[PB]));
   observations.push({ name: "corrupt-snapshot-then-recover", list: summary(corruptList), detail: summary(corruptDetail), recovered: summary(recovered) });
-  const legacy = await request("/", jars.B); assert(legacy.text.includes("클라우드 작업실을 준비하고 있어요")); assert(!legacy.text.includes(titles[PB]));
-  observations.push({ name: "legacy-home-still-pending", ...summary(legacy) });
+  // T-241 공개 메인 계약: 로그인한 B에게도 "/"는 공개 화면(사이트 제목·작업실 로그인 링크·h1 하나)이고, 세션 확인·Postgres 읽기·개인 제목 노출이 없다.
+  // 예시 작품 이름은 바뀔 수 있으므로 단언하지 않는다.
+  const homeSince = events.length, homeBefore = await activity();
+  const home = await request("/", jars.B);
+  assert.equal(home.status, 200); assert(home.text.includes("<title>Dream AI Studio</title>")); assert(home.text.includes('href="/login?next=%2Fstudio"'));
+  assert.equal((home.text.match(/<h1[\s>]/g) ?? []).length, 1, "public home h1");
+  assert(!home.text.includes(titles[PA])); assert(!home.text.includes(titles[PB]));
+  assert.equal(userCalls(homeSince), 0, "public home must not verify the session");
+  assert.deepEqual(await activity(), homeBefore, "public home must not query Postgres");
+  observations.push({ name: "public-home", ...summary(home), sessionChecks: 0, postgresQueries: 0 });
+  // 예전 작업실 홈은 T-241 뒤 /studio다. 클라우드에서는 여전히 준비 안내(legacyPageGate)이고 개인 제목을 보이지 않는다.
+  const legacy = await request("/studio", jars.B); assert.equal(legacy.status, 200); assert(legacy.text.includes("클라우드 작업실을 준비하고 있어요")); assert(!legacy.text.includes(titles[PB]));
+  observations.push({ name: "legacy-studio-still-pending", ...summary(legacy) });
   for (const [token, user] of tokens) if (user.id === A) tokens.delete(token);
   const expired = await request(`/cloud/projects/${PA}`, jars.A); assert.equal(expired.status, 307); assert.match(expired.location, /\/login/);
   const stillB = await request("/cloud/projects", jars.B); assert.equal(stillB.status, 200); assert(stillB.text.includes(titles[PB]));

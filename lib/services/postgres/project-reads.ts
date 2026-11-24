@@ -2,7 +2,7 @@ import "server-only";
 import type { Pool } from "pg";
 import { z } from "zod";
 import { isVerifiedActor, type VerifiedActor } from "@/lib/db/postgres/types";
-import { withActorTransaction } from "@/lib/db/postgres/transaction";
+import { withActorTransaction, type ActorTransactionOptions } from "@/lib/db/postgres/transaction";
 import { postgresProjectsRepository } from "@/lib/repo/postgres/projects";
 import { menuSnapshotSchema } from "@/lib/menus/snapshot";
 import { jsonObject } from "@/lib/db/json";
@@ -29,12 +29,12 @@ function checkedProject(project: NonNullable<Awaited<ReturnType<Repo["get"]>>>) 
 
 // Unwired backend service: the caller must already hold a verified actor and an
 // explicitly provisioned pool. It never resolves Auth or opens SQLite itself.
-export function postgresProjectReads(pool: Pick<Pool, "connect">) {
+export function postgresProjectReads(pool: Pick<Pool, "connect">, prepareSession?: ActorTransactionOptions["prepareSession"]) {
   async function read<T>(actor: VerifiedActor, operation: (repo: Repo) => Promise<T>): Promise<T> {
     if (!isVerifiedActor(actor)) throw projectReadError("AUTH_REQUIRED");
     try {
       return await withActorTransaction(pool, actor, tx => operation(postgresProjectsRepository(tx)), {
-        mode: "read-only-repeatable-read", preserveDomainError: isProjectReadError,
+        mode: "read-only-repeatable-read", preserveDomainError: isProjectReadError, prepareSession,
       });
     } catch (error) {
       if (isProjectReadError(error)) throw error;
