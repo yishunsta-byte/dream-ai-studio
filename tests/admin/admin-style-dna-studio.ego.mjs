@@ -20,7 +20,9 @@ const studio = () => page.evaluate((ST) => {
   const st = eval(ST);
   if (!st) return null;
   const text = (selector) => st.querySelector(selector)?.textContent.trim() ?? null;
-  const facts = (label) => [...st.querySelectorAll(`[aria-label='${label}'] dl > div`)].map((row) => [row.querySelector("dt").textContent, row.querySelector("dd").textContent]);
+  // [이름, 값(추정 표시 뺀 글자), 추정 표시, 이름표(title)]
+  const facts = (label) => [...st.querySelectorAll(`[aria-label='${label}'] dl > div`)].map((row) => { const dd = row.querySelector("dd"), badge = dd.querySelector("[data-estimate]");
+    return [row.querySelector("dt").textContent, badge ? [...dd.childNodes].filter((node) => node !== badge).map((node) => node.textContent).join("").trim() : dd.textContent, badge?.textContent ?? null, dd.title || null]; });
   const grid = st.querySelector("form[aria-label='분석 설정']").parentElement;
   const buttons = [...st.querySelectorAll("button")];
   return {
@@ -146,6 +148,10 @@ try {
     v = await studio();
     assert.deepEqual(v.titles, ["EN: Dusk City Portrait", "KR: 황혼의 도심 초상"]);
     assert.deepEqual(v.camera.map((item) => item[1]), ["눈높이 정면", "미디엄 클로즈업", "85mm 상당 망원", "—", "얕은 심도"]);
+    // 렌즈 추정값에만 '추정' 표시·근거 이름표. 미확인 초점 거리는 '—' 그대로, 다른 칸·조명 카드는 표시 없음.
+    assert.deepEqual(v.camera.map((item) => item[2]), [null, null, "추정", null, null]);
+    assert.deepEqual([v.camera[2][3], v.camera[3][3], v.camera[0][3]], ["추정값 · 근거: 배경 압축이 큼", "모델이 확인하지 못했어요", "근거: 수평선이 화면 가운데"]);
+    assert.equal(v.lighting.filter((item) => item[2]).length, 0);
     assert.deepEqual([v.lighting.map((item) => item[1]), v.gold], [["해 질 녘", "왼쪽 측면광", "낮음", "중간", "—"], "해 질 녘"]);
     assert.deepEqual(v.blueprint, ["구도:인물을 오른쪽 삼분할 선에 둔 세로 구도근거: 얼굴이 오른쪽 1/3 지점", "배경:흐릿한 도심 간판 불빛근거: 둥근 빛 번짐"]);
     assert.equal(v.style.length, 2);
@@ -229,6 +235,34 @@ try {
       ["이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요.", "API키등록·플랫폼연동에 등록한 Gemini 키로 호출되며 요금은 그 계정에 청구돼요. 시험 이미지 생성은 언제나 Gemini로 해요.", 0]);
     assert.equal(v.runDisabled, true);
     if (width === 390 || width === 1574) await shot(`studio-no-key-${width}.png`);
+    console.log("STEP 8 " + width);
+    // 8. 렌즈·초점 거리 둘 다 추정(?styleDnaFocus=estimated): 두 칸 모두 '추정'+값, 줄 높이 같음, 표시 글자 대비 4.5:1 이상, 분석 POST 1건.
+    await page.evaluate(() => sessionStorage.clear());
+    await open(`styleDnaReport=1&styleDnaFocus=estimated&w=${width}`);
+    await mark(`[...(${ST}).querySelectorAll("label")].find((label) => label.textContent.trim() === "HTTPS 주소").querySelector("input")`, "Space");
+    await typeInto(`(${ST}).querySelector("input[type=url]")`, "https://images.example.com/lens.png");
+    await press("이미지 시퀀싱 시작");
+    await until((ST) => /Dusk City Portrait/.test(eval(ST).querySelector("[aria-label='분석 리포트']")?.textContent ?? ""), "estimate report", ST);
+    v = await studio();
+    assert.deepEqual(v.camera.map((item) => [item[1], item[2]]), [["눈높이 정면", null], ["미디엄 클로즈업", null], ["85mm 상당 망원", "추정"], ["약 1.5m(인물 근접)", "추정"], ["얕은 심도", null]]);
+    assert.equal(v.camera[3][3], "추정값 · 근거: 얼굴 크기와 배경 흐림 정도");
+    assert.equal((await rows()).filter((item) => item.method === "POST" && item.path === "/api/admin/style-dna").length, 1);
+    const badge = await page.evaluate((ST) => { const card = eval(ST).querySelector("[aria-label='카메라 & 렌즈']");
+      const rgb = (value) => value.match(/[\d.]+/g).map(Number);
+      const lum = ([r, g, b]) => [r, g, b].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+      const node = card.querySelector("[data-estimate]"); let back = null;
+      for (let item = node.parentElement; item && !back; item = item.parentElement) { const c = rgb(getComputedStyle(item).backgroundColor); if (c.length === 3 || c[3] === 1) back = c; }
+      const a = lum(rgb(getComputedStyle(node).color)), b = lum(back);
+      const heights = [...card.querySelectorAll("dl > div")].map((row) => row.getBoundingClientRect().height);
+      return { ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05), tallest: Math.max(...heights), shortest: Math.min(...heights), cut: [...card.querySelectorAll("dd")].filter((dd) => dd.scrollWidth > dd.clientWidth + 1).length }; }, ST);
+    assert.ok(badge.ratio >= 4.5, `추정 표시 대비 ${badge.ratio}`);
+    assert.ok(badge.tallest - badge.shortest <= 2, `추정 칸 줄 높이 ${badge.tallest}/${badge.shortest}`);
+    assert.ok(await overflow() <= 0, "estimate overflow");
+    row.estimate = { ratio: Math.round(badge.ratio * 100) / 100, cut: badge.cut };
+    if (width === 390 || width === 1574) { await page.evaluate((ST) => eval(ST).querySelector("[aria-label='카메라 & 렌즈']").scrollIntoView({ block: "center" }), ST); await settle(250);
+      await page.screenshot({ path: `${out}/studio-estimate-${width}.png` }); }
+    // 새로 만든 기록이 '마지막에 연 기록'으로 남으면 다음 시험 첫 화면이 바뀐다.
+    await page.evaluate(() => sessionStorage.clear());
     row.external = (await page.evaluate(() => window.__premiere.requests().filter((item) => !item.path.startsWith("/")).length));
     results.push(row);
   }

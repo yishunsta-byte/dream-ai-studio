@@ -203,7 +203,8 @@ const sdCell=(description:string,basis:string)=>({certainty:"estimated",descript
 const sdRow=(label:string,description:string,basis:string)=>({label,description,basis});
 const sdReport=()=>({schemaVersion:1,titles:{ko:"황혼의 도심 초상",en:"Dusk City Portrait"},
   camera:{angle:sdCell("눈높이 정면","수평선이 화면 가운데"),shotType:sdCell("미디엄 클로즈업","가슴 위로 잘림"),lens:sdCell("85mm 상당 망원","배경 압축이 큼"),
-    focusDistance:{certainty:"unconfirmed"},depthOfField:sdCell("얕은 심도","배경 불빛이 둥글게 번짐")},
+    // ?styleDnaFocus=estimated면 초점 거리도 추정값(렌즈·초점 거리 둘 다 '추정' 표시 확인용). 기본은 미확인.
+    focusDistance:sdQuery.get("styleDnaFocus")==="estimated"?sdCell("약 1.5m(인물 근접)","얼굴 크기와 배경 흐림 정도"):{certainty:"unconfirmed"},depthOfField:sdCell("얕은 심도","배경 불빛이 둥글게 번짐")},
   lighting:{timeOfDay:sdCell("해 질 녘","주황빛 낮은 태양"),direction:sdCell("왼쪽 측면광","오른쪽 뺨 그림자"),altitude:sdCell("낮음","긴 그림자"),
     contrast:sdCell("중간","암부 디테일 유지"),shadows:{certainty:"unconfirmed"}},
   blueprint:[sdRow("구도","인물을 오른쪽 삼분할 선에 둔 세로 구도","얼굴이 오른쪽 1/3 지점"),sdRow("배경","흐릿한 도심 간판 불빛","둥근 빛 번짐")],

@@ -10,20 +10,26 @@ import s from "./studio.module.css";
 
 type Cells = Partial<Record<string, StudioCell>> | undefined;
 const cellText = (cell: StudioCell | undefined) => cell?.certainty === "estimated" ? cell.description : "—";
-const cellTitle = (cell: StudioCell | undefined) => cell?.certainty === "estimated" ? `근거: ${cell.basis}` : cell ? "모델이 확인하지 못했어요" : "분석 결과에 없음";
+const cellTitle = (cell: StudioCell | undefined, estimate = false) => cell?.certainty === "estimated" ? `${estimate ? "추정값 · " : ""}근거: ${cell.basis}` : cell ? "모델이 확인하지 못했어요" : "분석 결과에 없음";
+/** 렌즈·초점 거리는 사진 단서로 추정해 채운다(CMD-20261125-002·003). 값이 있으면 '추정' 표시를 붙이고, 미확인·누락은 그대로 '—'. */
+const ESTIMATE_KEYS: readonly string[] = ["lens", "focusDistance"];
 
-function FactCard({ emoji, title, fields, cells, analyzing, hasRecord, gold }: {
-  emoji: string; title: string; fields: readonly (readonly [string, string])[]; cells: Cells; analyzing: boolean; hasRecord: boolean; gold?: string;
+function FactCard({ emoji, title, fields, cells, analyzing, hasRecord, gold, estimate }: {
+  emoji: string; title: string; fields: readonly (readonly [string, string])[]; cells: Cells; analyzing: boolean; hasRecord: boolean; gold?: string; estimate?: readonly string[];
 }) {
   // 원본: 분석 전·중에는 '---', 결과가 있는데 칸이 비면 '—'.
   const blank = analyzing || !hasRecord;
   return <section className={s.card} aria-label={title}>
     <div className={s.cardHead}><h4><span className={s.emoji} aria-hidden>{emoji}</span>{title}</h4></div>
     <dl className={s.facts}>
-      {fields.map(([key, label]) => <div key={key}>
-        <dt>{label}</dt>
-        <dd className={key === gold ? s.gold : undefined} title={blank ? undefined : cellTitle(cells?.[key])}>{blank ? "---" : cellText(cells?.[key])}</dd>
-      </div>)}
+      {fields.map(([key, label]) => {
+        const guess = !blank && !!estimate?.includes(key) && cells?.[key]?.certainty === "estimated";
+        return <div key={key}>
+          <dt>{label}</dt>
+          <dd className={key === gold ? s.gold : undefined} title={blank ? undefined : cellTitle(cells?.[key], guess)}>
+            {guess && <><span className={s.estimate} data-estimate>추정</span>{" "}</>}{blank ? "---" : cellText(cells?.[key])}</dd>
+        </div>;
+      })}
     </dl>
     {!blank && !cells && <p className={s.cardNote}>이 기록의 분석 결과에는 {title} 항목이 없어요.</p>}
   </section>;
@@ -31,7 +37,7 @@ function FactCard({ emoji, title, fields, cells, analyzing, hasRecord, gold }: {
 
 export function StudioCameraLighting({ view, analyzing }: { view?: StudioView; analyzing: boolean }) {
   return <>
-    <FactCard emoji="📷" title="카메라 & 렌즈" fields={cameraFields} cells={view?.camera} analyzing={analyzing} hasRecord={!!view} />
+    <FactCard emoji="📷" title="카메라 & 렌즈" fields={cameraFields} cells={view?.camera} analyzing={analyzing} hasRecord={!!view} estimate={ESTIMATE_KEYS} />
     <FactCard emoji="🔆" title="조명 환경 분석" fields={lightingFields} cells={view?.lighting} analyzing={analyzing} hasRecord={!!view} gold="timeOfDay" />
   </>;
 }
