@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 // 3. 2단계에서 Claude로 보정 → 본문 engine·버전 5, 기록·현재 카드에 실제 엔진. 1단계 리포트의 v1 엔진(OpenAI)은 그대로.
 // 4. 키 교체(Claude 버전 6) → 409 → 공급자 이름이 든 안내, 엔진 설정 다시 읽기, 기록 보존 → 다시 누르면 버전 6으로 성공(CMD-044: 동의 체크 상자 없음).
 // 5. 시험 생성: 단추 옆 안내 문구 Gemini, 본문에 engine 없음·Gemini 버전 3. 6. 미등록 공급자는 '(키 미등록)'으로 잠김. 7. 엔진 칸 없는 이전 기록은 'Gemini · 모델 기록 없음'.
+// 8. 등록 조회(CMD-045): 조회 중에는 OpenAI·Claude가 '확인 중'으로 잠기고 '키 미등록'은 없음, 풀면 등록 결과대로. 조회 실패(500)는 '확인 실패'. 어느 경우든 Gemini 기본 경로, 고르기만으로 POST 0.
 // 각 폭(1574·390)에서 가로 넘침 0, 외부 요청 0.
 const base = globalThis.FIXTURE_ORIGIN;
 const out = globalThis.FIXTURE_OUTPUT_DIR ?? ".";
@@ -174,6 +175,36 @@ try {
     const external = await page.evaluate(() => window.__premiere.requests().filter((item) => !item.path.startsWith("/")).length);
     assert.equal(external, 0);
     if (width === 1574 || width === 390) { await page.evaluate(`(${ST}).scrollIntoView({ block: "start" })`); await settle(250); await page.screenshot({ path: `${out}/engine-old-${width}.png` }); }
+    console.log("STEP 8 " + width);
+    const AF = "form[aria-label='분석 설정']";
+    const noUnregistered = () => page.evaluate((ST) => /키 미등록/.test(eval(ST).textContent), ST);
+    await open(`styleDnaEngines=openai&styleDnaHold=engines&w=${width}`);
+    e = await engineState(ST, AF);
+    assert.deepEqual(e.options, [["Google Gemini", false], ["OpenAI (확인 중)", true], ["Anthropic Claude (확인 중)", true]]);
+    assert.deepEqual([e.labels, e.value], [["Gemini", "OpenAI 확인 중", "Claude 확인 중"], "gemini"]);
+    assert.equal(await noUnregistered(), false, "조회 중에는 키 미등록 표시 없음");
+    assert.equal(await page.evaluate(() => window.__premiere.requests().filter((row) => row.path === "/api/admin/style-dna/engine-credentials").length), 1, "조회 1건 붙잡힘");
+    const toButtons = async () => { await page.evaluate((ST) => eval(ST).querySelector("[role=group][aria-describedby$='engine']").scrollIntoView({ block: "center" }), ST); await settle(250); };
+    await toButtons(); await page.screenshot({ path: `${out}/engine-loading-${width}.png` });
+    await page.evaluate(() => window.__premiere.release());
+    await until((ST) => !eval(ST).querySelector("[role=group][aria-describedby$='engine'] button[value='openai']").disabled, "engines loaded", ST);
+    e = await engineState(ST, AF);
+    assert.deepEqual(e.options, [["Google Gemini", false], ["OpenAI", false], ["Anthropic Claude (키 미등록)", true]]);
+    assert.deepEqual(e.labels, ["Gemini", "OpenAI", "Claude 키 미등록"]);
+    await pickAnalysis("openai");
+    e = await engineState(ST, AF);
+    assert.deepEqual([e.value, e.model], ["openai", "gpt-fixture-vision"]);
+    assert.equal((await posts("/api/admin/style-dna")).length, 0, "조회·고르기만으로 POST 0");
+    await open(`styleDnaEngines=openai&styleDnaEnginesFault=500&w=${width}`);
+    await until((ST) => /확인 실패/.test(eval(ST).querySelector("[role=group][aria-describedby$='engine']").textContent), "engines failed", ST);
+    e = await engineState(ST, AF);
+    assert.deepEqual(e.options, [["Google Gemini", false], ["OpenAI (확인 실패)", true], ["Anthropic Claude (확인 실패)", true]]);
+    assert.deepEqual([e.labels, e.value], [["Gemini", "OpenAI 확인 실패", "Claude 확인 실패"], "gemini"]);
+    assert.equal(await noUnregistered(), false, "조회 실패는 키 미등록이 아님");
+    assert.match(e.consentText ?? "", /Gemini/);
+    assert.equal((await posts("/api/admin/style-dna")).length, 0, "실패 화면 POST 0");
+    assert.equal(await overflow(), 0, `조회 실패 넘침 ${width}`);
+    await toButtons(); await page.screenshot({ path: `${out}/engine-failed-${width}.png` });
     results.push({ width, overflow: 0, external, notice: await notice() });
   }
 } finally {
