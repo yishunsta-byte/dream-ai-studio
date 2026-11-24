@@ -149,7 +149,9 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare, set
     }
   }
 
-  return <section className={styles.panel} data-appearance={appearance} aria-labelledby={`${id}-title`}>
+  const invalidUrl = notice === errors.invalid_input;
+
+  return <section className={styles.panel} data-appearance={appearance} data-form-theme="shorts" aria-labelledby={`${id}-title`}>
     <div className={styles.surface}>
       {appearance === "premiere" && <details className={styles.promptEditor} onToggle={event => setSearchOpen(event.currentTarget.open)}>
         <summary>공개 쇼츠 검색</summary>
@@ -182,7 +184,8 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare, set
         <label className={styles.field} htmlFor={`${id}-url`}>
           공개 YouTube 영상 주소
           <input ref={urlField} id={`${id}-url`} inputMode="url" autoComplete="off" spellCheck={false}
-            maxLength={2048} value={url} aria-describedby={`${id}-help`}
+            maxLength={2048} value={url} aria-invalid={invalidUrl || undefined}
+            aria-describedby={invalidUrl ? `${id}-help ${id}-analysis-status` : `${id}-help`}
             onChange={event => { reset(); setUrl(event.target.value); setConsent(false); onSourceChange?.(event.target.value); }} />
         </label>
         <p className={styles.note} id={`${id}-help`}>공개 쇼츠 주소나 YouTube 시청 주소를 입력하세요.</p>
@@ -197,7 +200,8 @@ export function AdminShortsAnalysis({ onSourceChange, appearance, onPrepare, set
             disabled={availability.kind !== "configured" || !consent || !url.trim()}>쇼츠 분석</Button>
           {running && <Button type="button" variant="secondary" onClick={reset}>취소</Button>}
         </div>
-        <p className={styles.status} role="status">{running ? "공개 영상 분석 중" : notice}</p>
+        <p id={`${id}-analysis-status`} className={styles.status} role="status"
+          data-tone={notice && !result ? "error" : undefined}>{running ? "공개 영상 분석 중" : notice}</p>
       </form>
       {result && <div className={styles.inference}>
         <h4>Gemini 영상 분석 제안</h4>

@@ -311,7 +311,9 @@ export function AdminPremierePrograms() {
     navigateAdminSection(analysisResultsSection);
   }
 
-  return <><section id={analysisPrograms[0].id} tabIndex={-1} aria-label={analysisPrograms[0].label} className={hub.target}>
+  // 확정 분석기 테마: 이미지·오디오·영상 작업면이 상단 분석 버튼과 같은 배경 토큰을 읽는다(색은 admin.module.css .workspace).
+  return <><section id={analysisPrograms[0].id} tabIndex={-1} aria-label={analysisPrograms[0].label}
+    className={`${hub.target} ${styles.analyzer}`} data-analyzer-theme="image">
     {current === analysisPrograms[0].id && <AdminStyleDnaWorkflow layout="embedded" />}
   </section>{analysisPrograms.map(({ id: programId, label: programLabel, icon }, index) => {
     // 예전 결과 공개 준비는 별도 칸에서 기존 게시 기능을 사용한다.
@@ -321,8 +323,9 @@ export function AdminPremierePrograms() {
     const program = copy[index];
     const { kind } = program;
     const Workspace = workspaces[index];
+    const theme = kind === "music" ? "audio" : kind === "shorts" ? "video" : undefined;
     return <section key={id} id={id} tabIndex={-1} aria-labelledby={`${id}-title`} data-program-active={active || undefined}
-      data-program={kind} className={`${hub.target} ${styles.program}`}>
+      data-program={kind} data-analyzer-theme={theme} className={`${hub.target} ${styles.program}${theme ? ` ${styles.analyzer}` : ""}`}>
       {active && <>
         {program.kind !== "image"
           ? <div className={styles.programHeading}>

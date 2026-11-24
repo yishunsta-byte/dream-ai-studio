@@ -44,6 +44,16 @@
 .help > p { margin-top: var(--sp-2); }
 .lead { margin: 0 0 var(--sp-3); }
 .workspace { --admin-nav-offset: calc(var(--admin-nav-height, 0px) + 24px); min-width: 0; }
+/* P1-00-ANALYZER-THEME-121-PRODUCT: 확정 분석기 테마(이미지 1안 바이올렛 스튜디오 · 오디오 2안 코발트 리스닝 룸 · 영상 1안 버건디 시네마).
+   상단 분석 버튼과 각 프로그램 작업면이 같은 토큰을 읽는다. 다른 안으로 바꿀 때는 이 값만 교체한다(보관 6안은 analyzer-theme-options 기록). */
+.workspace {
+  --analyzer-image-bg: #251a38; --analyzer-image-side: #181125; --analyzer-image-card: #2e2243; --analyzer-image-well: #1b142a; --analyzer-image-line: #594777;
+  --analyzer-image-ink: #f9f4ff; --analyzer-image-muted: #d0c2e5; --analyzer-image-accent: #d6aaff; --analyzer-image-action: #6436a1;
+  --analyzer-audio-bg: #152b4d; --analyzer-audio-side: #111e37; --analyzer-audio-card: #1c365a; --analyzer-audio-well: #132440; --analyzer-audio-line: #4c6d9e;
+  --analyzer-audio-ink: #f4f8ff; --analyzer-audio-muted: #bdcfea; --analyzer-audio-accent: #a6d3ff; --analyzer-audio-action: #285a99;
+  --analyzer-video-bg: #321a29; --analyzer-video-side: #24131e; --analyzer-video-card: #402237; --analyzer-video-well: #281822; --analyzer-video-line: #734759;
+  --analyzer-video-ink: #fff2f5; --analyzer-video-muted: #e2bfce; --analyzer-video-accent: #ffb1c5; --analyzer-video-action: #a82e56;
+}
 .hubHeader {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "brand nav account";
   align-items: center; gap: 8px 16px; padding: 8px 16px;
@@ -64,6 +74,7 @@
 }
 .navigation { grid-area: nav; min-width: 0; }
 .navigation ul { display: flex; flex-wrap: wrap; gap: var(--sp-1); padding: 0; margin: 0; list-style: none; }
+.operationLinks > li:has(> a[data-analysis]) + li:has(> a[data-analysis]) { margin-inline-start: 6px; }
 .operationLinks .manualNav { margin-inline-start: auto; }
 .operationLinks a { overflow-wrap: anywhere; }
 .navEmoji {
@@ -82,6 +93,20 @@
 .navigation a[data-analysis] { border: 1px solid #75619b; background: #352650; color: #e9e1ff; }
 .navigation a[data-analysis]:hover { border-color: #a58fd0; background: #43306a; color: #fff; }
 .navigation a[data-analysis][aria-current="location"] { border-color: #dac7ff; background: #4a3473; color: #fff; box-shadow: inset 0 -3px #dac7ff; }
+/* 확정 테마: 각 분석 버튼은 자기 프로그램 작업면과 같은 배경 토큰. 선택·비선택 배경은 같고, 현재 위치·초점은 강조색 테두리와 아래 선으로 구분한다. */
+.navigation a[data-analysis][href="#admin-image-analysis"] { --nav-analyzer-bg: var(--analyzer-image-bg); --nav-analyzer-line: var(--analyzer-image-line); --nav-analyzer-ink: var(--analyzer-image-ink); --nav-analyzer-accent: var(--analyzer-image-accent); }
+.navigation a[data-analysis][href="#admin-music-analysis"] { --nav-analyzer-bg: var(--analyzer-audio-bg); --nav-analyzer-line: var(--analyzer-audio-line); --nav-analyzer-ink: var(--analyzer-audio-ink); --nav-analyzer-accent: var(--analyzer-audio-accent); }
+.navigation a[data-analysis][href="#admin-shorts-analysis"] { --nav-analyzer-bg: var(--analyzer-video-bg); --nav-analyzer-line: var(--analyzer-video-line); --nav-analyzer-ink: var(--analyzer-video-ink); --nav-analyzer-accent: var(--analyzer-video-accent); }
+.workspace .navigation a[data-analysis],
+.workspace .navigation a[data-analysis]:hover { border-color: var(--nav-analyzer-line, #75619b); background: var(--nav-analyzer-bg, #352650); color: var(--nav-analyzer-ink, #e9e1ff); }
+.workspace .navigation a[data-analysis]:hover { border-color: var(--nav-analyzer-ink, #a58fd0); }
+.workspace .navigation a[data-analysis]:is([aria-current="location"], :focus-visible) {
+  border-color: var(--nav-analyzer-accent, #dac7ff); background: var(--nav-analyzer-bg, #4a3473); color: var(--nav-analyzer-ink, #fff); box-shadow: inset 0 -3px var(--nav-analyzer-accent, #dac7ff);
+}
+.hubHeader .navigation a[data-analysis]:focus-visible { outline-color: var(--nav-analyzer-accent, #78e8d2); }
+@media (min-width: 941px) {
+  .operationLinks > li:has(> a[data-analysis]) + li:not(:has(> a[data-analysis])) { margin-inline-start: var(--sp-5); }
+}
 @media (min-width: 1381px) {
   .hubHeader { column-gap: 10px; padding-inline: 12px; }
   .hubHeader .brand { font-size: 15px; }
@@ -146,16 +171,16 @@
 .unavailableList li > span { grid-column: 2; grid-row: 1 / span 2; }
 
 @media (max-width: 940px) {
-  .navigation ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .operationLinks .manualNav { grid-column: -2 / -1; margin-inline-start: 0; }
+  .navigation ul { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .operationLinks li { grid-column: span 3; }
+  .operationLinks li:has(> a[data-analysis]) { grid-column: span 4; padding-block-end: var(--sp-2); }
+  .operationLinks .manualNav { grid-column: -4 / -1; margin-inline-start: 0; }
 }
 @media (max-width: 760px) {
-  .navigation ul { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .operationLinks li { grid-column: span 3; }
-  .operationLinks li:nth-child(-n+3) { grid-column: span 2; }
-  .operationLinks .manualNav { grid-column: -4 / -1; }
+  .operationLinks li { grid-column: span 6; }
+  .operationLinks .manualNav { grid-column: -7 / -1; }
   .navigation a { padding-inline: var(--sp-2); font-size: var(--text-sm); }
-  .operationLinks li:nth-child(-n+3) a { gap: var(--sp-1); padding-inline: var(--sp-1); }
+  .operationLinks a[data-analysis] { gap: var(--sp-1); padding-inline: var(--sp-1); }
   .columnHead { display: none; }
   .project { grid-template-columns: minmax(0, 1fr) auto; }
   .projectStatus { grid-column: 2; grid-row: 1; justify-self: end; }

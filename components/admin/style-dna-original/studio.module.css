@@ -331,3 +331,45 @@
 @media (min-width: 640px) { :global([data-dna-shell]) .studio { margin: -20px; } }
 @media (min-width: 768px) { :global([data-dna-shell]) .studio { margin: -24px; min-height: 100dvh; } }
 :global([data-dna-shell="embedded"]) .studio { margin: 0; min-height: 0; border-radius: 12px; }
+
+/* P1-00-ANALYZER-THEME-121-PRODUCT: 관리자 홈 이미지 분석 칸(data-analyzer-theme="image")의 분석 화면만 확정 1안 바이올렛 스튜디오로 칠한다.
+   밝게·다크 스튜디오 두 상태 모두 같은 바이올렛 값을 쓰고, 원본 전체 화면(/admin/style-dna)의 두 상태 색은 그대로다. */
+[data-analyzer-theme="image"] .studio[data-theme] {
+  color-scheme: dark;
+  --bg: var(--az-bg); --text: var(--az-ink); --muted: var(--az-muted); --soft: var(--az-muted); --label: var(--az-ink); --head-border: var(--az-line);
+  --hex: var(--az-ink); --strong2: var(--az-ink); --card: var(--az-card); --card-line: var(--az-line); --row-line: var(--az-line); --head-line: var(--az-line);
+  --title: var(--az-ink); --inset: var(--az-well); --inset-line: var(--az-line); --field: var(--az-well); --field-line: var(--az-line); --field-text: var(--az-ink);
+  --viewer: var(--az-well); --chip: var(--az-well); --chip-line: var(--az-line); --chip-text: var(--az-ink); --track: var(--az-line); --donut-track: var(--az-line);
+  --accent: var(--az-accent); --accent-strong: var(--az-accent); --accent-soft: var(--az-well); --accent-line: var(--az-line); --shadow: none;
+  background: var(--az-bg); color: var(--az-ink);
+}
+[data-analyzer-theme="image"] .studio[data-theme] :focus-visible { outline-color: var(--az-accent); }
+[data-analyzer-theme="image"] .studio[data-theme] :is(.cardNote, .empty, .dropHint) { color: var(--az-muted); }
+[data-analyzer-theme="image"] .studio[data-theme] .card { background: var(--az-card); border-color: var(--az-line); color: var(--az-ink); box-shadow: none; }
+[data-analyzer-theme="image"] .studio[data-theme] .drop { background: var(--az-well); border-color: var(--az-line); }
+[data-analyzer-theme="image"] .studio[data-theme] .primary { background: var(--az-action); border-color: var(--az-action); color: #fff; box-shadow: none; }
+[data-analyzer-theme="image"] .studio[data-theme] :is(.brandIcon, .ai) { background: var(--az-card); border-color: var(--az-line); color: var(--az-accent); }
+[data-analyzer-theme="image"] .studio[data-theme] .dot { border-color: var(--az-line); }
+[data-analyzer-theme="image"] .studio[data-theme] :is(.waiting, .dropTitle, .reportWait, .field, .sourceAlt, .consent, .pill, .facts, .score) { color: var(--az-ink); }
+[data-analyzer-theme="image"] .studio[data-theme] :is(.waiting, .cardHead, .reportWait, .facts, .score) :is(p, strong, dt, dd, span) { color: inherit; }
+[data-analyzer-theme="image"] .studio[data-theme] :is(.pill, .segment) { background: var(--az-well); border-color: var(--az-line); }
+[data-analyzer-theme="image"] .studio[data-theme] .segment button[aria-pressed="true"] { background: var(--az-action); color: #fff; }
+/* 원본 밝은 상태 전용 고정 색(어두운 글자·밝은 바탕)이 바이올렛 바탕에서 읽히도록 같은 칸 안에서만 바꾼다. 원본 다크 상태 덮어쓰기와 같은 자리다. */
+[data-analyzer-theme="image"] .studio[data-theme] :is(.brand p, .segment button) { color: var(--az-muted); }
+[data-analyzer-theme="image"] .studio[data-theme] .pillAccent { background: var(--az-card); border-color: var(--az-accent); color: var(--az-accent); }
+[data-analyzer-theme="image"] .studio[data-theme] :is(.drop:hover, .drop[data-drag]) { background: var(--az-card); border-color: var(--az-accent); }
+[data-analyzer-theme="image"] .studio[data-theme] .tipMark { background: var(--az-card); color: var(--az-ink); }
+[data-analyzer-theme="image"] .studio[data-theme] .tipCard { background: var(--az-card); border-color: var(--az-line); color: var(--az-muted); }
+[data-analyzer-theme="image"] .studio[data-theme] .tipCard strong { color: var(--az-ink); }
+[data-analyzer-theme="image"] .studio[data-theme] :is(.tipTitle, .titleEn, .titleRow > span, .sectionHead, .section[data-kind="style"] .sectionHead, .live) { color: var(--az-accent); }
+[data-analyzer-theme="image"] .studio[data-theme] .section[data-kind="tips"] { background: var(--az-well); border-color: var(--az-line); }
+[data-analyzer-theme="image"] .studio[data-theme] .section[data-kind="tips"] .sectionHead { color: #fcd34d; }
+[data-analyzer-theme="image"] .studio[data-theme] .titleRow { border-color: var(--az-line); }
+[data-analyzer-theme="image"] .studio[data-theme] .facts2 { color: var(--az-ink); }
+[data-analyzer-theme="image"] .studio[data-theme] .facts2 li::before { color: var(--az-accent); }
+[data-analyzer-theme="image"] .studio[data-theme] .live::before { background: var(--az-accent); }
+[data-analyzer-theme="image"] .studio[data-theme] .waitingIcon { background: var(--az-card); border-color: var(--az-line); color: var(--az-accent); }
+[data-analyzer-theme="image"] .studio[data-theme] .refineButton { background: var(--az-action); color: #fff; }
+[data-analyzer-theme="image"] .studio[data-theme] .refineButton:hover:not(:disabled) { background: var(--az-line); }
+[data-analyzer-theme="image"] .studio[data-theme] .testLink { background: var(--az-card); border-color: var(--az-accent); color: var(--az-accent); }
+[data-analyzer-theme="image"] .studio[data-theme] :is(.refineButton, .testLink):disabled { background: var(--az-well); border-color: var(--az-line); color: var(--az-muted); }

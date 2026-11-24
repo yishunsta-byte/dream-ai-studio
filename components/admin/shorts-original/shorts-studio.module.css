@@ -285,3 +285,32 @@
 .leaveText { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
 .leaveActions { display: flex; flex-wrap: wrap; gap: 8px; }
 .leaveNote { margin: 0 0 16px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; color: #334155; font-size: 13px; }
+
+/* P1-00-ANALYZER-THEME-121-PRODUCT: 관리자 홈 영상 분석 칸(data-analyzer-theme="video")의 내장 작업실만 확정 1안 버건디 시네마로 칠한다.
+   단독 화면(/admin/shorts-analysis)의 밝은 원본 색과 구조·크기·동작은 그대로다. 색 값은 칸의 --az-* 토큰(상단 영상 버튼과 같은 출처)에서 읽는다. */
+[data-analyzer-theme="video"] .app.embedded { color-scheme: dark; background: var(--az-bg); color: var(--az-ink); }
+[data-analyzer-theme="video"] .app.embedded :is(.main, .inner) { color: var(--az-ink); }
+[data-analyzer-theme="video"] .app.embedded :is(.side, .mobile, .drawer, .brandBox) { background: var(--az-side); border-color: var(--az-line); }
+[data-analyzer-theme="video"] .app.embedded :is(.brandName, .mobileName, .heroTitle, .stepLabel, .viewTitle, .stepDesc, .overview, .util, .step, .cardHead, .cardHead h3, .flowCardBody, .menuButton) { color: var(--az-ink); }
+[data-analyzer-theme="video"] .app.embedded :is(.heroLead, .empty, .viewDesc, .viewfinderTitle) { color: var(--az-muted); }
+[data-analyzer-theme="video"] .app.embedded .hero { background: linear-gradient(122deg, var(--az-card), var(--az-bg) 52%, var(--az-well)); border-color: var(--az-line); box-shadow: none; }
+[data-analyzer-theme="video"] .app.embedded :is(.card, .flowCard) { background: var(--az-card); border-color: var(--az-line); color: var(--az-ink); box-shadow: none; }
+[data-analyzer-theme="video"] .app.embedded .pickNote { background: var(--az-well); border-color: var(--az-line); color: var(--az-ink); }
+/* 직접 주소 안내 문장 속 '① 쇼츠 떡상 검색' 글자 단추: 밝은 바탕용 빨강(#dc2626, 3.50:1) 대신 같은 칸의 강조색. 단독 쇼츠 화면은 그대로. */
+[data-analyzer-theme="video"] .app.embedded .pickNote .inlineLink { color: var(--az-accent); }
+/* P1-00-ANALYZER-THEME-VIDEO-STAGE-LINK-CONTRAST: 다른 단계로 가는 글자 단추(다른 소재 고르기·주제 확정으로·대본 생성으로·보관함 빈 상태)와
+   키 미등록·모델 오류의 설정 바로가기도 같은 강조색(카드 #402237 위 2.90:1 → 8.4:1 안팎). 그 바로가기 앞 실행 상태 문장(#334155, 1.35:1)은 보조색. 단독 화면은 그대로. */
+[data-analyzer-theme="video"] .app.embedded .inlineLink { color: var(--az-accent); }
+[data-analyzer-theme="video"] .app.embedded .statusText { color: var(--az-muted); }
+[data-analyzer-theme="video"] .app.embedded :is(.chip, .heroBadge, .version, .banner) { background: var(--az-well); border-color: var(--az-line); color: var(--az-accent); }
+[data-analyzer-theme="video"] .app.embedded .primary { background: var(--az-action); border-color: var(--az-action); color: #fff; box-shadow: none; }
+[data-analyzer-theme="video"] .app.embedded :is(.brandIcon, .mobileIcon, .flowNum) { background: var(--az-action); border-color: var(--az-line); color: #fff; box-shadow: none; }
+[data-analyzer-theme="video"] .app.embedded :is(.overview, .util, .stepBody, .bannerLink, .flowCardTitle, .cardMeta, .flowTitle, .dot, .menuButton, .badge) { border-color: var(--az-line); }
+[data-analyzer-theme="video"] .app.embedded :is(.overview, .util, .step)[aria-current],
+[data-analyzer-theme="video"] .app.embedded .step[aria-current] .stepBody { background: var(--az-card); border-color: var(--az-accent); color: var(--az-accent); }
+[data-analyzer-theme="video"] .app.embedded :is(.flowCardTitle, .heroBadge, .bannerLink, .flowTitle, .brandSub, .cardMeta) { color: var(--az-accent); }
+[data-analyzer-theme="video"] .app.embedded :is(.badge, .menuButton) { background: var(--az-well); border-color: var(--az-line); color: var(--az-ink); }
+[data-analyzer-theme="video"] .app.embedded .phoneStage { background: linear-gradient(170deg, var(--az-action), #121622 45%, #080b10); }
+[data-analyzer-theme="video"] .app.embedded :is(.dot, .phoneTag) { background: var(--az-action); color: #fff; }
+[data-analyzer-theme="video"] .app.embedded :is(a, button, input, select, textarea, summary):focus-visible,
+[data-analyzer-theme="video"] .app.embedded .viewTitle:focus-visible { outline-color: var(--az-accent); }

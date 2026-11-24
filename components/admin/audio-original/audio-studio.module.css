@@ -243,3 +243,34 @@
 .guideFoot button { min-height: 36px; padding: 8px 16px; border: 0; border-radius: 8px; background: #0f172a; color: #fff; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
 .guideFoot button:hover { background: #1e293b; }
 @media (min-width: 768px) { .guideItems { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* P1-00-ANALYZER-THEME-121-PRODUCT: 관리자 홈 오디오 분석 칸(data-analyzer-theme="audio")의 내장 작업실만 확정 2안 코발트 리스닝 룸으로 칠한다.
+   단독 화면(/admin/audio-analysis, standalone)과 구조·크기·동작은 그대로다. 색 값은 칸의 --az-* 토큰(상단 오디오 버튼과 같은 출처)에서 읽는다. */
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] {
+  --n-bg: var(--az-bg); --n-head: var(--az-side); --n-card: var(--az-card); --n-deep: var(--az-well); --n-line: var(--az-line);
+  --n-cyan: var(--az-accent); --n-violet: var(--az-action); --n-soft: var(--az-ink); --n-muted: var(--az-muted);
+  --bg-surface: var(--az-side); --line: var(--az-line); --fg-accent: var(--az-accent); --fg-link: var(--az-accent); --line-focus: var(--az-accent);
+  --accent: var(--az-action);
+  background: var(--az-bg); color: var(--az-ink);
+}
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(.side, .bar) { background: var(--az-side); border-color: var(--az-line); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(.brandName, .heroTitle, .uploaderTitle, .flowLabel, .main) { color: var(--az-ink); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(.heroLead, .uploaderLead, .flowText) { color: var(--az-muted); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] .hero { background: linear-gradient(122deg, var(--az-card), var(--az-bg) 52%, var(--az-well)); border-color: var(--az-line); box-shadow: none; }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(.card, .kpi) { background: var(--az-card); border-color: var(--az-line); color: var(--az-ink); box-shadow: none; }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] .kpi:hover { border-color: var(--az-accent); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(.drop, .tabs, .nano) { background: var(--az-well); border-color: var(--az-line); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] .drop:hover { background: var(--az-card); border-color: var(--az-accent); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] .drop[data-dragging] { background: var(--az-card); border-color: var(--az-accent); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] .drop:has(.fileInput:focus-visible) { outline-color: var(--az-accent); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(.chip, .labChip, .version, .autoBadge) { background: var(--az-well); border-color: var(--az-line); color: var(--az-accent); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(.keyLink, .heroKey, .heroGuide) { background: var(--az-well); border-color: var(--az-line); color: var(--az-accent); box-shadow: none; }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(.keyLink, .heroKey):hover { background: var(--az-card); border-color: var(--az-accent); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] .fresh { background: var(--az-action); border-color: var(--az-action); color: #fff; box-shadow: none; }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] .brandIcon { background: var(--az-action); border-color: var(--az-line); color: #fff; box-shadow: none; }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(.tab, .kpiIcon, .dot, .sideMode, .sideLink, .menuButton, .badge) { border-color: var(--az-line); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] .kpiIcon { background: var(--az-well); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(.sideMode, .tab)[aria-pressed="true"],
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] .menuButton[aria-expanded="true"] { background: var(--az-card); border-color: var(--az-accent); color: var(--az-accent); box-shadow: none; }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] :is(a, button, input, select, textarea, summary):focus-visible { outline-color: var(--az-accent); }
+[data-analyzer-theme="audio"] .studio[data-audio-studio="embedded"] .sep { color: var(--az-muted); }

@@ -73,6 +73,22 @@
   background: linear-gradient(149deg, #261a32, var(--bg-surface) 60%);
 }
 .preview { grid-area: preview; }
+.guide[data-shorts-publication] {
+  --studio-light: var(--shorts-theme-accent, #a61c40);
+  --studio-tint: var(--shorts-theme-tint, #fce6eb);
+  background: var(--shorts-theme-canvas, #fff1f3);
+  color: var(--shorts-theme-ink, #321b25);
+  border-color: var(--shorts-theme-outline, #906975);
+}
+.guide[data-shorts-publication] :is(.preview, .control, .mediaStage) {
+  background: var(--shorts-theme-panel, #fff9fa);
+  border-color: var(--shorts-theme-outline, #906975);
+  color: var(--shorts-theme-ink, #321b25);
+}
+.guide[data-shorts-publication] :is(summary, .previewMessage a) { color: var(--studio-light); }
+.guide[data-shorts-publication] .previewMessage p { color: var(--shorts-theme-muted, #634a53); }
+.guide[data-shorts-publication] .filmFrame { background: var(--studio-tint); border-color: var(--studio-light); color: var(--studio-light); }
+.guide[data-shorts-publication] :is(summary, .previewMessage a):focus-visible { outline-color: var(--studio-light); }
 .desk { grid-area: desk; min-width: 0; display: grid; gap: var(--sp-3); }
 .preview h3, .control > h3 { margin: 0 0 var(--sp-3); }
 .mediaStage {
@@ -165,3 +181,24 @@
 .programHeading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-4); min-width: 0; }
 .programHeading h2 { margin: 0; }
 .programHeading a { gap: var(--sp-2); }
+/* P1-00-ANALYZER-THEME-121-PRODUCT: 확정 분석기 테마. 프로그램 칸마다 같은 이름의 --az-* 값을 정하고, 각 원본 작업실 CSS가 자기 칸 안에서만 읽는다.
+   값의 출처는 상단 분석 버튼과 같은 .workspace 토큰이다. */
+.analyzer[data-analyzer-theme="image"] {
+  --az-bg: var(--analyzer-image-bg, #251a38); --az-side: var(--analyzer-image-side, #181125); --az-card: var(--analyzer-image-card, #2e2243);
+  --az-well: var(--analyzer-image-well, #1b142a); --az-line: var(--analyzer-image-line, #594777); --az-ink: var(--analyzer-image-ink, #f9f4ff);
+  --az-muted: var(--analyzer-image-muted, #d0c2e5); --az-accent: var(--analyzer-image-accent, #d6aaff); --az-action: var(--analyzer-image-action, #6436a1);
+}
+.analyzer[data-analyzer-theme="audio"] {
+  --az-bg: var(--analyzer-audio-bg, #152b4d); --az-side: var(--analyzer-audio-side, #111e37); --az-card: var(--analyzer-audio-card, #1c365a);
+  --az-well: var(--analyzer-audio-well, #132440); --az-line: var(--analyzer-audio-line, #4c6d9e); --az-ink: var(--analyzer-audio-ink, #f4f8ff);
+  --az-muted: var(--analyzer-audio-muted, #bdcfea); --az-accent: var(--analyzer-audio-accent, #a6d3ff); --az-action: var(--analyzer-audio-action, #285a99);
+}
+.analyzer[data-analyzer-theme="video"] {
+  --az-bg: var(--analyzer-video-bg, #321a29); --az-side: var(--analyzer-video-side, #24131e); --az-card: var(--analyzer-video-card, #402237);
+  --az-well: var(--analyzer-video-well, #281822); --az-line: var(--analyzer-video-line, #734759); --az-ink: var(--analyzer-video-ink, #fff2f5);
+  --az-muted: var(--analyzer-video-muted, #e2bfce); --az-accent: var(--analyzer-video-accent, #ffb1c5); --az-action: var(--analyzer-video-action, #a82e56);
+  /* 버건디 조합에서 하위 공개 쇼츠 분석 폼(data-form-theme="shorts")과 공개 준비 칸이 물려받는 값. 값이 없으면 각 파일의 밝은 기본 팔레트를 그대로 쓴다. */
+  --shorts-theme-color-scheme: dark; --shorts-theme-accent: #ffb1c5; --shorts-theme-muted: #e2bfce; --shorts-theme-outline: #a5798c;
+  --shorts-theme-inset: #281822; --shorts-theme-ink: #fff2f5; --shorts-theme-panel: #402237; --shorts-theme-tint: #503047;
+  --shorts-theme-action: #a82e56; --shorts-theme-error: #ffb8cb; --shorts-theme-canvas: #321a29;
+}

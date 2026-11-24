@@ -104,3 +104,46 @@
 .panel[data-appearance="premiere"] .actions button:is(:disabled, [aria-disabled="true"]) {
   background: #273d3a; border-color: #45655f; color: #9ebbb5; opacity: 1;
 }
+
+.panel[data-form-theme="shorts"] {
+  color-scheme: var(--shorts-theme-color-scheme, light);
+  --lab-mint: var(--shorts-theme-accent, #a61c40);
+  --lab-muted: var(--shorts-theme-muted, #634a53);
+  --lab-line: var(--shorts-theme-outline, #906975);
+  --lab-inset: var(--shorts-theme-inset, #fff);
+  --shorts-ink: var(--shorts-theme-ink, #321b25);
+  --shorts-panel: var(--shorts-theme-panel, #fff9fa);
+  --shorts-tint: var(--shorts-theme-tint, #fce6eb);
+  --shorts-action: var(--shorts-theme-action, #b51c44);
+  --shorts-error: var(--shorts-theme-error, #a01435);
+}
+.panel[data-form-theme="shorts"] .surface {
+  background: var(--shorts-panel);
+  color: var(--shorts-ink);
+  border-color: var(--lab-line);
+}
+.panel[data-form-theme="shorts"][data-appearance="premiere"] .surface { background: transparent; }
+.panel[data-form-theme="shorts"] .surface :is(h3, h4, h5, input, select, textarea) { color: var(--shorts-ink); }
+.panel[data-form-theme="shorts"] .link,
+.panel[data-form-theme="shorts"] .promptEditor > summary { color: var(--lab-mint); }
+.panel[data-form-theme="shorts"] :is(.options label:has(:checked), .inference) { background: var(--shorts-tint); border-color: var(--lab-mint); }
+.panel[data-form-theme="shorts"] .options label:has(:disabled) { cursor: not-allowed; }
+.panel[data-form-theme="shorts"] .actions button {
+  background: var(--lab-inset);
+  border-color: var(--lab-line);
+  color: var(--lab-mint);
+}
+.panel[data-form-theme="shorts"] .actions .run {
+  background: var(--shorts-action);
+  border-color: var(--shorts-action);
+  color: #fff;
+}
+.panel[data-form-theme="shorts"] .actions button:hover:not(:disabled, [aria-disabled="true"]) { background: var(--shorts-tint); color: var(--shorts-ink); }
+.panel[data-form-theme="shorts"] .actions .run:hover:not(:disabled) { background: var(--shorts-action); color: #fff; }
+.panel[data-form-theme="shorts"] .actions button:is(:disabled, [aria-disabled="true"]) {
+  background: var(--shorts-tint); border-color: var(--lab-line); color: var(--lab-muted); opacity: 1;
+}
+.panel[data-form-theme="shorts"] :is(a, button, summary):focus-visible { outline: 2px solid var(--lab-mint); outline-offset: 3px; }
+.panel[data-form-theme="shorts"] .surface .field [aria-invalid="true"] { border: 2px solid var(--shorts-error); }
+.panel[data-form-theme="shorts"] .status[data-tone="error"] { color: var(--shorts-error); }
+.panel[data-form-theme="shorts"] .status:empty { display: block; position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }

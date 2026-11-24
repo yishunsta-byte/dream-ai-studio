@@ -125,3 +125,26 @@
 .menuButton { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border: 0; border-radius: 8px; background: none; color: #cbd5e1; cursor: pointer; }
 .menuButton:hover { background: #182030; }
 .drawer { max-height: 85vh; overflow-y: auto; border-top: 1px solid #222d42; background: #0c0f17; }
+
+/* P1-00-ANALYZER-THEME-121-PRODUCT: 관리자 홈 이미지 분석 칸(data-analyzer-theme="image")의 내장 틀만 확정 1안 바이올렛 스튜디오로 칠한다.
+   원본 전체 화면(/admin/style-dna)과 구조·크기·동작은 그대로다. 색 값은 칸의 --az-* 토큰(상단 이미지 버튼과 같은 출처)에서 읽는다. */
+[data-analyzer-theme="image"] .app.embedded { color-scheme: dark; background: var(--az-bg); border-color: var(--az-line); color: var(--az-ink); }
+[data-analyzer-theme="image"] .app.embedded :is(.main, .inner) { color: var(--az-ink); }
+[data-analyzer-theme="image"] .app.embedded :is(.side, .mobile, .drawer, .brandBox, .nav) { background: var(--az-side); border-color: var(--az-line); color: var(--az-ink); }
+[data-analyzer-theme="image"] .app.embedded :is(.brandName, .stepLabel, .overview, .util, .version, .lab) { color: var(--az-ink); }
+[data-analyzer-theme="image"] .app.embedded :is(.stepDesc, .flowTitle) { color: var(--az-muted); }
+[data-analyzer-theme="image"] .app.embedded .version { background: var(--az-well); border-color: var(--az-line); }
+[data-analyzer-theme="image"] .app.embedded :is(.brandIcon, .mobileIcon) { background: var(--az-card); border-color: var(--az-line); color: var(--az-accent); box-shadow: none; }
+[data-analyzer-theme="image"] .app.embedded :is(.overview, .util, .stepBody, .flowTitle, .badge) { border-color: var(--az-line); }
+[data-analyzer-theme="image"] .app.embedded .menuButton { background: var(--az-side); border-color: var(--az-line); color: var(--az-ink); }
+[data-analyzer-theme="image"] .app.embedded :is(.overview, .util)[aria-current],
+[data-analyzer-theme="image"] .app.embedded .step[aria-current] .stepBody { background: var(--az-card); border-color: var(--az-accent); color: var(--az-ink); }
+[data-analyzer-theme="image"] .app.embedded .step[aria-current] .stepBody .stepLabel { color: var(--az-accent); }
+[data-analyzer-theme="image"] .app.embedded :is(a, button, input, select, textarea, summary):focus-visible { outline-color: var(--az-accent); }
+[data-analyzer-theme="image"] .app.embedded .step:focus-visible .stepBody { outline-color: var(--az-accent); }
+[data-analyzer-theme="image"] .app.embedded .step:hover .stepBody { background: var(--az-card); }
+[data-analyzer-theme="image"] .app.embedded .badge { background: var(--az-well); color: var(--az-ink); }
+[data-analyzer-theme="image"] .app.embedded .step[aria-current] .badge { background: var(--az-action); border-color: var(--az-accent); color: #fff; box-shadow: none; }
+[data-analyzer-theme="image"] .app.embedded .step[aria-current] .stepLabel svg { color: var(--az-accent); }
+/* 안내 줄(role=alert·status) 안의 글자 단추는 바탕이 없어 어두운 색 체계의 기본 회색 단추가 된다. 같은 칸 안에서만 글자 링크처럼 보이게 한다. */
+[data-analyzer-theme="image"] .app.embedded :is([role="alert"], [role="status"]) > button { background: transparent; border-color: transparent; color: var(--az-accent); }
