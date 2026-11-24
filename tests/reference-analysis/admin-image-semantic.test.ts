@@ -214,3 +214,65 @@ describe("관리자 Style DNA 이미지 의미 분석", () => {
     }
   });
 });
+
+describe("Style DNA 렌즈·초점 거리 시각 추정", () => {
+  const options = { mode: "replicate", guidance: "", mutationLevel: 30, includeImageTag: false, targetModel: "gemini-nano-banana-2.1" } as const;
+  const lens = { description: "광각(약 24~35mm 상당) 추정", basis: "가장자리 원근 왜곡이 크고 배경이 넓게 보임" };
+  const focusDistance = { description: "근거리(약 1m 이내) 추정", basis: "인물 상반신이 화면을 채우고 배경이 강하게 흐림" };
+  const angle = { description: "눈높이", basis: "수평선이 화면 가운데" };
+  const output = (camera: Record<string, unknown>) => ({
+    findings: Object.fromEntries(imageSemanticCategories.map(category => [category, { description: `${category} 분석`, basis: "가운데 위치" }])),
+    ko: "중앙에 배치한 사진", en: "A photograph with centered composition",
+    styleDna: { titles: { ko: "근접 광각 인물", en: "Close wide portrait" }, camera },
+  });
+  const external = (provider: "openai" | "anthropic") => ({ key: privateKey, model: `${provider}-fixture`, provider, isCurrent: async () => true });
+  const engines = [
+    ["gemini", (value: unknown) => candidate(value), { key: privateKey, model: versionedModel }],
+    ["openai", (value: unknown) => Response.json({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify(value) } }] }), external("openai")],
+    ["anthropic", (value: unknown) => Response.json({ stop_reason: "end_turn", content: [{ type: "text", text: JSON.stringify(value) }] }), external("anthropic")],
+  ] as const;
+  type Settings = Parameters<ReturnType<typeof createStyleDnaProvider>["analyze"]>[2];
+  const analyze = async ([, reply, settings]: readonly [string, (value: unknown) => Response, Settings], camera: Record<string, unknown>) => {
+    const send = vi.fn<typeof fetch>(async () => reply(output(camera)));
+    const result = await createStyleDnaProvider(send).analyze({ kind: "file", name: "synthetic.png", bytes: Buffer.from(await syntheticImage()) }, options, settings);
+    return { result, request: String(send.mock.calls[0][1]?.body) };
+  };
+
+  it.each(engines)("%s 완료 응답의 두 칸을 근거 있는 추정으로 저장하고 그대로 다시 읽는다", async (name, reply, settings) => {
+    const { result, request } = await analyze([name, reply, settings], { angle, lens, focusDistance });
+    expect(result.styleDna?.camera).toEqual({ angle: { certainty: "estimated", ...angle }, lens: { certainty: "estimated", ...lens },
+      focusDistance: { certainty: "estimated", ...focusDistance } });
+    // 공통 지시와 출력 계약: 화각·환산 초점거리와 피사체 초점 거리를 구분하고 범위·정성 추정과 근거를 요구한다.
+    for (const phrase of ["35mm 환산 초점거리", "렌즈 초점거리(mm)가 아니라 카메라에서 초점이 맞은 피사체까지의 거리", "단일 수치를 실측값처럼 쓰지 말고",
+      "실제 렌즈를 알 수 없는 경우", "렌즈 화각과 35mm 환산 초점거리의 범위 또는 정성 추정", "카메라에서 초점이 맞은 피사체까지 거리의 범위 또는 정성 추정"]) expect(request).toContain(phrase);
+    expect(request).not.toContain(privateKey);
+    // 저장(jsonb)과 재조회는 기록 문서를 그대로 돌려준다.
+    expect(JSON.parse(JSON.stringify({ styleDna: result.styleDna }))).toEqual({ styleDna: result.styleDna });
+    expect(result.original).toMatchObject({ width: 1600, mime: "image/webp" });
+  });
+
+  it.each([
+    ["실측처럼 쓴 단일 수치", { description: "50mm", basis: "인물 비율" }, { description: "1.2m", basis: "인물 크기" }],
+    ["메타데이터를 근거로 든 값", { description: "EXIF 기준 약 35mm", basis: "촬영 정보" }, { description: "약 2m", basis: "메타데이터에 따르면 2m" }],
+    ["근거 없는 값", { description: "광각 추정" }, { description: "근거리 추정", basis: "" }],
+  ])("%s는 추정으로 표시하지 않는다", async (_label, badLens, badFocus) => {
+    for (const engine of engines) {
+      const { result } = await analyze(engine, { angle, lens: badLens, focusDistance: badFocus });
+      expect(result.styleDna?.camera).toEqual({ angle: { certainty: "estimated", ...angle }, lens: { certainty: "unconfirmed" }, focusDistance: { certainty: "unconfirmed" } });
+    }
+  });
+
+  it("범위·정성 표현은 그대로 두고, 단서가 없어 생략한 칸은 만들지 않으며 다른 칸의 기존 해석은 바꾸지 않는다", async () => {
+    const qualitative = { lens: { description: "표준 화각 정도", basis: "원근 왜곡이 거의 없음" }, focusDistance: { description: "중거리, 2~5m 사이", basis: "전신이 화면에 들어옴" } };
+    const { result } = await analyze(engines[0], { angle, shotType: { description: "50mm 렌즈 느낌의 미디엄 샷", basis: "허리 위 구도" }, ...qualitative });
+    expect(result.styleDna?.camera).toEqual({ angle: { certainty: "estimated", ...angle },
+      shotType: { certainty: "estimated", description: "50mm 렌즈 느낌의 미디엄 샷", basis: "허리 위 구도" },
+      lens: { certainty: "estimated", ...qualitative.lens }, focusDistance: { certainty: "estimated", ...qualitative.focusDistance } });
+  });
+
+  it.each(engines)("%s: 단서가 부족하거나 실제 렌즈를 알 수 없어 모델이 생략한 두 칸은 빈칸(미확인)으로 남는다", async (name, reply, settings) => {
+    const { result } = await analyze([name, reply, settings], { angle });
+    expect(result.styleDna?.camera).toEqual({ angle: { certainty: "estimated", ...angle } });
+    expect(result.styleDna?.camera).not.toHaveProperty("lens");expect(result.styleDna?.camera).not.toHaveProperty("focusDistance");
+  });
+});

@@ -26,13 +26,23 @@ function object(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
+// lens and focusDistance are visual estimates, never capture metadata. A number written as a bare measurement (no range or
+// approximation) or a value attributed to EXIF/metadata is not kept as an estimate; the cell stays unconfirmed.
+const visualEstimateKeys = new Set<string>(["lens", "focusDistance"]);
+const approximate = /약|대략|추정|상당|정도|내외|이내|이상|이하|안팎|전후|범위|사이|~|∼|〜|–|—|\d\s*-\s*\d|approx|about|around|roughly|equivalent|estimat|range|between/i;
+const metadataClaim = /(?:exif|메타\s*데이터|metadata|촬영\s*정보)\s*(?:기준|상|값|에\s*(?:따르면|의하면|따라|기록)|에서\s*확인|according|based|record|show|say)/i;
+function visualEstimate(item: z.infer<typeof finding>) {
+  return !metadataClaim.test(`${item.description} ${item.basis}`) && (!/\d/.test(item.description) || approximate.test(item.description));
+}
+
 function cells<Key extends string>(keys: readonly Key[], value: unknown) {
   const raw = object(value);
   const entries: [Key, Cell][] = [];
   for (const key of keys) {
     if (!Object.hasOwn(raw, key)) continue;
     const item = finding.safeParse(raw[key]);
-    entries.push([key, item.success ? { certainty: "estimated", ...item.data } : { certainty: "unconfirmed" }]);
+    const kept = item.success && (!visualEstimateKeys.has(key) || visualEstimate(item.data));
+    entries.push([key, kept ? { certainty: "estimated", ...item.data } : { certainty: "unconfirmed" }]);
   }
   return entries.length ? Object.fromEntries(entries) as Partial<Record<Key, Cell>> : undefined;
 }
@@ -79,8 +89,13 @@ const findingJson = { type: "object", properties: findingProperties, required: [
 const facts = { type: "array", maxItems: 5, items: { type: "object", properties: { label: string, ...findingProperties },
   required: ["label", "description", "basis"], additionalProperties: false } };
 const sectionProperties = { blueprint: facts, style: facts };
+// Shared output contract for every analysis engine: the two optical cells say what they mean.
+const cellMeaning: Record<string, string> = {
+  lens: "렌즈 화각과 35mm 환산 초점거리의 범위 또는 정성 추정. 원근 왜곡·배경 압축·화각 같은 시각 단서 기반이며 촬영 메타데이터가 아님",
+  focusDistance: "카메라에서 초점이 맞은 피사체까지 거리의 범위 또는 정성 추정. 렌즈 초점거리(mm)가 아니며 피사체 크기·초점면·배경 흐림 단서 기반",
+};
 const cellJson = (keys: readonly string[]) => ({ type: "object", additionalProperties: false,
-  properties: Object.fromEntries(keys.map(key => [key, findingJson])) });
+  properties: Object.fromEntries(keys.map(key => [key, cellMeaning[key] ? { ...findingJson, description: cellMeaning[key] } : findingJson])) });
 
 export const styleDnaSectionsJson = { type: "object", additionalProperties: false, properties: sectionProperties };
 export const styleDnaAnalysisJson = { type: "object", additionalProperties: false, properties: {
