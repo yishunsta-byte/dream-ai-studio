@@ -1,5 +1,6 @@
 // 오디오 422 2차: 일반 MP4 표시(isom)라 mp4로 판별되는 M4A는 보고서 버전과 관계없이 측정(오디오 전용 스트림·디코딩)을
 // 통과해야만 공급자로 보낸다. 측정 도구를 쓸 수 없으면 보내지 않고 503. 검사 전 거절은 고정 목록 값의 기록 한 줄만 남긴다.
+// 오디오 호환(msg_312264ab147c): 이름과 내용이 다르거나 판별되지 않는 입력은 서버 측정으로 확인한 형식의 MIME으로만 보낸다.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ADMIN_AUDIO_ANALYSIS_URI, ADMIN_AUDIO_MODE_HEADER } from "@/lib/reference-analysis/admin-audio-contract";
 import { createAdminAudioAnalysisPost } from "@/lib/reference-analysis/admin-audio-analysis-server";
@@ -8,10 +9,11 @@ import { AudioUploadError } from "@/lib/reference-analysis/admin-audio-media";
 import { MUSIC_EXTERNAL_CONSENT_HEADER } from "@/lib/reference-analysis/music-semantic-contract";
 
 vi.mock("server-only", () => ({}));
-const probe = vi.hoisted(() => ({ measure: vi.fn() }));
+const probe = vi.hoisted(() => ({ measure: vi.fn(), identify: vi.fn() }));
 vi.mock("@/lib/reference-analysis/admin-audio-media", async importOriginal => ({
   ...await importOriginal<typeof import("@/lib/reference-analysis/admin-audio-media")>(),
   measureInlineAudio: probe.measure,
+  identifyInlineAudio: probe.identify,
 }));
 
 const site = "https://studio.example.invalid";
@@ -31,8 +33,21 @@ function run(body: Buffer, filename: string) {
   return { send, response: post(request) };
 }
 
+const gif = Buffer.concat([Buffer.from("GIF89a"), Buffer.alloc(64)]);
+const unknown = Buffer.alloc(256, 7);
+const sentMime = (send: ReturnType<typeof vi.fn>) => {
+  const body = JSON.parse(String((send.mock.calls[0][1] as RequestInit).body)) as { contents: { parts: { inlineData?: { mimeType: string } }[] }[] };
+  return body.contents.flatMap(content => content.parts).find(part => part.inlineData)?.inlineData?.mimeType;
+};
+
 let warn: ReturnType<typeof vi.spyOn>;
-beforeEach(() => { probe.measure.mockReset(); warn = vi.spyOn(console, "warn").mockImplementation(() => undefined); });
+let info: ReturnType<typeof vi.spyOn>;
+beforeEach(() => {
+  probe.measure.mockReset();
+  probe.identify.mockReset();
+  warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  info = vi.spyOn(console, "info").mockImplementation(() => undefined);
+});
 afterEach(() => vi.restoreAllMocks());
 
 describe("ambiguous M4A (generic MP4 brand)", () => {
@@ -74,14 +89,56 @@ describe("ambiguous M4A (generic MP4 brand)", () => {
   });
 });
 
-describe("pre-check rejection record", () => {
-  it("keeps name and content mismatches rejected with one fixed record and no file details", async () => {
+describe("name and content mismatch", () => {
+  it("sends with the server-confirmed format, never the name's format", async () => {
+    probe.identify.mockResolvedValue({ format: "m4a", measurement: measured });
     const { send, response } = run(mp4("isom"), "비밀 노래 제목.mp3");
+    expect((await response).status).toBe(200);
+    expect(probe.identify).toHaveBeenCalledTimes(1);
+    expect(probe.measure).not.toHaveBeenCalled();
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(sentMime(send)).toBe("audio/mp4");
+    expect(info).toHaveBeenCalledWith("admin_audio_input_resolved", { expected: "mp3", detected: "mp4", resolved: "m4a" });
+    expect(JSON.stringify([...info.mock.calls, ...warn.mock.calls])).not.toContain("비밀");
+  });
+
+  it("also confirms content the type library cannot identify", async () => {
+    probe.identify.mockResolvedValue({ format: "mp3", measurement: measured });
+    const { send, response } = run(unknown, "노래.wav");
+    expect((await response).status).toBe(200);
+    expect(sentMime(send)).toBe("audio/mpeg");
+    expect(info).toHaveBeenCalledWith("admin_audio_input_resolved", { expected: "wav", detected: null, resolved: "mp3" });
+  });
+
+  it("rejects without sending when the measurement cannot confirm a supported audio format", async () => {
+    probe.identify.mockRejectedValue(new AudioUploadError("invalid_file"));
+    const { send, response } = run(unknown, "노래.mp3");
+    const rejected = await response;
+    expect(rejected.status).toBe(422);
+    expect(await rejected.json()).toEqual({ error: "invalid_file" });
+    expect(send).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith("admin_audio_input_rejected", { stage: "identify", expected: "mp3", detected: null, error: null });
+  });
+
+  it("stops with 503 and sends nothing when the measuring tool is unavailable", async () => {
+    probe.identify.mockRejectedValue(new AudioUploadError("media_unavailable"));
+    const { send, response } = run(mp4("isom"), "노래.mp3");
+    const stopped = await response;
+    expect(stopped.status).toBe(503);
+    expect(await stopped.json()).toEqual({ error: "media_unavailable" });
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe("pre-check rejection record", () => {
+  it("closes known non-audio content at once with one fixed record and no file details", async () => {
+    const { send, response } = run(gif, "비밀 노래 제목.mp3");
     const rejected = await response;
     expect(rejected.status).toBe(422);
     expect(send).not.toHaveBeenCalled();
     expect(probe.measure).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith("admin_audio_input_rejected", { stage: "file_type", expected: "mp3", detected: "mp4", error: null });
+    expect(probe.identify).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith("admin_audio_input_rejected", { stage: "file_type", expected: "mp3", detected: "other", error: null });
     expect(JSON.stringify(warn.mock.calls)).not.toContain("비밀");
   });
 

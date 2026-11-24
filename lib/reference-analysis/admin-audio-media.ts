@@ -61,6 +61,64 @@ export async function measureInlineAudio(audio: AudioPayload, signal: AbortSigna
   }
 }
 
+// 측정 핵심: 오디오 스트림 필수, 표지가 아닌 영상 거절, accept(형식 이름, 첫 오디오 코덱) 통과, 첫 오디오 1초 디코딩.
+// formatWhitelist가 있으면 ffprobe·ffmpeg가 그 해석기(demuxer)만 쓴다. 로컬 파일만 연다(protocol file).
+async function inspectAudioFile(path: string, signal: AbortSignal, accept: (formatName: string | undefined, codec: string | undefined) => boolean,
+  formatWhitelist?: string) {
+  const restrict = formatWhitelist ? ["-format_whitelist", formatWhitelist] : [];
+  let stage: ProbeStage = "probe";
+  try {
+    const { stdout } = await runMedia(mediaBinary("ffprobe"), ["-v", "error", "-protocol_whitelist", "file", ...restrict,
+      "-show_streams", "-show_format", "-of", "json", "-i", path], { timeout: 10_000, maxBuffer: 192 * 1024, windowsHide: true, signal });
+    stage = "probe_output";
+    const { streams, format: info } = inspected.parse(JSON.parse(stdout));
+    stage = "streams";
+    const audio = streams.find(stream => stream.codec_type === "audio");
+    if (!streams.some(stream => stream.codec_type === "audio" && stream.codec_name && stream.codec_name !== "unknown") ||
+        streams.some(stream => stream.codec_type === "video" && stream.disposition?.attached_pic !== 1)) throw new Error("Unsupported streams");
+    if (!accept(info.format_name, audio?.codec_name)) throw new Error("Unsupported format");
+    stage = "decode";
+    await runMedia(mediaBinary("ffmpeg"), ["-v", "error", "-nostdin", "-xerror", "-protocol_whitelist", "file", ...restrict, "-i", path,
+      "-map", "0:a:0", "-t", "1", "-f", "null", "-"], { timeout: 12_000, maxBuffer: 48 * 1024, windowsHide: true, signal });
+    const measurement: AudioMeasurement = { source: "server_probe", durationSeconds: info.duration,
+      sampleRateHz: positiveInteger.safeParse(Number(audio?.sample_rate)).data ?? null,
+      channels: positiveInteger.safeParse(audio?.channels).data ?? null };
+    return { measurement, formatName: info.format_name, codec: audio?.codec_name };
+  } catch (error) {
+    signal.throwIfAborted();
+    const failure = classifyProbeFailure(error, stage);
+    console.warn("admin_audio_probe_failed", failure);
+    if (failure.kind === "tool_missing" || failure.kind === "tool_start") throw new AudioUploadError("media_unavailable");
+    throw new AudioUploadError("invalid_file");
+  }
+}
+
+// 오디오 호환(Master msg_312264ab147c): 이름과 내용이 다르거나 file-type이 판별하지 못한 바로 분석 입력은
+// 지원 4형식의 해석기만 허용한 서버 측정으로 실제 형식을 확인한다. 확인된 형식만 돌려준다(이름·브라우저 MIME은 쓰지 않는다).
+export const identifiableDemuxers = "mp3,wav,mov,mp4,m4a,3gp,3g2,mj2,flac";
+export function identifiedAudioFormat(formatName: string | undefined, codec: string | undefined): AudioUploadFormat | undefined {
+  const names = (formatName ?? "").split(",");
+  if (names.includes("mp3") && codec === "mp3") return "mp3";
+  if (names.includes("wav") && codec?.startsWith("pcm_")) return "wav";
+  if (names.includes("mp4") && (codec === "aac" || codec === "alac")) return "m4a";
+  if (names.includes("flac") && codec === "flac") return "flac";
+}
+export async function identifyInlineAudio(bytes: Buffer, signal: AbortSignal): Promise<{ format: AudioUploadFormat; measurement: AudioMeasurement }> {
+  const root = await mkdtemp(join(tmpdir(), "dream-admin-audio-"));
+  const path = join(root, "source.bin");
+  try {
+    await writeFile(path, bytes, { flag: "wx", mode: 0o600, signal });
+    const inspected = await inspectAudioFile(path, signal, (formatName, codec) => identifiedAudioFormat(formatName, codec) !== undefined,
+      identifiableDemuxers);
+    const format = identifiedAudioFormat(inspected.formatName, inspected.codec);
+    if (!format) throw new AudioUploadError("invalid_file");
+    return { format, measurement: inspected.measurement };
+  } finally {
+    await rm(path, { force: true });
+    await rmdir(root);
+  }
+}
+
 export async function withVerifiedAudio<T>(input: { filename: string; sizeBytes: number; signal: AbortSignal;
   read: (offset: number) => Promise<Buffer | undefined> }, action: (audio: VerifiedAudio) => Promise<T>) {
   const format = audioFormatFromFilename(input.filename);
@@ -82,31 +140,8 @@ export async function withVerifiedAudio<T>(input: { filename: string; sizeBytes:
     await writeFile(path, chunks(), { flag: "wx", mode: 0o600, signal });
     const type = await fileTypeFromFile(path).catch(() => undefined);
     if (type?.ext !== format && !(format === "m4a" && type?.ext === "mp4")) throw new AudioUploadError("invalid_file");
-    let measurement: AudioMeasurement;
-    let stage: ProbeStage = "probe";
-    try {
-      const { stdout } = await runMedia(mediaBinary("ffprobe"), ["-v", "error", "-protocol_whitelist", "file",
-        "-show_streams", "-show_format", "-of", "json", "-i", path], { timeout: 10_000, maxBuffer: 192 * 1024, windowsHide: true, signal });
-      stage = "probe_output";
-      const { streams, format: info } = inspected.parse(JSON.parse(stdout));
-      stage = "streams";
-      const audio = streams.find(stream => stream.codec_type === "audio");
-      if (!streams.some(stream => stream.codec_type === "audio" && stream.codec_name && stream.codec_name !== "unknown") ||
-          streams.some(stream => stream.codec_type === "video" && stream.disposition?.attached_pic !== 1)) throw new Error("Unsupported streams");
-      if (format === "flac" && (info.format_name !== "flac" || audio?.codec_name !== "flac")) throw new Error("Invalid FLAC stream");
-      stage = "decode";
-      await runMedia(mediaBinary("ffmpeg"), ["-v", "error", "-nostdin", "-xerror", "-protocol_whitelist", "file", "-i", path,
-        "-map", "0:a:0", "-t", "1", "-f", "null", "-"], { timeout: 12_000, maxBuffer: 48 * 1024, windowsHide: true, signal });
-      measurement = { source: "server_probe", durationSeconds: info.duration,
-        sampleRateHz: positiveInteger.safeParse(Number(audio?.sample_rate)).data ?? null,
-        channels: positiveInteger.safeParse(audio?.channels).data ?? null };
-    } catch (error) {
-      signal.throwIfAborted();
-      const failure = classifyProbeFailure(error, stage);
-      console.warn("admin_audio_probe_failed", failure);
-      if (failure.kind === "tool_missing" || failure.kind === "tool_start") throw new AudioUploadError("media_unavailable");
-      throw new AudioUploadError("invalid_file");
-    }
+    const { measurement } = await inspectAudioFile(path, signal, (formatName, codec) =>
+      format !== "flac" || (formatName === "flac" && codec === "flac"));
     return await action({ path, sizeBytes, mime: audioUploadMime[format], sha256: hash.digest("base64"), measurement });
   } finally {
     await rm(path, { force: true });

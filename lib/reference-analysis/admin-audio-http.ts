@@ -4,7 +4,7 @@ import { fileTypeFromBuffer } from "file-type";
 import { resolveServerAuth } from "../auth/resolve";
 import { rejectForeignWrite } from "../public-showcase/admin-publication-http";
 import type { AudioMeasurement } from "./admin-audio-details-contract";
-import { AudioUploadError, inlineAudioProbeDeadlineMs, measureInlineAudio } from "./admin-audio-media";
+import { AudioUploadError, identifyInlineAudio, inlineAudioProbeDeadlineMs, measureInlineAudio } from "./admin-audio-media";
 import { audioFormatFromFilename, audioUploadMime } from "./admin-audio-upload-contract";
 import { referenceFileName, referenceUploadByteLimit } from "./input";
 import { MUSIC_EXTERNAL_CONSENT_HEADER } from "./music-semantic-contract";
@@ -17,7 +17,8 @@ const recordedFormats = new Set(["mp3", "wav", "m4a", "mp4", "flac", "aac", "opu
 const recordedErrors = new Set(["Error", "TypeError", "SyntaxError", "RangeError", "AbortError", "TimeoutError", "ZodError", "AudioUploadError"]);
 const fixedValue = (value: unknown, allowed: Set<string>) => value === undefined || value === null ? null
   : typeof value === "string" && allowed.has(value) ? value : "other";
-export function audioInputRejected(stage: "file_type" | "probe" | "analysis", detail: { expected?: string; detected?: string; error?: unknown }) {
+export function audioInputRejected(stage: "file_type" | "probe" | "identify" | "analysis",
+  detail: { expected?: string; detected?: string; error?: unknown }) {
   const name = detail.error instanceof AudioUploadError ? "AudioUploadError" : detail.error instanceof Error ? detail.error.name : detail.error;
   console.warn("admin_audio_input_rejected", { stage, expected: fixedValue(detail.expected, recordedFormats),
     detected: fixedValue(detail.detected, recordedFormats), error: fixedValue(name, recordedErrors) });
@@ -25,6 +26,12 @@ export function audioInputRejected(stage: "file_type" | "probe" | "analysis", de
 // file-type은 일반 MP4 표시(isom 등)의 M4A를 "mp4"로 판별한다. 측정 단계(withVerifiedAudio)와 같은 기준으로 받는다.
 export const audioContentMatches = (expected: string, detected: string | undefined) =>
   detected === expected || (expected === "m4a" && detected === "mp4");
+// 이름과 달라도 서버 측정으로 확인해 볼 내용 판별 값(지원 4형식). 그 밖의 판별 값(이미지·문서·영상·aac·ogg 등)은 바로 막는다.
+const identifiableContent = new Set(["mp3", "wav", "m4a", "mp4", "flac"]);
+export function audioInputResolved(detail: { expected: string; detected?: string; resolved: string }) {
+  console.info("admin_audio_input_resolved", { expected: fixedValue(detail.expected, recordedFormats),
+    detected: fixedValue(detail.detected, recordedFormats), resolved: fixedValue(detail.resolved, recordedFormats) });
+}
 type AudioRun = (audio: AudioPayload, signal: AbortSignal, measurement?: AudioMeasurement) => Promise<Response>;
 
 export const audioJson = (body: unknown, status = 200) => Response.json(body, {
@@ -94,15 +101,29 @@ export function createAdminAudioAccess({ authenticate = resolveServerAuth, env =
         const bytes = await readBounded(request.body, referenceUploadByteLimit, signal);
         if (!bytes) return audioJson({ error: "too_large" }, 413);
         const format = await fileTypeFromBuffer(bytes).catch(() => undefined);
-        if (!audioContentMatches(expected, format?.ext)) {
-          audioInputRejected("file_type", { expected, detected: format?.ext });
-          return audioJson({ error: "invalid_file" }, 422);
-        }
-        const audio = { bytes, mime: audioUploadMime[expected] };
+        let audio = { bytes, mime: audioUploadMime[expected] };
         let measurement: AudioMeasurement | undefined;
+        if (!audioContentMatches(expected, format?.ext)) {
+          if (format && !identifiableContent.has(format.ext)) {
+            audioInputRejected("file_type", { expected, detected: format.ext });
+            return audioJson({ error: "invalid_file" }, 422);
+          }
+          try {
+            const identified = await identifyInlineAudio(bytes, AbortSignal.any([request.signal, AbortSignal.timeout(inlineAudioProbeDeadlineMs)]));
+            audio = { bytes, mime: audioUploadMime[identified.format] };
+            measurement = identified.measurement;
+            audioInputResolved({ expected, detected: format?.ext, resolved: identified.format });
+          } catch (error) {
+            if (error instanceof AudioUploadError && error.code === "invalid_file") {
+              audioInputRejected("identify", { expected, detected: format?.ext });
+              return audioJson({ error: "invalid_file" }, 422);
+            }
+            return audioJson({ error: "media_unavailable" }, 503);
+          }
+        }
         // FLAC과 모호한 M4A(일반 MP4 표시라 mp4로 판별)는 보고서 버전과 관계없이 오디오 전용 스트림·디코딩을 확인한 뒤에만 보낸다.
         // 측정 도구를 쓸 수 없으면 보내지 않고 503으로 멈춘다.
-        if (expected === "flac" || (expected === "m4a" && format?.ext === "mp4")) {
+        else if (expected === "flac" || (expected === "m4a" && format?.ext === "mp4")) {
           try {
             measurement = await measureInlineAudio(audio, AbortSignal.any([request.signal, AbortSignal.timeout(inlineAudioProbeDeadlineMs)]), true);
           } catch (error) {

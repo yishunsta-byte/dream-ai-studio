@@ -99,7 +99,15 @@ describe("versioned administrator audio analysis", () => {
     expect((await post(request("auto", { origin: "https://foreign.example.invalid" }))).status).toBe(403);
     expect((await post(request("unknown"))).status).toBe(400);
     expect(settings).not.toHaveBeenCalled();
-    expect((await post(request("auto", {}, "not audio"))).status).toBe(422);
+    // 판별되지 않는 입력은 서버 측정으로만 확인한다. 측정 도구가 없는 상태를 고정해 503·전송 0을 확인하고,
+    // 알려진 비오디오(GIF)는 측정 없이 바로 422로 닫히는지 확인한다.
+    vi.stubEnv("FFPROBE_PATH", "/nonexistent/dream-missing-ffprobe");
+    vi.stubEnv("FFMPEG_PATH", "/nonexistent/dream-missing-ffmpeg");
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    expect((await post(request("auto", {}, new Uint8Array(Buffer.concat([Buffer.from("GIF89a"), Buffer.alloc(64)]))))).status).toBe(422);
+    expect((await post(request("auto", {}, "not audio"))).status).toBe(503);
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
     expect(send).not.toHaveBeenCalled();
 
     const unconfigured = createAdminAudioAnalysisPost({ authenticate: async () => actor, env, settings: async () => undefined, send });
@@ -107,16 +115,26 @@ describe("versioned administrator audio analysis", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  it("accepts FLAC names at the protected upload boundary and rejects mismatched bytes before direct analysis", async () => {
+  it("accepts FLAC names at the protected upload boundary and never sends mismatched bytes unconfirmed", async () => {
     const { post, send } = fixture();
     const input = { filename: "analysis.FLAC", sizeBytes: adminAudioUploadLimit, credentialVersion: 1,
       requestId: "10000000-0000-4000-8000-000000000002", authorized: true };
     expect(audioUploadStart.safeParse(input).success).toBe(true);
     expect(audioUploadStart.safeParse({ ...input, sizeBytes: input.sizeBytes + 1 }).success).toBe(false);
     expect(audioUploadStart.safeParse({ ...input, filename: "../analysis.flac" }).success).toBe(false);
-    const mismatch = await post(request("music", { "x-dream-filename": input.filename }));
+    // 판별되지 않는 입력은 서버 측정으로만 확인한다. 측정 도구가 없는 상태를 고정해 503·전송 0을 확인하고,
+    // 알려진 비오디오(GIF)는 측정 없이 바로 422로 닫히는지 확인한다.
+    vi.stubEnv("FFPROBE_PATH", "/nonexistent/dream-missing-ffprobe");
+    vi.stubEnv("FFMPEG_PATH", "/nonexistent/dream-missing-ffmpeg");
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const unconfirmed = await post(request("music", { "x-dream-filename": input.filename }));
+    expect(unconfirmed.status).toBe(503);
+    expect(await unconfirmed.json()).toEqual({ error: "media_unavailable" });
+    const mismatch = await post(request("music", { "x-dream-filename": input.filename }, new Uint8Array(Buffer.concat([Buffer.from("GIF89a"), Buffer.alloc(64)]))));
     expect(mismatch.status).toBe(422);
     expect(await mismatch.json()).toEqual({ error: "invalid_file" });
     expect(send).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 });

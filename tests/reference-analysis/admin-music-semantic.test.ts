@@ -50,7 +50,15 @@ describe("music semantic route", () => {
   it("blocks other types, inaccurate filenames and over-limit actual bodies before sending audio", async () => {
     const run = vi.fn(async () => result);
     const admin = createMusicSemanticHttp({ env, authenticate: async () => actor, provider: () => run });
-    expect((await admin.post(post("not music"))).status).toBe(422);
+    // 판별되지 않는 입력은 서버 측정으로만 확인한다. 측정 도구가 없는 상태를 고정해 503·전송 0을 확인하고,
+    // 알려진 비오디오(GIF)는 측정 없이 바로 422로 닫히는지 확인한다.
+    vi.stubEnv("FFPROBE_PATH", "/nonexistent/dream-missing-ffprobe");
+    vi.stubEnv("FFMPEG_PATH", "/nonexistent/dream-missing-ffmpeg");
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    expect((await admin.post(post(new Uint8Array(Buffer.concat([Buffer.from("GIF89a"), Buffer.alloc(64)]))))).status).toBe(422);
+    expect((await admin.post(post("not music"))).status).toBe(503);
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
     expect((await admin.post(post(wav(), { "x-dream-filename": "image.png" }))).status).toBe(400);
     expect((await admin.post(post(wav(), { "content-length": String(4 * 1024 * 1024 + 1) }))).status).toBe(413);
     expect((await admin.post(post(new Uint8Array(4 * 1024 * 1024 + 1)))).status).toBe(413);

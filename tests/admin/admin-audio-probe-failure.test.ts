@@ -5,9 +5,32 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
-import { AudioUploadError, classifyProbeFailure, measureInlineAudio } from "@/lib/reference-analysis/admin-audio-media";
+import { AudioUploadError, classifyProbeFailure, identifiedAudioFormat, identifyInlineAudio, measureInlineAudio }
+  from "@/lib/reference-analysis/admin-audio-media";
 // @ts-expect-error 빌드 스크립트(.mjs)라 타입 선언이 없다.
 import { flattenLibraryLinks } from "../../scripts/reference-media-libs.mjs";
+
+describe("identifiedAudioFormat", () => {
+  it("maps only the four supported containers with their own codecs", () => {
+    expect(identifiedAudioFormat("mp3", "mp3")).toBe("mp3");
+    expect(identifiedAudioFormat("wav", "pcm_s16le")).toBe("wav");
+    expect(identifiedAudioFormat("mov,mp4,m4a,3gp,3g2,mj2", "aac")).toBe("m4a");
+    expect(identifiedAudioFormat("mov,mp4,m4a,3gp,3g2,mj2", "alac")).toBe("m4a");
+    expect(identifiedAudioFormat("flac", "flac")).toBe("flac");
+    for (const [name, codec] of [["aac", "aac"], ["ogg", "opus"], ["matroska,webm", "opus"], ["mp3", "aac"], ["wav", "mp3"],
+      ["mov,mp4,m4a,3gp,3g2,mj2", "mp3"], ["flac", "pcm_s16le"], [undefined, undefined]] as const) {
+      expect(identifiedAudioFormat(name, codec)).toBeUndefined();
+    }
+  });
+
+  it("stops as a server tool problem when the measuring tool is missing", async () => {
+    vi.stubEnv("FFPROBE_PATH", join(tmpdir(), "missing-ffprobe-for-identify"));
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    await expect(identifyInlineAudio(Buffer.alloc(256, 7), AbortSignal.timeout(5_000)))
+      .rejects.toMatchObject({ code: "media_unavailable" });
+    vi.unstubAllEnvs();
+  });
+});
 
 describe("classifyProbeFailure", () => {
   it("treats a missing or unstartable tool as a server tool problem", () => {
