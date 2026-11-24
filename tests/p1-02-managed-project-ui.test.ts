@@ -508,11 +508,14 @@ describe("주제별 쇼츠 규칙: 길이 선택지와 핵심 메시지 글자 �
     expect(lengthChoices({ id: "topic-shorts", lengthOptions: [0, "x"] })).toEqual([10, 20, 30, 40, 50, 60]);
     expect(lengthChoices({ id: "shopping-shorts" })).toBeUndefined();
   });
-  it("글자 수: 50자 상한에서 50자는 저장 가능, 51자는 차단, 글은 자르지 않음, 이모지는 1자", () => {
+  it("글자 수: 서버와 같은 trim().length — 50자 상한에서 50자는 저장 가능, 51자는 차단, 이모지는 2자, 앞뒤 공백 제외", () => {
     const options = ["50", "100", "200", "300"];
     expect(keyMessageCheck(options, "50", "가".repeat(50))).toEqual({ max: 50, count: 50, over: false });
     expect(keyMessageCheck(options, "50", "가".repeat(51))).toEqual({ max: 50, count: 51, over: true });
-    expect(keyMessageCheck(options, "100", "😀".repeat(100))).toEqual({ max: 100, count: 100, over: false });
+    expect(keyMessageCheck(options, "100", "😀".repeat(100))).toEqual({ max: 100, count: 200, over: true });
+    expect(keyMessageCheck(options, "50", "가".repeat(49) + "😀")).toEqual({ max: 50, count: 51, over: true });
+    expect(keyMessageCheck(options, "50", "  " + "가".repeat(50) + "\n\t ")).toEqual({ max: 50, count: 50, over: false });
+    expect(keyMessageCheck(options, "50", "가 " + "가".repeat(49)).over).toBe(true); // 가운데 공백은 센다
     expect(keyMessageCheck(options, "100", "a".repeat(101)).over).toBe(true);
     expect(keyMessageCheck(options, "75", "a".repeat(200))).toEqual({ max: undefined, count: 200, over: false });
     expect(keyMessageCheck(undefined, "50", "a".repeat(200)).over).toBe(false);
