@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 // 4. 분석 중 스캔(레이저·'스타일 분석 중...'·'---') → 결과: 제목 두 줄·카메라/조명 값과 미확인 '—'·청사진/스타일/팁·프롬프트 두 개·서버 실측 5색·DNA(0% 포함)·일치율·키워드.
 // 5. 아래 추론 막대 보정 2회: v2는 청사진만, v3는 스타일만 바뀌고 나머지는 이어받음. 복사. 6. 보관함에서 확장 없는 이전 기록 다시 열기 → 빈 칸·의미 분석으로 채운 청사진.
 // 7. 모델 오류 실패 안내·빈 칸 유지, 키 미등록 경고·잠김. 각 폭(320·390·1280·1574)에서 가로 넘침 0, 빈 상태·결과 상태 사진. 1574는 원본 비교 사진(image-comparison-1574.png)과 같은 폭.
+// 8. 렌즈·초점 거리 추정 표시. 9. 대상 모델: 예전 서버 두 개·서버 목록 7개(키보드 고르기·안내·POST 0·본문 targetModel)·잘못된 목록은 예전 목록, 3단계 시험 모델은 Gemini 두 개 그대로.
 const base = globalThis.FIXTURE_ORIGIN;
 const out = globalThis.FIXTURE_OUTPUT_DIR ?? ".";
 assert.match(base ?? "", /^http:\/\/127\.0\.0\.1:\d+$/);
@@ -263,6 +264,44 @@ try {
       await page.screenshot({ path: `${out}/studio-estimate-${width}.png` }); }
     // 새로 만든 기록이 '마지막에 연 기록'으로 남으면 다음 시험 첫 화면이 바뀐다.
     await page.evaluate(() => sessionStorage.clear());
+    // 9. 대상 모델(CMD-20261125-012): 예전 서버는 두 개 그대로, ?styleDnaTargets=new면 서버 목록 7개(새 5개). 키보드로 FLUX 3을 고르면 안내가 붙고
+    //    고르기만으로는 POST 0. 분석 POST 본문 targetModel=flux-3. 3단계 '이미지 생성 모델'은 그대로 Gemini 두 개. =bad(중복 id)는 예전 목록.
+    const TARGET = `[...(${ST}).querySelectorAll("label")].find((label) => label.firstChild?.textContent.trim() === "타겟 이미지 모델").querySelector("select")`;
+    const targetState = () => page.evaluate((TARGET) => { const select = eval(TARGET); const note = select.getAttribute("aria-describedby");
+      return { value: select.value, options: [...select.options].map((option) => option.textContent), note: note ? document.getElementById(note)?.textContent.trim() ?? "없는 id" : null }; }, TARGET);
+    const posts = async () => (await rows()).filter((item) => item.method === "POST" && item.path === "/api/admin/style-dna");
+    if (width === 1574) {
+      await open(`styleDnaReport=1&w=${width}`);
+      assert.deepEqual(await targetState(), { value: "gemini-nano-banana-2.1", options: ["Nano Banana 2.1", "Nano Banana 2 Lite"], note: null });
+      await open(`styleDnaReport=1&styleDnaTargets=bad&w=${width}`);
+      assert.deepEqual((await targetState()).options, ["Nano Banana 2.1", "Nano Banana 2 Lite"]);
+    }
+    await open(`styleDnaReport=1&styleDnaTargets=new&w=${width}`);
+    v = await targetState();
+    assert.deepEqual(v, { value: "gemini-nano-banana-2.1", options: ["Nano Banana 2.1", "Nano Banana 2 Lite", "GPT Image 2.6", "FLUX 3", "MAI-Image-2.7", "Seedream 5.5", "Kling Image 4.0"], note: null });
+    const before = (await posts()).length;
+    for (let i = 0; i < 3; i++) await mark(TARGET, "ArrowDown");
+    v = await targetState();
+    assert.deepEqual(v, { value: "flux-3", options: v.options, note: "FLUX 3 문법에 맞춘 프롬프트만 만들어요. 3단계 시험 이미지는 Gemini로 만들어요." });
+    assert.equal((await posts()).length, before, "고르기만으로 POST 0");
+    assert.ok(await overflow() <= 0, "target overflow");
+    if (width === 390 || width === 1574) { await page.evaluate((TARGET) => eval(TARGET).scrollIntoView({ block: "center" }), TARGET); await settle(250);
+      await page.screenshot({ path: `${out}/studio-target-${width}.png` }); }
+    await mark(`[...(${ST}).querySelectorAll("label")].find((label) => label.textContent.trim() === "HTTPS 주소").querySelector("input")`, "Space");
+    await typeInto(`(${ST}).querySelector("input[type=url]")`, "https://images.example.com/target.png");
+    await press("이미지 시퀀싱 시작");
+    await until((ST) => /Dusk City Portrait/.test(eval(ST).querySelector("[aria-label='분석 리포트']")?.textContent ?? ""), "target report", ST);
+    const sent = await posts();
+    assert.equal(sent.length, before + 1);
+    assert.equal(sent.at(-1).body.targetModel, "flux-3");
+    await page.evaluate((R) => document.querySelectorAll(`${R} [aria-label='Style DNA 단계'] button`)[2].click(), R);
+    await until((R) => !!document.querySelector(`${R} [aria-label='결과 테스트']`), "test step", R);
+    const testModels = await page.evaluate((R) => { const label = [...document.querySelectorAll(`${R} [aria-label='결과 테스트'] label`)].find((item) => item.querySelector("span")?.textContent.trim() === "이미지 생성 모델");
+      return [...label.querySelector("select").options].map((option) => [option.value, option.textContent]); }, R);
+    assert.deepEqual(testModels, [["gemini-nano-banana-2.1", "Nano Banana 2.1 · 2K"], ["gemini-3.1-flash-lite-image", "Nano Banana 2 Lite · 1K"]]);
+    row.target = { sent: sent.at(-1).body.targetModel, testModels: testModels.length };
+    await page.evaluate(() => sessionStorage.clear());
+    console.log("STEP 9 " + width);
     row.external = (await page.evaluate(() => window.__premiere.requests().filter((item) => !item.path.startsWith("/")).length));
     results.push(row);
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  styleDnaPath, type StyleDnaComparison, type StyleDnaComparisonFrame, type StyleDnaOptions, type StyleDnaRecord, type StyleDnaSummary, type StyleDnaTestResult,
+  styleDnaImageModels, styleDnaPath, type StyleDnaComparison, type StyleDnaComparisonFrame, type StyleDnaOptions, type StyleDnaRecord, type StyleDnaSummary, type StyleDnaTestResult,
 } from "@/lib/reference-analysis/style-dna-contract";
 import { readStyleDnaEngineSettings, type StyleDnaEngineSettings } from "./style-dna-engine-credentials-client";
 import {
@@ -12,7 +12,22 @@ import {
 // 모든 쓰기는 requestId·authorized·credentialVersion을 함께 보내고, 같은 requestId·같은 내용이면 서버가 새 호출 없이 저장된 결과를 돌려준다.
 // 202(진행 중)는 같은 requestId·같은 본문으로 잠시 뒤 다시 물어보고, 연결이 끊긴 요청도 같은 본문으로만 다시 확인한다(새 생성 아님).
 export type StyleDnaSettings = { storage: "ready"; credentialVersion: number; analysisModel: string | null;
-  testModels: { id: StyleDnaTestResult["model"]; size: string; label: string }[] };
+  testModels: { id: StyleDnaTestResult["model"]; size: string; label: string }[];
+  /** 프롬프트를 맞출 대상 모델(CMD-20261125-012 제안 DTO, Backend 계약 확정 뒤 대조). 없으면 예전 서버. */
+  targetModels?: unknown };
+export type StyleDnaTargetChoice = { id: string; label: string };
+/** 대상 모델 고르는 칸 목록. 서버 settings.targetModels[{id,label}]이 올바르면 그 순서 그대로 쓰고,
+ *  없거나 하나라도 어긋나면(빈 목록·모양·중복 id) 예전 서버와 같은 시험 생성 모델 목록을 쓴다. */
+export function styleDnaTargetChoices(settings: Pick<StyleDnaSettings, "targetModels"> | null | undefined): StyleDnaTargetChoice[] {
+  const fallback = Object.entries(styleDnaImageModels).map(([id, info]) => ({ id, label: info.label }));
+  const raw = settings?.targetModels;
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > 50) return fallback;
+  const items = raw.map(item => item && typeof item === "object" ? item as Record<string, unknown> : {});
+  const valid = items.every(item => typeof item.id === "string" && /^[a-z0-9][a-z0-9.-]{0,63}$/.test(item.id)
+    && typeof item.label === "string" && item.label.trim().length > 0 && item.label.length <= 60);
+  if (!valid || new Set(items.map(item => item.id)).size !== items.length) return fallback;
+  return items.map(item => ({ id: item.id as string, label: (item.label as string).trim() }));
+}
 export type LibraryOutcome = { kind: "ok"; items: StyleDnaSummary[]; settings: StyleDnaSettings } | { kind: "login" } | { kind: "forbidden" }
   | { kind: "unavailable" } | { kind: "failed" };
 export type StyleDnaCode = "invalid_input" | "too_large" | "not_found" | "stale_credential" | "stale_revision" | "request_conflict" | "limit_reached"

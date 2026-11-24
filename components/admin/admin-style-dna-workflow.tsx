@@ -9,7 +9,7 @@ import type { ReadyResult } from "./admin-reference-analysis-model";
 import { nearestAspectRatio, StyleDnaReport } from "./admin-style-dna-report";
 import {
   analyzeRequest, analyzeStyleDna, compareStyleDna, engineBasisText, engineLabel, fileSha256, fillSubject, needsSubject, newRequestId, paletteProximity, readEngineCredentials,
-  deleteStyleDna, readStyleDnaLibrary, readStyleDnaRecord, referenceImage, refineRequest, refineStyleDna, testRequest, testStyleDna, testUploadRequest,
+  deleteStyleDna, readStyleDnaLibrary, readStyleDnaRecord, referenceImage, refineRequest, refineStyleDna, styleDnaTargetChoices, testRequest, testStyleDna, testUploadRequest,
   type AnalyzeSource, type EngineChoice, type EngineCredentials, type LibraryOutcome, type OpOutcome, type StyleDnaCode,
 } from "./style-dna-client";
 import { FlaskConical, HelpCircle, Loader2, Microscope, Moon, Sliders, Sparkles, Sun, Upload, Wand2 } from "./style-dna-original/icons";
@@ -111,7 +111,8 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const [mutationLevel, setMutationLevel] = useState(30);
   const [guidance, setGuidance] = useState("");
   const [includeImageTag, setIncludeImageTag] = useState(true);
-  const [targetModel, setTargetModel] = useState<Model>("gemini-nano-banana-2.1");
+  // 대상 모델(CMD-20261125-012): 서버가 준 목록을 쓰고(예전 서버면 시험 생성 모델 목록), 목록에 없는 값이면 첫 항목으로 본다.
+  const [targetModel, setTargetModel] = useState<string>("gemini-nano-banana-2.1");
   // 원본 분석 화면(P1-06 1단계): 밝은 화면이 기본, 도움말 창, 끌어다 놓기, 고른 파일 미리보기·브라우저 색 미리 추출(서버 전송 없음)
   const [dark, setDark] = useState(false);
   const [help, setHelp] = useState(false);
@@ -170,6 +171,11 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const engineModel = engine === "gemini" ? settings?.analysisModel ?? null : engineSetting?.configured ? engineSetting.modelId : null;
   const engineVersion = engine === "gemini" ? version : engineSetting?.version ?? 0;
   const engineReady = engine === "gemini" ? ready : !!settings && !!engineModel && engineVersion > 0;
+  const targets = useMemo(() => styleDnaTargetChoices(settings), [settings]);
+  const target = targets.some(item => item.id === targetModel) ? targetModel : targets[0].id;
+  const targetLabel = targets.find(item => item.id === target)?.label ?? target;
+  // 시험 생성 모델(Gemini)과 같은 대상이면 3단계에서 바로 시험해 볼 수 있다. 아니면 프롬프트 문법만 맞춘다는 안내를 붙인다.
+  const testable = (settings?.testModels.map(item => item.id as string) ?? modelIds).includes(target);
   const engineShort = { gemini: "Gemini", openai: "OpenAI", anthropic: "Claude" }[engine];
   const engineChoices = (["gemini", "openai", "anthropic"] as const).map(value => {
     // Gemini는 Style DNA 설정으로 따로 확인한다. OpenAI·Claude는 조회 결과가 있을 때만 등록 여부를 말한다.
@@ -320,7 +326,9 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
     : sourceKind === "url" ? (url.trim() ? { kind: "url", url } : null) : record ? { kind: "record", id: record.id } : null;
   const fileProblem = sourceKind === "file" && file ? (!TYPES.includes(file.type) ? "JPG·PNG·WebP 이미지만 분석할 수 있어요." : file.size > UPLOAD_LIMIT ? "이미지가 4MiB를 넘어요." : "") : "";
   const urlProblem = sourceKind === "url" && url.trim() && !/^https:\/\//i.test(url.trim()) ? "주소는 https://로 시작해야 해요." : "";
-  const options: StyleDnaOptions = { mode, guidance: guidance.trim(), mutationLevel: mode === "mutate" ? mutationLevel : 30, includeImageTag, targetModel };
+  // Backend 계약 확정 전: 서버 목록의 id를 그대로 보낸다(서버가 모르는 id는 서버가 거절).
+  const options: StyleDnaOptions = { mode, guidance: guidance.trim(), mutationLevel: mode === "mutate" ? mutationLevel : 30, includeImageTag,
+    targetModel: target as StyleDnaOptions["targetModel"] };
   const analyzeReady = !!source && !fileProblem && !urlProblem && [...guidance].length <= LIMITS.guidance;
   function submitAnalyze(event: FormEvent) {
     event.preventDefault();
@@ -557,8 +565,11 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
               <span className={studio.stage} data-stage={stage.label} title={stage.desc}>{stage.full}</span>
             </div>}
             <label className={studio.field}>타겟 이미지 모델
-              <select value={targetModel} onChange={event => { changed(); setTargetModel(event.target.value as Model); }}>
-                {modelIds.map(model => <option key={model} value={model}>{styleDnaImageModels[model].label}</option>)}</select></label>
+              <select value={target} aria-describedby={testable ? undefined : `${id}-target-note`}
+                onChange={event => { changed(); setTargetModel(event.target.value); }}>
+                {targets.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select>
+              {!testable && <span className={studio.count} id={`${id}-target-note`}>
+                {targetLabel} 문법에 맞춘 프롬프트만 만들어요. 3단계 시험 이미지는 Gemini로 만들어요.</span>}</label>
             <label className={studio.field}>추가 분석 지침 (선택)
               <textarea maxLength={LIMITS.guidance} value={guidance} placeholder=">> 예: '조명과 표면 질감을 집중 분석', '따뜻한 감성 톤으로 추출' 등 자유 입력"
                 onChange={event => { changed(); setGuidance(event.target.value); }} />
