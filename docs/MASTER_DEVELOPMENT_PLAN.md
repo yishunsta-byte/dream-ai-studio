@@ -10,7 +10,7 @@
 
 ### 진행 상황과 담당
 
-#### 현재 개발 상태와 남은 작업 · 2026-11-25 03:42 KST
+#### 현재 개발 상태와 남은 작업 · 2026-11-25 03:49 KST
 
 **이미지 렌즈·초점 거리 격리 합본 검수 통과.** Front `msg_6a1fd0541f65`의 `ddfa570`와 Backend `e530c4c`를 운영 `82263a9` 위에 합친 `961e4ae2fdf603f72b80ba7128ca65473b662ed8`의 7경로는 객체·모드가 원본과 일치한다. 관련 시험 768건과 빌드 검사를 통과했다. 합성 브라우저에서 폭 320·390·1280·1574px의 렌즈·초점 거리 추정 표시, 근거 안내, 값이 없는 경우의 대시를 확인했다. 격리 검수의 운영 기준은 `82263a9`였다. [Front 보고](D:/starwork/review-scratch/style-dna-lens-focus-estimate-display-front-1125/report.md). [합본 시험](D:/starwork/review-scratch/master-style-dna-lens-focus-combined-1125/focus.log). [브라우저 검수](D:/starwork/review-scratch/master-style-dna-lens-focus-combined-1125/fixture-browser.log).
 
@@ -74,7 +74,9 @@ Codex(Shots)에게 운영 `eb5475d` 기준으로 상세 보고서의 합성 검�
 
 Codex(Shots) `msg_00f211fb01da`의 `6703b14` 최신 통합 후보는 15경로에서 분석·보관함·기획·장면 합성 시험 253개와 변경 경로 린트를 통과했다. 대본 15·30·60초와 작업실 10·20·30·40·50·60초 중 공통이며 승인 때 프로젝트 길이가 일치하는 30초를 첫 실제 9:16 종단 검수 목표로 맞췄다. 실제 Gemini 시험은 전용 설정과 비용 범위 확인을 기다린다.
 
-**Seedream·Kling 프롬프트 문구 후속 검수.** Front `msg_bb2f0d7b9d98`의 `dab8aba`를 단일 운영 기준에 합친 격리 후보 `c3eb810d`에서 관련 시험 54개가 통과했다. Design 독립 시험 53개도 통과했다(`msg_2b74dfc9fe6a`). Seedream 편집의 변경·유지 요구는 5.5 자료에서, 간결한 문장과 표시 문구 규칙은 계열 가이드에서 확인했다. Kling은 서사형 이미지 문단의 구성과 타이포그래피 안내를 반영했다. 후속 후보의 운영 반영은 승인 대기다. [BytePlus 작성 안내](https://ai.byteplus.com/ark/region%3Aap-southeast-1/docs/seedream-4-0-5-0-prompt-guide). [Kling 작성 안내](https://kling.ai/quickstart/kling-image-4-user-guide).
+**Seedream·Kling 프롬프트 문구 후속 검수.** Front `msg_bb2f0d7b9d98`의 `dab8aba`를 단일 운영 기준에 합친 격리 후보 `c3eb810d`에서 관련 시험 54개가 통과했다. Design 독립 시험 53개도 통과했다(`msg_2b74dfc9fe6a`). Seedream 편집의 변경·유지 요구는 5.5 자료에서, 간결한 문장과 표시 문구 규칙은 계열 가이드에서 확인했다. Kling은 서사형 이미지 문단의 구성과 타이포그래피 안내를 반영했다. [BytePlus 작성 안내](https://ai.byteplus.com/ark/region%3Aap-southeast-1/docs/seedream-4-0-5-0-prompt-guide). [Kling 작성 안내](https://kling.ai/quickstart/kling-image-4-user-guide).
+
+**CMD-20261125-024 · Seedream·Kling 문구 운영 반영 및 실제 분석.** `msg_03d4494e4845`로 주인님의 검수 후 운영 반영과 Seedream 5.5 대상 최초 분석 한 번 승인을 확인했다. `P1-06-STYLE-DNA-PROMPT-REFINEMENT-PRODUCTION`은 `8bd1b91`에 `dab8aba`의 두 파일을 합쳐 검수한 SHA를 일반 푸시한다. Vercel Production Current 확인 뒤 `wild-coast.png` 한 장, 분석 Gemini, 대상 Seedream 5.5로 최초 분석 한 번을 수행한다. 응답 코드·시간과 자연어 문장 준수 여부를 기록한다. Front는 화면 시험의 실행 순서 의존성을 같은 문구 작업과 별도 사본에서 시험 파일만 수정한다.
 
 **MASTER-INSPECTION-20261125-0201 · 정기 점검.** Orca에서 Front의 인계 범위와 Backend 사본의 응답 계약을 확인했다. Front 배정 2를 전송했고, Backend 모델 작업과 그 뒤 주제별 쇼츠 장면 조회의 대기 상태를 대조했다. 열린 관리자 직접 조치 3건과 기존 미확정 전송 2건을 확인했다. 포그라운드 요청에 따라 기존 Orca Backend 터미널을 선택했다.
 
@@ -1051,7 +1053,7 @@ Front 완료 `msg_421aa877859d`, SHA-256 `efb16e5c770f32a0fff645494289ef14aeab46
 | --- | --- | --- |
 | 관리자 화면 | 운영 반영 | 원격 `master`와 기존 운영 배포 기록은 `9526f5c`다. 앞선 로그인 검수에서 `/admin` 상단 이미지·오디오·영상 메뉴를 확인했다. 이번 비로그인 실측은 홈과 관리자 로그인 200, 관리자·분석기·연동 진입 307이다. 로그인 뒤 분석 실행은 이번 점검에서 새로 확인하지 않았다. |
 | API 키·플랫폼 | 등록·안내 운영 반영 | `/admin/integrations`에 분석 엔진 OpenAI·Claude·Gemini, YouTube Data API 키 등록과 Threads·Instagram·YouTube·Google Drive 연결 안내가 있다. YouTube 채널 OAuth는 보호 후보까지 확인했다. 전체 플랫폼 OAuth와 실제 생성 API 연결은 아직 확인되지 않았다. |
-| 이미지 분석 | 기본 운영, 원본 기능 격리 검수 | 운영 Style DNA 진입이 있고, 분석·프롬프트 보정·시험 이미지 비교와 보관 흐름에 격리 검수 근거가 있다. 실제 운영 키로 원본부터 결과 저장까지 한 번에 확인하는 시험이 남았다. |
+| 이미지 분석 | 운영 및 실사용 전체 검수 완료 | 운영 `961e4ae`에서 원본 분석·프롬프트 보정·시험 이미지 생성이 각각 201, 비교 지점 보관이 200이었다. `81943e2`에서 FLUX.2 대상 최초 분석도 201로 프롬프트를 확인했다. [전체 흐름 증거](D:/starwork/review-scratch/style-dna-live-e2e-1125/report.md). [FLUX.2 운영 증거](D:/starwork/review-scratch/master-style-dna-all-prompt-targets-1125/production-report.md). |
 | 오디오 분석 | 상세 보고서·대용량 보호 통합 | 자동 판별·음성·음악 보고서와 100 MiB 업로드·복구는 격리 검수를 통과했다. 기존 운영 Supabase의 업로드 스키마 설치는 이전 기록에 확인돼 있고, 운영 연결 설정·제한 역할 확인이 남았다. 정리 SQL과 되돌림은 보호 통합 `58f952f`에 있으며 실제 파일을 사용한 격리 PG17 시험 14건이 통과했다. 운영 예약은 적용 전이다. |
 | 쇼츠 분석 | 원본 단계·보관함 보호 통합 | 검색과 분석부터 소재·전략·대본·프롬프트, 작업 이어하기를 통합했다. 보관함 내용 검색은 화면·API가 같은 120 유니코드 코드 포인트 기준을 사용한다. 고정본 `ce377a5`에서 59파일 1,052건과 Webpack·산출물 검증이 통과했다. `1b36b72`에는 최대 3개 선택·묶음 분석 화면과 API를 통합했다. 전체 3,007건·빌드 통과, 외부 설정 의존 319건 건너뜀. 검색은 실제 Next·합성 로그인에서 비로그인 401과 DB 미연결 503 화면을 확인했다. `f26ec18`에는 시간 제한 안에서 실패 시 원문을 유지하는 한 문장 보정을 추가했으며 관련 시험 1,131건과 빌드가 통과했다. 기존 쇼츠 6단계는 운영 중이다. ② 상세 보고서 후보 `56588c9`의 S4 취소 초점·대비는 작성자 검증 완료, 독립 재검 배정 2 PASS. `89e10c0` 로컬 통합 체크포인트 검증 완료. |
 | 공통 프로젝트·기획 | 격리 통합, 운영 연결 대기 | 같은 프로젝트의 기획 저장·명시 승인과 45장면 가져오기에 격리 검수 근거가 있다. 이미지·오디오·쇼츠 결과의 실제 운영 저장과 재조회는 기존 메인 Supabase에서 연결을 확인해야 한다. |
