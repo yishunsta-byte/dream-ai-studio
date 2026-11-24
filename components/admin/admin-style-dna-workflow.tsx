@@ -134,7 +134,8 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const [loadedFrom, setLoadedFrom] = useState<{ round: number; prevPrompt: string; prevEditing: boolean } | null>(null);
   const [reference, setReference] = useState<{ file: File; href: string } | null>(null);
   // 분석·보정 엔진(서버 f2d7e63): 원본처럼 하나를 골라 분석과 보정에 함께 쓴다. OpenAI·Anthropic 설정은 키 원문 없이 등록 여부·모델·버전만 읽는다.
-  const [engines, setEngines] = useState<EngineCredentials | null>(null);
+  // 엔진 등록 조회 상태(CMD-045): undefined = 아직 조회 중, null = 조회 실패, 값 = 조회 성공. 조회 전·중·실패에는 '키 미등록'이라고 하지 않는다.
+  const [engines, setEngines] = useState<EngineCredentials | null | undefined>(undefined);
   const [engine, setEngine] = useState<EngineChoice>("gemini");
   const active = useRef<AbortController | null>(null);
   const reading = useRef<AbortController | null>(null);
@@ -153,7 +154,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
         void open(last, true);
       }
     }, () => { if (!controller.signal.aborted) setLibrary({ kind: "failed" }); });
-    void readEngineCredentials(controller.signal).then(value => { if (!controller.signal.aborted) setEngines(value); }, () => { /* 끊김 */ });
+    void readEngineCredentials(controller.signal).then(value => { if (!controller.signal.aborted) setEngines(value); }, () => { if (!controller.signal.aborted) setEngines(null); });
     return () => controller.abort();
     // open은 기록을 여는 일회성 동작이라 다시 읽기 기준(attempt)에만 묶는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,10 +172,13 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const engineReady = engine === "gemini" ? ready : !!settings && !!engineModel && engineVersion > 0;
   const engineShort = { gemini: "Gemini", openai: "OpenAI", anthropic: "Claude" }[engine];
   const engineChoices = (["gemini", "openai", "anthropic"] as const).map(value => {
-    const off = value !== "gemini" && !engines?.[value]?.configured;
-    return { value, short: { gemini: "Gemini", openai: "OpenAI", anthropic: "Claude" }[value], label: `${engineLabel(value)}${off ? " (키 미등록)" : ""}`, disabled: off };
+    // Gemini는 Style DNA 설정으로 따로 확인한다. OpenAI·Claude는 조회 결과가 있을 때만 등록 여부를 말한다.
+    const tag = value === "gemini" ? null : engines === undefined ? "확인 중" : engines === null ? "확인 실패" : engines[value]?.configured ? null : "키 미등록";
+    return { value, short: { gemini: "Gemini", openai: "OpenAI", anthropic: "Claude" }[value], label: `${engineLabel(value)}${tag ? ` (${tag})` : ""}`, tag, disabled: !!tag };
   });
   const engineWarn = !settings || engineReady ? null : engine === "gemini" ? "이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요."
+    : engines === undefined ? null
+    : engines === null ? `${engineLabel(engine)} 등록 정보를 확인하지 못했어요. 잠시 뒤 다시 열거나 Gemini를 선택해 주세요.`
     : `${engineLabel(engine)} 키가 등록되지 않았거나 바뀌었어요. API키등록·플랫폼연동에서 확인하거나 다른 AI를 선택해 주세요.`;
   /** 분석·보정 요청의 동작 값: 고른 엔진의 등록 버전, OpenAI·Anthropic이면 engine을 싣는다. */
   const engineOp = () => ({ requestId: newRequestId(), credentialVersion: engineVersion,
@@ -564,7 +568,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
               <p className={studio.engineHead} id={`${id}-engine-head`}>분석 AI</p>
               <div className={`${studio.segment} ${studio.segmentThree}`} role="group" aria-labelledby={`${id}-engine-head`} aria-describedby={`${id}-engine`}>
                 {engineChoices.map(choice => <button key={choice.value} type="button" aria-pressed={engine === choice.value} disabled={busy || choice.disabled}
-                  value={choice.value} title={choice.label} onClick={event => pickEngine(event.currentTarget.value as EngineChoice)}>{choice.short}{choice.disabled && <small> 키 미등록</small>}</button>)}
+                  value={choice.value} title={choice.label} onClick={event => pickEngine(event.currentTarget.value as EngineChoice)}>{choice.short}{choice.tag && <small> {choice.tag}</small>}</button>)}
               </div>
               <p className={studio.engineNote} id={`${id}-engine`}>API키등록·플랫폼연동에 등록한 {engineShort} 키{engineModel ? `(${engineModel})` : ""}로 호출되며 요금은 그 계정에 청구돼요. 시험 이미지 생성은 언제나 Gemini로 해요.</p>
             </div>

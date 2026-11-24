@@ -197,6 +197,7 @@ if (Number(new URLSearchParams(location.search).get("musicModel"))>0) { fixture.
 // GET /api/admin/style-dna/engine-credentials → {providers:{openai,anthropic}}. 분석·보정에 engine이 있으면 그 공급자의 등록·모델·버전을 확인(미등록 503, 다르면 409 stale_credential),
 // 결과 record.engine·첫 리비전 engine·semantic.provider, 보정 리비전 engine에 {provider,modelId,credentialVersion}을 남긴다. 시험 생성은 언제나 Gemini 확인.
 // styleDna.engines[provider]를 바꾸면 키 교체(버전 변경)를 흉내 낼 수 있다.
+// 엔진 등록 조회(CMD-045): ?styleDnaHold=engines면 첫 조회를 붙잡고(window.__premiere.release()로 풀기), ?styleDnaEnginesFault=<상태>면 첫 조회 한 번 실패.
 type SdRecord = Record<string,any>;
 const sdCell=(description:string,basis:string)=>({certainty:"estimated",description,basis});
 const sdRow=(label:string,description:string,basis:string)=>({label,description,basis});
@@ -219,7 +220,7 @@ const styleDna={
     :{configured:false,modelId:null,version:0,updatedAt:null}])) as Record<string,{configured:boolean;modelId:string|null;version:number;updatedAt:string|null}>,
   // ?styleDnaHold=list: 첫 목록을 붙잡는다(불러오는 중 확인), ?styleDnaListFault=<상태>: 첫 목록 한 번 실패(보관함 오류·다시 확인).
   records:[] as SdRecord[], hold:sdQuery.get("styleDnaHold")??"", seq:0, done:{} as Record<string,{hash:string;status:number;body:unknown}>,
-  faults:{list:sdQuery.get("styleDnaListFault")?[{status:Number(sdQuery.get("styleDnaListFault")),body:{code:"failed"}}]:[],get:[],analyze:[],refine:[],test:[],engines:[],compare:[],delete:[]} as Record<string,({status:number;body:unknown}|{lost:true|"before"})[]>,
+  faults:{list:sdQuery.get("styleDnaListFault")?[{status:Number(sdQuery.get("styleDnaListFault")),body:{code:"failed"}}]:[],get:[],analyze:[],refine:[],test:[],engines:sdQuery.get("styleDnaEnginesFault")?[{status:Number(sdQuery.get("styleDnaEnginesFault")),body:{code:"failed"}}]:[],compare:[],delete:[]} as Record<string,({status:number;body:unknown}|{lost:true|"before"})[]>,
   media(id:string,name:string,width:number,height:number,palette:{hex:string;share:number}[]){
     return {mime:"image/webp",width,height,sha256:(name+id).padEnd(64,"0").slice(0,64),palette,href:"/api/admin/style-dna/"+id+"/media/"+name}; },
   create(options:Record<string,unknown>, title:string){
@@ -254,6 +255,8 @@ window.fetch=async(raw,init)=>{
   }
   if(path==="/api/auth/logout"&&method==="POST") return response({state:"ended"});
   if(path==="/api/admin/style-dna/engine-credentials"&&method==="GET"){
+    if (styleDna.hold==="engines") { styleDna.hold=""; await new Promise<void>(resolve=>{row.resolve=resolve;}); }
+    if (init?.signal?.aborted) throw new DOMException("aborted","AbortError");
     const fault=styleDna.faults.engines?.shift();
     if (fault&&"status" in fault) return response(fault.body,fault.status);
     return response({providers:{openai:styleDna.engines.openai,anthropic:styleDna.engines.anthropic}});
