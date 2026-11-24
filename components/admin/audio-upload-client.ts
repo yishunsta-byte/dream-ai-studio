@@ -16,10 +16,11 @@ import { readCredentialSettings } from "./gemini-credentials-client";
 // (없으면 기본 v2, 같은 접수의 분석 재전송에서 프로필이 바뀌면 409). 화면은 그 접수의 분석을 보낸 프로필을 조회·취소·정리·조각에도 그대로 쓴다.
 export const largeAudioLimit = adminAudioUploadLimit;
 export const directAudioLimit = 4 * 1024 * 1024;
-// P1-07 A-2: 관리자 오디오 형식은 서버(3580c96)와 같은 audioFormatFromFilename으로만 판정한다(MP3·WAV·M4A·FLAC, 대소문자 무관).
+// P1-07 A-2: 관리자 오디오 형식은 서버와 같은 audioFormatFromFilename으로만 판정한다(대소문자 무관).
+// 오디오 호환 3차: 원본 키트 v1.01 파일 고르기와 같은 MP3·WAV·M4A·FLAC·AAC·OGG·WMA. 실제 형식은 서버가 내용을 측정해 확인한다.
 // 공용 참조 분석 형식(referenceFileFormat)은 넓히지 않는다. 바로 분석·보호 업로드·파일 선택 세 곳이 같은 판정을 쓴다.
-export const AUDIO_FORMATS_LABEL = "MP3 · WAV · M4A · FLAC";
-export const AUDIO_ACCEPT = ".mp3,.wav,.m4a,.flac";
+export const AUDIO_FORMATS_LABEL = "MP3 · WAV · M4A · FLAC · AAC · OGG · WMA";
+export const AUDIO_ACCEPT = ".mp3,.wav,.m4a,.flac,.aac,.ogg,.wma";
 /** 바로 분석(4 MiB 이하) 입력 확인. 맞지 않으면 안내 문구. */
 export function directAudioIssue(file: File): string | undefined {
   if (!file.size) return "내용이 있는 파일을 선택해 주세요.";

@@ -130,6 +130,40 @@ describe("name and content mismatch", () => {
   });
 });
 
+describe("names from the original kit (AAC·OGG·WMA)", () => {
+  it("always confirms the content and sends the confirmed format, never the name's", async () => {
+    probe.identify.mockResolvedValue({ format: "aac", measurement: measured });
+    const { send, response } = run(unknown, "곡.aac");
+    expect((await response).status).toBe(200);
+    expect(probe.identify).toHaveBeenCalledTimes(1);
+    expect(probe.measure).not.toHaveBeenCalled();
+    expect(sentMime(send)).toBe("audio/aac");
+    expect(info).toHaveBeenCalledWith("admin_audio_input_resolved", { expected: "aac", detected: null, resolved: "aac" });
+  });
+
+  it("sends an OGG-named file that is really MP3 as MP3", async () => {
+    probe.identify.mockResolvedValue({ format: "mp3", measurement: measured });
+    const { send, response } = run(unknown, "Live.OGG");
+    expect((await response).status).toBe(200);
+    expect(sentMime(send)).toBe("audio/mpeg");
+  });
+
+  it("rejects WMA content the provider cannot read without sending", async () => {
+    probe.identify.mockRejectedValue(new AudioUploadError("invalid_file"));
+    const { send, response } = run(unknown, "옛 녹음.wma");
+    expect((await response).status).toBe(422);
+    expect(send).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith("admin_audio_input_rejected", { stage: "identify", expected: "wma", detected: null, error: null });
+  });
+
+  it("closes known non-audio content under a new name at once", async () => {
+    const { send, response } = run(gif, "곡.ogg");
+    expect((await response).status).toBe(422);
+    expect(probe.identify).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
 describe("pre-check rejection record", () => {
   it("closes known non-audio content at once with one fixed record and no file details", async () => {
     const { send, response } = run(gif, "비밀 노래 제목.mp3");

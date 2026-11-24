@@ -103,7 +103,8 @@ describe("P1-07 대용량 오디오 업로드 클라이언트", () => {
     expect(largeAudioIssue(sized(adminAudioUploadLimit))).toBeUndefined();
     expect(largeAudioIssue(sized(adminAudioUploadLimit + 1))).toBe("업로드는 100 MiB까지 가능해요.");
     expect(largeAudioIssue(sized(0))).toBe("내용이 있는 파일을 선택해 주세요.");
-    expect(largeAudioIssue(sized(5, "track.ogg"))).toBe("MP3 · WAV · M4A · FLAC 확장자의 오디오 파일만 올릴 수 있어요.");
+    expect(largeAudioIssue(sized(5, "track.opus"))).toBe("MP3 · WAV · M4A · FLAC · AAC · OGG · WMA 확장자의 오디오 파일만 올릴 수 있어요.");
+    expect(largeAudioIssue(sized(5, "track.ogg"))).toBeUndefined();
     expect(largeAudioIssue(sized(5, "a.m4a"))).toBeUndefined();
     expect(largeAudioIssue(sized(5, ".mp3"))).toMatch(/5~255자/);
     expect(largeAudioIssue(sized(5, `${"가".repeat(252)}.mp3`))).toMatch(/5~255자/);
@@ -119,9 +120,16 @@ describe("P1-07 대용량 오디오 업로드 클라이언트", () => {
       expect(audioFormatFromFilename(name)).toBeTruthy();
       expect(directAudioIssue(sized(5, name))).toBeUndefined();
     }
-    for (const name of ["track.ogg", "track.flac.txt", "track", "track.aac"]) {
-      expect(directAudioIssue(sized(5, name))).toBe("MP3 · WAV · M4A · FLAC 확장자의 오디오 파일만 분석할 수 있어요.");
-      expect(largeAudioIssue(sized(5, name))).toMatch(/MP3 · WAV · M4A · FLAC 확장자/);
+    for (const name of ["track.opus", "track.flac.txt", "track", "track.webm", "track.aiff"]) {
+      expect(directAudioIssue(sized(5, name))).toBe("MP3 · WAV · M4A · FLAC · AAC · OGG · WMA 확장자의 오디오 파일만 분석할 수 있어요.");
+      expect(largeAudioIssue(sized(5, name))).toMatch(/MP3 · WAV · M4A · FLAC · AAC · OGG · WMA 확장자/);
+    }
+    // 오디오 호환 3차: 원본 키트 v1.01 파일 고르기와 같은 AAC·OGG·WMA 이름도 고를 수 있다(실제 형식은 서버가 내용을 측정해 확인).
+    for (const name of ["곡.aac", "Live.OGG", "옛 녹음.wma"]) {
+      expect(audioFormatFromFilename(name)).toBeTruthy();
+      expect(directAudioIssue(sized(5, name))).toBeUndefined();
+      expect(largeAudioIssue(sized(5, name))).toBeUndefined();
+      expect(audioUploadStart.safeParse({ requestId, authorized: true, credentialVersion: 1, filename: name, sizeBytes: adminAudioUploadLimit }).success).toBe(true);
     }
     expect(directAudioIssue(sized(4 * 1024 * 1024, "곡.flac"))).toBeUndefined();
     expect(directAudioIssue(sized(4 * 1024 * 1024 + 1, "곡.flac"))).toBe("바로 분석은 4 MiB까지 가능해요.");
@@ -131,7 +139,7 @@ describe("P1-07 대용량 오디오 업로드 클라이언트", () => {
     for (const name of ["긴 곡.FLAC", "Live.flac"]) {
       expect(audioUploadStart.safeParse({ requestId, authorized: true, credentialVersion: 1, filename: name, sizeBytes: adminAudioUploadLimit }).success).toBe(true);
     }
-    expect(AUDIO_ACCEPT).toBe(".mp3,.wav,.m4a,.flac");
+    expect(AUDIO_ACCEPT).toBe(".mp3,.wav,.m4a,.flac,.aac,.ogg,.wma");
   });
 
   it("서버 렌더에서는 설정 확인 안내만 그리고 요청하지 않는다", () => {

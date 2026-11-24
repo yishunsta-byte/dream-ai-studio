@@ -8,10 +8,15 @@ export const adminAudioChunkBytes = 2 * 1024 * 1024;
 export const audioUploadId = z.uuidv7();
 export const audioUploadMime = { mp3: "audio/mpeg", wav: "audio/wav", m4a: "audio/mp4", flac: "audio/flac" } as const;
 export type AudioUploadFormat = keyof typeof audioUploadMime;
+// 원본 키트 v1.01의 파일 고르기와 같은 이름 목록. 위 네 형식은 이름과 내용이 일치하면 기존처럼 보내고,
+// AAC·OGG·WMA 이름은 이름 MIME을 쓰지 않고 항상 서버 측정으로 확인한 형식으로만 보낸다(admin-audio-media).
+export const audioNameFormats = ["mp3", "wav", "m4a", "flac", "aac", "ogg", "wma"] as const;
+export type AudioNameFormat = typeof audioNameFormats[number];
+export const isLegacyAudioFormat = (format: AudioNameFormat): format is AudioUploadFormat => Object.hasOwn(audioUploadMime, format);
 
-export function audioFormatFromFilename(name: string): AudioUploadFormat | undefined {
+export function audioFormatFromFilename(name: string): AudioNameFormat | undefined {
   const extension = /\.(\w+)$/.exec(name)?.[1]?.toLowerCase();
-  if (extension && Object.hasOwn(audioUploadMime, extension)) return extension as AudioUploadFormat;
+  if (extension && (audioNameFormats as readonly string[]).includes(extension)) return extension as AudioNameFormat;
 }
 
 const authorized = z.strictObject({ authorized: z.literal(true), requestId: z.uuid(), credentialVersion: z.int().min(1).max(2_147_483_647) });

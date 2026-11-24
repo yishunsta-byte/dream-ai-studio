@@ -6,7 +6,7 @@ import { rejectForeignWrite } from "../public-showcase/admin-publication-http";
 import type { AudioMeasurement } from "./admin-audio-details-contract";
 import { AudioUploadError, audioInputResolved, confirmedAudioMime, identifiableContent, identifyInlineAudio, inlineAudioProbeDeadlineMs,
   measureInlineAudio } from "./admin-audio-media";
-import { audioFormatFromFilename, audioUploadMime } from "./admin-audio-upload-contract";
+import { audioFormatFromFilename, audioUploadMime, isLegacyAudioFormat } from "./admin-audio-upload-contract";
 import { referenceFileName, referenceUploadByteLimit } from "./input";
 import { MUSIC_EXTERNAL_CONSENT_HEADER } from "./music-semantic-contract";
 
@@ -14,7 +14,8 @@ export type AudioPayload = { bytes: Buffer; mime: string };
 
 // 오디오 422 2차: 검사 도구 전 단계의 거절은 이유를 남기지 않아 운영에서 원인을 가릴 수 없었다.
 // 단계·기대 형식·판별 형식·오류 종류를 아래 고정 목록 값으로만 남긴다(목록 밖은 "other"). 파일명·본문·경로·원문은 남기지 않는다.
-const recordedFormats = new Set(["mp3", "wav", "m4a", "mp4", "flac", "aac", "opus", "ogg", "oga", "webm", "mkv", "mov", "avi", "amr", "aiff"]);
+const recordedFormats = new Set(["mp3", "wav", "m4a", "mp4", "flac", "aac", "opus", "ogg", "oga", "webm", "mkv", "mov", "avi", "amr", "aiff",
+  "wma", "asf"]);
 const recordedErrors = new Set(["Error", "TypeError", "SyntaxError", "RangeError", "AbortError", "TimeoutError", "ZodError", "AudioUploadError"]);
 const fixedValue = (value: unknown, allowed: Set<string>) => value === undefined || value === null ? null
   : typeof value === "string" && allowed.has(value) ? value : "other";
@@ -96,9 +97,11 @@ export function createAdminAudioAccess({ authenticate = resolveServerAuth, env =
         const bytes = await readBounded(request.body, referenceUploadByteLimit, signal);
         if (!bytes) return audioJson({ error: "too_large" }, 413);
         const format = await fileTypeFromBuffer(bytes).catch(() => undefined);
-        let audio: AudioPayload = { bytes, mime: audioUploadMime[expected] };
+        // 기존 네 형식 이름이 내용과 일치할 때만 이름의 MIME을 쓴다. AAC·OGG·WMA 이름과 불일치·판별 불가는 아래 확인 경로로만 보낸다.
+        const named = isLegacyAudioFormat(expected) ? expected : undefined;
+        let audio: AudioPayload = { bytes, mime: named ? audioUploadMime[named] : "" };
         let measurement: AudioMeasurement | undefined;
-        if (!audioContentMatches(expected, format?.ext)) {
+        if (!named || !audioContentMatches(named, format?.ext)) {
           if (format && !identifiableContent.has(format.ext)) {
             audioInputRejected("file_type", { expected, detected: format.ext });
             return audioJson({ error: "invalid_file" }, 422);

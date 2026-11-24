@@ -9,7 +9,7 @@ import { z } from "zod";
 import { mediaBinary, runMedia } from "../media/tools";
 import type { AudioMeasurement } from "./admin-audio-details-contract";
 import type { AudioPayload } from "./admin-audio-http";
-import { adminAudioChunkBytes, audioFormatFromFilename, audioUploadMime, type AudioUploadFormat } from "./admin-audio-upload-contract";
+import { adminAudioChunkBytes, audioFormatFromFilename, audioUploadMime, isLegacyAudioFormat, type AudioUploadFormat } from "./admin-audio-upload-contract";
 
 export const inlineAudioProbeDeadlineMs = 23_000;
 
@@ -97,7 +97,8 @@ async function inspectAudioFile(path: string, signal: AbortSignal, accept: (form
 // 여기서는 이름과 내용이 다르거나 file-type이 판별하지 못한 입력을, 허용 해석기만 쓰는 서버 측정(오디오 스트림·1초 디코딩)으로
 // 실제 형식을 확인한 뒤 그 형식의 MIME으로만 보낸다(이름·브라우저 MIME은 쓰지 않는다). 바로 분석과 큰 파일 업로드가 같이 쓴다.
 // AAC(ADTS)·Ogg는 원본처럼 Gemini가 처리하는 오디오라 확인 형식에 넣는다(선택 가능한 파일 이름 목록은 그대로).
-export const confirmedAudioMime = { ...audioUploadMime, aac: "audio/aac", ogg: "audio/ogg" } as const;
+export const confirmedAudioMime = { mp3: audioUploadMime.mp3, wav: audioUploadMime.wav, m4a: audioUploadMime.m4a, flac: audioUploadMime.flac,
+  aac: "audio/aac", ogg: "audio/ogg" } as const;
 export type ConfirmedAudioFormat = keyof typeof confirmedAudioMime;
 export const identifiableDemuxers = "mp3,wav,mov,mp4,m4a,3gp,3g2,mj2,flac,aac,ogg";
 // 이름과 달라도 서버 측정으로 확인해 볼 file-type 판별 값. 그 밖(이미지·문서·영상·webm 등)은 측정 없이 바로 막는다.
@@ -112,7 +113,8 @@ export function identifiedAudioFormat(formatName: string | undefined, codec: str
   if (names.includes("ogg") && (codec === "vorbis" || codec === "opus" || codec === "flac")) return "ogg";
 }
 // 확인 기록: 값은 모두 위 고정 목록 안의 짧은 이름이다(목록 밖은 "other"). 파일명·본문·경로는 남기지 않는다.
-const recordValue = (value: string | undefined) => value === undefined ? null : identifiableContent.has(value) ? value : "other";
+const recordable: ReadonlySet<string> = new Set([...identifiableContent, "wma", "asf"]);
+const recordValue = (value: string | undefined) => value === undefined ? null : recordable.has(value) ? value : "other";
 export function audioInputResolved(detail: { expected: string; detected?: string; resolved: string }) {
   console.info("admin_audio_input_resolved", { expected: recordValue(detail.expected), detected: recordValue(detail.detected),
     resolved: recordValue(detail.resolved) });
@@ -156,9 +158,10 @@ export async function withVerifiedAudio<T>(input: { filename: string; sizeBytes:
     }
     await writeFile(path, chunks(), { flag: "wx", mode: 0o600, signal });
     const type = await fileTypeFromFile(path).catch(() => undefined);
-    let mime: string = audioUploadMime[format];
+    let mime: string;
     let measurement: AudioMeasurement;
-    if (type?.ext === format || (format === "m4a" && type?.ext === "mp4")) {
+    if (isLegacyAudioFormat(format) && (type?.ext === format || (format === "m4a" && type?.ext === "mp4"))) {
+      mime = audioUploadMime[format];
       ({ measurement } = await inspectAudioFile(path, signal, (formatName, codec) =>
         format !== "flac" || (formatName === "flac" && codec === "flac")));
     } else {

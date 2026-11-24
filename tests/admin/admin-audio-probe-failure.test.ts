@@ -42,6 +42,7 @@ describe("large upload content check", () => {
   it("closes known non-audio content without measuring", async () => {
     vi.stubEnv("FFPROBE_PATH", join(tmpdir(), "missing-ffprobe-for-large"));
     await expect(verify(Buffer.concat([Buffer.from("GIF89a"), Buffer.alloc(64)]), "노래.mp3")).rejects.toMatchObject({ code: "invalid_file" });
+    await expect(verify(Buffer.concat([Buffer.from("GIF89a"), Buffer.alloc(64)]), "곡.ogg")).rejects.toMatchObject({ code: "invalid_file" });
     vi.unstubAllEnvs();
   });
 
@@ -49,6 +50,7 @@ describe("large upload content check", () => {
     vi.stubEnv("FFPROBE_PATH", join(tmpdir(), "missing-ffprobe-for-large"));
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     await expect(verify(Buffer.alloc(256, 7), "노래.mp3")).rejects.toMatchObject({ code: "media_unavailable" });
+    await expect(verify(Buffer.alloc(256, 7), "옛 녹음.wma")).rejects.toMatchObject({ code: "media_unavailable" });
     vi.unstubAllEnvs();
   });
 });

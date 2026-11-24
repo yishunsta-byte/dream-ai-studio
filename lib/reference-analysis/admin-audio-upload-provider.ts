@@ -25,7 +25,8 @@ function safeSession(raw: string | null) {
 
 function sameMime(expected: string, actual: string) {
   return actual === expected || (expected === "audio/wav" && actual === "audio/x-wav") ||
-    (expected === "audio/mp4" && actual === "audio/x-m4a");
+    (expected === "audio/mp4" && actual === "audio/x-m4a") || (expected === "audio/aac" && actual === "audio/x-aac") ||
+    (expected === "audio/ogg" && actual === "application/ogg");
 }
 
 export function createAdminAudioUploadProvider(send: typeof fetch = fetch) {
