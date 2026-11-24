@@ -23,5 +23,10 @@ describe("audio analysis runs straight from the button", () => {
     const large = readFileSync("components/admin/admin-audio-upload.tsx", "utf8");
     expect(large).toContain("const transferAgreed = !!ready;");
     expect(large).toContain("const analysisAgreed = !!conditionKey;");
+    // 바닥 안내는 실제 버튼 흐름과 같아야 한다: 보호 업로드는 올리기에서 서버로, 분석에서 Gemini로 보낸다.
+    const studio = readFileSync("components/admin/audio-original/audio-studio.tsx", "utf8");
+    expect(studio).toContain("‘서버에 올리기’를 누르면 서버의 비공개 저장소에 올리고, 분석 버튼을 누를 때 Gemini로 보내요.");
+    expect(studio).toContain("파일은 분석 버튼을 누를 때 Gemini로 보내요.");
+    expect(studio).not.toContain("분석 버튼을 누를 때만 서버와 Gemini로 보내요");
   });
 });
