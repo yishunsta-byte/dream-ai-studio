@@ -10,6 +10,7 @@ import {
 } from "./gemini-credentials-client";
 import styles from "./admin-gemini-settings.module.css";
 import { AdminModelOptions } from "./admin-model-options";
+import { AdminProviderForm, AdminProviderHeader } from "./admin-provider-form";
 import { geminiAnalysisModels } from "./admin-model-suggestions";
 
 // P0 Gemini 설정(Design msg_72dad930c7d0, Backend msg_bb18c2ae5fd0·msg_cb4ee4e63485):
@@ -88,6 +89,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
   const savedModels = (): Models => ({ image: settings.programs.image.modelId ?? "", music: settings.programs.music.modelId ?? "", shorts: settings.programs.shorts.modelId ?? "" });
   const [models, setModels] = useState(savedModels);
   const [modelProgram, setModelProgram] = useState<CredentialProgram>("image");
+  const selectedGroup = groupOf[modelProgram];
   const [keyOpen, setKeyOpen] = useState<Record<CredentialGroup, boolean>>({ reference: false, music: false });
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -140,6 +142,13 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
   const id = (name: string) => `${base}-${name.replace(".", "-")}`;
   const keyId = (group: CredentialGroup) => id(`${group}-key`);
   const showKey = (group: CredentialGroup) => settings.groups[group].version === 0 || keyOpen[group];
+  function revealField(field: string) {
+    const program = programOrder.find(item => id(`models.${item}`) === field);
+    const group = groupOrder.find(item => keyId(item) === field);
+    if (program) setModelProgram(program);
+    else if (group) setModelProgram(previous => groupOf[previous] === group ? previous : credentialGroups[group][0]);
+    pendingFocus.current = field;
+  }
   const track = () => { const controller = new AbortController(); requests.current.add(controller); return controller; };
   const clearKey = (group: CredentialGroup) => { const input = keyRef(group).current; if (input) input.value = ""; };
   const writePending = (next: Partial<Record<CredentialGroup, boolean>>) => { pendingRef.current = next; setPending(next); };
@@ -176,7 +185,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
     }
     setErrors(local);
     const firstInvalid = Object.keys(local)[0];
-    if (firstInvalid) { pendingFocus.current = firstInvalid; setNotice(null); return; }
+    if (firstInvalid) { revealField(firstInvalid); setNotice(null); return; }
     pendingFocus.current = "notice";
     if (!plans.length) { setNotice({ tone: "warning", text: "바뀐 내용이 없어요. 키를 넣거나 모델 ID를 바꾼 뒤 저장해 주세요." }); return; }
     pendingFocus.current = null;
@@ -205,7 +214,7 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
         const target = outcome.field === "apiKey" ? keyId(plan.group) : id(outcome.field);
         if (outcome.field === "apiKey") setKeyOpen(previous => ({ ...previous, [plan.group]: true }));
         setErrors({ [target]: fieldMessage(outcome.field, outcome.code) });
-        pendingFocus.current = target;
+        revealField(target);
         setNotice(done ? { tone: "warning", text: `${done}${groupText[plan.group].name} 설정은 저장하지 못했어요.` } : null);
         return;
       }
@@ -265,71 +274,54 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
     ? { tone: "danger", text: `다른 곳에서 ${groupNames(waiting)} 설정이 바뀌었는데 최신 설정을 불러오지 못했어요. 다시 불러온 뒤 시험해 주세요.` }
     : testNotice;
 
+  const storage = keyState(settings, selectedGroup);
+  const updated = settings.groups[selectedGroup].updatedAt;
+
   return <>
     <dl className={styles.status} aria-label="Gemini 키 저장 상태">
-      <div><dt>저장 위치</dt><dd data-tone={ready ? "success" : "warning"}>{ready ? "서버 키 저장소" : "서버 키 저장소 미연결"}</dd></div>
-      {groupOrder.map(group => {
-        const state = keyState(settings, group);
-        const updated = settings.groups[group].updatedAt;
-        return <div key={group}><dt>{groupText[group].name} 키</dt>
-          <dd data-tone={state.tone}>{state.text}{updated && <> · 변경 <time dateTime={updated}>{time.format(new Date(updated))}</time></>}</dd></div>;
-      })}
+      <div><dt>저장 상태</dt><dd data-tone={storage.tone}>{storage.text}</dd></div>
+      <div><dt>마지막 저장</dt><dd>{updated ? <time dateTime={updated}>{time.format(new Date(updated))}</time> : "없음"}</dd></div>
     </dl>
-    {!ready && <div className={styles.unavailable}>
-      <p ref={noticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone="warning">
-        서버 키 저장소에 연결되지 않아 지금은 이 화면에서 저장할 수 없어요. 서버 제공 설정이 있으면 분석기는 그 설정을 써요.{notice ? ` ${notice.text}` : ""}
-      </p>
-      <Button type="button" variant="secondary" size="sm" loading={rechecking} loadingLabel="다시 확인 중" onClick={async () => {
-        setRechecking(true);
-        const latest = await reloadLatest();
-        setRechecking(false);
-        if (latest === "superseded") return;
-        pendingFocus.current = "notice";
-        setNotice(!latest ? { tone: "danger", text: "상태를 다시 불러오지 못했어요." }
-          : latest.storage === "ready" ? { tone: "success", text: "저장소에 연결됐어요. 이제 저장할 수 있어요." }
-          : { tone: "warning", text: "다시 확인했지만 아직 연결되지 않았어요." });
-      }}>저장소 다시 확인</Button>
-      <a className={styles.link} href="#admin-manual">설정 방법 보기</a>
-    </div>}
-    <form className={styles.form} onSubmit={submit} noValidate aria-label="Gemini 키와 모델 ID" aria-busy={saving || undefined}>
-      <div className={styles.columns}>
-      <fieldset className={styles.fieldset} disabled={!ready || saving}>
-        <legend>API 키</legend>
-        <div className={styles.grid}>
-          {groupOrder.map(group => {
-            const key = keyId(group);
-            const stored = settings.groups[group].version > 0;
-            return <div className={styles.field} key={group}>
-              <label htmlFor={key}>{groupText[group].key}</label>
-              {showKey(group) ? <>
-                <input ref={keyRef(group)} id={key} name={`${group}-api-key`} type="password" autoComplete="off" spellCheck={false} autoCapitalize="off"
-                  maxLength={256} aria-invalid={!!errors[key]} aria-describedby={describe(key, "help")} />
-                <p id={`${key}-help`} className={styles.help}>{stored ? "비워 두면 저장된 키를 그대로 써요. " : ""}저장한 키는 다시 보여 주지 않아요.</p>
-                {fieldError(key)}
-                {stored && <Button type="button" variant="ghost" size="sm" onClick={() => {
-                  clearKey(group);
-                  setKeyOpen(previous => ({ ...previous, [group]: false }));
-                  setErrors(previous => ({ ...previous, [key]: undefined }));
-                }}>교체 취소</Button>}
-              </> : <div className={styles.keyStored}>
-                <span id={`${key}-help`} className={styles.help}>저장된 키를 써요. 값은 보이지 않아요.</span>
-                <Button type="button" variant="secondary" size="sm" aria-describedby={`${key}-help`}
-                  onClick={() => { pendingFocus.current = key; setKeyOpen(previous => ({ ...previous, [group]: true })); }}>{groupText[group].name} 키 교체</Button>
-              </div>}
-            </div>;
-          })}
-        </div>
-      </fieldset>
-      <fieldset className={styles.fieldset} disabled={!ready || saving}>
-        <legend>분석 모델</legend>
+    <AdminProviderForm label="Gemini 키와 모델 ID" busy={saving} onSubmit={submit}
+      target={<>
         <label htmlFor={id("model-program")}>모델 적용 대상</label>
-        <select id={id("model-program")} className={styles.modelProgram} value={modelProgram}
+        <select id={id("model-program")} className={styles.modelProgram} value={modelProgram} disabled={saving}
           onChange={event => {
             const next = programOrder.find(program => program === event.target.value);
             if (next) setModelProgram(next);
           }}>
           {programOrder.map(program => <option key={program} value={program}>{programText[program]}</option>)}
         </select>
+      </>}
+      keys={<fieldset className={styles.fieldset} disabled={!ready || saving}>
+        <legend>API 키</legend>
+        {groupOrder.map(group => {
+          const key = keyId(group);
+          const stored = settings.groups[group].version > 0;
+          return <div className={styles.field} key={group} hidden={group !== selectedGroup}>
+            {showKey(group) ? <label htmlFor={key}>{groupText[group].key}</label>
+              : <span className={styles.help}>{groupText[group].key}</span>}
+            {showKey(group) ? <>
+              <input ref={keyRef(group)} id={key} name={`${group}-api-key`} type="password" autoComplete="off" spellCheck={false} autoCapitalize="off"
+                maxLength={256} aria-invalid={!!errors[key]} aria-describedby={describe(key, "help")} />
+              <p id={`${key}-help`} className={styles.help}>{stored ? "비워 두면 저장된 키를 그대로 써요. " : ""}저장한 키는 다시 보여 주지 않아요.</p>
+              {fieldError(key)}
+              {stored && <Button type="button" variant="ghost" size="sm" onClick={() => {
+                clearKey(group);
+                setKeyOpen(previous => ({ ...previous, [group]: false }));
+                setErrors(previous => ({ ...previous, [key]: undefined }));
+                pendingFocus.current = `${key}-replace`;
+              }}>교체 취소</Button>}
+            </> : <div className={styles.keyStored}>
+              <span id={`${key}-help`} className={styles.help}>저장된 키로 모델을 바꿀 수 있어요.</span>
+              <Button id={`${key}-replace`} type="button" variant="secondary" size="sm" aria-describedby={`${key}-help`}
+                onClick={() => { pendingFocus.current = key; setKeyOpen(previous => ({ ...previous, [group]: true })); }}>{groupText[group].name} 키 교체</Button>
+            </div>}
+          </div>;
+        })}
+      </fieldset>}
+      models={<fieldset className={styles.fieldset} disabled={!ready || saving}>
+        <legend>분석 모델</legend>
         <AdminModelOptions name={`${base}-choices`} label={`Gemini ${programText[modelProgram]} 모델 선택`}
           options={geminiAnalysisModels} value={models[modelProgram]}
           onChange={model => {
@@ -337,52 +329,69 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
             const field = id(`models.${modelProgram}`);
             setErrors(previous => ({ ...previous, [field]: undefined }));
           }} />
-        {settings.programs[modelProgram].modelId && <p className={styles.help}>
-          저장된 모델 <strong>{settings.programs[modelProgram].modelId}</strong>
-        </p>}
-        <div className={styles.grid}>
-          {programOrder.map(program => {
-            const field = id(`models.${program}`);
-            return <div className={styles.field} key={program}>
-              <label htmlFor={field}>{programText[program]} 모델 ID</label>
-              <input id={field} name={`models.${program}`} type="text" autoComplete="off" spellCheck={false} autoCapitalize="off" maxLength={128}
-                value={models[program]} aria-invalid={!!errors[field]} aria-describedby={describe(field)}
-                onChange={event => { const value = event.target.value; setModels(previous => ({ ...previous, [program]: value })); }} />
-              {fieldError(field)}
-            </div>;
-          })}
-        </div>
-      </fieldset>
-      </div>
-      {ready && <p ref={noticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone={notice?.tone}>{notice?.text ?? ""}</p>}
-      <div><Button type="submit" loading={saving} loadingLabel="Gemini에서 확인 중" disabled={!ready}>저장</Button></div>
-    </form>
-    <section className={styles.tests} aria-labelledby={`${base}-tests`}>
-      <h5 id={`${base}-tests`}>연결 시험</h5>
-      <p className={styles.help}>저장된 설정으로 각 분석기의 Gemini 모델 정보를 확인해요. 원본 자료나 분석 요청은 보내지 않아요.{dirty ? " 바꾼 모델 ID는 먼저 저장해 주세요." : ""}</p>
-      <p ref={testNoticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone={shownTestNotice?.tone}>{shownTestNotice?.text ?? ""}</p>
-      {recovery && <div><Button type="button" variant="secondary" size="sm" loading={refreshing} loadingLabel="불러오는 중"
-        onClick={() => void refreshPending()}>최신 설정 다시 불러오기</Button></div>}
-      <ul>
+      </fieldset>}
+      modelId={<fieldset className={styles.fieldset} disabled={!ready || saving}>
+        <p className={styles.help}>저장된 모델 <strong>{settings.programs[modelProgram].modelId ?? "없음"}</strong></p>
         {programOrder.map(program => {
-          const state = testState(settings, program, testing[program]);
-          const at = "at" in state ? state.at : undefined;
-          return <li key={program}>
-            <div>
-              <strong>{programText[program]}</strong>
-              <span className={styles.help}>{settings.programs[program].modelId ?? "모델 미설정"}</span>
-            </div>
-            <p className={styles.state} role="status" aria-label={`${programText[program]} 연결 상태`} data-tone={state.tone}>
-              {state.text}{at && <> · 최근 확인 <time dateTime={at}>{time.format(new Date(at))}</time></>}
-            </p>
-            <Button type="button" variant="secondary" size="sm" loading={testing[program] === "pending"} loadingLabel="시험 중"
-              disabled={settings.groups[groupOf[program]].version === 0 || saving || pending[groupOf[program]] !== undefined} onClick={() => void runTest(program)}>
-              {programText[program]} 연결 시험
-            </Button>
-          </li>;
+          const field = id(`models.${program}`);
+          return <div className={styles.field} key={program} hidden={program !== modelProgram}>
+            <label htmlFor={field}>모델 ID</label>
+            <input id={field} name={`models.${program}`} type="text" autoComplete="off" spellCheck={false} autoCapitalize="off" maxLength={128}
+              value={models[program]} aria-invalid={!!errors[field]} aria-describedby={describe(field, "help")}
+              onChange={event => { const value = event.target.value; setModels(previous => ({ ...previous, [program]: value })); }} />
+            <p id={`${field}-help`} className={styles.help}>목록에 없는 모델은 직접 입력하세요.</p>
+            {fieldError(field)}
+          </div>;
         })}
-      </ul>
-    </section>
+      </fieldset>}
+      notice={ready ? <p ref={noticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone={notice?.tone}>{notice?.text ?? ""}</p>
+        : <div className={styles.unavailable}>
+          <p ref={noticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone="warning">
+            서버 키 저장소에 연결되지 않아 지금은 이 화면에서 저장할 수 없어요. 서버 제공 설정이 있으면 분석기는 그 설정을 써요.{notice ? ` ${notice.text}` : ""}
+          </p>
+          <Button type="button" variant="secondary" size="sm" loading={rechecking} loadingLabel="다시 확인 중" onClick={async () => {
+            setRechecking(true);
+            const latest = await reloadLatest();
+            setRechecking(false);
+            if (latest === "superseded") return;
+            pendingFocus.current = "notice";
+            setNotice(!latest ? { tone: "danger", text: "상태를 다시 불러오지 못했어요." }
+              : latest.storage === "ready" ? { tone: "success", text: "저장소에 연결됐어요. 이제 저장할 수 있어요." }
+              : { tone: "warning", text: "다시 확인했지만 아직 연결되지 않았어요." });
+          }}>저장소 다시 확인</Button>
+          <a className={styles.link} href="#admin-manual">설정 방법 보기</a>
+        </div>}>
+      <Button type="submit" loading={saving} loadingLabel="Gemini에서 확인 중" disabled={!ready}>저장</Button>
+    </AdminProviderForm>
+    <details className={styles.providerTools}>
+      <summary>Gemini 연결 시험</summary>
+      <section className={styles.tests} aria-label="Gemini 연결 시험">
+        <p className={styles.help}>저장된 설정으로 각 분석기의 Gemini 모델 정보를 확인해요. 원본 자료나 분석 요청은 보내지 않아요.{dirty ? " 바꾼 모델 ID는 먼저 저장해 주세요." : ""}</p>
+        <p ref={testNoticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone={shownTestNotice?.tone}>{shownTestNotice?.text ?? ""}</p>
+        {recovery && <div><Button type="button" variant="secondary" size="sm" loading={refreshing} loadingLabel="불러오는 중"
+          onClick={() => void refreshPending()}>최신 설정 다시 불러오기</Button></div>}
+        <ul>
+          {programOrder.map(program => {
+            const state = testState(settings, program, testing[program]);
+            const at = "at" in state ? state.at : undefined;
+            return <li key={program}>
+              <div>
+                <strong>{programText[program]}</strong>
+                <span className={styles.help}>{settings.programs[program].modelId ?? "모델 미설정"}</span>
+              </div>
+              <p className={styles.state} role="status" aria-label={`${programText[program]} 연결 상태`} data-tone={state.tone}>
+                {state.text}{at && <> · 최근 확인 <time dateTime={at}>{time.format(new Date(at))}</time></>}
+              </p>
+              <Button type="button" variant="secondary" size="sm" loading={testing[program] === "pending"} loadingLabel="시험 중"
+                disabled={settings.groups[groupOf[program]].version === 0 || saving || pending[groupOf[program]] !== undefined} onClick={() => void runTest(program)}>
+                {programText[program]} 연결 시험
+              </Button>
+            </li>;
+          })}
+        </ul>
+        <p className={styles.help}><a className={styles.link} href="#admin-manual">키와 모델 설정 방법</a></p>
+      </section>
+    </details>
   </>;
 }
 
@@ -414,12 +423,8 @@ export function GeminiSettingsCard() {
   }
 
   return <Card className={styles.card} data-provider="gemini">
-    <div className={styles.head}>
-      <h4>Gemini 키·모델</h4>
-      <p className={styles.help}>이미지·음악·쇼츠 분석</p>
-      <a className={styles.link} href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Gemini API 키 발급 ↗</a>
-    </div>
-    <div aria-live="polite">
+    <AdminProviderHeader name="Gemini" usage="이미지·음악·쇼츠 분석" keyUrl="https://aistudio.google.com/apikey" />
+    {read.kind !== "ok" && <div aria-live="polite">
       {read.kind === "loading" && <p role="status">Gemini 설정을 불러오고 있어요.</p>}
       {read.kind === "login" && <p role="status">로그인이 끝났어요. <a className={styles.link} href={loginLink}>관리자 로그인</a></p>}
       {read.kind === "forbidden" && <p role="status">이 계정에는 Gemini 설정을 볼 권한이 없어요.</p>}
@@ -427,8 +432,7 @@ export function GeminiSettingsCard() {
         <p role="status">Gemini 설정을 불러오지 못했어요.</p>
         <Button type="button" variant="secondary" size="sm" onClick={() => { setRead({ kind: "loading" }); setAttempt(value => value + 1); }}>다시 불러오기</Button>
       </div>}
-    </div>
+    </div>}
     {read.kind === "ok" && <SettingsForm settings={read.value} onSaved={value => setRead({ kind: "ok", value })} onStale={reload} onLogin={() => setRead({ kind: "login" })} />}
-    <p className={styles.help}>키는 서버에만 저장되고 이 화면이나 브라우저에 남지 않아요. <a className={styles.link} href="#admin-manual">키와 모델 설정 방법</a></p>
   </Card>;
 }

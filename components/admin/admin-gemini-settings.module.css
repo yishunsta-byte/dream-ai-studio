@@ -30,10 +30,8 @@
 .form, .tests { display: grid; gap: var(--sp-4, 16px); min-width: 0; padding: var(--sp-4, 16px); border: 1px solid var(--studio-line); border-radius: var(--radius-md); background: var(--studio-surface); }
 .fieldset { display: grid; gap: var(--sp-3, 12px); min-width: 0; margin: 0; padding: 0; border: 0; }
 .fieldset legend { padding: 0; margin-bottom: var(--sp-2, 8px); font-weight: var(--weight-semibold); }
-/* 데스크톱: 왼쪽 키 2종, 오른쪽 모델 ID 3종(Design README P0). 좁은 화면은 키 → 모델 한 줄. */
-.columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4, 16px) var(--sp-6, 24px); align-items: start; }
-.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3, 12px); }
 .field { display: grid; gap: var(--sp-1, 4px); align-content: start; justify-items: start; min-width: 0; }
+.field[hidden] { display: none; }
 .field label { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--studio-ink); }
 .field input { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #8A969E; border-radius: var(--radius-md); padding: 6px 10px; background: var(--studio-surface); color: var(--studio-ink); font: inherit; font-size: 16px; }
 .field input[aria-invalid="true"] { border: 2px solid var(--studio-bad-fg); }
@@ -53,9 +51,8 @@
 .unavailable { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 8px) var(--sp-3, 12px); }
 .unavailable .notice { flex: 1 1 100%; }
 .failed { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 8px) var(--sp-3, 12px); }
-.card .columns { grid-template-columns: minmax(0, 1fr); }
 .card .tests li { grid-template-columns: minmax(0, 1fr); justify-items: start; }
-.card:is([data-provider="openai"], [data-provider="anthropic"]) .status {
+.card[data-provider] .status {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .card[data-provider] .status dd[data-tone="success"] { color: #8ee9c7; }
@@ -72,11 +69,32 @@
 .modelOption input[type="radio"] {
   appearance: auto; flex: none; margin: 0; padding: 0; width: 16px; height: 16px; min-height: 0; accent-color: var(--studio-action);
 }
-.modelProgram {
+.providerTarget { display: grid; align-content: start; gap: 4px; min-width: 0; font-weight: var(--weight-semibold); }
+.modelProgram, .targetValue {
+  display: flex; align-items: center;
   width: 100%; min-width: 0; min-height: 44px; padding: 5px 8px; font: inherit;
   background: var(--studio-surface); color: var(--studio-ink); border: 1px solid var(--studio-line); border-radius: 7px;
 }
+.providerKeys, .providerModels, .providerModelId, .providerActions { min-width: 0; align-self: start; }
+.providerModelId > fieldset { gap: var(--sp-1, 4px); }
+.providerNotice:has(.notice:empty) { display: none; }
+.providerTools { min-width: 0; }
+.providerTools summary { cursor: pointer; color: var(--studio-action); padding-block: 10px; font-weight: var(--weight-semibold); }
+.providerTools[open] summary { margin-bottom: 8px; }
+@media (min-width: 881px) {
+  /* 공급자 세 카드가 같은 줄의 제목, 등록 상태, 폼 구역과 저장 줄을 공유한다. */
+  .card[data-provider] { grid-row: span 9; grid-template-rows: subgrid; align-self: stretch; }
+  .card[data-provider] .head { grid-row: 1; }
+  .card[data-provider] .status { grid-row: 2; }
+  .providerForm { grid-row: 3 / span 6; grid-template-rows: subgrid; }
+  .providerTarget { grid-row: 1; }
+  .providerKeys { grid-row: 2; }
+  .providerModels { grid-row: 3; }
+  .providerModelId { grid-row: 4; }
+  .providerNotice { grid-row: 5; }
+  .providerActions { grid-row: 6; }
+  .providerTools { grid-row: 9; }
+}
 @media (max-width: 720px) {
-  .columns { grid-template-columns: minmax(0, 1fr); }
   .tests li { grid-template-columns: minmax(0, 1fr); justify-items: start; }
 }

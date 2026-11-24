@@ -10,6 +10,7 @@ import {
 } from "./style-dna-engine-credentials-client";
 import styles from "./admin-gemini-settings.module.css";
 import { AdminModelOptions } from "./admin-model-options";
+import { AdminProviderForm, AdminProviderHeader } from "./admin-provider-form";
 import { imageAnalysisModels } from "./admin-model-suggestions";
 
 const engines = ["openai", "anthropic"] as const;
@@ -158,7 +159,7 @@ function EngineCard({ provider, initial, onDenied }: {
     if (error?.field === "model") setError(undefined);
   };
   return <Card className={styles.card} data-provider={provider}>
-    <div className={styles.head}><h4>{name} 키·모델</h4><p className={styles.help}>이미지 분석·보정</p></div>
+    <AdminProviderHeader name={name} usage="이미지 분석·보정" keyUrl={keyUrls[provider]} />
     <dl className={styles.status} aria-label={`${name} 등록 상태`}>
       <div><dt>저장 상태</dt><dd data-tone={setting.configured ? "success" : "warning"}>
         {setting.configured ? `등록됨 · 버전 ${setting.version}` : "미등록"}
@@ -166,29 +167,36 @@ function EngineCard({ provider, initial, onDenied }: {
       <div><dt>마지막 저장</dt><dd>{setting.updatedAt
         ? <time dateTime={setting.updatedAt}>{dateTime.format(new Date(setting.updatedAt))}</time> : "없음"}</dd></div>
     </dl>
-    <form className={styles.form} onSubmit={submit} noValidate aria-label={`${name} 등록`} aria-busy={!!busy || undefined}>
-      <fieldset className={styles.fieldset} disabled={!!busy || needsReload}>
-        <legend>키와 모델</legend>
-        {showKey ? <div className={styles.field}>
-          <label htmlFor={keyId}>{setting.configured ? "새 API 키" : "API 키"}</label>
-          <input id={keyId} ref={keyField} name={`${provider}-key`} type="password" autoComplete="new-password" spellCheck={false}
-            autoCapitalize="off" maxLength={256} aria-invalid={error?.field === "key" || undefined}
-            aria-describedby={error?.field === "key" ? `${keyId}-error` : undefined}
-            onChange={() => { if (error?.field === "key") setError(undefined); }} />
-          {error?.field === "key" && <p className={styles.error} id={`${keyId}-error`}>{error.text}</p>}
-          {setting.configured && <Button variant="ghost" size="sm" onClick={() => {
-            clearKey(); setReplaceKey(false); setError(undefined); focus.current = "model";
-          }}>교체 취소</Button>}
-        </div> : <div className={styles.keyStored}>
-          <span className={styles.help}>키를 유지한 채 모델만 바꿀 수 있어요.</span>
-          <Button variant="secondary" size="sm" onClick={() => { setReplaceKey(true); focus.current = "key"; }}>API 키 교체</Button>
-        </div>}
-        <a className={styles.link} href={keyUrls[provider]} target="_blank" rel="noreferrer">{name} API 키 발급 ↗</a>
+    <AdminProviderForm label={`${name} 등록`} busy={!!busy} onSubmit={submit}
+      target={<><span>모델 적용 대상</span><p className={styles.targetValue}>이미지 분석</p></>}
+      keys={<fieldset className={styles.fieldset} disabled={!!busy || needsReload}>
+        <legend>API 키</legend>
         <div className={styles.field}>
-          <span className={styles.help}>이미지 분석 모델</span>
-          <AdminModelOptions name={`${modelId}-choice`} label={`${name} 모델 선택`}
-            options={imageAnalysisModels[provider]} value={model} onChange={selectModel} />
-          {setting.modelId && <p className={styles.help}>저장된 모델 <strong>{setting.modelId}</strong></p>}
+          {showKey ? <label htmlFor={keyId}>{setting.configured ? "새 이미지 분석 API 키" : "이미지 분석 API 키"}</label>
+            : <span className={styles.help}>이미지 분석 API 키</span>}
+          {showKey ? <>
+            <input id={keyId} ref={keyField} name={`${provider}-key`} type="password" autoComplete="new-password" spellCheck={false}
+              autoCapitalize="off" maxLength={256} aria-invalid={error?.field === "key" || undefined}
+              aria-describedby={error?.field === "key" ? `${keyId}-error` : undefined}
+              onChange={() => { if (error?.field === "key") setError(undefined); }} />
+            {error?.field === "key" && <p className={styles.error} id={`${keyId}-error`}>{error.text}</p>}
+            {setting.configured && <Button variant="ghost" size="sm" onClick={() => {
+              clearKey(); setReplaceKey(false); setError(undefined); focus.current = "model";
+              }}>교체 취소</Button>}
+          </> : <div className={styles.keyStored}>
+            <span className={styles.help}>저장된 키로 모델을 바꿀 수 있어요.</span>
+            <Button variant="secondary" size="sm" onClick={() => { setReplaceKey(true); focus.current = "key"; }}>API 키 교체</Button>
+          </div>}
+        </div>
+      </fieldset>}
+      models={<fieldset className={styles.fieldset} disabled={!!busy || needsReload}>
+        <legend>분석 모델</legend>
+        <AdminModelOptions name={`${modelId}-choice`} label={`${name} 모델 선택`}
+          options={imageAnalysisModels[provider]} value={model} onChange={selectModel} />
+      </fieldset>}
+      modelId={<fieldset className={styles.fieldset} disabled={!!busy || needsReload}>
+        <div className={styles.field}>
+          <p className={styles.help}>저장된 모델 <strong>{setting.modelId ?? "없음"}</strong></p>
           <label htmlFor={modelId}>모델 ID</label>
           <input id={modelId} ref={modelField} name={`${provider}-model`} value={model} maxLength={128} autoComplete="off" spellCheck={false}
             aria-invalid={error?.field === "model" || undefined}
@@ -197,13 +205,13 @@ function EngineCard({ provider, initial, onDenied }: {
           <p className={styles.help} id={`${modelId}-help`}>목록에 없는 모델은 직접 입력하세요.</p>
           {error?.field === "model" && <p className={styles.error} id={`${modelId}-error`}>{error.text}</p>}
         </div>
-      </fieldset>
-      <p ref={status} tabIndex={-1} role="status" className={styles.notice} data-tone={notice?.tone}>{notice?.text ?? ""}</p>
-      <div>{needsReload
+      </fieldset>}
+      notice={<p ref={status} tabIndex={-1} role="status" className={styles.notice} data-tone={notice?.tone}>{notice?.text ?? ""}</p>}>
+      {needsReload
         ? <Button variant="secondary" size="sm" loading={busy === "reload"} loadingLabel="불러오는 중"
           onClick={() => { void run(signal => reload(signal, false)); }}>최신 설정 다시 불러오기</Button>
-        : <Button type="submit" disabled={busy === "reload"} loading={busy === "save"} loadingLabel="모델 확인 중">저장</Button>}</div>
-    </form>
+        : <Button type="submit" disabled={busy === "reload"} loading={busy === "save"} loadingLabel="모델 확인 중">저장</Button>}
+    </AdminProviderForm>
   </Card>;
 }
 
@@ -218,7 +226,7 @@ export function StyleDnaEngineSettingsCards() {
   return engines.map(provider => read.kind === "ok"
     ? <EngineCard key={provider} provider={provider} initial={read.value.providers[provider]} onDenied={kind => setRead({ kind })} />
     : <Card className={styles.card} key={provider} data-provider={provider}>
-      <div className={styles.head}><h4>{label[provider]} 키·모델</h4><p className={styles.help}>이미지 분석·보정</p></div>
+      <AdminProviderHeader name={label[provider]} usage="이미지 분석·보정" keyUrl={keyUrls[provider]} />
       {read.kind === "loading" ? <p role="status">등록 상태를 불러오고 있어요.</p>
         : read.kind === "login" ? <p role="status">로그인이 끝났어요. <a className={styles.link} href={loginLink}>관리자 로그인</a></p>
         : read.kind === "forbidden" ? <p role="status">이 계정에는 엔진 설정을 볼 권한이 없어요.</p>
