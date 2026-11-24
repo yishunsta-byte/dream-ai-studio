@@ -271,7 +271,11 @@ window.fetch=async(raw,init)=>{
     if (fault&&"status" in fault) return response(fault.body,fault.status);
     const summary=(record:SdRecord)=>({id:record.id,title:record.title,revision:record.revision,mode:record.mode,original:record.original,createdAt:record.createdAt,updatedAt:record.updatedAt});
     if (op==="list") return response({items:styleDna.records.map(summary),settings:{storage:"ready",credentialVersion:styleDna.model?styleDna.version:0,analysisModel:styleDna.model,
-      testModels:[{id:"gemini-nano-banana-2.1",size:"2K",label:"Nano Banana 2.1"},{id:"gemini-3.1-flash-lite-image",size:"1K",label:"Nano Banana 2 Lite"}]}});
+      testModels:[{id:"gemini-nano-banana-2.1",size:"2K",label:"Nano Banana 2.1"},{id:"gemini-3.1-flash-lite-image",size:"1K",label:"Nano Banana 2 Lite"}],
+      // 대상 모델(CMD-20261125-012 제안 DTO): ?styleDnaTargets=new면 새 5개를 더한 7개, =bad면 중복 id(화면은 예전 목록으로), 없으면 예전 서버(칸 없음).
+      ...(sdQuery.get("styleDnaTargets")==="new"?{targetModels:[{id:"gemini-nano-banana-2.1",label:"Nano Banana 2.1"},{id:"gemini-3.1-flash-lite-image",label:"Nano Banana 2 Lite"},
+        {id:"gpt-image-2.6",label:"GPT Image 2.6"},{id:"flux-3",label:"FLUX 3"},{id:"mai-image-2.7",label:"MAI-Image-2.7"},{id:"seedream-5.5",label:"Seedream 5.5"},{id:"kling-image-4.0",label:"Kling Image 4.0"}]}
+        :sdQuery.get("styleDnaTargets")==="bad"?{targetModels:[{id:"flux-3",label:"FLUX 3"},{id:"flux-3",label:"FLUX 3 중복"}]}:{})}});
     // 보관함 삭제(Backend 0727932 계약 대역): UUID 아님 400, 없음·다시 삭제 404, 성공은 본문 없는 204. faults.delete {lost:true}는 서버가 지운 뒤 응답만 끊기고, {lost:"before"}는 지우기 전에 끊긴다(삭제 안 됨).
     if (op==="delete") {
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) return response({code:"invalid_input"},400);
