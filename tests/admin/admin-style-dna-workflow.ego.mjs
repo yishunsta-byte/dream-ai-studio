@@ -76,6 +76,8 @@ try {
   for (const width of [320, 390, 1280]) {
     await page.cdp("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 600 });
     const row = { width };
+    // 같은 브라우저 탭을 쓰는 앞 시험(engine 등)이 남긴 '마지막으로 연 기록'을 지운다. 남아 있으면 첫 화면이 보관함 대신 그 기록으로 열린다.
+    await page.evaluate(() => sessionStorage.clear()).catch(() => {});
 
     console.log("STEP 1 " + width);
     // 1. 보관함 1개·설정 표시, 보정·시험 단계 잠김, 분석 소스 선택 전 실행 잠김, POST 0
