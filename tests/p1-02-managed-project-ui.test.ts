@@ -27,7 +27,9 @@ const V7 = "01936b2e-8f3a-7c4d-8e5f-1a2b3c4d5e6f";
 const V7B = "01936b2e-8f3a-7c4d-8e5f-1a2b3c4d5e70";
 const html = (node: unknown) => isValidElement(node) ? renderToStaticMarkup(node) : "";
 const settle = async (run: () => Promise<unknown>) => { try { return { value: await run() }; } catch (error) { return { error: error as Error & { to?: string; notFound?: boolean } }; } };
-const newPage = async () => (await import("@/app/(cloud)/cloud/projects/new/page")).default({ searchParams: Promise.resolve({}) });
+const newPage = async (menu?: string) => (await import("@/app/(cloud)/cloud/projects/new/page")).default({
+  searchParams: Promise.resolve(menu === undefined ? {} : { menu }),
+});
 const briefPage = async (id: string) => (await import("@/app/(cloud)/cloud/projects/[id]/brief/page")).default({ params: Promise.resolve({ id }) });
 const detailPage = async (id: string) => (await import("@/app/(cloud)/cloud/projects/[id]/page")).default({ params: Promise.resolve({ id }) });
 const listPage = async () => (await import("@/app/(cloud)/cloud/projects/(list)/page")).default();
@@ -112,7 +114,7 @@ describe("/cloud/projects/new: 관리형 생성 경로일 때만 폼", () => {
   });
   it("관리형 지정: 쇼핑숏츠 폼, 자료 목록을 읽기 전에는 제출·자료 선택 잠김, 캐릭터 입력 없음, 파일 읽는 메뉴 설정 미사용", async () => {
     process.env.DREAM_PROJECT_CORE_BACKEND = "supabase-postgres";
-    const markup = html(await newPage());
+    const markup = html(await newPage("shopping-shorts"));
     expect([...markup.matchAll(/<h1[^>]*>(.*?)<\/h1>/g)].map(match => match[1])).toEqual(["새 프로젝트"]);
     expect(markup).toMatch(/<form[^>]*novalidate/i);
     expect(markup).toContain("확인된 내 자료 목록을 불러오고 있어요.");
@@ -260,8 +262,8 @@ describe("P2-MANAGED-WORKSPACE-CAPABILITY-COPY: 목록·상세 안내는 실제�
   };
   const listNote = {
     off: "클라우드에서는 지금 보기만 할 수 있어요. 만들기·수정은 아직 내 PC 작업실에서 해 주세요.",
-    core: "클라우드에서 새 쇼핑숏츠 프로젝트를 만들고 브리프 확인까지 할 수 있어요. 기획·장면 제작·렌더는 아직 내 PC 작업실에서 해 주세요.",
-    both: "클라우드에서 새 쇼핑숏츠 프로젝트를 만들고 브리프 확인과 기획 초안 작성까지 할 수 있어요. 기획 승인 가능 여부는 기획 화면에서 확인해 주세요. 장면 제작·렌더는 아직 내 PC 작업실에서 해 주세요.",
+    core: "클라우드에서 새 쇼핑숏츠·주제별 쇼츠 프로젝트를 만들고 브리프 확인까지 할 수 있어요. 기획·장면 제작·렌더는 아직 내 PC 작업실에서 해 주세요.",
+    both: "클라우드에서 새 쇼핑숏츠·주제별 쇼츠 프로젝트를 만들고 브리프 확인과 기획 초안 작성까지 할 수 있어요. 기획 승인 가능 여부는 기획 화면에서 확인해 주세요. 장면 제작·렌더는 아직 내 PC 작업실에서 해 주세요.",
     plan: "클라우드에서는 브리프가 승인된 프로젝트의 기획 초안을 확인·작성할 수 있어요. 기획 승인 가능 여부는 기획 화면에서 확인해 주세요. 만들기와 장면 제작·렌더는 아직 내 PC 작업실에서 해 주세요.",
   };
   it.each([
@@ -278,15 +280,16 @@ describe("P2-MANAGED-WORKSPACE-CAPABILITY-COPY: 목록·상세 안내는 실제�
     expect(text(markup)).not.toMatch(/장면 제작·렌더(?:를|까지)? (?:할 수|만들 수)|연결됐|연결되어|연결 성공|postgres|DREAM_/i);
     // 배정 2: 기획 승인은 승인 구성·권한·저장 초안 조건을 따르므로 목록에서 약속하지 않는다.
     expect(text(markup)).not.toMatch(/기획 승인까지|승인할 수 있어요|작성하고 승인/);
-    // 같은 화면 열림 조건: 새 프로젝트 화면이 폼을 여는지와 링크 이름이 맞는다.
-    expect(html(await newPage()).includes("<form")).toBe(core);
+    // 링크를 열어 분야를 고르면 설정에 맞게 생성 폼이 열린다.
+    expect(html(await newPage()).includes('aria-label="만들 분야"')).toBe(core);
+    expect(html(await newPage("shopping-shorts")).includes("<form")).toBe(core);
   });
   it("빈 목록: 생성이 열리면 만들기로 시작하라는 안내, 아니면 예전 옮기기 안내", async () => {
     state.list.mockResolvedValue({ kind: "ok", data: [] });
     set(true, true);
     const open = text(html(await listPage()));
     expect(open).toContain("아직 클라우드 프로젝트가 없어요");
-    expect(open).toContain("‘새 프로젝트 만들기’로 쇼핑숏츠 프로젝트를 시작할 수 있어요.");
+    expect(open).toContain("‘새 프로젝트 만들기’로 쇼핑숏츠·주제별 쇼츠 프로젝트를 시작할 수 있어요.");
     set(false, false);
     const closed = text(html(await listPage()));
     expect(closed).toContain("아직 클라우드에 옮긴 프로젝트가 없어요");
@@ -413,9 +416,9 @@ describe("P2-MANAGED-UI-SCENE-CAPABILITY-COPY: 목록·상세 장면 안내는 �
     ["선택만", ["DREAM_SCENE_READ_BACKEND", "DREAM_SCENE_SELECT_BACKEND"],
       "클라우드에서 기획이 승인된 프로젝트는 장면 결과 화면에서 결과를 보고 쓸 결과를 고를 수 있어요. 선택 가능 여부는 장면 화면에서 확인해 주세요. 만들기·기획과 장면 새로 만들기·편집·렌더는 아직 내 PC 작업실에서 해 주세요."],
     ["기획·등록만", ["DREAM_SCENE_READ_BACKEND", "DREAM_SCENE_RESULT_BACKEND", "DREAM_PROJECT_CORE_BACKEND", "DREAM_PROJECT_PLAN_BACKEND"],
-      "클라우드에서 새 쇼핑숏츠 프로젝트를 만들고 브리프 확인과 기획 초안 작성까지 할 수 있어요. 기획 승인 가능 여부는 기획 화면에서 확인해 주세요. 기획이 승인된 프로젝트는 장면 결과 화면에서 결과를 보고, 확인된 내 자료를 결과로 등록할 수 있어요. 등록 가능 여부는 장면 화면에서 확인해 주세요. 장면 새로 만들기·편집·렌더는 아직 내 PC 작업실에서 해 주세요."],
+      "클라우드에서 새 쇼핑숏츠·주제별 쇼츠 프로젝트를 만들고 브리프 확인과 기획 초안 작성까지 할 수 있어요. 기획 승인 가능 여부는 기획 화면에서 확인해 주세요. 기획이 승인된 프로젝트는 장면 결과 화면에서 결과를 보고, 확인된 내 자료를 결과로 등록할 수 있어요. 등록 가능 여부는 장면 화면에서 확인해 주세요. 장면 새로 만들기·편집·렌더는 아직 내 PC 작업실에서 해 주세요."],
     ["모두", [...FLAGS],
-      "클라우드에서 새 쇼핑숏츠 프로젝트를 만들고 브리프 확인과 기획 초안 작성까지 할 수 있어요. 기획 승인 가능 여부는 기획 화면에서 확인해 주세요. 기획이 승인된 프로젝트는 장면 결과 화면에서 결과를 보고, 확인된 내 자료를 결과로 등록하거나 쓸 결과를 고를 수 있어요. 등록·선택 가능 여부는 장면 화면에서 확인해 주세요. 장면 새로 만들기·편집·렌더는 아직 내 PC 작업실에서 해 주세요."],
+      "클라우드에서 새 쇼핑숏츠·주제별 쇼츠 프로젝트를 만들고 브리프 확인과 기획 초안 작성까지 할 수 있어요. 기획 승인 가능 여부는 기획 화면에서 확인해 주세요. 기획이 승인된 프로젝트는 장면 결과 화면에서 결과를 보고, 확인된 내 자료를 결과로 등록하거나 쓸 결과를 고를 수 있어요. 등록·선택 가능 여부는 장면 화면에서 확인해 주세요. 장면 새로 만들기·편집·렌더는 아직 내 PC 작업실에서 해 주세요."],
   ] as const)("목록 문장 %s", async (_name, on, sentence) => {
     for (const flag of on) process.env[flag] = "supabase-postgres";
     state.list.mockResolvedValue({ kind: "ok", data: [card] });
@@ -433,28 +436,11 @@ describe("P2-MANAGED-UI-SCENE-CAPABILITY-COPY: 목록·상세 장면 안내는 �
 
 // P2-MANAGED-TOPIC-SHORTS-ENTRY-FRONT 배정 1·2(CMD-20261125-005·007·008·009): 쇼핑숏츠·주제별 쇼츠 고르기, 길이 10~60초(기본 30),
 // 9:16 기본, 참고 자료는 선택이라 목록 없이도 저장, 사실 출처 없음, 핵심 메시지 글자 수 상한(50·100·200·300, 기본 100).
-// 서버 설정(topic-shorts active·lengthOptions)은 Backend 몫이라, 여기서는 메뉴 설정 읽기를 합성 설정으로 바꿔 화면만 본다.
-describe("주제별 쇼츠 진입(합성 설정)", () => {
-  const real = JSON.parse(readFileSync("docs/spec/menus.json", "utf8"));
-  const shop = real.menus.find((menu: { id: string }) => menu.id === "shopping-shorts");
-  const topicMenu = { ...shop, id: "topic-shorts", label: "주제별 쇼츠", description: "주제·대상·핵심 메시지로 만드는 일반 쇼츠", defaultAspect: "9:16", defaultLengthSec: 30,
-    inputs: [
-      { id: "topic", label: "주제", type: "text", required: true, maxLength: 80 },
-      { id: "keyMessageLength", label: "핵심 메시지 글자 수", type: "select", required: true, options: ["50", "100", "200", "300"] },
-      { id: "keyMessage", label: "핵심 메시지", type: "textarea", required: true, maxLength: 300 },
-      { id: "references", label: "참고 자료(선택)", type: "assets", required: false, accept: ["image", "video"] },
-    ] };
-  const config = { ...real, menus: [...real.menus, topicMenu] };
-  const withTopic = async <T,>(load: () => Promise<T>) => {
-    vi.resetModules();
-    vi.doMock("@/lib/menus/parse", () => ({ parseMenuConfig: () => ({ ok: true, config }) }));
-    try { return await load(); } finally { vi.doUnmock("@/lib/menus/parse"); vi.resetModules(); }
-  };
-  const topicPage = (menu?: string) => withTopic(async () => {
+describe("주제별 쇼츠 진입", () => {
+  const topicPage = async (menu?: string) => {
     process.env.DREAM_PROJECT_CORE_BACKEND = "supabase-postgres";
-    const page = (await import("@/app/(cloud)/cloud/projects/new/page")).default;
-    return html(await page({ searchParams: Promise.resolve(menu ? { menu } : {}) }));
-  });
+    return html(await newPage(menu));
+  };
   const submitTag = (markup: string) => markup.match(/<button[^>]*type="submit"[^>]*>/)?.[0] ?? "";
   const selectOf = (markup: string, id: string) => markup.match(new RegExp(`<select id="input-${id}"[^>]*>(.*?)</select>`))?.[1] ?? "";
 
@@ -493,10 +479,8 @@ describe("주제별 쇼츠 진입(합성 설정)", () => {
     expect(selectOf(markup, "lengthSec")).toBe("");
   });
   it("목록 안내도 두 분야 이름", async () => {
-    const markup = await withTopic(async () => {
-      const { CloudReadOnlyNote } = await import("@/components/cloud/project-list-readonly");
-      return renderToStaticMarkup(CloudReadOnlyNote({ capability: { create: true, plan: false }, place: "list" }));
-    });
+    const { CloudReadOnlyNote } = await import("@/components/cloud/project-list-readonly");
+    const markup = renderToStaticMarkup(CloudReadOnlyNote({ capability: { create: true, plan: false }, place: "list" }));
     expect(markup).toContain("클라우드에서 새 쇼핑숏츠·주제별 쇼츠 프로젝트를 만들고 브리프 확인까지 할 수 있어요.");
   });
 });
