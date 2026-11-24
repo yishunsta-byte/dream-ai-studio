@@ -3,8 +3,10 @@ import { isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  assetChoicesPath, classifyApprove, classifyBriefRead, classifyChoices, classifyCreate, cloudBriefPath, createBody, mergeChoices, nextAttempt,
+  activeManagedMenus, assetChoicesPath, classifyApprove, classifyBriefRead, classifyChoices, classifyCreate, cloudBriefPath, createBody, keyMessageCheck, lengthChoices,
+  managedMenuName, mergeChoices, nextAttempt,
 } from "@/components/cloud/managed-project-requests";
+import { BriefSummary } from "@/components/cloud/managed-brief-panel";
 
 // P1-02 관리형 프로젝트 생성·브리프 화면(Master msg_ff678d34d472, Backend e91a89c·681e757 계약, Tester UI-PREFLIGHT).
 const state = vi.hoisted(() => ({
@@ -25,7 +27,7 @@ const V7 = "01936b2e-8f3a-7c4d-8e5f-1a2b3c4d5e6f";
 const V7B = "01936b2e-8f3a-7c4d-8e5f-1a2b3c4d5e70";
 const html = (node: unknown) => isValidElement(node) ? renderToStaticMarkup(node) : "";
 const settle = async (run: () => Promise<unknown>) => { try { return { value: await run() }; } catch (error) { return { error: error as Error & { to?: string; notFound?: boolean } }; } };
-const newPage = async () => (await import("@/app/(cloud)/cloud/projects/new/page")).default();
+const newPage = async () => (await import("@/app/(cloud)/cloud/projects/new/page")).default({ searchParams: Promise.resolve({}) });
 const briefPage = async (id: string) => (await import("@/app/(cloud)/cloud/projects/[id]/brief/page")).default({ params: Promise.resolve({ id }) });
 const detailPage = async (id: string) => (await import("@/app/(cloud)/cloud/projects/[id]/page")).default({ params: Promise.resolve({ id }) });
 const listPage = async () => (await import("@/app/(cloud)/cloud/projects/(list)/page")).default();
@@ -426,5 +428,117 @@ describe("P2-MANAGED-UI-SCENE-CAPABILITY-COPY: 목록·상세 장면 안내는 �
       expect(text(markup)).toContain("프로젝트를 불러오지 못했어요");
       expect(text(markup)).not.toMatch(/할 수 있어요|보기만/);
     }
+  });
+});
+
+// P2-MANAGED-TOPIC-SHORTS-ENTRY-FRONT 배정 1·2(CMD-20261125-005·007·008·009): 쇼핑숏츠·주제별 쇼츠 고르기, 길이 10~60초(기본 30),
+// 9:16 기본, 참고 자료는 선택이라 목록 없이도 저장, 사실 출처 없음, 핵심 메시지 글자 수 상한(50·100·200·300, 기본 100).
+// 서버 설정(topic-shorts active·lengthOptions)은 Backend 몫이라, 여기서는 메뉴 설정 읽기를 합성 설정으로 바꿔 화면만 본다.
+describe("주제별 쇼츠 진입(합성 설정)", () => {
+  const real = JSON.parse(readFileSync("docs/spec/menus.json", "utf8"));
+  const shop = real.menus.find((menu: { id: string }) => menu.id === "shopping-shorts");
+  const topicMenu = { ...shop, id: "topic-shorts", label: "주제별 쇼츠", description: "주제·대상·핵심 메시지로 만드는 일반 쇼츠", defaultAspect: "9:16", defaultLengthSec: 30,
+    inputs: [
+      { id: "topic", label: "주제", type: "text", required: true, maxLength: 80 },
+      { id: "keyMessageLength", label: "핵심 메시지 글자 수", type: "select", required: true, options: ["50", "100", "200", "300"] },
+      { id: "keyMessage", label: "핵심 메시지", type: "textarea", required: true, maxLength: 300 },
+      { id: "references", label: "참고 자료(선택)", type: "assets", required: false, accept: ["image", "video"] },
+    ] };
+  const config = { ...real, menus: [...real.menus, topicMenu] };
+  const withTopic = async <T,>(load: () => Promise<T>) => {
+    vi.resetModules();
+    vi.doMock("@/lib/menus/parse", () => ({ parseMenuConfig: () => ({ ok: true, config }) }));
+    try { return await load(); } finally { vi.doUnmock("@/lib/menus/parse"); vi.resetModules(); }
+  };
+  const topicPage = (menu?: string) => withTopic(async () => {
+    process.env.DREAM_PROJECT_CORE_BACKEND = "supabase-postgres";
+    const page = (await import("@/app/(cloud)/cloud/projects/new/page")).default;
+    return html(await page({ searchParams: Promise.resolve(menu ? { menu } : {}) }));
+  });
+  const submitTag = (markup: string) => markup.match(/<button[^>]*type="submit"[^>]*>/)?.[0] ?? "";
+  const selectOf = (markup: string, id: string) => markup.match(new RegExp(`<select id="input-${id}"[^>]*>(.*?)</select>`))?.[1] ?? "";
+
+  it("분야가 둘이면 먼저 고르기: 쇼핑숏츠·주제별 쇼츠 링크, 폼 없음", async () => {
+    const markup = await topicPage();
+    const nav = markup.match(/<nav aria-label="만들 분야"[^>]*>(.*?)<\/nav>/)?.[1] ?? "";
+    expect([...nav.matchAll(/href="([^"]+)"[^>]*>([^<]+)</g)].map(match => [match[1], match[2]])).toEqual([
+      ["/cloud/projects/new?menu=shopping-shorts", "쇼핑숏츠"], ["/cloud/projects/new?menu=topic-shorts", "주제별 쇼츠"]]);
+    expect(nav).not.toContain("aria-current");
+    expect(markup).toContain("만들 분야를 골라 주세요");
+    expect(markup).not.toContain("<form");
+    // 모르는 분야 주소도 고르기 화면
+    expect(await topicPage("travel-shorts")).not.toContain("<form");
+  });
+  it("주제별 쇼츠: 주소 복귀, 길이 10~60초 기본 30, 9:16 기본, 글자 수 기본 100, 사실 출처 없음, 자료 목록 전에도 저장 열림", async () => {
+    const markup = await topicPage("topic-shorts");
+    expect(markup).toMatch(/<a[^>]*href="\/cloud\/projects\/new\?menu=topic-shorts"[^>]*aria-current="page"|<a[^>]*aria-current="page"[^>]*href="\/cloud\/projects\/new\?menu=topic-shorts"/);
+    expect(markup).toMatch(/<form[^>]*novalidate/i);
+    expect([...selectOf(markup, "lengthSec").matchAll(/<option value="(\d+)"( selected="")?>(\d+)초<\/option>/g)].map(match => [match[3], !!match[2]]))
+      .toEqual([["10", false], ["20", false], ["30", true], ["40", false], ["50", false], ["60", false]]);
+    expect(selectOf(markup, "aspect")).toMatch(/<option selected="">9:16<\/option>/);
+    expect(selectOf(markup, "aspect")).toContain("1:1");
+    expect(selectOf(markup, "aspect")).toContain("16:9");
+    expect(selectOf(markup, "keyMessageLength")).toMatch(/^<option>50<\/option><option selected="">100<\/option><option>200<\/option><option>300<\/option>$/);
+    expect(markup).toContain("0 / 100자");
+    expect(markup).toContain('id="input-topic"');
+    expect(markup).not.toMatch(/factSources|사실 출처|productName|상품명/);
+    expect(submitTag(markup)).not.toMatch(/\bdisabled\b/);
+    expect(markup).not.toContain("확인된 제품 사진이나 영상이 필요해요");
+  });
+  it("쇼핑숏츠를 고르면 기존 폼 그대로: 필수 자료 목록 전에는 저장 잠김", async () => {
+    const markup = await topicPage("shopping-shorts");
+    expect(markup).toContain('id="input-productName"');
+    expect(markup).toContain("확인된 내 자료 목록을 불러오고 있어요.");
+    expect(submitTag(markup)).toMatch(/\bdisabled\b/);
+    expect(selectOf(markup, "lengthSec")).toBe("");
+  });
+  it("목록 안내도 두 분야 이름", async () => {
+    const markup = await withTopic(async () => {
+      const { CloudReadOnlyNote } = await import("@/components/cloud/project-list-readonly");
+      return renderToStaticMarkup(CloudReadOnlyNote({ capability: { create: true, plan: false }, place: "list" }));
+    });
+    expect(markup).toContain("클라우드에서 새 쇼핑숏츠·주제별 쇼츠 프로젝트를 만들고 브리프 확인까지 할 수 있어요.");
+  });
+});
+
+describe("주제별 쇼츠 규칙: 길이 선택지와 핵심 메시지 글자 수", () => {
+  it("길이: topic-shorts는 10~60초, 설정의 lengthOptions가 있으면 그것, 쇼핑은 숫자 입력", () => {
+    expect(lengthChoices({ id: "topic-shorts" })).toEqual([10, 20, 30, 40, 50, 60]);
+    expect(lengthChoices({ id: "topic-shorts", lengthOptions: [15, 30] })).toEqual([15, 30]);
+    expect(lengthChoices({ id: "topic-shorts", lengthOptions: [0, "x"] })).toEqual([10, 20, 30, 40, 50, 60]);
+    expect(lengthChoices({ id: "shopping-shorts" })).toBeUndefined();
+  });
+  it("글자 수: 50자 상한에서 50자는 저장 가능, 51자는 차단, 글은 자르지 않음, 이모지는 1자", () => {
+    const options = ["50", "100", "200", "300"];
+    expect(keyMessageCheck(options, "50", "가".repeat(50))).toEqual({ max: 50, count: 50, over: false });
+    expect(keyMessageCheck(options, "50", "가".repeat(51))).toEqual({ max: 50, count: 51, over: true });
+    expect(keyMessageCheck(options, "100", "😀".repeat(100))).toEqual({ max: 100, count: 100, over: false });
+    expect(keyMessageCheck(options, "100", "a".repeat(101)).over).toBe(true);
+    expect(keyMessageCheck(options, "75", "a".repeat(200))).toEqual({ max: undefined, count: 200, over: false });
+    expect(keyMessageCheck(undefined, "50", "a".repeat(200)).over).toBe(false);
+  });
+  it("관리형 분야 순서와 이름", () => {
+    const menus = [{ id: "topic-shorts", availability: "active" }, { id: "travel-shorts", availability: "active" }, { id: "shopping-shorts", availability: "active" }];
+    expect(activeManagedMenus(menus).map(menu => menu.id)).toEqual(["shopping-shorts", "topic-shorts"]);
+    expect(activeManagedMenus([{ id: "topic-shorts", availability: "skeleton" }])).toEqual([]);
+    expect([managedMenuName("shopping-shorts"), managedMenuName("topic-shorts")]).toEqual(["쇼핑숏츠", "주제별 쇼츠"]);
+  });
+});
+
+describe("주제별 쇼츠 브리프: 주제·핵심 메시지, 예전 응답 호환", () => {
+  const base = { title: "제목", goal: "목표", target: "대상", aspect: "9:16", lengthSec: 30, revision: 1, stages: { intake: "approved", brief: "todo", plan: "locked" } };
+  it("topic-shorts 응답: 주제·핵심 메시지 줄, 상품·출처 줄 없음", () => {
+    const read = classifyBriefRead(200, { ...base, menuId: "topic-shorts", topic: "출근길 스트레칭", keyMessage: "3분이면 충분해요", product: null, facts: null, rights: null, sources: null });
+    expect(read.kind).toBe("ok");
+    const markup = renderToStaticMarkup(BriefSummary({ brief: (read as { brief: Parameters<typeof BriefSummary>[0]["brief"] }).brief }));
+    const labels = [...markup.matchAll(/<dt>([^<]+)<\/dt>/g)].map(match => match[1]);
+    expect(labels).toEqual(["제목", "목표", "보는 사람(타깃)", "주제", "핵심 메시지", "화면 비율", "목표 길이"]);
+  });
+  it("예전 쇼핑 응답(menuId·topic 없음)도 그대로 읽고 상품 줄을 보임", () => {
+    const read = classifyBriefRead(200, { ...base, product: "텀블러", facts: "보온 6시간", rights: "직접 촬영", sources: "제조사 표" });
+    expect(read.kind).toBe("ok");
+    const markup = renderToStaticMarkup(BriefSummary({ brief: (read as { brief: Parameters<typeof BriefSummary>[0]["brief"] }).brief }));
+    expect([...markup.matchAll(/<dt>([^<]+)<\/dt>/g)].map(match => match[1]))
+      .toEqual(["제목", "목표", "보는 사람(타깃)", "화면 비율", "목표 길이", "상품명", "확인된 장점", "장점 출처", "제품 이미지 사용권"]);
   });
 });

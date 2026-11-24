@@ -32,11 +32,16 @@ async function readBrief(id: string, signal?: AbortSignal): Promise<BriefRead> {
   } catch { return { kind: "failed" }; }
 }
 
-function Summary({ brief }: { brief: Brief }) {
-  const rows: [string, string | number | null][] = [["제목", brief.title], ["목표", brief.goal], ["보는 사람(타깃)", brief.target], ["화면 비율", brief.aspect],
-    ["목표 길이", `${brief.lengthSec}초`], ["상품명", brief.product], ["확인된 장점", brief.facts], ["장점 출처", brief.sources], ["제품 이미지 사용권", brief.rights]];
+/** 등록한 내용 표(분야별 줄). 시험에서도 쓴다. */
+export function BriefSummary({ brief }: { brief: Brief }) {
+  // 분야별 줄: 주제별 쇼츠는 주제·핵심 메시지(사실 출처 없음, 주인님 지시), 쇼핑숏츠(또는 menuId 없는 이전 응답)는 상품 칸. 빈 값은 숨긴다.
+  const topic = brief.menuId === "topic-shorts";
+  const rows: [string, string | number | null | undefined][] = [["제목", brief.title], ["목표", brief.goal], ["보는 사람(타깃)", brief.target],
+    ...(topic ? [["주제", brief.topic], ["핵심 메시지", brief.keyMessage]] as [string, string | null | undefined][] : []), ["화면 비율", brief.aspect],
+    ["목표 길이", `${brief.lengthSec}초`],
+    ...(topic ? [] : [["상품명", brief.product], ["확인된 장점", brief.facts], ["장점 출처", brief.sources], ["제품 이미지 사용권", brief.rights]] as [string, string | null][])];
   return <Card><h2>등록한 내용</h2><dl className="project-inputs">
-    {rows.filter(([, value]) => value !== null && value !== "").map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+    {rows.filter(([, value]) => value !== null && value !== undefined && value !== "").map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
   </dl></Card>;
 }
 
@@ -101,7 +106,7 @@ export function ManagedBriefPanel({ projectId, planHref }: { projectId: string; 
   const next = briefNextStep(planHref, brief.stages.plan);
   const ready = brief.stages.intake === "approved" && brief.stages.brief === "todo" && brief.stages.plan === "locked";
   return <div className="stack" aria-busy={pending || undefined}>
-    <Summary brief={brief} />
+    <BriefSummary brief={brief} />
     <Card><h2>단계</h2><ul className="stack">
       {(["intake", "brief", "plan"] as const).map(stage => <li key={stage}>{{ intake: "등록", brief: "브리프", plan: "기획" }[stage]} · <StatusPill status={stagePill[brief.stages[stage]]}>{stageLabel[brief.stages[stage]]}</StatusPill></li>)}
     </ul><p className="muted">내용 버전 {brief.revision}</p></Card>

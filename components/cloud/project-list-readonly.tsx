@@ -3,13 +3,14 @@ import { Callout, Card, EmptyState, PageHeader, StatusPill } from "@/components/
 import type { CloudProjectCard } from "@/lib/cloud/project-read-page";
 import menusJson from "@/docs/spec/menus.json";
 import { parseMenuConfig } from "@/lib/menus/parse";
+import { activeManagedMenus, managedMenuName } from "./managed-project-requests";
 
 // 클라우드 읽기 전용 목록(T-207). 서버 컴포넌트, 기존 primitives만 쓴다. 쓰기·단계·파일 화면 링크는 두지 않는다.
 const time = (iso: string) => new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Seoul" }).format(new Date(iso));
 
 /**
  * P2-MANAGED-WORKSPACE-CAPABILITY-COPY: 안내 문구가 실제로 열리는 화면과 맞도록, 화면이 열리는 조건만 본다.
- * - create: /cloud/projects/new가 생성 폼을 여는 조건과 같다(DREAM_PROJECT_CORE_BACKEND 지정 + 정적 메뉴 설정의 쇼핑숏츠 active).
+ * - create: /cloud/projects/new가 생성 폼을 여는 조건과 같다(DREAM_PROJECT_CORE_BACKEND 지정 + 정적 메뉴 설정의 관리형 분야 하나 이상 active).
  * - plan: 기획 화면·상세 기획 링크가 여는 조건과 같다(DREAM_PROJECT_PLAN_BACKEND 지정).
  * - scenes: 장면 결과 화면(/cloud/projects/:id/scenes)이 패널을 여는 조건과 같다(DREAM_SCENE_READ_BACKEND 지정). 꺼져 있으면 없음.
  *   register·select는 그 화면이 등록·선택 단추를 주는 조건과 하나씩 같다(등록 = DREAM_SCENE_RESULT_BACKEND + DREAM_PROJECT_CORE_BACKEND,
@@ -22,12 +23,18 @@ export type CloudWorkspaceCapability = { create: boolean; plan: boolean; scenes?
 export const readOnlyCapability: CloudWorkspaceCapability = { create: false, plan: false };
 export function cloudWorkspaceCapability(env: Readonly<Record<string, string | undefined>> = process.env): CloudWorkspaceCapability {
   const config = env.DREAM_PROJECT_CORE_BACKEND !== undefined ? parseMenuConfig(JSON.stringify(menusJson)) : undefined;
-  const create = !!config?.ok && config.config.menus.some(item => item.id === "shopping-shorts" && item.availability === "active");
+  const create = !!config?.ok && activeManagedMenus(config.config.menus).length > 0;
   const scenes = env.DREAM_SCENE_READ_BACKEND === undefined ? undefined : {
     register: env.DREAM_SCENE_RESULT_BACKEND !== undefined && env.DREAM_PROJECT_CORE_BACKEND !== undefined,
     select: env.DREAM_SCENE_SELECT_BACKEND !== undefined,
   };
   return { create, plan: env.DREAM_PROJECT_PLAN_BACKEND !== undefined, ...(scenes ? { scenes } : {}) };
+}
+/** 새 프로젝트로 만들 수 있는 분야 이름(정적 설정만 읽음). 예: "쇼핑숏츠", "쇼핑숏츠·주제별 쇼츠". */
+function createKinds() {
+  const config = parseMenuConfig(JSON.stringify(menusJson));
+  const names = config.ok ? activeManagedMenus(config.config.menus).map(item => managedMenuName(item.id)) : [];
+  return names.length ? names.join("·") : "쇼핑숏츠";
 }
 const managed = (capability: CloudWorkspaceCapability) => capability.create || capability.plan || capability.scenes !== undefined;
 /** 장면 결과 화면에서 할 수 있는 일. 열린 단추만 말하고, 실제 등록·선택은 프로젝트 상태·권한·확인된 자료 조건을 따르므로 장면 화면에서 확인하게 한다. */
@@ -55,7 +62,7 @@ export function CloudReadOnlyNote({ capability = readOnlyCapability, place = "li
     return <p className="muted">클라우드에서는 브리프가 승인된 프로젝트의 기획 초안을 확인·작성할 수 있어요.{approval}{scenes} 만들기와 {making} 아직 내 PC 작업실에서 해 주세요.</p>;
   const reach = capability.plan ? "브리프 확인과 기획 초안 작성까지" : "브리프 확인까지";
   const later = capability.plan ? making : `기획·${making}`;
-  return <p className="muted">{place === "list" ? `클라우드에서 새 쇼핑숏츠 프로젝트를 만들고 ${reach} 할 수 있어요.` : `클라우드에서는 ${reach} 할 수 있어요.`}
+  return <p className="muted">{place === "list" ? `클라우드에서 새 ${createKinds()} 프로젝트를 만들고 ${reach} 할 수 있어요.` : `클라우드에서는 ${reach} 할 수 있어요.`}
     {approval}{scenes}{" "}{later} 아직 내 PC 작업실에서 해 주세요.</p>;
 }
 
@@ -65,7 +72,7 @@ export function ProjectListReadonly({ projects, capability = readOnlyCapability 
       actions={<Link href="/cloud/projects/new">{capability.create ? "새 프로젝트 만들기 →" : "새 프로젝트 만들기 안내 →"}</Link>} />
     {!projects.length
       ? <Card>{capability.create
-        ? <EmptyState title="아직 클라우드 프로젝트가 없어요" description="‘새 프로젝트 만들기’로 쇼핑숏츠 프로젝트를 시작할 수 있어요. 내 PC 작업실의 작품은 클라우드로 옮기는 작업이 끝나면 여기에 보여요." />
+        ? <EmptyState title="아직 클라우드 프로젝트가 없어요" description={`‘새 프로젝트 만들기’로 ${createKinds()} 프로젝트를 시작할 수 있어요. 내 PC 작업실의 작품은 클라우드로 옮기는 작업이 끝나면 여기에 보여요.`} />
         : <EmptyState title="아직 클라우드에 옮긴 프로젝트가 없어요" description="지금까지 만든 작품은 내 PC 작업실에 있어요. 클라우드로 옮기는 작업이 끝나면 여기에 보여요." />}</Card>
       : <ul className="stack" style={{ listStyle: "none", margin: 0, padding: 0 }} aria-label="프로젝트 목록">{projects.map((project) => <li key={project.id}>
           <Card>
