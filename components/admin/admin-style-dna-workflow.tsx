@@ -9,8 +9,8 @@ import type { ReadyResult } from "./admin-reference-analysis-model";
 import { nearestAspectRatio, StyleDnaReport } from "./admin-style-dna-report";
 import {
   analyzeRequest, analyzeStyleDna, compareStyleDna, engineBasisText, engineLabel, fileSha256, fillSubject, needsSubject, newRequestId, paletteProximity, readEngineCredentials,
-  deleteStyleDna, readStyleDnaLibrary, readStyleDnaRecord, referenceImage, refineRequest, refineStyleDna, styleDnaTargetChoices, testRequest, testStyleDna, testUploadRequest,
-  type AnalyzeSource, type EngineChoice, type EngineCredentials, type LibraryOutcome, type OpOutcome, type StyleDnaCode,
+  deleteStyleDna, readStyleDnaLibrary, readStyleDnaRecord, referenceImage, refineRequest, refineStyleDna, styleDnaListEngines, styleDnaTargetChoices, testRequest, testStyleDna, testUploadRequest,
+  type AnalyzeSource, type EngineChoice, type EngineState, type LibraryOutcome, type OpOutcome, type StyleDnaCode,
 } from "./style-dna-client";
 import { FlaskConical, HelpCircle, Loader2, Microscope, Moon, Sliders, Sparkles, Sun, Upload, Wand2 } from "./style-dna-original/icons";
 import { StudioCameraLighting, StudioDnaBars, StudioHelp, StudioPalette, StudioReport, StudioReportWaiting, StudioScanOverlay } from "./style-dna-original/studio-parts";
@@ -136,7 +136,8 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const [reference, setReference] = useState<{ file: File; href: string } | null>(null);
   // 분석·보정 엔진(서버 f2d7e63): 원본처럼 하나를 골라 분석과 보정에 함께 쓴다. OpenAI·Anthropic 설정은 키 원문 없이 등록 여부·모델·버전만 읽는다.
   // 엔진 등록 조회 상태(CMD-045): undefined = 아직 조회 중, null = 조회 실패, 값 = 조회 성공. 조회 전·중·실패에는 '키 미등록'이라고 하지 않는다.
-  const [engines, setEngines] = useState<EngineCredentials | null | undefined>(undefined);
+  // 배정 2: 새 서버는 목록 응답(settings.analysisEngines·engineStorage)으로 알려 주고, 칸이 없는 예전 서버일 때만 따로 조회한다.
+  const [engines, setEngines] = useState<EngineState | null | undefined>(undefined);
   const [engine, setEngine] = useState<EngineChoice>("gemini");
   const active = useRef<AbortController | null>(null);
   const reading = useRef<AbortController | null>(null);
@@ -146,6 +147,9 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
     const controller = new AbortController();
     void readStyleDnaLibrary(controller.signal).then(outcome => {
       setLibrary(outcome);
+      // 목록에 엔진 상태가 없거나(예전 서버) 목록을 못 읽었으면 예전처럼 등록 정보를 따로 조회한다.
+      if (outcome.kind !== "ok" || styleDnaListEngines(outcome.settings) === "legacy")
+        void readEngineCredentials(controller.signal).then(value => { if (!controller.signal.aborted) setEngines(value); }, () => { if (!controller.signal.aborted) setEngines(null); });
       // 새로고침 뒤 마지막으로 연 기록을 다시 연다(처음 한 번).
       if (outcome.kind !== "ok" || reopened.current) return;
       reopened.current = true;
@@ -154,8 +158,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
         setStep(current => current ?? "analyze");
         void open(last, true);
       }
-    }, () => { if (!controller.signal.aborted) setLibrary({ kind: "failed" }); });
-    void readEngineCredentials(controller.signal).then(value => { if (!controller.signal.aborted) setEngines(value); }, () => { if (!controller.signal.aborted) setEngines(null); });
+    }, () => { if (!controller.signal.aborted) { setLibrary({ kind: "failed" }); setEngines(null); } });
     return () => controller.abort();
     // open은 기록을 여는 일회성 동작이라 다시 읽기 기준(attempt)에만 묶는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,7 +170,11 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const settings = library.kind === "ok" ? library.settings : null;
   const version = settings?.credentialVersion ?? 0;
   const ready = !!settings && version > 0 && !!settings.analysisModel;
-  const engineSetting = engine === "gemini" ? null : engines?.[engine] ?? null;
+  // 엔진 상태: undefined = 아직 모름(확인 중), null = 확인 실패, 값 = 등록 상태. not_configured면 OpenAI·Claude는 '준비 안 됨'.
+  const listEngines = useMemo(() => styleDnaListEngines(settings), [settings]);
+  const engineState = listEngines === "legacy" ? engines : listEngines.engines;
+  const engineStoreOff = listEngines !== "legacy" && listEngines.storage === "not_configured";
+  const engineSetting = engine === "gemini" ? null : engineState?.[engine] ?? null;
   const engineModel = engine === "gemini" ? settings?.analysisModel ?? null : engineSetting?.configured ? engineSetting.modelId : null;
   const engineVersion = engine === "gemini" ? version : engineSetting?.version ?? 0;
   const engineReady = engine === "gemini" ? ready : !!settings && !!engineModel && engineVersion > 0;
@@ -175,16 +182,18 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const target = targets.some(item => item.id === targetModel) ? targetModel : targets[0].id;
   const targetLabel = targets.find(item => item.id === target)?.label ?? target;
   // 시험 생성 모델(Gemini)과 같은 대상이면 3단계에서 바로 시험해 볼 수 있다. 아니면 프롬프트 문법만 맞춘다는 안내를 붙인다.
-  const testable = (settings?.testModels.map(item => item.id as string) ?? modelIds).includes(target);
+  const testable = targets.find(item => item.id === target)?.testable ?? true;
   const engineShort = { gemini: "Gemini", openai: "OpenAI", anthropic: "Claude" }[engine];
   const engineChoices = (["gemini", "openai", "anthropic"] as const).map(value => {
     // Gemini는 Style DNA 설정으로 따로 확인한다. OpenAI·Claude는 조회 결과가 있을 때만 등록 여부를 말한다.
-    const tag = value === "gemini" ? null : engines === undefined ? "확인 중" : engines === null ? "확인 실패" : engines[value]?.configured ? null : "키 미등록";
+    const tag = value === "gemini" ? null : engineStoreOff ? "준비 안 됨" : engineState === undefined ? "확인 중" : engineState === null ? "확인 실패"
+      : engineState[value]?.configured ? null : "키 미등록";
     return { value, short: { gemini: "Gemini", openai: "OpenAI", anthropic: "Claude" }[value], label: `${engineLabel(value)}${tag ? ` (${tag})` : ""}`, tag, disabled: !!tag };
   });
   const engineWarn = !settings || engineReady ? null : engine === "gemini" ? "이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요."
-    : engines === undefined ? null
-    : engines === null ? `${engineLabel(engine)} 등록 정보를 확인하지 못했어요. 잠시 뒤 다시 열거나 Gemini를 선택해 주세요.`
+    : engineStoreOff ? `서버에 ${engineLabel(engine)} 키 저장소가 아직 준비되지 않았어요. Gemini를 선택해 주세요.`
+    : engineState === undefined ? null
+    : engineState === null ? `${engineLabel(engine)} 등록 정보를 확인하지 못했어요. 잠시 뒤 다시 열거나 Gemini를 선택해 주세요.`
     : `${engineLabel(engine)} 키가 등록되지 않았거나 바뀌었어요. API키등록·플랫폼연동에서 확인하거나 다른 AI를 선택해 주세요.`;
   /** 분석·보정 요청의 동작 값: 고른 엔진의 등록 버전, OpenAI·Anthropic이면 engine을 싣는다. */
   const engineOp = () => ({ requestId: newRequestId(), credentialVersion: engineVersion,

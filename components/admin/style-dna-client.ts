@@ -3,7 +3,7 @@
 import {
   styleDnaImageModels, styleDnaPath, type StyleDnaComparison, type StyleDnaComparisonFrame, type StyleDnaOptions, type StyleDnaRecord, type StyleDnaSummary, type StyleDnaTestResult,
 } from "@/lib/reference-analysis/style-dna-contract";
-import { readStyleDnaEngineSettings, type StyleDnaEngineSettings } from "./style-dna-engine-credentials-client";
+import { acceptsEngineModel, readStyleDnaEngineSettings, type StyleDnaEngineSettings } from "./style-dna-engine-credentials-client";
 import {
   type StyleDnaEngine, type StyleDnaEngineBasis, type StyleDnaEngineSelection,
 } from "@/lib/reference-analysis/style-dna-engine-credential-contract";
@@ -13,20 +13,46 @@ import {
 // 202(진행 중)는 같은 requestId·같은 본문으로 잠시 뒤 다시 물어보고, 연결이 끊긴 요청도 같은 본문으로만 다시 확인한다(새 생성 아님).
 export type StyleDnaSettings = { storage: "ready"; credentialVersion: number; analysisModel: string | null;
   testModels: { id: StyleDnaTestResult["model"]; size: string; label: string }[];
-  /** 프롬프트를 맞출 대상 모델(CMD-20261125-012 제안 DTO, Backend 계약 확정 뒤 대조). 없으면 예전 서버. */
-  targetModels?: unknown };
-export type StyleDnaTargetChoice = { id: string; label: string };
-/** 대상 모델 고르는 칸 목록. 서버 settings.targetModels[{id,label}]이 올바르면 그 순서 그대로 쓰고,
- *  없거나 하나라도 어긋나면(빈 목록·모양·중복 id) 예전 서버와 같은 시험 생성 모델 목록을 쓴다. */
-export function styleDnaTargetChoices(settings: Pick<StyleDnaSettings, "targetModels"> | null | undefined): StyleDnaTargetChoice[] {
-  const fallback = Object.entries(styleDnaImageModels).map(([id, info]) => ({ id, label: info.label }));
-  const raw = settings?.targetModels;
+  /** 배정 2(Backend 작성 중 계약): 분석 프롬프트 대상, 분석 엔진 등록 상태, 엔진 키 저장소 상태. 없으면 예전 서버. */
+  promptTargets?: unknown; analysisEngines?: unknown; engineStorage?: unknown };
+export type StyleDnaTargetChoice = { id: string; label: string; testable: boolean };
+/** 대상 모델 고르는 칸 목록. 서버 settings.promptTargets[{id,label,vendor,testable}]이 올바르면 그 순서 그대로 쓰고,
+ *  없거나 하나라도 어긋나면(빈 목록·모양·중복 id·시험 가능 표시 없음) 예전 서버와 같은 시험 생성 모델 목록을 쓴다. */
+export function styleDnaTargetChoices(settings: Pick<StyleDnaSettings, "promptTargets" | "testModels"> | null | undefined): StyleDnaTargetChoice[] {
+  const fallback = (settings?.testModels ?? Object.entries(styleDnaImageModels).map(([id, info]) => ({ id, label: info.label })))
+    .map(item => ({ id: item.id as string, label: item.label, testable: true }));
+  const raw = settings?.promptTargets;
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 50) return fallback;
   const items = raw.map(item => item && typeof item === "object" ? item as Record<string, unknown> : {});
   const valid = items.every(item => typeof item.id === "string" && /^[a-z0-9][a-z0-9.-]{0,63}$/.test(item.id)
-    && typeof item.label === "string" && item.label.trim().length > 0 && item.label.length <= 60);
+    && typeof item.label === "string" && item.label.trim().length > 0 && item.label.length <= 60 && typeof item.testable === "boolean");
   if (!valid || new Set(items.map(item => item.id)).size !== items.length) return fallback;
-  return items.map(item => ({ id: item.id as string, label: (item.label as string).trim() }));
+  return items.map(item => ({ id: item.id as string, label: (item.label as string).trim(), testable: item.testable as boolean }));
+}
+/** OpenAI·Anthropic 분석 엔진 등록 상태(키 원문 없음). 화면은 등록 여부·모델·버전만 쓴다. */
+export type EngineState = Record<StyleDnaEngine, { configured: boolean; modelId: string | null; version: number }>;
+/** 목록 응답에서 읽은 엔진 상태.
+ *  - "legacy": 칸이 없는 예전 서버 → 화면이 따로 등록 정보를 조회한다.
+ *  - storage "ready": engines에 두 엔진 상태. "unavailable"(저장소를 읽지 못함)·모양이 어긋남: engines null = '확인 실패'(키 미등록이라고 하지 않음).
+ *  - storage "not_configured": 서버에 엔진 키 저장소가 준비되지 않음 → 고를 수 없음. */
+export type ListEngineState = "legacy" | { storage: "ready"; engines: EngineState } | { storage: "unavailable"; engines: null } | { storage: "not_configured"; engines: null };
+export function styleDnaListEngines(settings: Pick<StyleDnaSettings, "analysisEngines" | "engineStorage"> | null | undefined): ListEngineState {
+  if (!settings || (settings.analysisEngines === undefined && settings.engineStorage === undefined)) return "legacy";
+  const storage = settings.engineStorage;
+  if (storage === "not_configured") return { storage, engines: null };
+  if (storage !== "ready" || !Array.isArray(settings.analysisEngines)) return { storage: "unavailable", engines: null };
+  const rows = settings.analysisEngines.map(item => item && typeof item === "object" ? item as Record<string, unknown> : {});
+  const read = (provider: StyleDnaEngine) => {
+    const found = rows.filter(row => row.provider === provider);
+    if (found.length !== 1) return null;
+    const { configured, modelId, version } = found[0];
+    if (configured === true && typeof modelId === "string" && acceptsEngineModel(provider, modelId)
+      && Number.isInteger(version) && (version as number) >= 1 && (version as number) <= 2_147_483_647) return { configured, modelId, version: version as number };
+    if (configured === false && modelId === null && version === 0) return { configured, modelId, version };
+    return null;
+  };
+  const openai = read("openai"), anthropic = read("anthropic");
+  return openai && anthropic ? { storage: "ready", engines: { openai, anthropic } } : { storage: "unavailable", engines: null };
 }
 export type LibraryOutcome = { kind: "ok"; items: StyleDnaSummary[]; settings: StyleDnaSettings } | { kind: "login" } | { kind: "forbidden" }
   | { kind: "unavailable" } | { kind: "failed" };
