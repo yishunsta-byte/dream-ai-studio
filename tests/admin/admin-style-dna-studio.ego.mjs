@@ -221,8 +221,10 @@ try {
     await typeInto(`(${ST}).querySelector("input[type=url]")`, "https://images.example.com/no-key.png");
     v = await studio();
     assert.deepEqual(await page.evaluate((ST) => { const st = eval(ST);
-      return [st.querySelector("[id$='-operation-status']")?.textContent ?? null, [...st.querySelectorAll("[aria-label='시스템 가이던스'] select")].at(-1).selectedOptions[0].textContent]; }, ST),
-      ["이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요.", "등록 안 됨"]);
+      return [st.querySelector("[id$='-operation-status']")?.textContent ?? null, st.querySelector("[aria-label='시스템 가이던스'] p[id$='-engine']").textContent,
+        st.querySelectorAll("[aria-label='시스템 가이던스'] select[aria-describedby$='engine']").length]; }, ST),
+      // CMD-043: 모델 고르는 칸이 없어졌다. 미등록이면 안내 문구에 모델 이름이 붙지 않는다.
+      ["이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요.", "API키등록·플랫폼연동에 등록한 Gemini 키로 호출되며 요금은 그 계정에 청구돼요. 시험 이미지 생성은 언제나 Gemini로 해요.", 0]);
     assert.equal(v.runDisabled, true);
     if (width === 390 || width === 1574) await shot(`studio-no-key-${width}.png`);
     row.external = (await page.evaluate(() => window.__premiere.requests().filter((item) => !item.path.startsWith("/")).length));

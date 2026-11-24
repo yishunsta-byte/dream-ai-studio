@@ -1,7 +1,8 @@
 /* global taskSpace, window, document, console, setTimeout, Event, HTMLSelectElement, sessionStorage */
 import assert from "node:assert/strict";
 // P1-06 이미지 분석·보정 엔진 선택(서버 f2d7e63 계약, Tester ACCEPTANCE p1-06-style-dna-engine-ui-preflight 기준). fixture ?styleDnaEngines=openai,anthropic.
-// 1. 선택: 분석 AI에 Gemini·OpenAI·Anthropic Claude, 모델은 등록된 것 하나. 열기만 하면 목록·엔진 설정 GET뿐(POST 0).
+// 1. 선택: 분석 AI는 Gemini·OpenAI·Claude 단추 세 개(CMD-043, 모델 고르는 칸 없음 — 등록 모델은 안내 문구), 보정 AI는 고르는 칸. 열기만 하면 목록·엔진 설정 GET뿐(POST 0).
+//    단추는 키보드(Enter)로 고르고, 분석 응답을 붙잡은 동안 세 단추가 모두 잠긴다.
 // 2. 엔진을 바꾸면 안내 문구의 공급자가 바뀐다. OpenAI로 분석 → 본문 engine·OpenAI 등록 버전 2, 리포트에 실제 실행 엔진.
 // 3. 2단계에서 Claude로 보정 → 본문 engine·버전 5, 기록·현재 카드에 실제 엔진. 1단계 리포트의 v1 엔진(OpenAI)은 그대로.
 // 4. 키 교체(Claude 버전 6) → 409 → 공급자 이름이 든 안내, 엔진 설정 다시 읽기, 동의 풀림, 기록 보존 → 다시 동의하면 버전 6으로 성공.
@@ -37,14 +38,21 @@ const typeInto = (expression, value) => page.evaluate(([expression, value]) => {
   Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value").set.call(input, value);
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }, [expression, value]);
-const ENGINE = `(${ST}).querySelector("[aria-label='시스템 가이던스'] select[aria-describedby$='engine']")`;
+const pickAnalysis = (value) => mark(`(${ST}).querySelector("[aria-label='시스템 가이던스'] [role=group][aria-describedby$='engine'] button[value='${value}']")`, "Enter");
 const REF_ENGINE = `(${RF}).querySelector("form select[aria-describedby$='engine']")`;
 const consentOf = (scope, form) => `[...(${scope}).querySelectorAll("${form} input[type=checkbox]")].find((box) => /동의해요/.test(box.closest("label").textContent))`;
 const engineState = (scope, form) => page.evaluate(([scope, form]) => {
   const root = eval(scope);
   const selects = [...root.querySelectorAll(`${form} select[aria-describedby$='engine']`)];
   const box = [...root.querySelectorAll(`${form} input[type=checkbox]`)].find((item) => /동의해요/.test(item.closest("label").textContent));
-  return { options: [...selects[0].options].map((option) => [option.textContent, option.disabled]), value: selects[0].value, model: selects[1].selectedOptions[0]?.textContent ?? null,
+  // 분석 화면: 플랫폼 단추(이름표 title = 전체 이름·미등록 표시), 모델은 안내 문구의 '키(모델)'. 보정 화면: 기존 고르는 칸 두 개.
+  const group = root.querySelector(`${form} [role=group][aria-describedby$='engine']`);
+  const buttons = group ? [...group.querySelectorAll("button")] : [];
+  const note = root.querySelector(`${form} p[id$='-engine']`)?.textContent ?? "";
+  const pick = group ? { options: buttons.map((button) => [button.title, button.disabled]), labels: buttons.map((button) => button.textContent.trim()),
+    value: buttons.find((button) => button.getAttribute("aria-pressed") === "true")?.value ?? null, model: /키\(([^)]+)\)로/.exec(note)?.[1] ?? null, selects: selects.length }
+    : { options: [...selects[0].options].map((option) => [option.textContent, option.disabled]), value: selects[0].value, model: selects[1].selectedOptions[0]?.textContent ?? null };
+  return { ...pick,
     consent: box?.checked ?? null, consentText: box?.closest("label").textContent.trim() ?? root.querySelector(`${form} [id$='analyze-info']`)?.textContent.trim(),
     warn: root.querySelector(`${form} [role=note]:not(details *)`)?.textContent ?? null };
 }, [scope, form]);
@@ -73,6 +81,7 @@ try {
     await open(`styleDnaEngines=openai,anthropic&styleDnaReport=1&w=${width}`);
     let e = await engineState(ST, "form[aria-label='분석 설정']");
     assert.deepEqual([e.options, e.value, e.model, e.warn], [[["Google Gemini", false], ["OpenAI", false], ["Anthropic Claude", false]], "gemini", "gemini-fixture-image", null]);
+    assert.deepEqual([e.labels, e.selects], [["Gemini", "OpenAI", "Claude"], 0], "분석 AI는 단추 세 개, 고르는 칸 없음");
     assert.match(e.consentText, /Gemini에 보내고/);
     assert.equal((await posts("style-dna")).length, 0, "열기만 하면 POST 0");
     assert.equal(await gets("/api/admin/style-dna/engine-credentials"), 1);
@@ -80,12 +89,18 @@ try {
     console.log("STEP 2 " + width);
     await mark(`[...(${ST}).querySelectorAll("label")].find((label) => label.textContent.trim() === "HTTPS 주소").querySelector("input")`, "Space");
     await typeInto(`(${ST}).querySelector("input[type=url]")`, "https://images.example.com/engine.png");
-    await choose(ENGINE, "openai");
+    await pickAnalysis("openai");
     e = await engineState(ST, "form[aria-label='분석 설정']");
     assert.deepEqual([e.value, e.model, e.consent], ["openai", "gpt-fixture-vision", null]);
     assert.match(e.consentText, /OpenAI에 보내고/);
     assert.equal((await posts("style-dna")).length, 0, "엔진 선택만으로 POST 0");
+    // 분석 응답을 붙잡은 동안 세 단추가 모두 잠기는지, 클릭 한 번에 POST 1건인지
+    await page.evaluate(() => { window.__premiere.styleDna.hold = "analyze"; });
     await press("이미지 시퀀싱 시작", ST);
+    await until(() => window.__premiere.requests().filter((row) => row.method === "POST" && row.path === "/api/admin/style-dna").length === 1, "held post");
+    e = await engineState(ST, "form[aria-label='분석 설정']");
+    assert.deepEqual(e.options.map(([, disabled]) => disabled), [true, true, true], "분석 중 플랫폼 단추 잠김");
+    await page.evaluate(() => { window.__premiere.styleDna.hold = ""; window.__premiere.release(); });
     await until((ST) => /Dusk City Portrait/.test(eval(ST).textContent), "analyzed", ST);
     const analyzed = (await posts("/api/admin/style-dna")).at(-1).body;
     assert.deepEqual([analyzed.credentialVersion, analyzed.engine], [2, { provider: "openai", modelId: "gpt-fixture-vision" }]);
@@ -151,6 +166,7 @@ try {
     await open(`styleDnaSeed=1&styleDnaEngines=openai&w=${width}`);
     e = await engineState(ST, "form[aria-label='분석 설정']");
     assert.deepEqual(e.options, [["Google Gemini", false], ["OpenAI", false], ["Anthropic Claude (키 미등록)", true]]);
+    assert.deepEqual(e.labels, ["Gemini", "OpenAI", "Claude 키 미등록"]);
 
     console.log("STEP 7 " + width);
     if (await page.evaluate((R) => [...document.querySelectorAll(`${R} [aria-label='Style DNA 단계'] button`)][1].disabled, R)) await press("다시 열기");

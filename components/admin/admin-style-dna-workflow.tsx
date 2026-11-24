@@ -175,7 +175,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const engineShort = { gemini: "Gemini", openai: "OpenAI", anthropic: "Claude" }[engine];
   const engineChoices = (["gemini", "openai", "anthropic"] as const).map(value => {
     const off = value !== "gemini" && !engines?.[value]?.configured;
-    return { value, label: `${engineLabel(value)}${off ? " (키 미등록)" : ""}`, disabled: off };
+    return { value, short: { gemini: "Gemini", openai: "OpenAI", anthropic: "Claude" }[value], label: `${engineLabel(value)}${off ? " (키 미등록)" : ""}`, disabled: off };
   });
   const engineWarn = !settings || engineReady ? null : engine === "gemini" ? "이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요."
     : `${engineLabel(engine)} 키가 등록되지 않았거나 바뀌었어요. API키등록·플랫폼연동에서 확인하거나 다른 AI를 선택해 주세요.`;
@@ -570,13 +570,13 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
                 onChange={event => { changed(); setGuidance(event.target.value); }} />
               <span className={studio.count}>{[...guidance].length} / {LIMITS.guidance}</span></label>
             <div className={studio.engine}>
-              <div className={studio.engineRow}>
-                <label>분석 AI<select value={engine} disabled={busy} aria-describedby={`${id}-engine`} onChange={event => pickEngine(event.target.value as EngineChoice)}>
-                  {engineChoices.map(choice => <option key={choice.value} value={choice.value} disabled={choice.disabled}>{choice.label}</option>)}</select></label>
-                <label>모델<select value={engineModel ?? ""} disabled aria-describedby={`${id}-engine`}>
-                  <option value={engineModel ?? ""}>{engineModel ?? "등록 안 됨"}</option></select></label>
+              {/* 주인님 지시(CMD-043): 분석 AI·모델 고르는 칸 대신 플랫폼 단추만 둔다. 모델과 등록 버전은 API키등록·플랫폼연동에 등록한 값을 그대로 쓴다. */}
+              <p className={studio.engineHead} id={`${id}-engine-head`}>분석 AI</p>
+              <div className={`${studio.segment} ${studio.segmentThree}`} role="group" aria-labelledby={`${id}-engine-head`} aria-describedby={`${id}-engine`}>
+                {engineChoices.map(choice => <button key={choice.value} type="button" aria-pressed={engine === choice.value} disabled={busy || choice.disabled}
+                  value={choice.value} title={choice.label} onClick={event => pickEngine(event.currentTarget.value as EngineChoice)}>{choice.short}{choice.disabled && <small> 키 미등록</small>}</button>)}
               </div>
-              <p className={studio.engineNote} id={`${id}-engine`}>API키등록·플랫폼연동에 등록한 {engineShort} 키로 호출되며 요금은 그 계정에 청구돼요. 시험 이미지 생성은 언제나 Gemini로 해요.</p>
+              <p className={studio.engineNote} id={`${id}-engine`}>API키등록·플랫폼연동에 등록한 {engineShort} 키{engineModel ? `(${engineModel})` : ""}로 호출되며 요금은 그 계정에 청구돼요. 시험 이미지 생성은 언제나 Gemini로 해요.</p>
             </div>
           </section>
         </form>
