@@ -10,7 +10,6 @@ import styles from "./admin-gemini-settings.module.css";
 // Gemini 설정과 따로 저장하고, 새 키는 서버가 YouTube에서 확인한 뒤 교체한다.
 // 키는 가려진 입력에만 두고(화면 상태 없음) 저장에 성공하면 바로 지운다. 409면 입력은 그대로 두고 최신 상태를 다시 읽는다.
 const loginLink = adminLoginPath({ next: "/admin#admin-api-integrations" });
-const time = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Seoul" });
 type Read = { kind: "loading" } | { kind: "login" } | { kind: "forbidden" } | { kind: "storage" } | { kind: "failed" } | { kind: "ok"; value: YouTubeKeyState };
 type Notice = { tone: "success" | "warning" | "danger"; text: string };
 
@@ -38,6 +37,11 @@ function KeyForm({ state, onState, onLogin }: { state: YouTubeKeyState; onState:
   const [notice, setNotice] = useState<Notice | null>(null);
   const seen = useKeyCheck();
   const status = keyStatusText(state, seen);
+  // 주인님 지시(2026-11-24): 저장 상태·마지막 저장 칸과 회색 안내 줄을 없애고 위에 등록됨/등록 안 됨만 보인다.
+  // 이 화면의 검색에서 YouTube가 키를 거절한 경우만 교체가 필요하다고 덧붙인다.
+  const badge = !state.configured ? { tone: "warning", text: "등록 안 됨" }
+    : status.tone === "danger" ? { tone: "danger", text: "등록됨 · YouTube가 키를 거절했어요. 키를 교체해 주세요." }
+    : { tone: "success", text: "등록됨" };
   const active = useRef<AbortController | null>(null);
   const focus = useRef<"key" | "notice" | null>(null);
   useLayoutEffect(() => {
@@ -93,13 +97,7 @@ function KeyForm({ state, onState, onLogin }: { state: YouTubeKeyState; onState:
   }
 
   return <>
-    <dl className={styles.status}>
-      <div><dt>저장 상태</dt><dd data-tone={status.tone}>{state.configured ? `저장됨 · 버전 ${state.version}` : "미등록"}</dd></div>
-      <div><dt>마지막 저장</dt><dd>{state.updatedAt ? <time dateTime={state.updatedAt}>{time.format(new Date(state.updatedAt))}</time> : "없음"}</dd></div>
-    </dl>
-    <p className={styles.state} role="status" aria-label="YouTube 키 확인 상태" data-tone={status.tone}>
-      {status.text}{"at" in status && status.at && <> · <time dateTime={status.at}>{time.format(new Date(status.at))}</time></>}
-    </p>
+    <p className={`${styles.state} ${styles.stateBadge}`} role="status" aria-label="YouTube 키 등록 상태" data-tone={badge.tone}>{badge.text}</p>
     <form className={styles.form} onSubmit={submit} noValidate aria-label="YouTube API 키" aria-busy={saving || undefined}>
       <fieldset className={styles.fieldset} disabled={saving}>
         <legend>YouTube Data API 키</legend>

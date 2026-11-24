@@ -291,7 +291,6 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
     : testNotice;
 
   const storage = keyState(settings, selectedGroup);
-  const updated = settings.groups[selectedGroup].updatedAt;
   const changes = groupOrder.flatMap(group => changeNames(group, keyDrafts[group]));
   const saveScope = ready && changes.length ? {
     id: id("save-scope"),
@@ -299,10 +298,9 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
   } : undefined;
 
   return <>
-    <dl className={styles.status} aria-label="Gemini 키 저장 상태">
-      <div><dt>저장 상태</dt><dd data-tone={storage.tone}>{storage.text}</dd></div>
-      <div><dt>마지막 저장</dt><dd>{updated ? <time dateTime={updated}>{time.format(new Date(updated))}</time> : "없음"}</dd></div>
-    </dl>
+    {/* 주인님 지시(2026-11-24): 저장 상태·마지막 저장 칸을 없애고 카드 위쪽에 등록됨/등록 안 됨만 보인다. */}
+    <p className={`${styles.state} ${styles.stateBadge}`} role="status" aria-label="Gemini 키 등록 상태" data-tone={storage.tone}>
+      {storage.tone === "success" ? "등록됨" : storage.tone === "warning" ? "등록 안 됨" : "등록됨 · 서버 제공 설정"}</p>
     <AdminProviderForm label="Gemini 키와 모델 ID" busy={saving} onSubmit={submit}
       target={<>
         <label htmlFor={id("model-program")}>모델 적용 대상</label>
@@ -348,26 +346,14 @@ function SettingsForm({ settings, onSaved, onStale, onLogin }: {
       models={<fieldset className={styles.fieldset} disabled={!ready || saving}>
         <legend>분석 모델</legend>
         <AdminModelOptions name={`${base}-choices`} label={`Gemini ${programText[modelProgram]} 모델 선택`}
-          options={geminiAnalysisModels} value={models[modelProgram]}
+          options={geminiAnalysisModels} value={models[modelProgram]} id={id(`models.${modelProgram}`)}
+          invalid={!!errors[id(`models.${modelProgram}`)]} describedBy={describe(id(`models.${modelProgram}`))}
           onChange={model => {
             setModels(previous => ({ ...previous, [modelProgram]: model }));
             const field = id(`models.${modelProgram}`);
             setErrors(previous => ({ ...previous, [field]: undefined }));
           }} />
-      </fieldset>}
-      modelId={<fieldset className={styles.fieldset} disabled={!ready || saving}>
-        <p className={styles.help}>저장된 모델 <strong>{settings.programs[modelProgram].modelId ?? "없음"}</strong></p>
-        {programOrder.map(program => {
-          const field = id(`models.${program}`);
-          return <div className={styles.field} key={program} hidden={program !== modelProgram}>
-            <label htmlFor={field}>모델 ID</label>
-            <input id={field} name={`models.${program}`} type="text" autoComplete="off" spellCheck={false} autoCapitalize="off" maxLength={128}
-              value={models[program]} aria-invalid={!!errors[field]} aria-describedby={describe(field, "help")}
-              onChange={event => { const value = event.target.value; setModels(previous => ({ ...previous, [program]: value })); }} />
-            <p id={`${field}-help`} className={styles.help}>목록에 없는 모델은 직접 입력하세요.</p>
-            {fieldError(field)}
-          </div>;
-        })}
+        {fieldError(id(`models.${modelProgram}`))}
       </fieldset>}
       saveScope={saveScope}
       notice={ready ? <p ref={noticeRef} tabIndex={-1} role="status" className={styles.notice} data-tone={notice?.tone}>{notice?.text ?? ""}</p>

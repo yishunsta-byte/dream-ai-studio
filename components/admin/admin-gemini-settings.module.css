@@ -43,6 +43,8 @@
 :is(.state, .notice)[data-tone="success"] { background: var(--studio-ok-bg); color: var(--studio-ok-fg); }
 :is(.state, .notice)[data-tone="warning"] { background: var(--studio-warn-bg); color: var(--studio-warn-fg); }
 :is(.state, .notice)[data-tone="danger"] { background: var(--studio-bad-bg); color: var(--studio-bad-fg); }
+/* YouTube 키 카드 위쪽의 등록 상태 표시(등록됨/등록 안 됨): 줄 전체가 아닌 글자 폭만큼만 칠한다. */
+.stateBadge { justify-self: start; width: fit-content; max-width: 100%; font-weight: var(--weight-semibold); }
 .status dd[data-tone="success"] { color: var(--studio-ok-fg); }
 .status dd[data-tone="warning"] { color: var(--studio-warn-fg); }
 .tests ul { display: grid; gap: var(--sp-2, 8px); padding: 0; list-style: none; }

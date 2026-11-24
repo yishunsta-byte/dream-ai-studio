@@ -52,7 +52,6 @@
 .nano { margin-top: 4px; padding: 10px; border-radius: 12px; border: 1px solid rgb(0 240 255 / 0.2); background: linear-gradient(135deg, #0c1324, #070b14); }
 .nanoHead { display: flex; align-items: center; gap: 6px; color: var(--n-cyan); font-size: 12px; font-weight: 700; }
 .sideFoot { padding-top: 8px; border-top: 1px solid var(--n-line); }
-.key { color: #22d3ee; }
 /* 좁은 칸(A-4): 브랜드와 메뉴 단추 한 줄(원본 모바일 머리 바 h-14), 메뉴는 펼칠 때만. */
 .brandRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
 .brandRow > .brand { flex: 1; padding-bottom: 0; border-bottom: 0; }

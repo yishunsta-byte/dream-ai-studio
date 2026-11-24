@@ -18,7 +18,8 @@ export function AdminProviderForm({ label, busy, onSubmit, target, keys, models,
   target: ReactNode;
   keys: ReactNode;
   models: ReactNode;
-  modelId: ReactNode;
+  /** 2026-11-24부터 쓰지 않는다(모델은 선택지로만 고른다). 주면 예전처럼 모델 줄 아래에 그린다. */
+  modelId?: ReactNode;
   notice: ReactNode;
   saveScope?: { id: string; text: string };
   children: ReactNode;
@@ -28,7 +29,7 @@ export function AdminProviderForm({ label, busy, onSubmit, target, keys, models,
     <div className={styles.providerTarget} data-form-part="target">{target}</div>
     <div className={styles.providerKeys} data-form-part="keys">{keys}</div>
     <div className={styles.providerModels} data-form-part="models">{models}</div>
-    <div className={styles.providerModelId} data-form-part="model-id">{modelId}</div>
+    {modelId && <div className={styles.providerModelId} data-form-part="model-id">{modelId}</div>}
     <div className={styles.providerNotice}>
       {notice}
       {saveScope && <p id={saveScope.id} className={styles.saveScope}>{saveScope.text}</p>}

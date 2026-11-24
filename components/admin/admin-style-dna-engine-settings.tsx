@@ -18,7 +18,6 @@ const label = { openai: "OpenAI", anthropic: "Anthropic Claude" } as const;
 const keyUrls = { openai: "https://platform.openai.com/api-keys", anthropic: "https://console.anthropic.com/settings/keys" } as const;
 const modelExample = { openai: "gpt-… 또는 o3-…", anthropic: "claude-…" } as const;
 const loginLink = adminLoginPath({ next: "/admin/integrations" });
-const dateTime = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Seoul" });
 type ReadState = { kind: "loading" } | Awaited<ReturnType<typeof readStyleDnaEngineSettings>>;
 type AccessDenied = "login" | "forbidden";
 type Notice = { tone: "success" | "warning" | "danger"; text: string };
@@ -160,13 +159,9 @@ function EngineCard({ provider, initial, onDenied }: {
   };
   return <Card className={styles.card} data-provider={provider}>
     <AdminProviderHeader name={name} usage="이미지 분석·보정" keyUrl={keyUrls[provider]} />
-    <dl className={styles.status} aria-label={`${name} 등록 상태`}>
-      <div><dt>저장 상태</dt><dd data-tone={setting.configured ? "success" : "warning"}>
-        {setting.configured ? `등록됨 · 버전 ${setting.version}` : "미등록"}
-      </dd></div>
-      <div><dt>마지막 저장</dt><dd>{setting.updatedAt
-        ? <time dateTime={setting.updatedAt}>{dateTime.format(new Date(setting.updatedAt))}</time> : "없음"}</dd></div>
-    </dl>
+    {/* 주인님 지시(2026-11-24): 저장 상태·마지막 저장 칸을 없애고 카드 위쪽에 등록됨/등록 안 됨만 보인다. */}
+    <p className={`${styles.state} ${styles.stateBadge}`} role="status" aria-label={`${name} 등록 상태`}
+      data-tone={setting.configured ? "success" : "warning"}>{setting.configured ? "등록됨" : "등록 안 됨"}</p>
     <AdminProviderForm label={`${name} 등록`} busy={!!busy} onSubmit={submit}
       target={<><span>모델 적용 대상</span><p className={styles.targetValue}>이미지 분석</p></>}
       keys={<fieldset className={styles.fieldset} disabled={!!busy || needsReload}>
@@ -191,20 +186,10 @@ function EngineCard({ provider, initial, onDenied }: {
       </fieldset>}
       models={<fieldset className={styles.fieldset} disabled={!!busy || needsReload}>
         <legend>분석 모델</legend>
-        <AdminModelOptions name={`${modelId}-choice`} label={`${name} 모델 선택`}
+        <AdminModelOptions name={`${modelId}-choice`} label={`${name} 모델 선택`} id={modelId} inputRef={modelField}
+          invalid={error?.field === "model"} describedBy={error?.field === "model" ? `${modelId}-error` : undefined}
           options={imageAnalysisModels[provider]} value={model} onChange={selectModel} />
-      </fieldset>}
-      modelId={<fieldset className={styles.fieldset} disabled={!!busy || needsReload}>
-        <div className={styles.field}>
-          <p className={styles.help}>저장된 모델 <strong>{setting.modelId ?? "없음"}</strong></p>
-          <label htmlFor={modelId}>모델 ID</label>
-          <input id={modelId} ref={modelField} name={`${provider}-model`} value={model} maxLength={128} autoComplete="off" spellCheck={false}
-            aria-invalid={error?.field === "model" || undefined}
-            aria-describedby={`${modelId}-help${error?.field === "model" ? ` ${modelId}-error` : ""}`}
-            onChange={event => selectModel(event.target.value)} />
-          <p className={styles.help} id={`${modelId}-help`}>목록에 없는 모델은 직접 입력하세요.</p>
-          {error?.field === "model" && <p className={styles.error} id={`${modelId}-error`}>{error.text}</p>}
-        </div>
+        {error?.field === "model" && <p className={styles.error} id={`${modelId}-error`}>{error.text}</p>}
       </fieldset>}
       notice={<p ref={status} tabIndex={-1} role="status" className={styles.notice} data-tone={notice?.tone}>{notice?.text ?? ""}</p>}>
       {needsReload

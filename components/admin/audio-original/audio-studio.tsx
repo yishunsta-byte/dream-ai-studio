@@ -10,7 +10,7 @@ import { ADMIN_SETTINGS_HREF } from "../admin-settings-link";
 import type { PublicationDraft } from "../admin-reference-analysis-model";
 import { AUDIO_ACCEPT, directAudioIssue, directAudioLimit, guidance, guidanceLimit, largeAudioIssue } from "../audio-upload-client";
 import { AudioGuide } from "./audio-guide";
-import { Activity, ArrowRight, BookOpen, Cpu, FileAudio, KeyRound, Menu, Mic, Music, Sparkles, Trash2, UploadCloud, X } from "./icons";
+import { Activity, ArrowRight, BookOpen, Cpu, FileAudio, Menu, Mic, Music, Sparkles, Trash2, UploadCloud, X } from "./icons";
 import s from "./audio-studio.module.css";
 
 // P1-07 A-1 Audio Analyzer 원본(v1.15) 화면 셸: 사이버 네온 다크 사이드바(브랜드·ENGINE MODE·WORKFLOW·안내 카드·설정)와
@@ -193,7 +193,7 @@ export function AudioStudio({ embedded = false, onPrepare }: Props = {}) {
         <button ref={sideGuide} type="button" className={`${s.sideLink} ${s.sideGuide}`} aria-haspopup="dialog" onClick={openGuide}>
           <BookOpen size={14} className={s.book} /><span>📖 연동 &amp; 사용 매뉴얼</span><span className={s.guideBadge} aria-hidden="true">GUIDE</span>
         </button>
-        <a className={s.sideLink} href={settingsHref} onClick={() => closeMenu(false)}><KeyRound size={14} className={s.key} /><span>API키등록·플랫폼연동</span></a>
+        {/* 주인님 지시(2026-11-24): 왼쪽 메뉴의 API키등록·플랫폼연동 버튼은 위쪽 관리자 메뉴의 같은 항목과 겹쳐 지우고 하나로 합쳤다. */}
       </div>
       </div>
     </aside>
