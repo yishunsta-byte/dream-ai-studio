@@ -1,5 +1,5 @@
 // 주인님 지시(2026-11-24): 분석 중에는 하단에 움직이는 진행 막대와 지난 시간이 보여야 하고, Suno 분석 프롬프트는 칸에 잘리지 않고 다 보여야 한다.
-// Master 검수: 모델 대기 예산(120·200초)은 전체 최대가 아니므로, 숫자는 경로 함수 한도(300초)만 보인다.
+// Master 검수: 모델 대기 예산(120·200초)도, 함수 한도(300초)도 화면에 결과가 나오는 시간을 보장하지 않으므로 시간 약속 문구는 없다.
 import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -10,13 +10,13 @@ import { fitPrompt } from "@/components/admin/admin-suno-prompt";
 const routeSeconds = (path: string) => Number(/export const maxDuration = (\d+);/.exec(readFileSync(path, "utf8"))?.[1]);
 
 describe("analysis progress bar", () => {
-  it("shows a moving bar, the elapsed time and only the real route limit", () => {
+  it("shows a moving bar, the elapsed time and the progress state without promising a time", () => {
     const html = renderToStaticMarkup(createElement(AudioAnalysisProgress));
     expect(html).toContain('role="progressbar"');
     expect(html).toContain('aria-label="분석 진행 중"');
     expect(html).not.toContain("aria-valuenow");
-    expect(html).toContain("0초 지남 · 막대가 움직이면 분석이 진행 중이에요. 늦어도 5분 0초 안에 결과나 안내가 나와요.");
-    expect(html).not.toMatch(/2분 0초|3분 20초|최대/);
+    expect(html).toContain("0초 지남 · 분석 진행 중이에요.");
+    expect(html).not.toMatch(/2분 0초|3분 20초|5분|최대|늦어도|안에/);
     expect(elapsedLabel(59)).toBe("59초");
     expect(elapsedLabel(125)).toBe("2분 5초");
   });
