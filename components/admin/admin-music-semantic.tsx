@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/primitives";
 import type { AdminAudioMode, AdminAudioResponse, SpeechReport } from "@/lib/reference-analysis/admin-audio-contract";
 import type { DetailedAudioResponse } from "@/lib/reference-analysis/admin-audio-details-contract";
@@ -64,9 +64,8 @@ type Props = {
 export function AdminMusicSemantic({ file, client = defaultClient, disabled, onPrepare, settingsHref = ADMIN_SETTINGS_HREF, mode = "music", detail = false, onReset, onReport }: Props) {
   const [selection, setSelection] = useState({ file, version: 0 });
   if (selection.file !== file) setSelection({ file, version: selection.version + 1 });
-  const id = useId();
-  return <section className={styles.panel} aria-labelledby={id}>
-    <h3 id={id}>음악 의미 분석</h3>
+  // 주인님 지시(2026-11-24): 원본 키트처럼 제목·동의 상자 없이 분석 버튼으로 바로 실행한다.
+  return <section className={styles.panel} aria-label="오디오 분석 실행">
     {file ? <MusicFileAnalysis key={selection.version} file={file} client={client} disabled={disabled} onPrepare={onPrepare} settingsHref={settingsHref} mode={mode} detail={detail} onReset={onReset} onReport={onReport} />
       : <p>음악 파일을 선택하면 의미 분석을 실행할 수 있어요.</p>}
   </section>;
@@ -75,7 +74,6 @@ export function AdminMusicSemantic({ file, client = defaultClient, disabled, onP
 type Outcome = { mode: "music"; result: MusicSemanticResult } | { mode: Exclude<AdminAudioMode, "music">; result: AdminAudioResponse }
   | { mode: "detail"; result: DetailedAudioResponse };
 function MusicFileAnalysis({ file, client, disabled, onPrepare, settingsHref, mode, detail, onReset, onReport }: Props & { file: File; client: AdminMusicSemanticClient; mode: AdminAudioMode; detail: boolean }) {
-  const [consent, setConsent] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -98,7 +96,6 @@ function MusicFileAnalysis({ file, client, disabled, onPrepare, settingsHref, mo
     setBusy(false);
     setOutcome(undefined);
     setError("");
-    setConsent(false);
   }
   useLayoutEffect(() => () => { request.current?.abort(); request.current = null; }, [mode, detail]);
   const reported = outcome?.mode === "detail" && completedDetail(outcome.result);
@@ -107,7 +104,7 @@ function MusicFileAnalysis({ file, client, disabled, onPrepare, settingsHref, mo
   const folded = reported && !!onReport;
 
   async function analyze() {
-    if (disabled || fileIssue || !consent || availability?.kind !== "ok" || !availability.configured || request.current) return;
+    if (disabled || fileIssue || availability?.kind !== "ok" || !availability.configured || request.current) return;
     const controller = new AbortController();
     const sent = mode;
     request.current = controller;
@@ -124,7 +121,6 @@ function MusicFileAnalysis({ file, client, disabled, onPrepare, settingsHref, mo
     const result = reply.result;
     if (result.status === "unavailable" && result.reason === "not_configured") {
       setAvailability({ kind: "ok", configured: false });
-      setConsent(false);
       return;
     }
     setOutcome(detailed ? { mode: "detail", result: result as DetailedAudioResponse }
@@ -146,11 +142,7 @@ function MusicFileAnalysis({ file, client, disabled, onPrepare, settingsHref, mo
     </>}
     {fileIssue && <p role="status">{fileIssue}</p>}
     {configured && <>
-      <label className={styles.consent}>
-        <input type="checkbox" checked={consent} disabled={busy || disabled || !!fileIssue} onChange={event => setConsent(event.target.checked)} />
-        이 파일을 분석할 권리가 있고, {mode === "music" ? "음악 분석" : mode === "speech" ? "음성 분석" : "자동 판별과 분석"}{detail ? "(상세 보고서)" : ""}을 위해 Gemini에 원본 파일을 전송하는 데 동의해요.
-      </label>
-      <Button type="button" loading={busy} loadingLabel="분석 중" disabled={!consent || !!fileIssue || disabled} onClick={analyze}>{detail ? `${current.run} (상세)` : current.run}</Button>
+      <Button type="button" loading={busy} loadingLabel="분석 중" disabled={!!fileIssue || disabled} onClick={analyze}>{detail ? `${current.run} (상세)` : current.run}</Button>
     </>}
     {busy && <p role="status">{analyzingStatus(mode)}</p>}
     {error && <p role="alert">{error}</p>}

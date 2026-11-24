@@ -4,7 +4,8 @@ import { z } from "zod";
 import { type AudioPayload, readBounded } from "./admin-audio-http";
 import type { GeminiSettings } from "./analysis-gemini-settings";
 
-export const audioProviderDeadlineMs = 25_000;
+// 기본 보고서·음악 의미 분석 모델 대기. 원본처럼 긴 녹음도 기다리되 함수 한도 300초 안에 둔다.
+export const audioProviderDeadlineMs = 120_000;
 export type AdminAudioSource = AudioPayload | { fileUri: string; mime: string };
 
 const providerEnvelope = z.object({

@@ -23,7 +23,7 @@ export const GUIDE_MUSIC: readonly Item[] = [
   { title: "곡 구조 & 코드 진행 채보", text: "[Intro]-[Verse]-[Chorus] 구조 타임라인과 Key/Scale, 코드 진행(Chord Progression)을 텍스트 악보로 제공합니다. 조성·코드·채보는 상세 보고서에 있어요.", Icon: CheckCircle2, tone: "ok" },
 ];
 export const GUIDE_KEY_TEXT = "이 화면에서는 키를 직접 입력하지 않아요. Gemini 키는 관리자 설정의 API키등록·플랫폼연동에 등록하고, 서버가 암호화해 보관해요. "
-  + "분석할 때마다 파일 전송에 따로 동의해야 Gemini로 보내요. 4 MiB보다 큰 파일이나 사용자 컨텍스트·특별 요청이 있으면 서버의 비공개 저장소에 올린 뒤 분석해요.";
+  + "분석 버튼을 누르면 파일을 Gemini로 보내요. 4 MiB보다 큰 파일이나 사용자 컨텍스트·특별 요청이 있으면 서버의 비공개 저장소에 올린 뒤 분석해요.";
 
 type Props = { id: string; open: boolean; onClose: () => void; onNavigate: () => void; settingsHref: string };
 

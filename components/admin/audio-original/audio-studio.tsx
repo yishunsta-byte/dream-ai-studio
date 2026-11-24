@@ -283,7 +283,7 @@ export function AudioStudio({ embedded = false, onPrepare }: Props = {}) {
             : <AdminMusicSemantic file={selected} mode={mode} detail={detail} onReset={clear} onReport={setReported} onPrepare={onPrepare} settingsHref={settingsHref} />}
         </div>
       </section>
-      <p className={s.foot}><ArrowRight size={13} className={s.icon} />파일은 동의하기 전까지 서버나 Gemini로 보내지 않아요.</p>
+      <p className={s.foot}><ArrowRight size={13} className={s.icon} />파일은 분석 버튼을 누를 때만 서버와 Gemini로 보내요.</p>
     </div>
   </div>
   <AudioGuide id={`${ids}-guide`} open={guide} onClose={closeGuide} onNavigate={leaveGuide} settingsHref={settingsHref} />

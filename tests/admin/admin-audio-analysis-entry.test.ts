@@ -133,12 +133,13 @@ describe("P1-07-AUDIO-ORIGINAL-PARITY-UI G1 이용 가이드 창", () => {
     expect(html).toContain("API키등록·플랫폼연동 열기");
     expect(html).toContain('tabindex="0" role="region" aria-label="이용 가이드 내용"');
   });
-  it("키 안내는 관리자 API연동·서버 암호화 보관·실행마다 동의로 바꾸고, 회원 키·평문 저장·지금 화면과 다른 원본 주장은 남기지 않는다", async () => {
+  it("키 안내는 관리자 API연동·서버 암호화 보관·버튼으로 바로 전송으로 바꾸고, 회원 키·평문 저장·지금 화면과 다른 원본 주장은 남기지 않는다", async () => {
     const { AudioGuide, GUIDE_KEY_TEXT } = await import("@/components/admin/audio-original/audio-guide");
     const { createElement } = await import("react");
     const html = renderToStaticMarkup(createElement(AudioGuide, { id: "g", open: false, onClose: () => {}, onNavigate: () => {}, settingsHref: "#admin-api-integrations" }));
     expect(GUIDE_KEY_TEXT).toContain("API키등록·플랫폼연동에 등록하고, 서버가 암호화해 보관해요");
-    expect(GUIDE_KEY_TEXT).toContain("분석할 때마다 파일 전송에 따로 동의해야");
+    expect(GUIDE_KEY_TEXT).toContain("분석 버튼을 누르면 파일을 Gemini로 보내요");
+    expect(GUIDE_KEY_TEXT).not.toContain("동의");
     expect(html).toContain("관리자 키 연동 원칙");
     for (const banned of ["회원", "Rule 00", "Google AI Studio", "평문", "localStorage", "똑같은", "전문을 기록", "Cut-off를 감지", "뻥튀기"]) expect(html, banned).not.toContain(banned);
   });

@@ -96,13 +96,11 @@ export function AdminAudioUpload({ file, client = defaultClient, settingsHref = 
 function UploadBody({ file, client, settingsHref, mode = "music", detail = false, context = "", special = "", onState, onReset, onReport }: Props & { client: AudioUploadClient }) {
   const [settings, setSettings] = useState<Settings>();
   const [check, setCheck] = useState(0);
-  const [transferConsent, setTransferConsent] = useState<number | null>(null);
   const [upload, setUpload] = useState<AudioUploadView>();
   const [work, setWork] = useState<Work>("");
   const [notice, setNotice] = useState<Notice>();
   const [startLost, setStartLost] = useState(false);
   const [analysisLost, setAnalysisLost] = useState(false);
-  const [analysisConsent, setAnalysisConsent] = useState<string | null>(null);
   const [sent, setSent] = useState<Sent>();
   const run = useRef<AbortController | null>(null);
   const startId = useRef<{ id: string; version: number } | null>(null);
@@ -133,12 +131,10 @@ function UploadBody({ file, client, settingsHref, mode = "music", detail = false
   const wanted: Sent = { mode, context: guidance(context), specialRequest: guidance(special), ...(detail && { reportVersion: 2 as const }) };
   // 상세 여부도 동의·요청 ID 조건에 묶는다(서버는 reportVersion을 같은 요청 ID 재전송 비교에 넣는다).
   const conditionKey = upload && ready ? JSON.stringify([upload.id, ready.version, wanted.mode, wanted.context ?? "", wanted.specialRequest ?? "", detail ? 2 : 1]) : "";
-  const transferAgreed = !!ready && transferConsent === ready.version;
-  const analysisAgreed = !!conditionKey && analysisConsent === conditionKey;
+  // 주인님 지시(2026-11-24): 동의 상자 없이 버튼으로 바로 진행한다(원본 키트와 같음). 요청 ID는 여전히 조건 키에 묶는다.
+  const transferAgreed = !!ready;
+  const analysisAgreed = !!conditionKey;
   const tooLong = [...context.trim()].length > guidanceLimit || [...special.trim()].length > guidanceLimit;
-  // 셸에서 조건이 바뀌면 분석 동의를 푼다(바꿨다가 되돌려도 이전 동의는 살아나지 않는다).
-  const [seenKey, setSeenKey] = useState(conditionKey);
-  if (seenKey !== conditionKey) { setSeenKey(conditionKey); setAnalysisConsent(null); }
 
   const say = (tone: Notice["tone"], text: string) => setNotice({ tone, text });
   function begin(kind: Work) {
@@ -159,8 +155,6 @@ function UploadBody({ file, client, settingsHref, mode = "music", detail = false
   function reloadSettings() {
     setSettings(undefined);
     setCheck(value => value + 1);
-    setTransferConsent(null);
-    setAnalysisConsent(null);
     startId.current = null;
     analysisId.current = null;
   }
@@ -317,8 +311,6 @@ function UploadBody({ file, client, settingsHref, mode = "music", detail = false
     setNotice(undefined);
     setStartLost(false);
     setAnalysisLost(false);
-    setTransferConsent(null);
-    setAnalysisConsent(null);
     setSent(undefined);
     startId.current = null;
     analysisId.current = null;
@@ -347,11 +339,6 @@ function UploadBody({ file, client, settingsHref, mode = "music", detail = false
       <li className={own.step}>
         <h4>1. 서버에 올리기</h4>
         <p className={styles.hint}>{file.name} · {megabytes(file.size)}</p>
-        <label className={styles.consent}>
-          <input type="checkbox" checked={transferAgreed} disabled={!!upload || !!work}
-            onChange={event => setTransferConsent(event.target.checked ? ready.version : null)} />
-          이 파일을 분석할 권리가 있고, 서버의 비공개 임시 저장소에 올리는 데 동의해요. 이 단계에서는 Gemini로 보내지 않아요.
-        </label>
         <div className={own.row}>
           {!upload && <Button type="button" loading={work === "start"} loadingLabel="접수 중" disabled={!transferAgreed || !!work} onClick={start}>
             {startLost ? "접수 다시 확인" : "서버에 올리기"}</Button>}
@@ -376,12 +363,7 @@ function UploadBody({ file, client, settingsHref, mode = "music", detail = false
           <div><dt>분석 맥락</dt><dd>{preview(wanted.context)}</dd></div>
           <div><dt>특별 요청</dt><dd>{preview(wanted.specialRequest)}</dd></div>
         </dl>
-        <label className={styles.consent}>
-          <input type="checkbox" checked={analysisAgreed} disabled={status !== "uploaded" || !!work || tooLong}
-            onChange={event => setAnalysisConsent(event.target.checked ? conditionKey : null)} />
-          이 파일을 분석할 권리가 있고, 위 파일과 입력을 {modeName(mode)} 분석{detail ? "(상세 보고서)" : ""}을 위해 Gemini에 전송하는 데 동의해요.
-        </label>
-        {status !== "uploaded" && !ended && <p className={styles.hint}>파일을 모두 올린 뒤 동의하고 실행할 수 있어요.</p>}
+        {status !== "uploaded" && !ended && <p className={styles.hint}>파일을 모두 올린 뒤 실행할 수 있어요.</p>}
         {tooLong && <p role="alert">분석 맥락과 특별 요청은 각각 {guidanceLimit.toLocaleString("ko-KR")}자까지 보낼 수 있어요.</p>}
         <Button type="button" loading={work === "analyze"} loadingLabel="분석 중" disabled={status !== "uploaded" || !analysisAgreed || tooLong || !!work}
           onClick={analyze}>{analysisLost ? "같은 요청 다시 보내기" : "업로드한 파일 분석 실행"}</Button>

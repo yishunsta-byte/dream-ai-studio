@@ -30,7 +30,9 @@ const expandedMusicInstruction = " 근거가 있는 경우 additionalFindings에
   "음원 출처는 관찰 근거가 있는 추정만 설명하고 실제 제작자나 출처를 단정하지 마세요. " +
   "확인할 수 없는 값은 생략하거나 null로 두세요.";
 const maxOutputTokens = 10_000;
-export const detailedAudioDeadlineMs = 50_000;
+// 상세 보고서 모델 대기. 운영에서 50초로는 3분대 곡 상세 분석이 끝나지 않았다. 경로 함수 한도 300초 안에서
+// 본문 읽기(10초)·서버 측정(23초)·큰 파일 준비(50초)를 빼고 남는 시간으로 정한다.
+export const detailedAudioDeadlineMs = 200_000;
 
 export const detailedAudioUnavailable = (requestedMode: AdminAudioMode, kind: AudioKind, reason: DetailedAudioFailure): DetailedAudioResponse =>
   ({ schemaVersion: 2, requestedMode, kind, status: "unavailable", reason });
