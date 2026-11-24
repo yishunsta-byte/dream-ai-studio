@@ -93,26 +93,43 @@ async function inspectAudioFile(path: string, signal: AbortSignal, accept: (form
   }
 }
 
-// 오디오 호환(Master msg_312264ab147c): 이름과 내용이 다르거나 file-type이 판별하지 못한 바로 분석 입력은
-// 지원 4형식의 해석기만 허용한 서버 측정으로 실제 형식을 확인한다. 확인된 형식만 돌려준다(이름·브라우저 MIME은 쓰지 않는다).
-export const identifiableDemuxers = "mp3,wav,mov,mp4,m4a,3gp,3g2,mj2,flac";
-export function identifiedAudioFormat(formatName: string | undefined, codec: string | undefined): AudioUploadFormat | undefined {
+// 오디오 호환: 원본 키트(v1.01)는 내용 검사 없이 Gemini에 맡겨, 이름과 내용이 다른 파일도 분석됐다.
+// 여기서는 이름과 내용이 다르거나 file-type이 판별하지 못한 입력을, 허용 해석기만 쓰는 서버 측정(오디오 스트림·1초 디코딩)으로
+// 실제 형식을 확인한 뒤 그 형식의 MIME으로만 보낸다(이름·브라우저 MIME은 쓰지 않는다). 바로 분석과 큰 파일 업로드가 같이 쓴다.
+// AAC(ADTS)·Ogg는 원본처럼 Gemini가 처리하는 오디오라 확인 형식에 넣는다(선택 가능한 파일 이름 목록은 그대로).
+export const confirmedAudioMime = { ...audioUploadMime, aac: "audio/aac", ogg: "audio/ogg" } as const;
+export type ConfirmedAudioFormat = keyof typeof confirmedAudioMime;
+export const identifiableDemuxers = "mp3,wav,mov,mp4,m4a,3gp,3g2,mj2,flac,aac,ogg";
+// 이름과 달라도 서버 측정으로 확인해 볼 file-type 판별 값. 그 밖(이미지·문서·영상·webm 등)은 측정 없이 바로 막는다.
+export const identifiableContent: ReadonlySet<string> = new Set(["mp3", "wav", "m4a", "mp4", "flac", "aac", "ogg", "oga", "opus"]);
+export function identifiedAudioFormat(formatName: string | undefined, codec: string | undefined): ConfirmedAudioFormat | undefined {
   const names = (formatName ?? "").split(",");
   if (names.includes("mp3") && codec === "mp3") return "mp3";
   if (names.includes("wav") && codec?.startsWith("pcm_")) return "wav";
   if (names.includes("mp4") && (codec === "aac" || codec === "alac")) return "m4a";
   if (names.includes("flac") && codec === "flac") return "flac";
+  if (names.includes("aac") && codec === "aac") return "aac";
+  if (names.includes("ogg") && (codec === "vorbis" || codec === "opus" || codec === "flac")) return "ogg";
 }
-export async function identifyInlineAudio(bytes: Buffer, signal: AbortSignal): Promise<{ format: AudioUploadFormat; measurement: AudioMeasurement }> {
+// 확인 기록: 값은 모두 위 고정 목록 안의 짧은 이름이다(목록 밖은 "other"). 파일명·본문·경로는 남기지 않는다.
+const recordValue = (value: string | undefined) => value === undefined ? null : identifiableContent.has(value) ? value : "other";
+export function audioInputResolved(detail: { expected: string; detected?: string; resolved: string }) {
+  console.info("admin_audio_input_resolved", { expected: recordValue(detail.expected), detected: recordValue(detail.detected),
+    resolved: recordValue(detail.resolved) });
+}
+async function confirmAudioFile(path: string, signal: AbortSignal) {
+  const inspected = await inspectAudioFile(path, signal, (formatName, codec) => identifiedAudioFormat(formatName, codec) !== undefined,
+    identifiableDemuxers);
+  const format = identifiedAudioFormat(inspected.formatName, inspected.codec);
+  if (!format) throw new AudioUploadError("invalid_file");
+  return { format, measurement: inspected.measurement };
+}
+export async function identifyInlineAudio(bytes: Buffer, signal: AbortSignal): Promise<{ format: ConfirmedAudioFormat; measurement: AudioMeasurement }> {
   const root = await mkdtemp(join(tmpdir(), "dream-admin-audio-"));
   const path = join(root, "source.bin");
   try {
     await writeFile(path, bytes, { flag: "wx", mode: 0o600, signal });
-    const inspected = await inspectAudioFile(path, signal, (formatName, codec) => identifiedAudioFormat(formatName, codec) !== undefined,
-      identifiableDemuxers);
-    const format = identifiedAudioFormat(inspected.formatName, inspected.codec);
-    if (!format) throw new AudioUploadError("invalid_file");
-    return { format, measurement: inspected.measurement };
+    return await confirmAudioFile(path, signal);
   } finally {
     await rm(path, { force: true });
     await rmdir(root);
@@ -139,10 +156,20 @@ export async function withVerifiedAudio<T>(input: { filename: string; sizeBytes:
     }
     await writeFile(path, chunks(), { flag: "wx", mode: 0o600, signal });
     const type = await fileTypeFromFile(path).catch(() => undefined);
-    if (type?.ext !== format && !(format === "m4a" && type?.ext === "mp4")) throw new AudioUploadError("invalid_file");
-    const { measurement } = await inspectAudioFile(path, signal, (formatName, codec) =>
-      format !== "flac" || (formatName === "flac" && codec === "flac"));
-    return await action({ path, sizeBytes, mime: audioUploadMime[format], sha256: hash.digest("base64"), measurement });
+    let mime: string = audioUploadMime[format];
+    let measurement: AudioMeasurement;
+    if (type?.ext === format || (format === "m4a" && type?.ext === "mp4")) {
+      ({ measurement } = await inspectAudioFile(path, signal, (formatName, codec) =>
+        format !== "flac" || (formatName === "flac" && codec === "flac")));
+    } else {
+      // 큰 파일도 바로 분석과 같은 규칙: 알려진 비오디오는 바로 막고, 나머지는 서버 측정으로 확인한 형식으로만 보낸다.
+      if (type && !identifiableContent.has(type.ext)) throw new AudioUploadError("invalid_file");
+      const confirmed = await confirmAudioFile(path, signal);
+      mime = confirmedAudioMime[confirmed.format];
+      measurement = confirmed.measurement;
+      audioInputResolved({ expected: format, detected: type?.ext, resolved: confirmed.format });
+    }
+    return await action({ path, sizeBytes, mime, sha256: hash.digest("base64"), measurement });
   } finally {
     await rm(path, { force: true });
     await rmdir(root);

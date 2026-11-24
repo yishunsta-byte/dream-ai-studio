@@ -5,19 +5,22 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
-import { AudioUploadError, classifyProbeFailure, identifiedAudioFormat, identifyInlineAudio, measureInlineAudio }
+import { AudioUploadError, classifyProbeFailure, identifiedAudioFormat, identifyInlineAudio, measureInlineAudio, withVerifiedAudio }
   from "@/lib/reference-analysis/admin-audio-media";
 // @ts-expect-error 빌드 스크립트(.mjs)라 타입 선언이 없다.
 import { flattenLibraryLinks } from "../../scripts/reference-media-libs.mjs";
 
 describe("identifiedAudioFormat", () => {
-  it("maps only the four supported containers with their own codecs", () => {
+  it("maps only supported containers with their own codecs, including AAC and Ogg that Gemini reads", () => {
     expect(identifiedAudioFormat("mp3", "mp3")).toBe("mp3");
     expect(identifiedAudioFormat("wav", "pcm_s16le")).toBe("wav");
     expect(identifiedAudioFormat("mov,mp4,m4a,3gp,3g2,mj2", "aac")).toBe("m4a");
     expect(identifiedAudioFormat("mov,mp4,m4a,3gp,3g2,mj2", "alac")).toBe("m4a");
     expect(identifiedAudioFormat("flac", "flac")).toBe("flac");
-    for (const [name, codec] of [["aac", "aac"], ["ogg", "opus"], ["matroska,webm", "opus"], ["mp3", "aac"], ["wav", "mp3"],
+    expect(identifiedAudioFormat("aac", "aac")).toBe("aac");
+    expect(identifiedAudioFormat("ogg", "opus")).toBe("ogg");
+    expect(identifiedAudioFormat("ogg", "vorbis")).toBe("ogg");
+    for (const [name, codec] of [["matroska,webm", "opus"], ["mp3", "aac"], ["wav", "mp3"], ["aac", "mp3"], ["ogg", "theora"],
       ["mov,mp4,m4a,3gp,3g2,mj2", "mp3"], ["flac", "pcm_s16le"], [undefined, undefined]] as const) {
       expect(identifiedAudioFormat(name, codec)).toBeUndefined();
     }
@@ -28,6 +31,24 @@ describe("identifiedAudioFormat", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     await expect(identifyInlineAudio(Buffer.alloc(256, 7), AbortSignal.timeout(5_000)))
       .rejects.toMatchObject({ code: "media_unavailable" });
+    vi.unstubAllEnvs();
+  });
+});
+
+describe("large upload content check", () => {
+  const verify = (bytes: Buffer, filename: string) => withVerifiedAudio({ filename, sizeBytes: bytes.length, signal: AbortSignal.timeout(5_000),
+    read: async offset => offset === 0 ? bytes : undefined }, async audio => audio.mime);
+
+  it("closes known non-audio content without measuring", async () => {
+    vi.stubEnv("FFPROBE_PATH", join(tmpdir(), "missing-ffprobe-for-large"));
+    await expect(verify(Buffer.concat([Buffer.from("GIF89a"), Buffer.alloc(64)]), "노래.mp3")).rejects.toMatchObject({ code: "invalid_file" });
+    vi.unstubAllEnvs();
+  });
+
+  it("measures unidentified content and stops as a server tool problem when the tool is missing", async () => {
+    vi.stubEnv("FFPROBE_PATH", join(tmpdir(), "missing-ffprobe-for-large"));
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    await expect(verify(Buffer.alloc(256, 7), "노래.mp3")).rejects.toMatchObject({ code: "media_unavailable" });
     vi.unstubAllEnvs();
   });
 });

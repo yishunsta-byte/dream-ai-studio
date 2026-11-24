@@ -4,7 +4,8 @@ import { fileTypeFromBuffer } from "file-type";
 import { resolveServerAuth } from "../auth/resolve";
 import { rejectForeignWrite } from "../public-showcase/admin-publication-http";
 import type { AudioMeasurement } from "./admin-audio-details-contract";
-import { AudioUploadError, identifyInlineAudio, inlineAudioProbeDeadlineMs, measureInlineAudio } from "./admin-audio-media";
+import { AudioUploadError, audioInputResolved, confirmedAudioMime, identifiableContent, identifyInlineAudio, inlineAudioProbeDeadlineMs,
+  measureInlineAudio } from "./admin-audio-media";
 import { audioFormatFromFilename, audioUploadMime } from "./admin-audio-upload-contract";
 import { referenceFileName, referenceUploadByteLimit } from "./input";
 import { MUSIC_EXTERNAL_CONSENT_HEADER } from "./music-semantic-contract";
@@ -26,12 +27,6 @@ export function audioInputRejected(stage: "file_type" | "probe" | "identify" | "
 // file-type은 일반 MP4 표시(isom 등)의 M4A를 "mp4"로 판별한다. 측정 단계(withVerifiedAudio)와 같은 기준으로 받는다.
 export const audioContentMatches = (expected: string, detected: string | undefined) =>
   detected === expected || (expected === "m4a" && detected === "mp4");
-// 이름과 달라도 서버 측정으로 확인해 볼 내용 판별 값(지원 4형식). 그 밖의 판별 값(이미지·문서·영상·aac·ogg 등)은 바로 막는다.
-const identifiableContent = new Set(["mp3", "wav", "m4a", "mp4", "flac"]);
-export function audioInputResolved(detail: { expected: string; detected?: string; resolved: string }) {
-  console.info("admin_audio_input_resolved", { expected: fixedValue(detail.expected, recordedFormats),
-    detected: fixedValue(detail.detected, recordedFormats), resolved: fixedValue(detail.resolved, recordedFormats) });
-}
 type AudioRun = (audio: AudioPayload, signal: AbortSignal, measurement?: AudioMeasurement) => Promise<Response>;
 
 export const audioJson = (body: unknown, status = 200) => Response.json(body, {
@@ -101,7 +96,7 @@ export function createAdminAudioAccess({ authenticate = resolveServerAuth, env =
         const bytes = await readBounded(request.body, referenceUploadByteLimit, signal);
         if (!bytes) return audioJson({ error: "too_large" }, 413);
         const format = await fileTypeFromBuffer(bytes).catch(() => undefined);
-        let audio = { bytes, mime: audioUploadMime[expected] };
+        let audio: AudioPayload = { bytes, mime: audioUploadMime[expected] };
         let measurement: AudioMeasurement | undefined;
         if (!audioContentMatches(expected, format?.ext)) {
           if (format && !identifiableContent.has(format.ext)) {
@@ -110,7 +105,7 @@ export function createAdminAudioAccess({ authenticate = resolveServerAuth, env =
           }
           try {
             const identified = await identifyInlineAudio(bytes, AbortSignal.any([request.signal, AbortSignal.timeout(inlineAudioProbeDeadlineMs)]));
-            audio = { bytes, mime: audioUploadMime[identified.format] };
+            audio = { bytes, mime: confirmedAudioMime[identified.format] };
             measurement = identified.measurement;
             audioInputResolved({ expected, detected: format?.ext, resolved: identified.format });
           } catch (error) {
