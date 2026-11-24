@@ -154,10 +154,10 @@ describe("서버·클라이언트 경계와 진입 링크(정적)", () => {
     expect(readFileSync("components/admin/shorts-original/shorts-paths.ts", "utf8")).not.toMatch(/^\s*["']use (client|server)["']/m);
     expect(readFileSync("components/admin/shorts-original/shorts-studio.tsx", "utf8")).toMatch(/^"use client";/);
   });
-  it("운영 작업실 쇼츠 칸(검색·단건 분석·공개 준비)은 그대로 두고 전용 화면 링크만 더한다", () => {
+  it("운영 쇼츠 칸은 내장 작업실과 기존 검색·단건 분석·공개 준비를 제공한다", () => {
     const programs = readFileSync("components/admin/admin-premiere-programs.tsx", "utf8");
-    expect(programs).toMatch(/import \{ shortsAnalysisPath \} from "\.\/shorts-original\/shorts-paths";/);
-    expect(programs).toMatch(/<a className=\{hub\.link\} href=\{shortsAnalysisPath\}>쇼츠 분석 작업실\(원본 v2\.01\) 열기<\/a>/);
+    expect(programs).not.toContain("href={shortsAnalysisPath}");
+    expect(programs).not.toContain("쇼츠 분석 작업실(원본 v2.01) 열기");
     expect(programs).toMatch(/<AdminShortsAnalysis onSourceChange=\{setUrl\} onPrepare=\{onPrepare\} appearance="premiere" \/>/);
   });
 });

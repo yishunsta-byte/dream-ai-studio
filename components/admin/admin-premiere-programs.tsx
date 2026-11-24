@@ -15,8 +15,6 @@ import { AdminStudioReturn } from "./admin-studio-return";
 import { PasteUrlField } from "./admin-paste-url";
 import { analysisPrograms, analysisResultsSection, navigateAdminSection, useAdminSection } from "./admin-navigation";
 import { imageShareSection } from "./admin-paths";
-import { audioAnalysisPath } from "./audio-analysis-path";
-import { shortsAnalysisPath } from "./shorts-original/shorts-paths";
 import { ShortsStudio } from "./shorts-original/shorts-studio";
 import {
   analysisInputIssue, createAdminReferenceAnalysisClient, failureMessage, SUPPORTED_ORIGINS,
@@ -329,9 +327,6 @@ export function AdminPremierePrograms() {
         {program.kind !== "image"
           ? <div className={styles.programHeading}>
             <h2 id={`${id}-title`} tabIndex={-1}>{label}</h2>
-            {program.kind === "music"
-              ? <a className={hub.link} href={audioAnalysisPath}>오디오 분석 작업실(원본 v1.15) 열기 <Icon name="arrow" /></a>
-              : <a className={hub.link} href={shortsAnalysisPath}>쇼츠 분석 작업실(원본 v2.01) 열기</a>}
           </div>
           : <header className={styles.mast}>
             <div><h2 id={`${id}-title`} tabIndex={-1}>{label}</h2><p>{program.description}</p></div>

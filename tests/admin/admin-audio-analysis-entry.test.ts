@@ -78,12 +78,13 @@ describe("서버·클라이언트 경계(정적)", () => {
     expect(readFileSync("components/admin/audio-analysis-path.ts", "utf8")).not.toMatch(/^\s*["']use (client|server)["']/m);
     expect(page).toMatch(/<main id="main-content" className="content">\s*<ProtectedContent>/);
   });
-  it("운영 오디오 탭은 원본 작업실과 기존 공개 준비·복귀 진입을 연결한다", () => {
+  it("운영 오디오 탭은 내장 작업실과 공개 준비·복귀 진입을 제공한다", () => {
     const programs = readFileSync("components/admin/admin-premiere-programs.tsx", "utf8");
     const studio = readFileSync("components/admin/audio-original/audio-studio.tsx", "utf8");
     expect(programs).toContain("<AudioStudio embedded onPrepare={onPrepare} />");
     expect(programs).toContain('<AdminStudioReturn kind="audio" />');
-    expect(programs).toContain("href={audioAnalysisPath}");
+    expect(programs).not.toContain("href={audioAnalysisPath}");
+    expect(programs).not.toContain("오디오 분석 작업실(원본 v1.15) 열기");
     expect(studio).toMatch(/<AdminMusicSemantic file=\{selected\}[^>]*onPrepare=\{onPrepare\}/);
     expect(studio).not.toMatch(/<main\b/);
   });
