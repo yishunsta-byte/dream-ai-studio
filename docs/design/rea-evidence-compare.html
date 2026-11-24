@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>레퍼런스 분석 · 근거 비교</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#11121b;color:#f6f3ff;font:16px/1.65 "Pretendard","Malgun Gothic",sans-serif;word-break:keep-all}main,header{max-width:1160px;margin:auto;padding:20px 32px}header{border-bottom:1px solid #393947;display:flex;align-items:center;gap:12px;font-size:14px;color:#c9c4d6}header b{color:#fff;letter-spacing:.06em}.spark{color:#dbb1ff}h1{font-size:clamp(32px,5vw,58px);letter-spacing:-.055em;margin:22px 0 4px;line-height:1.2}h2{font-size:23px;letter-spacing:-.04em;margin:0}h3{font-size:16px;margin:0 0 6px}p{margin:0 0 12px}.intro,small{color:#c1bbd0}.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:25px 0 18px}.choices{display:flex;gap:4px;padding:4px;background:#252433;border-radius:12px}button{font:inherit;font-weight:700;border:0;border-radius:8px;background:transparent;color:#ccc8da;min-height:44px;padding:5px 18px;cursor:pointer}button[aria-pressed=true]{background:#ded2ff;color:#241336}label{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer}input{accent-color:#c6a3ff;width:18px;height:18px}.grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}.panel{padding:24px;border:1px solid #424050;background:#1b1b29;border-radius:16px}.head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.asset{background:#2b273b;padding:18px;border-radius:10px;margin:18px 0}.asset strong{display:block;font-size:22px}.asset a{color:#ddc7ff;display:inline-flex;align-items:center;min-height:44px}.row{padding:14px 0;border-top:1px solid #424050}.row p,.diff p{margin:3px 0}.location{color:#c7bfda;font-size:14px}.diff{border-left:3px solid #8b859b;padding:8px 14px;margin:20px 0;background:#242332}.revised{border-color:#bc9bfb}.change{display:inline-block;color:#ede3ff;background:#493661;border-radius:5px;padding:2px 7px;font-weight:700}.empty{border:1px dashed #706884;border-radius:10px;padding:18px;margin-top:16px}.empty strong{display:block}a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #ffca7a;outline-offset:2px}[hidden]{display:none!important}@media(max-width:720px){main,header{padding:16px}.grid{grid-template-columns:1fr}.panel{padding:18px}.controls{margin:16px 0}.choices{width:100%}.choices button{flex:1;padding:5px}.head{flex-wrap:wrap}h1{margin-top:14px}}
+</style>
+<header><b><span class="spark">✦</span> DREAM SCREEN</b><span>작업실 / 레퍼런스 분석</span></header>
+<main><h1>분석 근거 비교</h1><p class="intro">원본의 어느 부분에서 얻은 근거인지 살펴보고 프롬프트 변경 내용을 비교하세요.</p>
+<div class="controls"><div class="choices" role="group" aria-label="자료 선택"><button data-key="jpg" aria-pressed="true">JPG 이미지</button><button data-key="mp3" aria-pressed="false">MP3 음악</button><button data-key="mp4" aria-pressed="false">MP4 영상</button></div><label><input id="missing" type="checkbox">근거 없는 결과 보기</label></div>
+<div class="grid"><section class="panel"><div class="head"><h2>원문과 근거</h2><small id="type"></small></div>
+<div class="asset"><small>공개 원문</small><strong id="title"></strong><a id="source" target="_blank" rel="noopener">원본 파일 열기 ↗</a><div class="location" id="position"></div></div>
+<div id="evidence"><div class="row"><h3>관찰</h3><div class="location" id="where"></div><p id="observed"></p></div><div class="row"><h3>추정 · 편집 제안</h3><div class="location" id="basis"></div><p id="inferred"></p></div></div>
+<div class="empty" id="noEvidence" hidden><strong>확인할 수 있는 관찰 근거가 없어요.</strong>원본 파일과 분석 구간을 확인하세요. 이 결과에는 추정이나 프롬프트가 생성되지 않았어요.</div></section>
+<section class="panel"><div class="head"><h2>프롬프트 비교</h2><small>편집 예시</small></div><div id="versions"><div class="diff"><h3>원본 프롬프트</h3><p id="original"></p></div><div class="diff revised"><h3>수정본</h3><p><span id="repeat"></span> <span class="change" id="addition"></span></p></div><div class="row"><h3>변경 내용</h3><p id="delta"></p></div></div><div class="empty" id="noPrompt" hidden>비교할 프롬프트가 없어요.</div></section></div>
+<p role="status" id="status" class="location"></p></main>
+<script>
+const samples = {
+ jpg:{type:"JPG · 이미지",title:"손 그림",source:"MDN",url:"https://interactive-examples.mdn.mozilla.net/media/cc0-images/painted-hand-298-332.jpg",position:"이미지 전체 영역",observation:"주요 색 #e0e060이 전체의 65.95%를 차지해요.",inference:"주요 색을 중심으로 팔레트를 제한하면 화면의 톤을 통일할 수 있어요.",original:"연두색 계열을 중심으로 화면을 구성한다.",addition:"배경은 한 가지 색으로 정리한다."},
+ mp3:{type:"MP3 · 음악",title:"Salamander 피아노 A4",source:"Tone.js",url:"https://tonejs.github.io/audio/salamander/A4.mp3",position:"00:00.000–00:13.323 · 전체 구간",observation:"2채널 음원이며 해당 구간의 최대 정규화 RMS는 약 13%예요.",inference:"새 편집에서는 여린 음량의 질감을 살리는 방향을 시도할 수 있어요.",original:"피아노의 잔향을 살리는 사운드를 만든다.",addition:"도입에는 다른 악기를 겹치지 않는다."},
+ mp4:{type:"MP4 · 영상",title:"꽃 영상",source:"MDN",url:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",position:"00:00.000 · 첫 프레임",observation:"영상 시작 위치의 첫 프레임을 디코딩해 확인했어요. 후속 장면은 이 근거에 포함되지 않아요.",inference:"첫 장면을 새 영상의 도입 구도 참고로 사용할 수 있어요.",original:"첫 프레임을 참고해 도입 구도를 잡는다.",addition:"도입 구도를 2초간 유지한다."}
+};
+const el=id=>document.getElementById(id);
+const buttons=[...document.querySelectorAll("[data-key]")];
+let selected="jpg";
+function render(){
+ const asset=samples[selected], empty=el("missing").checked;
+ buttons.forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.key===selected)));
+ el("source").href=asset.url;el("source").textContent=asset.source+" 원본 파일 열기 ↗";
+ const fields={type:asset.type,title:asset.title,position:asset.position,where:asset.position,basis:"참조 관찰 · "+asset.position,observed:asset.observation,inferred:asset.inference,original:asset.original,repeat:asset.original,addition:asset.addition,delta:"추가한 지시 — "+asset.addition};
+ for(const [id,value] of Object.entries(fields)) el(id).textContent=value;
+ el("evidence").hidden=el("versions").hidden=empty;el("noEvidence").hidden=el("noPrompt").hidden=!empty;
+ el("status").textContent=asset.type+" · "+(empty?"근거 없음":"관찰 1건 · 추정 1건");
+}
+buttons.forEach(button=>button.addEventListener("click",()=>{selected=button.dataset.key;render()}));
+el("missing").addEventListener("change",render);render();
+</script></html>

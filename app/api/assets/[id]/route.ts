@@ -7,6 +7,10 @@ import { resolveStoredFile } from "@/lib/storage/paths";
 import { parseByteRange } from "@/lib/media/range";
 export const runtime="nodejs";
 export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
+ if (process.env.DREAM_PRIVATE_UPLOAD_BACKEND === "owned-pg17" && new URL(request.url).searchParams.get("format") === "wav") {
+   const { localPrivateWav } = await import("@/lib/cloud/local-private-wav");
+   return localPrivateWav(request,(await params).id);
+ }
  const denied=await requireApiAuth();if(denied)return denied;
 
  try {

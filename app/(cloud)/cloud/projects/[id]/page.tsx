@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CloudReadLocal, CloudReadUnavailable, cloudWorkspaceCapability } from "@/components/cloud/project-list-readonly";
 import { ProjectDetailReadonly } from "@/components/cloud/project-detail-readonly";
@@ -6,6 +7,9 @@ import { readCloudProject } from "@/lib/cloud/project-read-page";
 import { cloudBriefPath } from "@/components/cloud/managed-project-requests";
 import { cloudPlanPath } from "@/components/cloud/managed-plan-requests";
 import { cloudScenesPath } from "@/components/cloud/managed-scene-requests";
+import { ProjectBrief } from "@/components/cloud/project-brief";
+import { PrivateWavPanel } from "@/components/cloud/private-wav-panel";
+import { localProjectFormEnabled } from "@/lib/cloud/local-project-form-enabled";
 
 export const metadata: Metadata = { title: "프로젝트 보기 · Dream AI Studio" };
 
@@ -25,6 +29,21 @@ export default async function CloudProjectPage({ params }: { params: Promise<{ i
     && result.data.stages.some(row => row.stage === "plan" && row.status !== "locked");
   // P2-MANAGED-SOURCE-SCENE-PANEL: 관리형 장면 조회(같은 조건의 GET /scenes)가 열려 있고 장면 제작 단계가 열려 있으면 장면 링크를 준다.
   const scenesOpen = process.env.DREAM_SCENE_READ_BACKEND !== undefined && result.data.stages.some(row => row.stage === "produce" && row.status !== "locked");
-  return <ProjectDetailReadonly project={result.data} briefHref={briefOpen ? cloudBriefPath(result.data.id) : undefined}
-    planHref={planOpen ? cloudPlanPath(result.data.id) : undefined} scenesHref={scenesOpen ? cloudScenesPath(result.data.id) : undefined} capability={capability} />;
+  const project = result.data;
+  const localTools = process.env.DREAM_PROJECT_CORE_BACKEND === undefined && localProjectFormEnabled() && project.menuId === "shopping-shorts";
+  const produceOpen = project.stages.some(stage => stage.stage === "plan" && stage.status === "approved") &&
+    project.stages.some(stage => stage.stage === "produce" && stage.status !== "locked");
+  return <>
+    <ProjectDetailReadonly project={project} briefHref={briefOpen ? cloudBriefPath(project.id) : undefined}
+      planHref={planOpen ? cloudPlanPath(project.id) : undefined} scenesHref={scenesOpen ? cloudScenesPath(project.id) : undefined} capability={capability} />
+    {localTools && <>
+      {produceOpen && <div><Link className="action-link" href={`/cloud/projects/${project.id}/produce`}>장면 제작으로 이동</Link></div>}
+      <ProjectBrief key={project.id} projectId={project.id} />
+      <PrivateWavPanel projectId={project.id} />
+      <Link className="action-link" href={`/cloud/projects/${project.id}/editing-audio`}>편집 음원 선택</Link>
+      <Link className="action-link" href={`/cloud/projects/${project.id}/subtitles`}>자막 편집</Link>
+      <Link className="action-link" href={`/cloud/projects/${project.id}/render`}>영상 만들기</Link>
+      <Link className="action-link" href={`/cloud/projects/${project.id}/editing-zip`}>재편집 ZIP</Link>
+    </>}
+  </>;
 }

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>등록 MP4 분석 결과 · 원본 시간과 편집 기준</title>
+  <link rel="icon" href="data:,">
+  <style>
+    @font-face{font-family:Pretendard;src:url('../../../../public/fonts/PretendardVariable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    :root{color-scheme:light;--bg:#f1f7f3;--ink:#182f38;--muted:#405b60;--edge:#c0d5cc;--white:#fff;--brand:#086d62;--green:#e7f3ec;font:16px/1.55 Pretendard,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+    *,*::before,*::after{box-sizing:border-box}body{margin:0;word-break:keep-all;overflow-wrap:anywhere}h1,h2,h3,p,figure{margin:0}select,textarea{font:inherit;color:inherit}:where(select,textarea):focus-visible{outline:2px solid #94601a;outline-offset:4px}
+    .wrap{width:min(1120px,calc(100% - 56px));margin-inline:auto}.brand{background:#193e3c;color:#f2fffa;border-bottom:1px solid #254f49}.brand .wrap{display:flex;align-items:center;gap:10px;min-height:56px}.brand small{color:#c8e9dc;margin-left:auto}.mark{width:32px;height:32px;display:grid;place-items:center;border-radius:8px;color:#234437;background:#a7ead4}
+    main{padding:22px 0 35px}.intro{padding:22px 24px;border-radius:13px;border:1px solid var(--edge);background:linear-gradient(110deg,#e0f1e8,#f8f5e6);margin-bottom:14px}.intro h1{font-size:clamp(32px,5vw,55px);line-height:1.12;letter-spacing:-.06em}.intro p{margin-top:8px;color:#2b5c50}.grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.3fr);align-items:start;gap:13px}.card{min-width:0;border:1px solid var(--edge);border-radius:11px;background:var(--white);padding:16px 19px}h2{font-size:24px;line-height:1.2;letter-spacing:-.035em;margin-bottom:8px}h3{font-size:17px;line-height:1.25}.small{color:var(--muted);font-size:14px}.field-label{display:block;font-weight:750;margin:8px 0 5px}.field{width:100%;min-height:44px;padding:8px 9px;border:1px solid #9ebfb1;border-radius:7px;background:#fff}.field[rows]{min-height:86px;resize:vertical}
+    .timeline{margin-top:17px;border-top:1px solid var(--edge);padding-top:13px}.timeline figcaption{margin-bottom:25px}.track{height:23px;position:relative;border-radius:5px;background:linear-gradient(to right,#b8453d 0 50%,#3b9391 50% 100%)}.track .range{position:absolute;top:0;bottom:0;left:48.35%;width:1.65%;min-width:4px;background:#fae393;border-left:1px solid #5e431b}.track .pin{position:absolute;left:0;top:-11px;bottom:-5px;width:2px;color:#163d36;background:currentColor}.track .pin::before{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:currentColor;top:-2px;left:-2.5px}.ticks{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:9px;font-variant-numeric:tabular-nums}.time-note{margin-top:8px}
+    .readout{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:center;border:1px solid #c2dad0;border-radius:8px;background:#eef7f2;padding:9px 11px;margin:9px 0 12px}.readout strong{font-size:22px;line-height:1.2;color:#17483b;font-variant-numeric:tabular-nums}.result-kind{color:#225e50;font-weight:745;font-size:14px}.section{margin-top:13px}.observations{padding-left:20px;margin:6px 0 0;font-size:15px}.observations li{padding:3px 0}.analysis-note{border:1px solid #cfddd5;border-radius:8px;background:#edf4f0;padding:9px 10px;margin-top:11px}.analysis-note p{margin-top:4px}.edit-sheet{border-top:1px solid var(--edge);margin-top:14px;padding-top:13px}.edit-timing{display:inline-flex;border:1px solid #d2c9aa;border-radius:6px;background:#f5efdd;color:#574b2d;font-size:14px;padding:4px 8px;margin-bottom:9px}.draft{background:#edf5ef;border:1px solid #cadaD0;border-radius:7px;padding:8px 10px;margin:5px 0}.hide-visually{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}[hidden]{display:none!important}
+    @media(max-width:700px){.wrap{width:calc(100% - 28px)}main{padding-top:15px}.intro,.card{padding:14px}.grid{grid-template-columns:minmax(0,1fr)}.readout{gap:4px 12px}}
+  </style>
+</head>
+<body>
+  <header class="brand"><div class="wrap"><span class="mark" aria-hidden="true">✦</span><strong>Dream AI Studio</strong><small>클라우드 작업실</small></div></header>
+  <main class="wrap">
+    <header class="intro"><h1>MP4 분석 결과의 시간 표시</h1><p>격리 환경의 등록 MP4 시험 결과로 원본 프레임 시각, 전환 후보, 편집 기준을 비교합니다.</p></header>
+    <div class="grid">
+      <section class="card" aria-labelledby="select-heading">
+        <h2 id="select-heading">분석 결과 선택</h2>
+        <label class="field-label" for="choice">결과 선택</label>
+        <select class="field" id="choice">
+          <option value="start">0 ms · 디코딩 프레임</option>
+          <option value="frame">1000 ms · 디코딩 프레임</option>
+          <option value="cut">1000 ms · 장면 전환 후보</option>
+        </select>
+        <figure class="timeline">
+          <figcaption><h3>시험 영상의 원본 시간</h3><p class="small">1초 지점에서 빨강에서 청록으로 바뀌는 2초 시험 영상의 도식이에요.</p></figcaption>
+          <div aria-hidden="true"><div class="track"><span class="range" id="range" hidden></span><span class="pin" id="pin"></span></div><div class="ticks"><span>0 ms</span><span>1000 ms</span><span>2000 ms</span></div></div>
+          <p class="small time-note" id="time-note"></p>
+        </figure>
+      </section>
+      <section class="card" aria-labelledby="result-heading">
+        <h2 id="result-heading">분석 결과</h2>
+        <div class="readout"><div><p class="small">원본 프레임 표시 시각</p><strong id="pts"></strong></div><p class="result-kind" id="result-kind"></p></div>
+        <div class="section"><h3>관찰 근거</h3><ol class="observations" id="observations"></ol></div>
+        <div class="analysis-note"><h3>분석 추정</h3><p class="small" id="inference"></p><p class="small" id="evidence-numbers" hidden>관련 관찰 근거 1번, 2번</p></div>
+        <div class="edit-sheet">
+          <p class="edit-timing" id="edit-timing"></p>
+          <h3>분석으로 생성한 초안</h3>
+          <p class="draft" id="original"></p>
+          <p class="small">제작자가 공개한 프롬프트는 확인되지 않았어요.</p>
+          <label class="field-label" for="revision">내 수정본</label>
+          <textarea class="field" id="revision" rows="3"></textarea>
+        </div>
+      </section>
+    </div>
+    <p class="hide-visually" id="result-status" role="status" aria-atomic="true"></p>
+  </main>
+  <script>
+    const get = id => document.getElementById(id);
+    const choice = get("choice"), revision = get("revision");
+    const durationMs = 2000;
+    const frameDraft = "이 관찰 시점을 참고해 사용자 소재의 핵심 장면을 보여 주는 쇼트를 구성하세요.";
+    const results = {
+      start: { pts: 0, frame: 0, kind: "디코딩 프레임", observations: ["디코딩된 영상 프레임 · 0 ms"], draft: frameDraft },
+      frame: { pts: 1000, frame: 30, kind: "디코딩 프레임", observations: ["디코딩된 영상 프레임 · 1000 ms"], draft: frameDraft },
+      cut: { pts: 1000, frame: 30, kind: "장면 전환 후보", observations: ["인접 프레임의 평균 RGB 차이 74.51% · 967–1000 ms", "디코딩된 영상 프레임 · 1000 ms"], inference: "장면 전환 후보 · 967–1000 ms", draft: "사용자 소재에서 화면 변화가 큰 지점을 골라 앞뒤 쇼트를 바로 연결하세요." },
+    };
+    const edits = new Map();
+
+    function render() {
+      const result = results[choice.value];
+      get("pts").textContent = `${result.pts} ms`;
+      get("result-kind").textContent = result.kind;
+      get("pin").style.left = `${(result.pts / durationMs) * 100}%`;
+      get("range").hidden = !result.inference;
+      get("time-note").textContent = result.inference ? "RGB 차이를 비교한 구간은 967–1000 ms예요." : `선택한 프레임의 원본 시각은 ${result.pts} ms예요.`;
+      get("observations").replaceChildren(...result.observations.map(text => {
+        const item = document.createElement("li");
+        item.textContent = text;
+        return item;
+      }));
+      get("inference").textContent = result.inference ?? "이 결과에 포함된 추정이 없어요.";
+      get("evidence-numbers").hidden = !result.inference;
+      get("edit-timing").textContent = `편집 기준 약 ${result.frame}프레임 · 30 fps`;
+      get("original").textContent = result.draft;
+      revision.value = edits.get(choice.value) ?? result.draft;
+    }
+
+    choice.addEventListener("change", () => {
+      render();
+      const result = results[choice.value];
+      get("result-status").textContent = `${result.pts} ms ${result.kind} 결과를 표시했어요.`;
+    });
+    revision.addEventListener("input", () => edits.set(choice.value, revision.value));
+    render();
+  </script>
+</body>
+</html>

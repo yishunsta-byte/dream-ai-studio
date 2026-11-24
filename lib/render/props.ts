@@ -7,7 +7,13 @@ import type { RenderInput } from "./input";
 export type RenderClip={sceneId:string;from:number;durationInFrames:number;kind:"image"|"video";src:string;trimBefore:number};
 export type RenderFont={family:string;url:string;weight:string;weights:number[]};
 export type RenderProps={width:number;height:number;fps:30;durationInFrames:number;videoFrames:number;clips:RenderClip[];texts:PreviewText[];fonts:RenderFont[]};
-export function renderProps(input:RenderInput,urls:{media:(index:number)=>string;font:(index:number)=>string}):RenderProps{
+type CompositionInput = Pick<RenderInput, "durationInFrames" | "videoFrames"> & {
+  timeline: Pick<RenderInput["timeline"], "video" | "text">;
+  output: Pick<RenderInput["output"], "width" | "height">;
+  media: Pick<RenderInput["media"][number], "assetId" | "kind">[];
+  fonts: Pick<RenderInput["fonts"][number], "family" | "weightMin" | "weightMax">[];
+};
+export function renderProps(input:CompositionInput,urls:{media:(index:number)=>string;font:(index:number)=>string}):RenderProps{
   const index=new Map(input.media.map((item,n)=>[item.assetId,{item,n}]));let from=0;
   const clips=input.timeline.video.map(clip=>{const found=clip.assetId?index.get(clip.assetId):undefined;if(!found)throw new Error("render input has an empty or unknown clip");
     const value:RenderClip={sceneId:clip.sceneId,from,durationInFrames:clip.durationFrames,kind:found.item.kind,src:urls.media(found.n),trimBefore:found.item.kind==="video"?clip.trimInFrames:0};from+=clip.durationFrames;return value;});

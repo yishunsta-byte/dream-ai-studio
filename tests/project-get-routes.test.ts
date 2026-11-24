@@ -21,7 +21,7 @@ describe("B4-G new cloud project GET routes", () => {
   it("list delegates to exactly one request adapter and preserves the DTO", async () => {
     const body = [{ id: "synthetic", title: "합성", lengthSec: 4, states: [], nextStage: "brief" }];
     state.list.mockResolvedValue({ status: 200, body, headers });
-    const response = await list();
+    const response = await list(new Request("http://127.0.0.1/api/projects"));
     expect(response.status).toBe(200); expect(await response.json()).toEqual(body);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(state.create).toHaveBeenCalledOnce(); expect(state.list).toHaveBeenCalledOnce();
@@ -48,7 +48,7 @@ describe("B4-G new cloud project GET routes", () => {
     state.list.mockResolvedValue({ status, body, headers }); state.get.mockResolvedValue({ status, body, headers });
     const params = vi.fn(() => { throw new Error("must not read params"); });
     const context = { get params(): Promise<{ id: string }> { return params(); } };
-    for (const response of [await list(), await detail(new Request("http://127.0.0.1/api/projects/id"), context)]) {
+    for (const response of [await list(new Request("http://127.0.0.1/api/projects")), await detail(new Request("http://127.0.0.1/api/projects/id"), context)]) {
       expect(response.status).toBe(status); expect(await response.json()).toEqual(body);
       expect(response.headers.get("cache-control")).toBe("no-store"); expect(response.headers.get("location")).toBeNull();
     }

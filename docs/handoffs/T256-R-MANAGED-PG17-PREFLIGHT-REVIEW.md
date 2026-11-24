@@ -1,0 +1,43 @@
+# T256-R PostgreSQL 17 이관 절차 독립 검토
+
+**판정. 폐기용 PG17.12에서 읽기 전용 사전 진단이나 격리 실패 재현은 준비할 수 있다. 고정 v2로 스키마 3을 정상 적용하고 재적용을 수용하는 단계는 보류한다.** v2는 PG17 빈 상태를 받아들일 수 있지만 적용 직전 최종 검사에서 PG18.7 기준 카탈로그와 대조한다. 스키마 3 기준에 PG17이 같은 방식으로 반환하지 않는 테이블 `NOT NULL` 카탈로그 행 156개가 포함돼 있다. 스키마 3 SQL의 결함이나 실제 PG17 실패를 관측한 것이 아니라, 고정된 비교 조건에서 도출한 결과다.
+
+기준 커밋 `5e07360e0834e6fd1c2264172a53ebd6d93f84b6`. 검토 대상 `docs/handoffs/T256-MANAGED-PG17-PREFLIGHT.md`의 SHA-256 `195cd80649eee07ed076d3ce5f98507abcd9d66e5d718c47559647a12f03c094`와 경로 점유를 확인하고 Orca `msg_430f4c736f6f`로 수락했다. SQL 1~3도 v2 loader의 CRLF→LF 규칙으로 SHA-256을 계산해 manifest와 모두 대조했다. 이번 검토에서는 PostgreSQL 명령 실행, DB 접속 및 외부 접속을 수행하지 않았다.
+
+## 1. 실행 경로와 PG17 적용 차단점
+
+다음은 후속 작업에서 이미 제공되는 CLI 문법이다. 이번에 실행하지 않았다.
+
+```text
+node --conditions=react-server --import tsx scripts/postgres/migrate-v2.ts fingerprint --schema 3 --mode dry-run
+node --conditions=react-server --import tsx scripts/postgres/migrate-v2.ts fingerprint --schema 3 --mode apply
+node --conditions=react-server --import tsx scripts/postgres/migrate-v2.ts dry-run --schema 3
+node --conditions=react-server --import tsx scripts/postgres/migrate-v2.ts apply --schema 3
+```
+
+폐기용 대상은 `DREAM_PG_MIGRATION_PROFILE=synthetic`과 `DREAM_PG_MIGRATION_URL`의 명시적 루프백 주소, 직접 지정한 포트·역할·`dream_test_*` DB 이름을 사용한다. 명령은 `.env`나 `DATABASE_URL`을 읽어 대상 값을 자동으로 채우지 않는다. `fingerprint`는 대상 형식과 고정 SQL을 오프라인에서 검사한다. dry-run과 apply는 동일한 대상 해시와 각 모드별 `DREAM_PG_MIGRATION_APPROVAL_HASH`를 `DREAM_PG_MIGRATION_TARGET_HASH`와 함께 따로 받는다. 해시는 대상·버전·모드·고정 manifest를 묶는다. 실제 접속 역할과 DB, 인증서, 서버 major 및 작업 승인 여부는 별도로 확인해야 한다. [CLI](../../scripts/postgres/migrate-v2.ts) · [대상 검사](../../lib/db/postgres/migration-target.ts) · [고정 SQL](../../lib/db/postgres/migration-manifest-v2.ts)
+
+1. 빈 상태의 사전 검사는 DB, 포트, `session_user=current_user`, `search_path=pg_catalog`, 최소 major 16, 역할·CREATE 및 `auth.users` 전제를 검사한다. `dream`·`dream_migrations` 및 네 예약 역할이 없는 경우에는 완성 카탈로그를 비교하기 전에 `fresh`를 반환한다. 읽기 전용 `REPEATABLE READ` dry-run에 합성 Auth 객체를 준비하면 `fromVersion=null`, `pending=3`, `applied=0`이 정상 기대값이다. 따라서 이 값이 나와도 이어지는 적용의 성공 증거는 아니다.
+2. apply는 `READ COMMITTED` 한 세션에서 트랜잭션 advisory lock을 잡은 후 상태를 다시 확인한다. 저널을 생성하고 고정 SQL 1→2→3과 이력을 같은 트랜잭션에서 기록한다. 이어지는 최종 검사는 모든 `pg_constraint` 행을 PG18.7 UTF-8/C 기준과 정확히 비교한다. 스키마 3 기준에서 `contype='n'` 행 156개를 확인했다. 기존 로컬 PG17.12 배포본 `share/information_schema.sql`의 `table_constraints`는 테이블 `NOT NULL`을 `pg_attribute.attnotnull`로 따로 읽으며, v2는 이 경로를 `pg_constraint`의 기대 행으로 보완하지 않는다. PG17에서도 컬럼 `NOT NULL` 자체는 유지되지만 카탈로그의 행 표현이 달라 현재 comparator는 `MIGRATION_STATE`를 반환할 것으로 판단한다. COMMIT 전 검사이므로 정상 ROLLBACK이 확인되면 SQL 1~3·저널·새 역할이 함께 되돌아간다. [상태 비교](../../lib/db/postgres/migration-state-v2.ts) · [v2 적용·롤백](../../lib/db/postgres/migration-runner-v2.ts)
+3. 최소 제품 수정은 **고정 SQL 1~3을 보존한 PG17 스키마 3 카탈로그 계약**이다. 이후 승인된 폐기용 PG17.12에서 별도 관측으로 차이를 고정해 버전별 기준을 추가하거나, 증명된 표현 차이만 좁게 정규화한다. `attnotnull`, 관계·인덱스·정책·ACL·함수 검사와 PG18의 기존 비교는 지킨다. 실행 대상이 스스로 기대값을 생성하는 방식이나 완성 상태 비교를 건너뛰는 방식은 수용 기준을 잃는다. 다른 정의 표현·역할·collation 차이는 PG17 관측 뒤 따로 판정한다. v3는 PG18 전용 카탈로그 필드를 읽으므로 이 검증에 대입할 수 없다. [v3 카탈로그](../../lib/db/postgres/migration-catalog-v3.ts)
+
+## 2. 합성 실행과 폐기 절차에서 먼저 고정할 것
+
+- **도구와 실제 major.** 기존 `.tools/t253-postgres-17.12/pgsql/bin`에 `postgres.exe`, `initdb.exe`, `pg_ctl.exe`, `createdb.exe`, `psql.exe`가 있고 PE 버전 메타데이터는 모두 17.12였다. 서명과 17.12 서버 실행은 기존 T253의 근거다. T253-R3의 저장 결과는 PG17.12·검사 14건·잠금 대기 2건·종료 코드 0·PID 파일 부재·`ECONNREFUSED`이고 SQL SHA도 일치한다. 이번에는 서명 재검증이나 도구 실행을 하지 않았다. B23·B24의 보관 `version.txt`는 PG18.7이다. 그 이력 및 동시성/CLI 결과는 PG17.12에서 해당 계약이 통과했다는 근거로 사용할 수 없다.
+- **실행기와 소유권.** B23/B24 Windows 실행기는 도구 네 개의 서명을 검사하고 `postgres --version`을 기록하지만 특정 major를 강제하지 않는다. 기본 DB 선택과 스위트는 schema 3/4를 함께 다룬다. 고정 schema 3 전용 후속 실행기는 도구 경로·동형 버전·서명과 실제 서버 `server_version_num` 17.12, `data_directory`, DB·역할·루프백 주소/포트, 소유 PID를 최초 SQL 전에 확인해야 한다. UTF-8/C·SCRAM, 고유 폐기 경로, 임의 루프백 포트, 별도 합성 자격을 사용하고 `PG*`와 기존 운영 환경값은 상속 대상에서 제외한다. 최초 start 호출의 타임아웃·부분 성공도 소유 경로 검사로 수습할 수 있게 시작 전에 클러스터·포트 기록을 남긴다. 현재 실행기는 `started=true`가 start 성공 뒤에 오며 `run.json`은 소유 리스너 검사 뒤에 쓰인다. 그 사이 실패를 성공적인 정리로 간주할 수 없다. [B23 launcher](../../tests/postgres/run-versioned-migrations-local.mjs) · [B24 launcher](../../tests/postgres/run-versioned-cli-local.mjs)
+- **의존 객체.** schema 3 직전에는 `auth`와 `auth.users(id uuid PRIMARY KEY)`를 합성하고 A/B UUID 두 행을 넣는다. 관리형 대상은 `auth` USAGE, `auth.users` REFERENCES 및 FK가 실제 참조할 수 있는 유효한 비부분·비지연 UUID 고유 키를 확인한다. runner의 인덱스 조회는 고유성과 유효성을 검사하지만 모든 FK 적격성을 입증하지 않는다. `dream`·저널과 예약 역할은 사전에 만들지 않는다. SQL 1은 관계·복합 FK, SQL 2는 불변 트리거, SQL 3은 18개 테이블의 ENABLE/FORCE RLS 및 API·worker 권한을 만든다. 합성 Auth·관리자에 필요한 DB 권한과 관리형 권한은 분리한다. [기본 스키마](../../lib/db/postgres/0001_schema.sql) · [불변 규칙](../../lib/db/postgres/0002_invariants.sql) · [RLS](../../lib/db/postgres/0003_rls.sql)
+- **최초 적용 및 실패 판정.** 먼저 dry-run 전후 이력·스키마·역할·Auth 표식 동일을 기록한다. 실패 시험은 독립한 빈 폐기 클러스터에서 SQL 1 완료 뒤 고정 SQL 2 또는 3 실행 중 통제된 DB 오류를 일으켜 전체 원자성을 확인한다. 기존 Auth·오류 유도용 객체는 적용 전후 동일하고 `dream`·저널·예약 역할은 없어야 한다. 성공 시험은 별도 초기 상태에서 `applied=3` 및 고정 이력 3행·카탈로그·RLS 일치를 확인한다. 동일 대상 재적용은 `fromVersion=3`, `applied=0`, `pending=0`과 기존 이력 타임스탬프 보존을 요구한다. 역할이 클러스터 전역이므로 다른 테스트 DB를 만들기만 해서는 예약 역할이 없는 초기 상태가 보장되지 않는다. 일반 superuser 합성 검증과 CREATEROLE을 가진 비슈퍼유저 migration owner의 권한 검증도 증거를 구분한다.
+- **중단·복구.** 확인된 롤백은 새 읽기 전용 접속의 원래 상태로 검증한다. COMMIT 응답 유실, 출력 오류, rollback 미확인 시에는 같은 대상에서 이력·카탈로그를 새로 읽고 추정 재시도나 보상 DDL 없이 결과를 분류한다. 확인된 COMMIT 뒤 정리 실패는 적용된 상태를 보존해 보고한다. 폐기는 앱·풀·시험 클라이언트를 닫고 확인한 자기 클러스터에만 `pg_ctl -D <owned-cluster> -m fast -w stop`을 적용한다. 정확한 PID/경로와 PID 파일 부재 및 루프백 연결 거절까지 확인하고 증거를 보존한다. v2에는 자동 down이 없다. 스테이징 앱의 읽기 설정을 내리면 현재 GET은 비가용으로 바뀌므로, 복귀 기준이 직전 동작이라면 기존 배포와 설정 복원 및 런타임 교체를 따로 기록한다.
+
+## 3. 두 계정 읽기와 역할·TLS 증거
+
+| 항목 | 독립 검토 결과와 후속 수용 기준 |
+| --- | --- |
+| 런타임 로그인 | v2 완성 상태는 `dream_api_login`·`dream_worker_login`이 둘 다 없거나, 둘 다 있고 좁게 지정된 멤버십을 갖는 상태만 허용한다. `dream_api_login` 단독은 재검사에서 거절된다. 임의 이름을 써도 예약 역할 방향의 추가 멤버십은 역할 그래프 검사의 대상이다. 읽기 전용 스테이징에 worker 로그인 없이 갈 계획이라면, 정확한 API 단독 모드와 reapply 호환을 별도로 검토해야 한다. 현재 템플릿은 정확한 스키마 3에서 두 `PASSWORD NULL` 로그인을 만들며 실제 인증 자격 전달은 별도다. [템플릿](../../lib/db/postgres/provision-template.ts) · [역할 그래프](../../lib/db/postgres/migration-runner.ts) |
+| 두 actor와 DB | 기존 `syntheticPostgresFixture()`는 SQL 1~3을 직접 적용하고 `dream_test_api_login`을 만든다. 그 fixture를 이미 v2가 적용한 DB에 그대로 실행할 수 없고 기존 A/B 시험은 v2 저널·정확한 역할 그래프의 통합 증거가 아니다. 후속 fixture는 v2 적용 DB 위에서 생성 단계와 데이터 시드를 분리한다. 두 UUID에 고유 제목, 완전한 메뉴 스냅숏·단계·작업 상태, 한 보관 프로젝트를 준다. 제한된 login에서 owner 조건 없는 SQL로 actor 없음 0행과 A/B RLS를 검증하고, pool max 1의 A→B와 정상 롤백 뒤 같은 backend에서 role·actor 원복, max 2 동시 격리, 읽기 전용 쓰기 거부와 손상 연결 폐기·회복을 각각 관측한다. [기존 fixture](../../tests/postgres/fixture.ts) · [RLS/풀 시험](../../tests/postgres/projects.test.ts) · [요청 통합 시험](../../tests/postgres/project-read-request-integration.test.ts) |
+| HTTP와 개인 관리 | `getUser`·허용 이메일 뒤 검증 UUID를 사용하며 요청의 owner 값을 받지 않는다. 프로젝트·단계·작업 목록은 모두 actor 조건과 RLS를 사용한다. 실제 두 세션의 API 목록·자기 상세는 200, 상대·보관·미존재 상세는 공통 404, 잘못된 ID는 400, 만료/미인증은 401, 허용 밖은 403을 검증한다. API 응답은 `no-store`이며 인증 거절 전에 DB checkout이 없어야 한다. 실제 DB 장애의 안전한 503과 정상 빈 목록 200을 구별한다. 클라우드 화면은 API 상태값을 그대로 전달하는 대신 로그인 리다이렉트·상세 not-found·비가용 안내를 렌더한다. `/cloud/manage`는 성공한 자기 목록에서만 건수와 분포를 표시하고 실패 시 0건이나 조회 시각을 표시하지 않는다. 모의 인증과 실제 PG 조합은 소유권 경계의 로컬 검증이며, 공급자 로그인과 배포 HTTP의 증거는 별도로 남긴다. [요청 어댑터](../../lib/services/postgres/project-read-request.ts) · [트랜잭션](../../lib/db/postgres/transaction.ts) · [클라우드 화면](../../lib/cloud/project-read-page.ts) · [개인 관리](../../app/%28cloud%29/cloud/manage/page.tsx) |
+| 대상·CA·TLS | B8·B11의 관리형 기록은 당시 프로덕션 Session 연결의 클라이언트→pooler TLS 1.3, CA 승인·호스트 일치와 자체 backend `pg_stat_ssl.ssl=false`를 각각 보여 준다. Direct IPv6 도달이나 현재 스테이징 상태, 모든 구간의 TLS를 입증하지 않는다. CLI는 Session 5432의 호스트·DB·라우팅 `role.ref`와 실제 SQL 역할을 별개로 묶고 CA를 요구한다. 앱의 process pool은 기본 설정으로 생성되어 migration CA를 상속하지 않는다. 별도 승인된 스테이징에서 migration과 제한 API login 각각의 CA·SNI/호스트 확인 및 클라이언트 hop과 backend hop 증거를 다시 수집해야 한다. 앱의 실제 신뢰 경로가 성립하지 않으면 서버 전용 CA 설정을 가장 좁게 추가하는 작업을 분리한다. DEC-SSL-01은 계속 대기다. [B8](B8-MANAGED-CONNECTION-DIAGNOSIS.md) · [B11](B11-SSL-CHANGE-READINESS.md) · [연결 설정](../../lib/db/postgres/connection.ts) · [런타임 풀](../../lib/services/postgres/project-read-pool.ts) |
+
+## Master 전달용
+
+> T256-R 절차 검토 완료. 5e07360·지정 문서·SQL 1~3 해시를 대조했습니다. v2의 PostgreSQL 18.7 스키마 3 기준에 NOT NULL 카탈로그 행 156개가 있고 PG17 표현과 달라, 빈 대상 dry-run이 통과하더라도 고정 v2의 최종 검사에서 정상 apply를 수용할 수 없다고 판단합니다. 폐기용 PG17 진단 준비는 가능하며, 수용 시험 전에 고정 SQL을 보존한 PG17 카탈로그 계약과 소유·종료를 확인하는 schema 3 실행기가 필요합니다. API 단독 로그인은 현재 v2의 역할쌍 검사와 충돌하므로 스테이징 역할 계약도 별도 확인해야 합니다. 기존 PG17·PG18·관리형 TLS 증거는 범위별로 나눴고, 이번에는 DB 명령과 접속을 수행하지 않았습니다. 보고서 `docs/handoffs/T256-R-MANAGED-PG17-PREFLIGHT-REVIEW.md`에 두 계정·원자성·복구 수용 기준을 남겼습니다.

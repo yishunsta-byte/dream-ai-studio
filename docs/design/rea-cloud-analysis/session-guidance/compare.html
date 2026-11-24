@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>보호 분석 세션 안내 비교 · Dream AI Studio</title>
+  <link rel="icon" href="data:,">
+  <style>
+    @font-face {
+      font-family: Pretendard;
+      src: url('../../../../public/fonts/PretendardVariable.woff2') format('woff2');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+    :root {
+      color-scheme: light;
+      --bg: #edf3ef;
+      --ink: #193631;
+      --muted: #435d56;
+      --accent: #075748;
+      --border: #bfd2c8;
+      --paper: #fff;
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.5 Pretendard, system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; word-break: keep-all; overflow-wrap: anywhere; }
+    h1, h2, h3, p { margin: 0; }
+    button, select, input { font: inherit; color: inherit; }
+    :focus-visible, [tabindex="-1"]:focus { outline: 2px solid #98651f; outline-offset: 4px; }
+    .wrap { width: min(1080px, calc(100% - 44px)); margin-inline: auto; }
+    .brand { color: #eefbf4; background: #173d36; }
+    .brand .wrap { min-height: 58px; display: flex; align-items: center; gap: 10px; }
+    .brand-mark {
+      width: 34px; height: 34px; display: grid; place-items: center; flex: none;
+      background: #aee3ce; border-radius: 9px; color: #22463a;
+    }
+    .brand small { margin-inline-start: auto; color: #d5eae1; }
+    main { padding-block: 20px 40px; }
+    .intro { padding: 22px 24px; background: linear-gradient(115deg,#dcece0,#f7f4e7); border: 1px solid var(--border); border-radius: 14px; }
+    .intro h1 { font-size: clamp(1.95rem, 4.3vw, 3.45rem); line-height: 1.12; letter-spacing: -.06em; }
+    .intro p { margin-block-start: 8px; color: #2c5246; }
+    .grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; margin-block-start: 14px; }
+    .card { min-width: 0; display: flex; flex-direction: column; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--paper); }
+    .card.checking { grid-column: 1 / -1; }
+    .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-block-end: 11px; }
+    .card h2 { font-size: 1.25rem; letter-spacing: -.025em; line-height: 1.3; }
+    .http-code { margin-inline-start: 5px; color: var(--muted); font-size: .82rem; font-weight: 660; font-variant-numeric: tabular-nums; }
+    .button {
+      min-height: 44px; padding: 7px 11px; border: 1px solid #94b9aa; border-radius: 8px;
+      background: #f2f7f3; color: var(--accent); font-weight: 710; cursor: pointer;
+    }
+    a.button { display: inline-flex; align-items: center; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    .button:hover { background: #e4f0e7; }
+    .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .primary:hover { background: #094b3f; }
+    .example {
+      flex: 1; padding: 12px; border: 1px solid #cfddd4; border-radius: 9px; background: #f2f7f4;
+    }
+    .example.login { background: #faf4e8; border-color: #ddcfb5; }
+    .example.forbidden { background: #f9eeeb; border-color: #e1c8c2; }
+    .example.forbidden h3 { color: #773f36; }
+    .example h3 { font-size: 1.08rem; line-height: 1.3; }
+    .example .description { color: var(--muted); font-size: .9rem; margin-block-start: 4px; }
+    .example .action { margin-block-start: 10px; }
+    .label { display: block; font-size: .89rem; font-weight: 710; margin-block: 10px 4px; }
+    .field { min-height: 44px; width: 100%; border: 1px solid #8bb4a1; border-radius: 8px; padding: 6px 9px; background: #fff; }
+    .rights { display: flex; min-height: 44px; gap: 8px; align-items: center; margin-block-start: 5px; }
+    .rights input { width: 19px; height: 19px; margin: 0; flex: none; accent-color: var(--accent); }
+    .rights:has(input:disabled) { color: var(--muted); }
+    .feedback { color: var(--accent); margin-block-start: 7px; font-size: .875rem; }
+    .feedback:empty { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .return { margin-block-start: 16px; }
+    .return .button { gap: 6px; }
+    @media (max-width: 720px) {
+      .wrap { width: calc(100% - 28px); }
+      .brand .wrap { min-height: 54px; }
+      main { padding-block-start: 14px; }
+      .intro, .card { padding: 13px; }
+      .grid { grid-template-columns: minmax(0,1fr); }
+    }
+  </style>
+</head>
+<body>
+  <header class="brand"><div class="wrap"><span class="brand-mark" aria-hidden="true">✦</span><strong>Dream AI Studio</strong><small>클라우드 작업실</small></div></header>
+  <main class="wrap">
+    <header class="intro">
+      <h1>보호 분석 세션 안내 비교</h1>
+      <p>각 상태의 <strong>초점 확인</strong>을 누르고 Tab으로 이어지는 조작을 확인하세요. 아래 화면은 고정된 디자인 예시입니다.</p>
+    </header>
+    <div class="grid">
+      <article class="card checking" aria-labelledby="checking-heading">
+        <header class="card-head"><h2 id="checking-heading">확인 중</h2><button type="button" class="button" id="show-checking" data-focus="checking-example" aria-label="확인 중의 초점 확인">초점 확인</button></header>
+        <div class="example" id="checking-example" tabindex="-1" role="status" aria-labelledby="checking-title" aria-describedby="checking-copy">
+          <h3 id="checking-title">로그인 상태를 확인하고 있어요</h3>
+          <p class="description" id="checking-copy">확인이 끝날 때까지 이 화면의 내용을 가려 두었어요.</p>
+        </div>
+      </article>
+      <article class="card" aria-labelledby="login-heading">
+        <header class="card-head"><h2 id="login-heading">재로그인 필요 <span class="http-code">401</span></h2><button type="button" class="button" id="show-login" data-focus="login-example" aria-label="재로그인 상태의 초점 확인">초점 확인</button></header>
+        <div class="example login" id="login-example" tabindex="-1" role="group" aria-labelledby="login-title" aria-describedby="login-copy">
+          <h3 id="login-title">다시 로그인해 주세요.</h3>
+          <p class="description" id="login-copy">로그인을 확인할 수 없어 등록 자료 목록을 지웠어요.</p>
+          <a class="button primary action" id="login-action" href="#login-feedback">다시 로그인</a>
+          <p class="feedback" id="login-feedback" role="status" aria-atomic="true"></p>
+        </div>
+      </article>
+      <article class="card" aria-labelledby="forbidden-heading">
+        <header class="card-head"><h2 id="forbidden-heading">접근 거절 <span class="http-code">403</span></h2><button type="button" class="button" id="show-forbidden" data-focus="forbidden-example" aria-label="접근 거절 상태의 초점 확인">초점 확인</button></header>
+        <div class="example forbidden" id="forbidden-example" tabindex="-1" role="group" aria-labelledby="forbidden-title" aria-describedby="forbidden-copy">
+          <h3 id="forbidden-title">이 화면에 접근할 수 없어요.</h3>
+          <p class="description" id="forbidden-copy">클라우드 작업실 계정과 접근 권한을 확인해 주세요.</p>
+        </div>
+      </article>
+      <article class="card" aria-labelledby="selection-heading">
+        <header class="card-head"><h2 id="selection-heading">자료 선택 가능</h2><button type="button" class="button" id="show-selection" data-focus="material" aria-label="자료 선택 상태의 초점 확인">초점 확인</button></header>
+        <div class="example">
+          <h3 id="selection-title">등록 자료를 새로 선택해 주세요.</h3>
+          <label class="label" for="material">등록 자료 선택</label>
+          <select class="field" id="material" aria-describedby="selection-title">
+            <option value="">등록 자료를 선택하세요</option>
+            <option value="sample">시험 자료 1</option>
+          </select>
+          <label class="rights"><input id="rights" type="checkbox" disabled>이 자료를 분석할 권리가 있어요.</label>
+        </div>
+      </article>
+      <article class="card" aria-labelledby="empty-heading">
+        <header class="card-head"><h2 id="empty-heading">빈 목록</h2><button type="button" class="button" id="show-empty" data-focus="empty-example" aria-label="빈 목록 상태의 초점 확인">초점 확인</button></header>
+        <div class="example" id="empty-example" tabindex="-1" role="group" aria-labelledby="empty-title" aria-describedby="empty-copy">
+          <h3 id="empty-title">분석할 수 있는 등록 자료가 없어요.</h3>
+          <p class="description" id="empty-copy">내 프로젝트에서 등록 자료를 확인한 뒤 목록을 다시 조회해 주세요.</p>
+          <button type="button" class="button action" id="reload-action">목록 다시 조회</button>
+          <p class="feedback" id="reload-feedback" role="status" aria-atomic="true"></p>
+        </div>
+      </article>
+    </div>
+    <nav class="return" aria-label="분석 시안 이동">
+      <a class="button" href="../index.html"><span aria-hidden="true">←</span> 콘텐츠 분석 전체 시안</a>
+    </nav>
+  </main>
+  <script>
+    const get = id => document.getElementById(id);
+    const material = get("material"), rights = get("rights");
+
+    function resetRights() {
+      rights.checked = false;
+      rights.disabled = !material.value;
+    }
+
+    for (const trigger of document.querySelectorAll("[data-focus]")) {
+      trigger.addEventListener("click", () => {
+        if (trigger.dataset.focus === "material") {
+          material.value = "";
+          resetRights();
+        }
+        get(trigger.dataset.focus).focus();
+      });
+    }
+
+    material.addEventListener("change", resetRights);
+    get("login-action").addEventListener("click", event => {
+      event.preventDefault();
+      get("login-feedback").textContent = "다시 로그인 조작을 확인했어요. 시안 화면에 머물러요.";
+    });
+    get("reload-action").addEventListener("click", () => {
+      get("reload-feedback").textContent = "목록 다시 조회 조작을 확인했어요. 시안의 빈 목록을 표시해요.";
+    });
+  </script>
+</body>
+</html>

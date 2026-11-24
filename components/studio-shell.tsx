@@ -20,7 +20,7 @@ export type NavigationData = {
 };
 
 export function StudioShell({ navigation, sampleMode, account = null, children }: { navigation: NavigationData; sampleMode: boolean; account?: string | null; children: ReactNode }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const session = useSessionBoundary();
   // 계정 확인 전·변경 뒤에는 작업 수(계정별 데이터)도 보이지 않는다(T-220).
   const confirmed = !session || session.view === "current";

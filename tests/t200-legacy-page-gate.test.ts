@@ -72,7 +72,7 @@ const html = (node: unknown) => isValidElement(node) ? renderToStaticMarkup(node
 
 describe("화면 입구 목록", () => {
   it("studio·workspace의 모든 페이지가 입구 첫 줄에서 legacyPageGate를 부른다", () => {
-    expect(pages.length).toBe(14);
+    expect(pages.length).toBe(15); // T-266: (studio)/studio/reference-analysis 추가
     for (const [path] of pages) {
       const source = readFileSync(path.replace("../", ""), "utf8");
       const body = source.slice(source.indexOf("export default"));
@@ -176,6 +176,7 @@ describe("대조군: 이 PC 기본 설정은 기존 입구 동작 유지", () =>
     "(studio)/projects/new/page.tsx": "redirect:/menus/shopping-shorts/new",
     "(studio)/queue/page.tsx": "redirect:/jobs",
     "(studio)/settings/page.tsx": "menus",
+    "(studio)/studio/reference-analysis/page.tsx": "static", // T-266 합성 체험: 로더 없이 화면만 그린다
     "(studio)/setup/page.tsx": "startup",
     "(workspace)/workspaces/[id]/page.tsx": "params",
   };
@@ -192,6 +193,7 @@ describe("대조군: 이 PC 기본 설정은 기존 입구 동작 유지", () =>
       else if (want === "params") expect(read).toHaveBeenCalled();
       else if (want === "menus") expect(state.menus).toHaveBeenCalled();
       else if (want === "startup") expect(state.startup).toHaveBeenCalled();
+      else if (want === "static") { expect(result.error).toBeUndefined(); expect(html(result.value)).toContain("합성 체험"); expect(state.loader).not.toHaveBeenCalled(); }
       else expect(result.error?.to).toBe(want.replace("redirect:", ""));
     });
   }

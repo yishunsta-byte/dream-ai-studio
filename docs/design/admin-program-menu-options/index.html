@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>DREAM SCREEN 관리자 · 분석 프로그램 메뉴 시안</title>
+  <link rel="stylesheet" href="studio.css">
+  <script src="compare.js" defer></script>
+</head>
+<body class="compare">
+  <header class="compare-header">
+    <a class="brand" href="index.html"><span class="brand-icon" aria-hidden="true">✦</span><span>DREAM <strong>SCREEN</strong></span></a>
+    <span class="compare-label">관리자 UI 시안</span>
+  </header>
+  <main class="compare-main">
+    <div class="compare-intro">
+      <div><h1>분석 스튜디오 <em>3가지 시안</em></h1>
+        <p>상단 메뉴에서 Style DNA, 음악 분석, 쇼츠 분석을 각각 엽니다. 프로그램을 바꿔 각 작업 화면을 세 시안에서 비교해 보세요.</p>
+      </div>
+      <div class="compare-switch" role="group" aria-label="비교할 프로그램">
+        <button type="button" data-media="image" aria-pressed="true">Style DNA</button>
+        <button type="button" data-media="music" aria-pressed="false">음악 분석</button>
+        <button type="button" data-media="shorts" aria-pressed="false">쇼츠 분석</button>
+      </div>
+    </div>
+    <div class="design-grid">
+      <article class="design-card" data-look="live">
+        <div class="design-title"><span class="option-id">1안</span><h2>라이브 콘솔</h2></div>
+        <div class="design-preview"><iframe title="라이브 콘솔 시안 미리보기" src="studio.html?look=live&amp;embed=1#image" tabindex="-1" inert></iframe></div>
+        <div class="design-caption"><p>앰버·레드 조명과 큰 미디어 프리뷰. 입력에서 결과까지 제작 순서대로 배치했습니다.</p><a class="open" href="studio.html?look=live#image">전체 화면 ↗</a></div>
+      </article>
+      <article class="design-card" data-look="signal">
+        <div class="design-title"><span class="option-id">2안</span><h2>시그널 랩</h2></div>
+        <div class="design-preview"><iframe title="시그널 랩 시안 미리보기" src="studio.html?look=signal&amp;embed=1#image" tabindex="-1" inert></iframe></div>
+        <div class="design-caption"><p>청록색 계기판과 3열 작업대. 소스·미디어 근거·결과를 동시에 확인할 수 있습니다.</p><a class="open" href="studio.html?look=signal#image">전체 화면 ↗</a></div>
+      </article>
+      <article class="design-card" data-look="premiere">
+        <div class="design-title"><span class="option-id">3안</span><h2>프리미어 스튜디오</h2></div>
+        <div class="design-preview"><iframe title="프리미어 스튜디오 시안 미리보기" src="studio.html?look=premiere&amp;embed=1#image" tabindex="-1" inert></iframe></div>
+        <div class="design-caption"><p>보라·코랄 포스터와 넓은 감상 화면. 오른쪽에 입력을 두고 아래에서 결과를 검토합니다.</p><a class="open" href="studio.html?look=premiere#image">전체 화면 ↗</a></div>
+      </article>
+    </div>
+    <p class="compare-note">샘플 데이터로 메뉴와 분석 화면을 체험하는 시안입니다.</p>
+  </main>
+</body>
+</html>

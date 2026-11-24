@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dream Screen 관리자 · 시안 비교</title>
+  <style>
+    @font-face{font-family:Pretendard;src:url('../../../public/fonts/PretendardVariable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    :root{color-scheme:dark;font-family:Pretendard,system-ui,sans-serif;background:#0e0c15;color:#faf6ff}
+    *{box-sizing:border-box}body{margin:0}a{color:inherit;text-decoration:none}
+    .wrap{width:min(1660px,calc(100% - 48px));margin:auto}
+    header{border-bottom:1px solid #352b42;background:#14101e}
+    header .wrap{display:flex;align-items:center;gap:10px;min-height:60px;font-weight:780}
+    .mark{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:linear-gradient(140deg,#ba2daa,#7034be)}
+    header em{color:#eea5e7;font-style:normal}header small{margin-left:auto;color:#c3b5d0;font-weight:600}
+    main{padding:38px 0 48px}h1,h2,p{margin:0}h1{font-size:clamp(32px,4vw,60px);line-height:1.05;letter-spacing:-.055em}
+    .intro p{margin:12px 0 26px;color:#c8bfd2;line-height:1.6}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    article{min-width:0;overflow:hidden;border-radius:15px;border:1px solid #382f46;background:#181420}
+    article.chosen{border-color:#a28add}
+    article .copy{padding:18px}
+    .heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    h2{font-size:22px;letter-spacing:-.02em}
+    .badge{padding:3px 7px;border-radius:12px;background:#3b2b5c;color:#efe2ff;font-size:12px;font-weight:700}
+    article p{margin-top:8px;color:#c8bfd2;line-height:1.5;min-height:46px}
+    .shot{position:relative;overflow:hidden;aspect-ratio:1440/830;background:#100d17;border-block:1px solid #382f46}
+    iframe{position:absolute;left:0;top:0;width:1440px;height:830px;border:0;pointer-events:none;transform:scale(var(--scale,.30));transform-origin:top left}
+    .links{display:flex;gap:9px;align-items:center;padding:14px 18px}
+    .links a{min-height:44px;display:inline-flex;align-items:center;padding:6px 12px;border-radius:8px;border:1px solid #67527b;background:#281b36;font-weight:740}
+    .chosen .links a{background:#6645ad;border-color:#9879cf}.links a:hover{border-color:#f7bdf3}.links a:focus-visible{outline:2px solid #ffd08f;outline-offset:3px}
+    @media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:700px){.wrap{width:calc(100% - 28px)}.grid{grid-template-columns:minmax(0,1fr)}main{padding-top:24px}article p{min-height:0}}
+  </style>
+</head>
+<body>
+  <header><div class="wrap"><span class="mark" aria-hidden="true">✦</span><span>DREAM <em>SCREEN</em></span><small>관리자 UI 시안</small></div></header>
+  <main class="wrap">
+    <div class="intro">
+      <h1>관리자 상단 메뉴 3안</h1>
+      <p>세 안의 첫 화면을 비교하고, 전체 화면에서 상단 메뉴와 프로젝트 이동을 눌러보세요. 시안은 예시 데이터를 사용합니다.</p>
+    </div>
+    <div class="grid">
+      <article>
+        <div class="copy"><div class="heading"><h2>01 운영 브리핑</h2></div><p>검수 대기, 출력 완료, 연결 상태를 먼저 확인합니다.</p></div>
+        <div class="shot"><iframe src="index.html?design=1&amp;embed=1" title="운영 브리핑 미리보기" tabindex="-1" inert></iframe></div>
+        <div class="links"><a href="index.html?design=1" target="_blank" rel="noopener">1안 전체 화면 ↗</a></div>
+      </article>
+      <article class="chosen">
+        <div class="copy"><div class="heading"><h2>02 작업 콘솔</h2><span class="badge">제품 반영 후보</span></div><p>프로젝트를 검색하고 버전과 출력 요약을 확인한 뒤 작업으로 이동합니다.</p></div>
+        <div class="shot"><iframe src="index.html?design=2&amp;embed=1" title="작업 콘솔 미리보기" tabindex="-1" inert></iframe></div>
+        <div class="links"><a href="index.html?design=2" target="_blank" rel="noopener">2안 전체 화면 ↗</a></div>
+      </article>
+      <article>
+        <div class="copy"><div class="heading"><h2>03 프로젝트 스튜디오</h2></div><p>선택한 프로젝트의 장면 제작, 편집, 검수, 출력을 한 화면에서 봅니다.</p></div>
+        <div class="shot"><iframe src="index.html?design=3&amp;embed=1" title="프로젝트 스튜디오 미리보기" tabindex="-1" inert></iframe></div>
+        <div class="links"><a href="index.html?design=3" target="_blank" rel="noopener">3안 전체 화면 ↗</a></div>
+      </article>
+    </div>
+  </main>
+  <script>
+    const fit = new ResizeObserver(entries => {
+      for (const entry of entries) entry.target.style.setProperty("--scale", entry.contentRect.width / 1440);
+    });
+    for (const preview of document.querySelectorAll(".shot")) fit.observe(preview);
+  </script>
+</body>
+</html>

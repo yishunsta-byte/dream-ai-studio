@@ -2,7 +2,7 @@
 // the exact prefix registration, the renders repository, the backup file references and the stored-row check.
 // T-109: linked job identity (F107-1), NULL-free file fields (F107-2), saved timeline binding (F107-3), and 0007
 // stopping with the cause (nothing applied) when a row written under 0006 breaks the new rules.
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -12,6 +12,7 @@ vi.mock("server-only",()=>({}));
 import { openDatabase, type DatabaseHandle } from "@/lib/db/connection";
 import { compareMigrations, journal, LATER_SQL_STEPS, migrateDatabase, productMigrations } from "@/lib/db/migrate";
 import { checkRenderRows, renderInputSha256 } from "@/lib/db/render-data";
+import { currentPlayableRenderId, rendersService } from "@/lib/services/renders";
 import { rendersRepository } from "@/lib/repo/renders";
 import { maintenanceRepository } from "@/lib/repo/maintenance";
 import { readBackupManifest, verifyBackupArchive } from "@/lib/backup/archive";
@@ -64,6 +65,21 @@ describe("등록 (정확한 앞부분)",()=>{
 
 describe("renders 표 규칙 (0006+0007)",()=>{
   beforeEach(()=>s5Copy(7));
+  it("최근 50건이 취소되거나 파일이 누락돼도 재생 가능한 현재 MP4로 이동한다",async()=>{
+    vi.stubEnv("DREAM_DATA_ROOT",join(root,"s5"));
+    try{
+      const playable=render();succeed(playable);
+      const path=join(root,"s5","storage",file(playable).file_path);
+      mkdirSync(dirname(path),{recursive:true});writeFileSync(path,Buffer.alloc(1000));
+      const missing=render();succeed(missing);
+      for(let n=0;n<50;n++){const canceled=render();set(canceled,{status:"canceled",finished_at:stamp});}
+      expect(rendersRepository(handle).list(P).some(row=>row.id===playable)).toBe(false);
+      expect(currentPlayableRenderId(handle,P,timeline.id,timeline.content_revision)).toBe(playable);
+      expect(currentPlayableRenderId(handle,P,timeline.id,timeline.content_revision+1)).toBeNull();
+      const list=await rendersService(handle).list(P,{check:false});
+      expect(list.renders.filter(row=>row.id===playable)).toMatchObject([{stale:false,fileExists:true}]);
+    }finally{vi.unstubAllEnvs();}
+  });
   it("작업 계약(kind·ref·같은 프로젝트)과 같은 프로젝트의 저장된 타임라인만 받는다",()=>{
     expect(render()).toBeTruthy();
     for(const bad of [{kind:"export"},{ref_type:"export"},{project_id:OTHER}])expect(()=>render({},bad)).toThrow(/render job differs/);

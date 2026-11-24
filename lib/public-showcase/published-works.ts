@@ -44,7 +44,7 @@ const MAX_LIMIT = 100;
 const MAX_INPUT = 1000;
 const MAX_DIMENSION = 8192;
 const IMAGE_EXT = /\.(png|jpe?g|webp|avif)$/;
-const MEDIA_EXT = { video: /\.(mp4|webm)$/, audio: /\.(mp3|m4a|ogg|wav)$/ } as const;
+const MEDIA_EXT = { video: /\.(mp4|webm)$/, audio: /\.(mp3|m4a)$/ } as const;
 // 경로에는 이 글자만 허용한다: 공백·%·\·따옴표·제어 문자·물음표·# 등은 모두 거절.
 const SAFE_PATH = /^\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$/;
 // 비공개·서명 저장소 경로 조각(예: Supabase Storage sign/authenticated).

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>등록 자료 선택과 접근 상태 · Dream AI Studio</title>
+  <link rel="icon" href="data:,">
+  <style>
+    @font-face{font-family:Pretendard;src:url('../../../public/fonts/PretendardVariable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    :root{color-scheme:light;--fg:#172c39;--sub:#465b65;--brand:#08736a;--line:#cddcd7;--bg:#f5f8f6;--paper:#fff;font:16px/1.55 Pretendard,system-ui,sans-serif;color:var(--fg);background:var(--bg)}
+    *{box-sizing:border-box}body{margin:0;overflow-wrap:anywhere}h1,h2,h3,p{margin:0}button,select,input,textarea{font:inherit;color:inherit}a{color:#07594f}button,a,select,input,textarea{outline-offset:4px}button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #996210}button{cursor:pointer}button:disabled{cursor:default}
+    .wrap{width:min(1152px,calc(100% - 56px));margin:auto}.bar{background:#173a3a;color:#f1fffb}.bar .wrap{min-height:58px;display:flex;align-items:center;gap:10px}.bar small{margin-left:auto;color:#bfe4d7}.mark{background:#a6ecd7;color:#193b33;padding:2px 8px;border-radius:8px;font-size:20px}.intro{padding:32px 26px;margin:22px 0 16px;border-radius:16px;background:linear-gradient(115deg,#e3f4ee,#f0f7f3 60%,#f9f4e8);border:1px solid var(--line)}.intro h1{font-size:clamp(33px,5vw,57px);letter-spacing:-.055em;line-height:1.12}.intro p{margin-top:8px;color:#2c5950}
+    .scenario{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;margin:18px 0}.scenario label{font-weight:770}.scenario select,.field{min-height:44px;border:1px solid #a9c2bb;background:#fff;border-radius:8px;padding:8px 10px}.chip{background:#e8f2ee;border:1px solid #bfd8cd;color:#27564b;border-radius:999px;padding:3px 9px;font-size:13px;font-weight:720}.small{font-size:14px;color:var(--sub)}
+    .grid{display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,1.36fr);gap:14px;align-items:start}.card{min-width:0;border:1px solid var(--line);border-radius:12px;padding:20px;background:var(--paper)}h2{font-size:24px;letter-spacing:-.04em;margin-bottom:9px}h3{font-size:17px;margin-bottom:5px}.state{border-left:3px solid #b77b38;border-radius:8px;background:#fbf1e2;color:#583e20;padding:12px 13px;margin:10px 0}.state.neutral{border-color:#67a89a;background:#edf7f3;color:#23584d}.state p{margin-top:3px}.field{width:100%}label[for=material],label[for=draft]{display:block;font-weight:730;margin:12px 0 5px}.check{display:flex;align-items:center;gap:8px;margin:9px 0;min-height:44px}.check input{width:17px;height:17px;accent-color:var(--brand)}.check input:disabled+span{color:#586a70}.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+    .button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 14px;font-weight:750;color:white;background:var(--brand);border:1px solid var(--brand);border-radius:8px;text-decoration:none}.button.secondary{background:#eef7f3;color:#07594f;border-color:#bdd5cc}.button:disabled,.button[aria-disabled=true]{background:#ebf0ed;color:#4a5e64;border-color:#c7d3d0}.result{scroll-margin:12px}.result-note{border:1px dashed #b6ccc4;border-radius:9px;background:#f6faf8;padding:16px}.result-body{border-top:1px solid var(--line);padding-top:12px}.result-body p{margin-bottom:8px}.result-body textarea{min-height:80px;resize:vertical}.back{padding:20px 0 32px}.live{font-size:14px;color:#455e5a}.columns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.columns>div{background:#edf6f2;padding:10px;border-radius:8px}.columns strong{display:block;color:#245d50}.columns p{margin:4px 0 0}[hidden]{display:none!important}
+    .state{word-break:keep-all}
+    @media(max-width:700px){.wrap{width:calc(100% - 28px)}.intro{margin-top:14px;padding:17px}.grid,.columns{grid-template-columns:minmax(0,1fr)}.card{padding:15px}}
+  </style>
+</head>
+<body>
+  <header class="bar"><div class="wrap"><span class="mark" aria-hidden="true">✦</span><strong>Dream AI Studio</strong><small>클라우드 작업실</small></div></header>
+  <main class="wrap">
+    <section class="intro"><h1>등록 자료로 콘텐츠 분석</h1><p>접근이 확인된 자료를 선택하고 직접 관찰한 근거와 편집용 초안을 확인하세요.</p></section>
+    <div class="scenario">
+      <label for="scenario">시안 상태</label>
+      <select id="scenario">
+        <option value="list">시험 자료 선택</option><option value="empty">조회 성공 · 빈 목록</option><option value="login">재로그인 필요</option><option value="restricted">계정 접근 제한</option><option value="revoked">선택 자료 권한 철회</option><option value="failure">조회 연결 실패</option><option value="offline">운영 미연결</option>
+      </select>
+      <span class="chip">시험 자료로 체험 · 실제 운영은 미연결</span>
+    </div>
+    <div class="grid">
+      <section class="card" aria-labelledby="sources">
+        <h2 id="sources">분석 자료</h2>
+        <div class="state" id="state" role="status" hidden><h3 id="state-title"></h3><p id="state-copy"></p></div>
+        <div id="picker">
+          <p class="small" id="analysis-instructions">분석 권한이 확인된 등록 자료를 한 개 선택해 주세요.</p>
+          <label for="material" id="material-label">등록 자료 선택</label>
+          <select class="field" id="material" aria-describedby="source-help"></select>
+          <p id="source-help" class="small">현재 시험 목록은 등록 이미지·영상 예시입니다.</p>
+          <div id="analysis-controls">
+            <label class="check"><input id="rights" type="checkbox" disabled><span>이 자료를 분석할 권리가 있어요.</span></label>
+            <button type="button" id="run" class="button" disabled>분석 실행</button>
+          </div>
+          <div class="actions" id="revocation-controls" hidden>
+            <button type="button" id="revoke" class="button" disabled>선택한 시험 자료 철회</button>
+          </div>
+        </div>
+        <div class="actions" id="recover" hidden>
+          <a class="button" id="login" href="https://dream-ai-studio-orpin.vercel.app/login?next=%2Fcloud%2Freference-analysis" hidden>다시 로그인</a>
+          <button type="button" class="button secondary" id="retry" hidden>목록 다시 조회</button>
+          <a class="button secondary" href="https://dream-ai-studio-orpin.vercel.app/cloud/projects">내 프로젝트 열기</a>
+        </div>
+        <p role="status" class="live" id="work-status"></p>
+      </section>
+      <section class="card result" aria-labelledby="result-title">
+        <h2 id="result-title" tabindex="-1">분석 결과</h2>
+        <div id="placeholder" class="result-note"><h3 id="placeholder-heading">아직 분석 결과가 없어요.</h3><p class="small" id="placeholder-copy">등록 자료를 고르고 분석 권리를 확인해 주세요.</p></div>
+        <div id="output" class="result-body" hidden>
+          <h3 id="observation-title"></h3><p class="small" id="source-label"></p>
+          <div class="columns">
+            <div><strong>직접 관찰</strong><p id="observation"></p></div>
+            <div><strong>분석 추정</strong><p id="inference"></p></div>
+          </div>
+          <h3>분석으로 생성한 초안</h3><p class="small">원본 제작자가 공개한 프롬프트는 확인되지 않았어요.</p>
+          <label for="draft">내 수정본</label><textarea class="field" id="draft" rows="3"></textarea>
+        </div>
+      </section>
+    </div>
+    <p class="back small"><a href="index.html">콘텐츠 분석 전체 시안 보기</a></p>
+  </main>
+  <script>
+    const get=id=>document.getElementById(id);
+    const cases={
+      empty:["분석할 수 있는 등록 자료가 없어요.","내 프로젝트에서 접근 가능한 자료를 확인한 뒤 목록을 다시 조회해 주세요."],
+      login:["다시 로그인해 주세요.","세션을 확인할 수 없어 등록 자료 목록을 지웠어요."],
+      restricted:["이 화면에 접근할 수 없어요.","클라우드 작업실 계정과 접근 권한을 확인해 주세요."],
+      revoked:["선택한 자료에 접근할 수 없어요.","이전 선택과 결과는 표시하지 않아요. 남은 자료를 새로 선택해 주세요."],
+      failure:["등록 자료를 불러오지 못했어요.","잠시 뒤 목록을 다시 조회해 주세요. 같은 문제가 계속되면 운영 담당자에게 화면 문구와 발생 시각을 알려 주세요."],
+      offline:["등록 자료 분석을 준비 중이에요.","현재 운영에서는 분석 공급원이 연결을 기다리고 있어요."]
+    };
+    const materials=[
+      { label:"시험 이미지 — 색 분포",kind:"등록 이미지",observation:"불투명 영역의 색·밝기 분포를 확인했어요.",inference:"이 분석에 포함된 추정이 없어요.",draft:"제품이 먼저 보이도록 밝기 대비를 설계한다." },
+      { label:"시험 영상 — 장면 전환",kind:"등록 영상",observation:"앞뒤 프레임에서 색 분포 변화가 관찰됐어요.",inference:"장면 전환 후보예요.",draft:"제품 전체 모습에서 사용 장면으로 컷을 바꾼다." }
+    ];
+    const scenario=get("scenario"),picker=get("material"),rights=get("rights"),run=get("run"),revoke=get("revoke");
+    let generation=0,pending=false,revokedValue="";
+    function sync(){
+      rights.disabled=!picker.value;
+      run.disabled=!picker.value||!rights.checked;
+      revoke.disabled=!picker.value;
+      run.setAttribute("aria-disabled",String(pending));
+      run.textContent=pending?"분석 중…":"분석 실행";
+    }
+    function clearResult(){
+      generation+=1;pending=false;rights.checked=false;
+      get("output").hidden=true;get("placeholder").hidden=false;get("draft").value="";
+      get("source-label").textContent="";get("observation-title").textContent="";
+      get("observation").textContent="";get("inference").textContent="";
+      get("work-status").textContent="";sync();
+    }
+    function renderState(){
+      const mode=scenario.value;
+      const choosingRevocation=mode==="revoked"&&!revokedValue;
+      const selected=choosingRevocation
+        ? ["철회할 시험 자료를 선택해 주세요.","철회 버튼을 누르면 고른 자료가 목록에서 빠져요."]
+        : cases[mode];
+      const available=mode==="list"||mode==="revoked";
+      picker.replaceChildren(new Option("자료를 선택해 주세요",""));
+      if(available)materials.forEach((item,index)=>{
+        const value=String(index+1);
+        if(value!==revokedValue)picker.add(new Option(item.label,value));
+      });
+      get("picker").hidden=!available;
+      get("material-label").textContent=choosingRevocation?"철회할 시험 자료 선택":"등록 자료 선택";
+      get("analysis-instructions").hidden=choosingRevocation;
+      get("analysis-controls").hidden=choosingRevocation;
+      get("revocation-controls").hidden=!choosingRevocation;
+      get("state").hidden=!selected;get("state").classList.toggle("neutral",mode==="empty"||mode==="offline"||choosingRevocation);
+      get("state-title").textContent=selected?.[0]??"";get("state-copy").textContent=selected?.[1]??"";
+      get("recover").hidden=mode==="list"||choosingRevocation;
+      get("login").hidden=mode!=="login";
+      get("retry").hidden=!["empty","revoked","failure"].includes(mode);
+      get("placeholder-heading").textContent=mode==="list"?"아직 분석 결과가 없어요.":"표시할 분석 결과가 없어요.";
+      get("placeholder-copy").textContent=choosingRevocation?"시험 자료를 골라 권한 철회를 확인해 주세요.":available?"등록 자료를 고르고 분석 권리를 확인해 주세요.":"자료를 선택할 수 있게 되면 이곳에서 결과를 확인할 수 있어요.";
+      clearResult();
+    }
+    scenario.addEventListener("change",()=>{
+      revokedValue=scenario.value==="revoked"?picker.value:"";
+      renderState();
+    });
+    picker.addEventListener("change",clearResult);
+    revoke.addEventListener("click",()=>{
+      revokedValue=picker.value;
+      renderState();
+      picker.focus();
+    });
+    rights.addEventListener("change",()=>{
+      if(!rights.checked)clearResult();
+      else sync();
+    });
+    run.addEventListener("click",()=>{
+      if(run.disabled||pending)return;
+      const expected=++generation;
+      const sample=materials[Number(picker.value)-1];
+      pending=true;sync();get("work-status").textContent="시험 자료의 분석 결과를 준비하고 있어요.";
+      setTimeout(()=>{
+        if(expected!==generation)return;
+        pending=false;sync();
+        get("work-status").textContent="시험 자료 결과를 표시했어요.";
+        get("observation-title").textContent=sample.label;get("source-label").textContent=sample.kind;
+        get("observation").textContent=sample.observation;get("inference").textContent=sample.inference;
+        get("draft").value=sample.draft;get("placeholder").hidden=true;get("output").hidden=false;
+        get("result-title").focus({preventScroll:true});get("result-title").scrollIntoView({block:"start"});
+      },350);
+    });
+    get("retry").addEventListener("click",()=>{
+      get("work-status").textContent="시안에서 목록 재조회 동작을 확인했어요. 위의 시안 상태를 바꾸면 다른 결과를 볼 수 있어요.";
+    });
+    renderState();
+  </script>
+</body>
+</html>

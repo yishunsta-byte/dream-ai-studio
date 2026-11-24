@@ -138,6 +138,9 @@ const guardedRoutes = [
   "library/archive", "projects/[id]/finishing", "projects/[id]/production",
   "projects/[id]/renders", "projects/[id]/timeline", "projects/[id]/workflow",
   "projects/[id]/brief", "projects/[id]/plan", "projects/[id]/scene-results", "projects/[id]/scene-selection", "projects/[id]/scenes", "projects/asset-choices",
+  "projects/[id]/audio-assets", "projects/[id]/audio-assets/[assetId]", "projects/[id]/exports", "projects/[id]/exports/[exportId]",
+  "projects/[id]/renders/[jobId]/execute", "projects/[id]/review", "projects/[id]/timeline/audio-clips", "projects/[id]/timeline/initial",
+  "projects/[id]/timeline/subtitles", "projects/[id]/timeline/subtitles/download", "studio/reference-analysis",
   "projects", "projects/[id]", "renders/[id]/cancel", "renders/[id]/file", "restore/finish", "restore/inspect",
 ];
 const modulePath = (route: string) => `../app/api/${route}/route.ts`;
@@ -187,6 +190,40 @@ describe("direct route calls without proxy", () => {
       }
     });
   }
+});
+
+describe("owned PG WAV routes without a proxy", () => {
+  it.each([
+    ["projects/[id]/audio-assets", "GET", "owned-pg17"],
+    ["projects/[id]/audio-assets/[assetId]", "PUT", "owned-pg17"],
+    ["projects/[id]/audio-assets", "GET", undefined],
+    ["projects/[id]/audio-assets/[assetId]", "PUT", undefined],
+    ["projects/[id]/renders", "GET", "owned-pg17"],
+    ["projects/[id]/renders", "POST", "owned-pg17"],
+    ["projects/[id]/renders", "GET", undefined],
+    ["projects/[id]/renders", "POST", undefined],
+    ["projects/[id]/renders/[jobId]/execute", "GET", "owned-pg17"],
+    ["projects/[id]/renders/[jobId]/execute", "POST", "owned-pg17"],
+  ] as const)("%s %s backend=%s rejects a missing session before identifiers or database access", async (path, method, backend) => {
+    const { Client } = await import("pg");
+    const connect = vi.spyOn(Client.prototype, "connect").mockImplementation(() => { throw new Error("unexpected database access"); });
+    try {
+      for (const key of ["DREAM_PROJECT_CREATE_BACKEND", "DREAM_PRIVATE_UPLOAD_BACKEND"]) vi.stubEnv(key, backend);
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:10001");
+      vi.stubEnv("DREAM_OWNED_CREATE_PG_PORT", "10002");
+      vi.stubEnv("DREAM_OWNED_CREATE_PG_PASSWORD", "fixture");
+      const request = new Request("http://127.0.0.1/api/direct", { method });
+      const readParams = vi.fn(() => { throw new Error("unexpected params access"); });
+      const route = await routeModules[modulePath(path)]();
+      const response = await (route[method] as Handler)(request, { params: { then: readParams } as unknown as Promise<{id:string}> });
+      expect(response.status).toBe(401);
+      expect(await response.json()).toMatchObject({ code: "AUTH_REQUIRED" });
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(state.getUser).toHaveBeenCalledOnce();
+      expect(readParams).not.toHaveBeenCalled();
+      expect(connect).not.toHaveBeenCalled();
+    } finally { connect.mockRestore(); vi.unstubAllEnvs(); }
+  });
 });
 
 describe("public authentication routes called without proxy or session", () => {

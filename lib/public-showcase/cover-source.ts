@@ -8,6 +8,7 @@
 // 공급원은 아래 COVER_SOURCE 하나로만 정한다. 환경변수·요청 값으로 고르는 경로나 시험용 공개 우회는 두지 않는다.
 // 합성 시험은 격리 사본에서 이 값을 바꿔 주입한다(docs/handoffs/T254-SHOWCASE-IMAGE-IMPLEMENTATION.md).
 import "server-only";
+import type { PlaybackStore } from "./playback-source";
 import { createHash } from "node:crypto";
 import { addAbortListener } from "node:events";
 import sharp from "sharp";
@@ -21,6 +22,7 @@ const SHA256 = /^[a-f0-9]{64}$/;
 // T-253 find_cover(slug, generation) 결과 한 행(object_key, mime, size_bytes, sha).
 export type CoverRow = Readonly<{ objectKey: string; mime: string; sizeBytes: number; sha: string }>;
 export type CoverStore = Readonly<{
+  media?: PlaybackStore;
   // 활성 세대가 정확히 일치하면 한 행, 아니면 null. 조회 실패는 throw.
   findCover(address: CoverAddress, signal: AbortSignal): Promise<CoverRow | null>;
   // DB가 준 불변 객체 키의 바이트 전체. maxBytes를 넘기면 throw.

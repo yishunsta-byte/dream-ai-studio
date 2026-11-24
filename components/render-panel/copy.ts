@@ -1,5 +1,6 @@
 // Screen wording for the render page (T-102 3장·5장·6장). Pure: server values in, sentences out. No guessing:
 // a value the server did not send is not shown.
+import { spokenFrameTime } from "@/lib/edit/preview";
 import type { RenderBlocker } from "@/lib/render/input";
 import type { RenderView } from "@/lib/services/renders";
 
@@ -26,7 +27,7 @@ export function blockerLines(blockers:RenderBlocker[]):BlockerLine[]{
     else if(blocker.code==="RENDER_BROWSER_MISSING")lines.push(blocker.params.reason==="mismatch"?{key:"browser",text:`영상 만들기 도구의 설치본이 정해진 버전(${blocker.params.version})과 달라요. 이 PC에서 PowerShell로 scripts/install-browser.ps1을 다시 실행해 주세요.`,code:"RENDER_BROWSER_MISSING"}:{key:"browser",text:"영상 만들기 도구가 아직 설치되지 않았어요. 설치는 한 번만 하면 돼요: 이 PC에서 PowerShell로 scripts/install-browser.ps1을 실행해 주세요.",code:"RENDER_BROWSER_MISSING"});
     else if(blocker.code==="AUDIO_RENDER_UNSUPPORTED")lines.push({key:"audio",text:"소리를 넣은 예전 형식 타임라인이에요. 편집에서 소리를 확인하고 다시 저장해 주세요. 소리 없이 만든다고 성공으로 보여 주지 않아요.",code:"AUDIO_RENDER_UNSUPPORTED",link:"edit"});
     else if(blocker.code==="AUDIO_SOURCE_MISSING")lines.push({key:`audio-${blocker.params.assetId}`,text:blocker.params.reason==="range"?"소리 파일이 쓰려는 구간보다 짧아요. 편집에서 소리 구간을 확인해 주세요.":blocker.params.reason==="file_changed"?"소리 파일이 고를 때와 달라졌어요. 편집에서 소리를 다시 골라 주세요.":blocker.params.reason==="not_audio"?"소리 자리에 소리가 아닌 파일이 들어 있어요. 편집에서 다시 골라 주세요.":"소리 파일을 찾지 못했어요. 편집에서 소리를 다시 골라 주세요.",code:"AUDIO_SOURCE_MISSING",link:"edit"});
-    else if(blocker.code==="AUDIO_TOO_LONG")lines.push({key:"audio-long",text:`소리가 들어간 영상은 10분까지만 만들 수 있어요(지금 ${duration(blocker.params.frames/30)}).`,code:"AUDIO_TOO_LONG",link:"edit"});
+    else if(blocker.code==="AUDIO_TOO_LONG")lines.push({key:"audio-long",text:`소리가 들어간 영상은 10분까지만 만들 수 있어요(지금 ${spokenFrameTime(blocker.params.frames)}).`,code:"AUDIO_TOO_LONG",link:"edit"});
     else if(blocker.code==="AUDIO_TOOL_MISSING")lines.push({key:"audio-tool",text:"소리 처리 도구(FFmpeg)를 찾지 못했어요. 설치 안내를 확인해 주세요.",code:"AUDIO_TOOL_MISSING"});
     else if(blocker.code==="DISK_FULL")lines.push({key:"disk",text:`디스크 공간이 모자라요. 필요 약 ${gb(blocker.params.needBytes)} · 남은 ${gb(blocker.params.freeBytes)}.`,code:"DISK_FULL"});
   }

@@ -10,6 +10,7 @@ import { parseMenuConfig } from "@/lib/menus/parse";
 import { snapshotForMenu } from "@/lib/menus/snapshot";
 import { loginPath } from "@/lib/auth/config";
 import { getRenderAuth } from "@/lib/auth/render";
+import { localProjectFormEnabled } from "@/lib/cloud/local-project-form-enabled";
 import { activeManagedMenus, managedMenuName } from "@/components/cloud/managed-project-requests";
 
 export const metadata: Metadata = { title: "새 프로젝트 · Dream AI Studio" };
@@ -27,6 +28,10 @@ export default async function CloudProjectCreatePendingPage({ searchParams }: { 
     redirect(loginPath({ error: auth.status === 403 ? "forbidden" : "unavailable" }));
   }
   if (auth.kind === "local") return <CloudReadLocal title="새 프로젝트" />;
+  if (process.env.DREAM_PROJECT_CORE_BACKEND === undefined && localProjectFormEnabled()) {
+    const { PrivatePngProjectPage } = await import("@/components/cloud/private-png-project-page");
+    return <PrivatePngProjectPage />;
+  }
   const config = process.env.DREAM_PROJECT_CORE_BACKEND !== undefined ? parseMenuConfig(JSON.stringify(menusJson)) : undefined;
   const menus = config?.ok ? activeManagedMenus(config.config.menus) : [];
   const wanted = (await searchParams)?.menu;

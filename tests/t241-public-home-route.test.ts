@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { NextRequest } from "next/server";
-import { createElement, isValidElement } from "react";
+import { isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PUBLIC_SHOWCASE_ASSETS, isAnonymousPublicPath, isPublicPath } from "@/lib/auth/config";
@@ -98,7 +98,7 @@ describe("T-241 proxy", () => {
 describe("T-241 공개 메인 페이지와 메뉴 설정 오류", () => {
   it("공개 메인은 예시 작품과 작업실로 돌아오는 로그인 링크만 그린다", async () => {
     const { default: Page } = await import("@/app/(public)/page");
-    const markup = renderToStaticMarkup(createElement(Page));
+    const markup = renderToStaticMarkup(await Page({})); // T-255: 공개 메인이 비동기 서버 컴포넌트가 됨
     expect(markup).toContain("NEON AFTER HOURS");
     expect(markup).toContain('href="/login?next=%2Fstudio"');
     expect(markup).not.toMatch(/메뉴 설정|menus\.json|docs\/spec/);
@@ -107,7 +107,8 @@ describe("T-241 공개 메인 페이지와 메뉴 설정 오류", () => {
   it("공개 메인·루트 레이아웃은 개인 자료·메뉴 설정·인증 사용자 모듈을 가져오지 않는다", () => {
     const page = readFileSync("app/(public)/page.tsx", "utf8");
     const imports = [...page.matchAll(/from\s+"([^"]+)"/g)].map((match) => match[1]);
-    expect(imports).toEqual(["next", "@/components/public-showcase/neon-showcase", "@/lib/public-showcase/works"]);
+    expect(imports).toEqual(["next", "@/components/public-showcase/neon-showcase", "@/components/public-showcase/showcase-guard",
+      "@/lib/public-showcase/publication-runtime", "@/lib/public-showcase/showcase-feed"]);
     const root = readFileSync("app/layout.tsx", "utf8");
     expect(root).not.toMatch(/menus\/server|getMenuConfig|issues|lib\/services|lib\/db|lib\/auth/);
   });
@@ -123,7 +124,7 @@ describe("T-241 공개 메인 페이지와 메뉴 설정 오류", () => {
     expect(startup.calls).toBe(0);
     // 같은 상태에서 공개 메인은 안내 없이 예시를 그린다.
     const { default: Page } = await import("@/app/(public)/page");
-    const publicMarkup = renderToStaticMarkup(createElement(Page));
+    const publicMarkup = renderToStaticMarkup(await Page({}));
     expect(publicMarkup).toContain("NEON AFTER HOURS");
     expect(publicMarkup).not.toMatch(/메뉴 설정|menus\.json/);
   });

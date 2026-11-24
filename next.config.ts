@@ -17,7 +17,12 @@ const analysisRoutes = {
   "/api/admin/audio-analysis": analysisMedia,
   [audioCompletionRoute]: analysisMedia,
 };
-const config:NextConfig={reactStrictMode:true,poweredByHeader:false,outputFileTracingIncludes:analysisRoutes,outputFileTracingExcludes:{
+const config:NextConfig={reactStrictMode:true,poweredByHeader:false,
+async rewrites() {
+  return { beforeFiles: [{ source: "/media/public/:slug/:generation/play.:ext(mp4|webm|mp3|m4a)", destination: "/api/publication-playback" }], afterFiles: [], fallback: [] };
+},
+images:{localPatterns:[{pathname:"/showcase/t240/**",search:""}]},
+outputFileTracingIncludes:analysisRoutes,outputFileTracingExcludes:{
   "/*":["./data/**/*","./storage/**/*","./backups/**/*","./tmp/**/*","./.tools/**/*","./.env*",...(runtimePrefix?[...["data","storage","backups","tmp",".tools"].map(name=>`${runtimePrefix}/${name}/**/*`),`${runtimePrefix}/.env*`]:[])],
 }};
 export default config;

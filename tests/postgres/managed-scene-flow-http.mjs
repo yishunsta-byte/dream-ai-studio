@@ -357,9 +357,12 @@ export async function verifyTopicScenes(context, baseEnv, ids) {
   const topicFiles = { read: ["managed-scene-read/0002_topic_shorts.sql", "scene_read", "SCENE_READ_TOPIC_SHORTS_TARGET"],
     result: ["managed-scene-result/0003_topic_shorts.sql", "scene_result", "SCENE_RESULT_TOPIC_SHORTS_TARGET"],
     select: ["managed-scene-select/0002_topic_shorts.sql", "scene_select", "SCENE_SELECT_TOPIC_SHORTS_TARGET"] };
+  const rollbackFiles = { read: ["managed-scene-read/rollback_0002_topic_shorts.sql", "scene_read", "SCENE_READ_TOPIC_SHORTS_ROLLBACK_TARGET"],
+    result: ["managed-scene-result/rollback_0003_topic_shorts.sql", "scene_result", "SCENE_RESULT_TOPIC_SHORTS_ROLLBACK_TARGET"],
+    select: ["managed-scene-select/rollback_0002_topic_shorts.sql", "scene_select", "SCENE_SELECT_TOPIC_SHORTS_ROLLBACK_TARGET"] };
   const installed = {};
-  const installTopic = async key => {
-    const [file, prefix, refusal] = topicFiles[key];
+  const installTopic = async (key, files = topicFiles) => {
+    const [file, prefix, refusal] = files[key];
     const text = (await readFile(new URL("lib/db/postgres/" + file, rootPath), "utf8")).replaceAll("\r\n", "\n");
     await admin.query("SET ROLE p102_migrate");
     try {
@@ -543,6 +546,24 @@ export async function verifyTopicScenes(context, baseEnv, ids) {
         select: await status(selectPath(ids.approved), { input: { ...pick, requestId: v7(), revision: R0 + 1 } }) };
     } finally { await admin.query("UPDATE dream.projects SET archived_at=NULL WHERE id=$1", [ids.approved]); }
     assert.deepEqual(archived, { read: 404, register: 404, select: 404 });
+
+    // 8) 되돌리기(선택 → 등록 → 읽기 역순): 이전 설치 상태로 돌아가 쇼핑숏츠는 그대로, 주제별 쇼츠는 404. 이미 만든 버전·선택은
+    //    남고 다시 실행하면 거부된다. 그 뒤 정방향 파일을 다시 설치하면 같은 읽기와 등록·선택 재전송 응답으로 돌아온다.
+    const finalRead = await body(call(scenesPath(ids.approved)), 200);
+    const kept = await counts(ids.approved);
+    for (const key of ["select", "result", "read"]) await installTopic(key, rollbackFiles);
+    states.rolledBack = await probe();
+    assert.deepEqual(states.rolledBack, { read: 404, register: 404, select: 404 });
+    await shoppingSame();
+    assert.deepEqual(await counts(ids.approved), kept);
+    for (const key of ["read", "result", "select"]) await installTopic(key);
+    assert.deepEqual(await body(call(scenesPath(ids.approved)), 200), finalRead);
+    const replays = { register: await status(resultsPath(ids.approved), { input: registered[0].input }),
+      select: (await body(call(selectPath(ids.approved), { input: pick }), 200)).outcome };
+    assert.deepEqual(replays, { register: 200, select: "replayed" });
+    assert.deepEqual(await counts(ids.approved), kept);
+    await shoppingSame();
+    states.reapplied = { read: 200, ...replays };
     report = { installs: installed, states, scenes: 3, registered: 9, recent: [7, 6, 5, 4, 3], olderPage: [2, 1], registerCodes, selected: "200 revision " + R0 + "->" + (R0 + 1),
       selectCodes, afterSelectRegister: { oldRevision: 409, newRevision: "201 version 8" }, unknownStateClosed: drift, shoppingSameInEveryState: true, archived, readsWrite: 0 };
   });

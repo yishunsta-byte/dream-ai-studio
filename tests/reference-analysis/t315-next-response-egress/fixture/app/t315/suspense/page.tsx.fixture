@@ -1,0 +1,15 @@
+// [T315 격리 사본 전용 시험 파일] Suspense 스트리밍 페이지. 설치 위치: app/t315/suspense/page.tsx
+// 공개 셸(T315-PUBLIC-SHELL)을 먼저 보내고, 보호 영역은 Suspense 안에서 허가 확인 뒤 표식 또는 T315-WITHHELD.
+import { headers } from "next/headers";
+import { Suspense } from "react";
+import { marker, renderGate } from "@/lib/t315/gate";
+export const dynamic = "force-dynamic";
+async function Protected({ ticket, req }: { ticket?: string; req?: string }) {
+  if (!ticket || !(await renderGate(ticket, req))) return <p>T315-WITHHELD</p>;
+  return <p>{marker(ticket)}</p>;
+}
+export default async function Page({ searchParams }: { searchParams: Promise<{ ticket?: string }> }) {
+  const { ticket } = await searchParams;
+  const req = (await headers()).get("x-t315-request") ?? undefined;
+  return <main><p>T315-PUBLIC-SHELL</p><Suspense fallback={<p>T315-LOADING</p>}><Protected ticket={ticket} req={req} /></Suspense></main>;
+}

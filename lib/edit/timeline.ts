@@ -127,6 +127,13 @@ export function secondsToFrames(seconds:number){const ms=Math.round(seconds*1000
 // For the static editor and SRT: frames back to whole milliseconds (round trip frame → ms → frame is exact).
 export function framesToMs(frames:number){return Math.floor((frames*1000*2+FPS)/(FPS*2));}
 export const framesToSeconds=(frames:number)=>framesToMs(frames)/1000;
+export function sceneFrameRange(plannedSeconds:number,videoDurationMs:number|null){
+  const plannedFrames=plannedSeconds*FPS;
+  const sourceFrames=videoDurationMs!==null && Number.isSafeInteger(videoDurationMs) && videoDurationMs>0
+    ? Math.max(1,Math.floor((videoDurationMs*FPS+500)/1000)) : plannedFrames;
+  const durationFrames=Math.min(plannedFrames,sourceFrames);
+  return {durationFrames,trimInFrames:0,trimOutFrames:sourceFrames-durationFrames};
+}
 export const totalFrames=(video:readonly {durationFrames:number}[])=>video.reduce((sum,clip)=>sum+clip.durationFrames,0);
 // spec fromP1Values.endFrameLimit: a text may end at max(video total, project length × 30); P1 values moved by 0005 are not cut.
 export const textEndLimit=(video:readonly {durationFrames:number}[],lengthSec:number)=>Math.max(totalFrames(video),lengthSec*FPS);

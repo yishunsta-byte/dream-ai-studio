@@ -13,7 +13,7 @@
     "build": "next build && node scripts/verify-build.mjs",
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit -p tsconfig.typecheck.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "worker": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx worker/main.ts",

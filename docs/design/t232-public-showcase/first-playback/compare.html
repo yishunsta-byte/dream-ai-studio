@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>공개 작품 최초 재생 조작 비교 · Dream Screen</title>
+  <link rel="icon" href="data:,">
+  <style>
+    @font-face {
+      font-family: Pretendard;
+      src: url('../assets/PretendardVariable.woff2') format('woff2');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+    :root {
+      color-scheme: dark;
+      --bg: #0d0b15;
+      --panel: #191625;
+      --line: #453652;
+      --ink: #fdf5ff;
+      --muted: #d7c8df;
+      --pink: #ffb6e9;
+      --focus: #ffd5a1;
+      font: 16px/1.5 Pretendard, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; word-break: keep-all; overflow-wrap: anywhere; }
+    h1, h2, h3, p, figure { margin: 0; }
+    button { font: inherit; cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
+    [hidden] { display: none !important; }
+    .wrap { width: min(1120px, calc(100% - 52px)); margin-inline: auto; }
+    .top {
+      background: radial-gradient(ellipse at 85% 0, #41243f 0, transparent 67%), #181322;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { min-height: 62px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #b189b42e; }
+    .mark {
+      display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(130deg, #cd3eab, #7847d2); color: #fff;
+    }
+    .brand b { color: var(--pink); }
+    .brand small { margin-inline-start: auto; color: var(--muted); }
+    .intro { padding-block: 24px 25px; }
+    .intro h1 { font-size: clamp(2rem, 4.1vw, 3.65rem); line-height: 1.1; letter-spacing: -.06em; }
+    .intro p { margin-block-start: 8px; color: var(--muted); }
+    main { padding-block: 18px 43px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .card { min-width: 0; border: 1px solid var(--line); background: var(--panel); border-radius: 13px; overflow: hidden; }
+    .shot { position: relative; background: #322037; isolation: isolate; }
+    .shot img { display: block; width: 100%; height: clamp(115px, 17vw, 200px); object-fit: cover; object-position: 50% 44%; }
+    .shot::after {
+      content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background: linear-gradient(0deg, #0f091adc 0, transparent 68%);
+    }
+    .still-caption { position: absolute; z-index: 1; inset: auto 14px 11px; color: #fff4ff; font-size: .88rem; font-weight: 720; }
+    .card-content { padding: 14px 16px 16px; }
+    .card h2 { font-size: 1.27rem; line-height: 1.25; letter-spacing: -.035em; }
+    .path { color: var(--muted); font-size: .9rem; margin-block: 5px 12px; }
+    .button {
+      min-height: 44px; padding: 8px 13px; border-radius: 8px; border: 1px solid #8e739f;
+      color: var(--ink); background: #382945; font-weight: 725;
+    }
+    .button:hover { background: #4a365a; }
+    .primary { color: #261028; background: #f0a9e1; border-color: #f0a9e1; }
+    .primary:hover { background: #ffcbf1; }
+    .evidence { border-block-start: 1px solid var(--line); margin-block-start: 19px; padding-block-start: 13px; }
+    .evidence h2 { font-size: 1.14rem; margin-block-end: 5px; }
+    .evidence p { margin-block-start: 4px; color: var(--muted); font-size: .9rem; }
+    .evidence strong { color: var(--ink); }
+    dialog {
+      padding: 0; width: min(650px, calc(100% - 34px)); max-height: calc(100dvh - 32px); overflow: auto;
+      color: var(--ink); background: #20182e; border: 1px solid #785c8a; border-radius: 13px;
+      overscroll-behavior: contain;
+    }
+    dialog::backdrop { background: #09060ecd; }
+    .detail { padding: 16px; }
+    .detail-head { display: flex; justify-content: space-between; align-items: start; gap: 11px; margin-block-end: 12px; }
+    .detail-head h2 { font-size: 1.55rem; line-height: 1.2; }
+    .detail-head p { color: var(--muted); font-size: .9rem; margin-block-start: 3px; }
+    .close { flex: none; }
+    .detail .shot { border-radius: 8px; overflow: hidden; }
+    .detail .shot img { height: clamp(120px, 27vh, 230px); }
+    .player { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-block-start: 11px; }
+    .player-entry { padding: 8px 10px; border-radius: 7px; border: 1px solid #544360; color: var(--muted); }
+    .hint, .feedback { color: var(--muted); font-size: .89rem; margin-block-start: 8px; }
+    .feedback { color: #ffe2fa; }
+    .feedback:empty { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    @media (max-width: 700px) {
+      .wrap { width: calc(100% - 28px); }
+      .brand { min-height: 54px; }
+      .intro { padding-block: 17px 20px; }
+      main { padding-block-start: 13px; }
+      .grid { grid-template-columns: minmax(0, 1fr); }
+      .shot img { height: 142px; }
+      .detail { padding: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <div class="brand"><span class="mark" aria-hidden="true">✦</span><strong>DREAM <b>SCREEN</b></strong><small>공개 작품</small></div>
+      <div class="intro"><h1>공개 작품 최초 재생 조작</h1><p>같은 작품 예시에서 두 키보드 경로를 비교합니다. 재생 상태는 시안에서 모의로 표시합니다.</p></div>
+    </div>
+  </header>
+  <main class="wrap">
+    <div class="grid">
+      <article class="card" aria-labelledby="native-heading">
+        <figure class="shot"><img src="../assets/neon-rooftop.png" alt=""><figcaption class="still-caption">옥상 너머 · 영상 예시</figcaption></figure>
+        <div class="card-content">
+          <h2 id="native-heading">브라우저 기본 재생 버튼 경로</h2>
+          <p class="path">시안의 Tab 순서 · 닫기 → 미디어 요소 → 재생</p>
+          <button class="button" id="open-native" type="button" data-variant="native" aria-haspopup="dialog">기본 경로 상세 열기</button>
+        </div>
+      </article>
+      <article class="card" aria-labelledby="proposal-heading">
+        <figure class="shot"><img src="../assets/neon-rooftop.png" alt=""><figcaption class="still-caption">옥상 너머 · 영상 예시</figcaption></figure>
+        <div class="card-content">
+          <h2 id="proposal-heading">최초 재생 시작 버튼 제안</h2>
+          <p class="path">시안의 Tab 순서 · 닫기 → 재생 시작</p>
+          <button class="button primary" id="open-proposal" type="button" data-variant="proposal" aria-haspopup="dialog">제안 경로 상세 열기</button>
+        </div>
+      </article>
+    </div>
+    <section class="evidence" aria-labelledby="evidence-heading">
+      <h2 id="evidence-heading">고정 최초 입력 기록</h2>
+      <p>81ddad2 · 390px·1440px Chromium · MP4·M4A</p>
+      <p><strong>전체 사본 개발 서버</strong> · 미디어 요소에서 첫 Space·Enter로 재생 0/8</p>
+      <p><strong>별도 UI 배포 모드</strong> · 브라우저 기본 재생 버튼에서 첫 Space·Enter로 재생 8/8 · 버튼까지 Tab 2–6회</p>
+    </section>
+  </main>
+
+  <dialog id="detail" aria-labelledby="detail-heading" aria-describedby="mode-label">
+    <div class="detail">
+      <header class="detail-head">
+        <div><h2 id="detail-heading">옥상 너머</h2><p id="mode-label"></p></div>
+        <button class="button close" id="close" type="button" autofocus>닫기</button>
+      </header>
+      <figure class="shot"><img src="../assets/neon-rooftop.png" alt=""><figcaption class="still-caption" id="still-status">재생 전 시험 화면</figcaption></figure>
+      <div class="player">
+        <p class="player-entry" id="player-entry" tabindex="0">미디어 요소 예시</p>
+        <button class="button" id="play" type="button">재생</button>
+      </div>
+      <p class="hint" id="hint"></p>
+      <p class="feedback" id="feedback" role="status" aria-atomic="true"></p>
+    </div>
+  </dialog>
+
+  <script>
+    const get = id => document.getElementById(id);
+    const detail = get("detail"), close = get("close"), entry = get("player-entry"), play = get("play");
+    let opener;
+    let initialLabel = "재생";
+    let playing = false;
+
+    function openDetail(trigger) {
+      opener = trigger;
+      const proposal = trigger.dataset.variant === "proposal";
+      entry.hidden = proposal;
+      play.classList.toggle("primary", proposal);
+      initialLabel = proposal ? "재생 시작" : "재생";
+      playing = false;
+      play.textContent = initialLabel;
+      get("still-status").textContent = "재생 전 시험 화면";
+      get("mode-label").textContent = proposal ? "최초 재생 시작 버튼 제안" : "브라우저 기본 조작의 단순화된 모의 화면";
+      get("hint").textContent = "재생 버튼에서 Enter 또는 Space를 누르세요. Escape로 닫을 수 있어요.";
+      get("feedback").textContent = "";
+      detail.showModal();
+      close.focus();
+    }
+
+    for (const trigger of document.querySelectorAll("[data-variant]")) {
+      trigger.addEventListener("click", () => openDetail(trigger));
+    }
+    entry.addEventListener("keydown", event => {
+      if (event.key !== " " && event.key !== "Enter") return;
+      event.preventDefault();
+      get("feedback").textContent = "Tab으로 모의 재생 버튼에 이동하세요.";
+    });
+    play.addEventListener("click", () => {
+      playing = !playing;
+      play.textContent = playing ? "일시 정지" : initialLabel;
+      get("still-status").textContent = playing ? "재생 중 상태 예시" : "일시 정지 상태 예시";
+      get("feedback").textContent = playing ? "시안의 재생 상태를 시작했어요." : "시안의 재생 상태를 일시 정지했어요.";
+    });
+    function dismissDetail() {
+      detail.close();
+      opener?.focus();
+    }
+
+    close.addEventListener("click", dismissDetail);
+    detail.addEventListener("cancel", event => {
+      event.preventDefault();
+      dismissDetail();
+    });
+  </script>
+</body>
+</html>

@@ -12,7 +12,7 @@
 .sm { min-height:var(--control-h-sm); padding-inline:var(--sp-3); }
 .md { min-height:var(--control-h-md); }
 .lg { min-height:var(--control-h-lg); padding-inline:var(--sp-6); font-size:var(--text-md); }
-.button:disabled { background:var(--bg-sunken); color:var(--fg-muted); border-color:var(--line); cursor:not-allowed; }
+.button:disabled, .button[aria-disabled="true"] { background:var(--bg-sunken); color:var(--fg-muted); border-color:var(--line); cursor:not-allowed; }
 .disabledGroup { display:inline-flex; flex-direction:column; align-items:flex-start; gap:var(--sp-1); max-width:100%; }
 .reason, .help { color:var(--fg-muted); font-size:var(--text-sm); margin:0; }
 .iconButton { display:inline-grid; place-items:center; flex-shrink:0; width:var(--control-h-md); height:var(--control-h-md); border:1px solid var(--line); background:var(--bg-surface); color:var(--fg-strong); border-radius:var(--radius-sm); cursor:pointer; }

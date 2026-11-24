@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type Database from "better-sqlite3";
 import { editSnapshotSchema, type TextLayer as P1TextLayer } from "@/lib/edit/schema";
-import { canonicalJson, sameClip, textFromP1, timelineSchema, type Timeline, type TimelineClip } from "@/lib/edit/timeline";
+import { canonicalJson, sameClip, sceneFrameRange, textFromP1, timelineSchema, type Timeline, type TimelineClip } from "@/lib/edit/timeline";
 
 // Host-side timeline rules shared by the timeline service, the 0005 data check and the post-migration/restore checks.
 export type ClipData=Omit<TimelineClip,"id">;
@@ -20,11 +20,7 @@ export function clipFor(sqlite:Database.Database,scene:SceneRow):ClipData{
   const asset=sqlite.prepare("SELECT kind,duration_ms FROM assets WHERE id=?").get(version.result_asset_id) as {kind:string;duration_ms:number|null}|undefined;
   if(!asset||(asset.kind!=="image"&&asset.kind!=="video"))return clip;
   const filled:ClipData={...clip,sceneVersionId:scene.selected_version_id,assetId:version.result_asset_id};
-  if(asset.kind==="video"&&Number.isSafeInteger(asset.duration_ms)&&asset.duration_ms!>0){
-    const sourceFrames=Math.max(1,Math.floor((asset.duration_ms!*30+500)/1000)),durationFrames=Math.min(sourceFrames,planFrames);
-    return {...filled,durationFrames,trimOutFrames:sourceFrames-durationFrames};
-  }
-  return filled;
+  return {...filled,...sceneFrameRange(scene.duration_sec,asset.kind==="video"?asset.duration_ms:null)};
 }
 // Active scenes in the given order first (unknown and repeated ids ignored), then the rest by position.
 export function currentClips(sqlite:Database.Database,projectId:string,order:readonly string[]=[]):ClipData[]{

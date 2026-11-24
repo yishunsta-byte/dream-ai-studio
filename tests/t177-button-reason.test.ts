@@ -1,5 +1,5 @@
 // T-177 (T126 C1, plan A of T-176): a Button blocked with a shown reason names that reason as its description
-// (aria-describedby → the reason element's id). Clicking and Tab behaviour stay as they were (native disabled).
+// (aria-describedby → the reason element's id). The render action opts into staying in the Tab order.
 import { describe, expect, it, vi } from "vitest";
 import { createElement, Fragment } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -40,7 +40,10 @@ describe("공용 Button: 막힌 이유를 버튼 설명으로 잇는다",()=>{
     expect(button.disabled).toBe(true);expect(description(entry,button)).toBe("편집에서 저장하지 않은 변경이 있어요. 영상은 저장한 타임라인으로만 만들어요.");
     const panel=renderToStaticMarkup(createElement(RenderPanel,{projectId:"p1",saved:{revision:5,aspect:"9:16",audioMode:"none",audioClips:0},
       data:{workerOnline:true,contentRevision:7,timelineId:"019b0000-0000-7000-8000-000000000001",check:{ready:false,blockers:[{code:"DISK_FULL",params:{where:"storage",needBytes:2*1024**3,freeBytes:0.5*1024**3}}]},renders:[]}}));
-    const make=buttons(panel).find(item=>item.disabled&&item.text.includes("영상 만들기"))!;
-    expect(make).toBeTruthy();expect(description(panel,make).length).toBeGreaterThan(0);
+    const make=buttons(panel).find(item=>item.text==="영상 만들기")!;
+    expect(make).toBeTruthy();
+    expect(make.disabled).toBe(false);
+    expect(attr(make.attrs,"aria-disabled")).toBe("true");
+    expect(description(panel,make)).toBe("위 이유를 고치면 만들 수 있어요.");
   });
 });

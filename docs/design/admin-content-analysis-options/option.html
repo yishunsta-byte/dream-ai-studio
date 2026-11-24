@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>관리자 콘텐츠 분석 시안 · DREAM SCREEN</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="prototype.js" defer></script>
+</head>
+<body class="prototype">
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">✦</span>DREAM <strong>SCREEN</strong><span class="brand-context">관리자</span></a>
+    <nav aria-label="콘텐츠 분석 메뉴"><a href="#source" aria-current="location">분석 실행</a><a href="#results">근거·프롬프트</a><a href="#publishing">공개 관리</a></nav>
+    <a class="back" href="index.html">← 시안 비교</a>
+  </header>
+  <main class="workspace">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-shade"></div>
+      <div class="hero-copy">
+        <p class="overline" id="variant-name"></p>
+        <h1 id="page-title">콘텐츠 분석·공개</h1>
+        <p id="variant-description"></p>
+        <a class="public-link" href="https://dream-ai-studio-orpin.vercel.app/analysis-results" target="_blank" rel="noopener">공개 결과 페이지 ↗</a>
+      </div>
+      <div class="hero-metadata"><span>디자인 시안</span><span>예시 데이터</span></div>
+    </section>
+
+    <section class="panel source" id="source" aria-labelledby="source-title">
+      <div class="panel-head">
+        <div><p class="overline">SOURCE</p><h2 id="source-title">미디어 소스</h2></div>
+        <button class="quiet-button" id="example" type="button">예시 URL</button>
+      </div>
+      <div class="formats" aria-label="분석하는 미디어 종류">
+        <span>▧ 이미지</span><span>♫ 음악</span><span>▷ 영상</span>
+      </div>
+      <form id="source-form" novalidate>
+        <label for="source-url">미디어 파일 URL</label>
+        <input id="source-url" type="url" inputmode="url" autocomplete="off" placeholder="https://…/파일.jpg" aria-describedby="url-guide source-message" required>
+        <p class="hint" id="url-guide">파일 확장자가 있는 직접 HTTPS 주소를 넣으세요.</p>
+        <p class="source-message" id="source-message" role="status" hidden></p>
+        <div class="source-actions">
+          <button class="button primary" id="run" type="submit"><span aria-hidden="true">✦</span> 권리 확인하고 분석</button>
+          <button class="button neutral" id="cancel" type="button" hidden>분석 취소</button>
+        </div>
+        <p class="hint">분석할 권리가 있는 자료만 실행하세요.</p>
+      </form>
+      <details class="formats-help">
+        <summary>지원 원본·형식 보기</summary>
+        <ul><li><code>interactive-examples.mdn.mozilla.net</code>, <code>mdn.github.io</code>, <code>tonejs.github.io</code></li><li>이미지 PNG·JPG·WEBP</li><li>음악 MP3·WAV·M4A, 최대 24초</li><li>영상 MP4·MOV·WEBM, 최대 20초 또는 240프레임</li><li>파일 최대 64MB</li></ul>
+      </details>
+    </section>
+
+    <section class="panel results" id="results" aria-labelledby="results-title">
+      <div class="panel-head">
+        <div><p class="overline">ANALYSIS</p><h2 id="results-title" tabindex="-1">분석 결과</h2></div>
+        <span class="state" id="result-state">예시 결과</span>
+      </div>
+      <div id="result-body">
+        <div class="media-preview" id="media-preview">
+          <div class="wave" id="wave" aria-hidden="true"></div>
+          <div class="media-caption"><span id="media-kind"></span><strong id="media-title"></strong></div>
+          <span class="media-time" id="media-time"></span>
+        </div>
+        <div class="result-switch" aria-label="결과 보기">
+          <button type="button" class="switch" id="evidence-button" aria-pressed="true" aria-controls="evidence">관찰 근거</button>
+          <button type="button" class="switch" id="prompt-button" aria-pressed="false" aria-controls="prompt">생성 프롬프트</button>
+        </div>
+        <ul class="evidence" id="evidence"></ul>
+        <div class="prompt" id="prompt" hidden>
+          <h3>분석으로 생성한 초안</h3>
+          <p id="prompt-text"></p>
+          <button class="quiet-button" id="use-prompt" type="button">공개 초안에 넣기 ↓</button>
+        </div>
+      </div>
+      <p class="result-empty" id="result-empty" hidden>직접 파일 주소를 확인한 뒤 분석을 실행하세요.</p>
+    </section>
+
+    <section class="panel publishing" id="publishing" aria-labelledby="publish-title">
+      <div class="panel-head"><div><p class="overline">PUBLISH</p><h2 id="publish-title">공개 준비</h2></div><span class="state" id="publication-state">초안</span></div>
+      <form id="publication-form">
+        <div class="publish-fields">
+          <label for="publish-name">제목<input id="publish-name" maxlength="80" required></label>
+          <label for="publish-summary">요약<textarea id="publish-summary" maxlength="600" rows="2" required></textarea></label>
+          <label for="publish-prompt">생성 프롬프트<textarea id="publish-prompt" maxlength="2000" rows="2" required></textarea></label>
+        </div>
+        <label class="public-consent"><input id="public-consent" type="checkbox" required> 이 결과를 공개할 권리를 확인했고 공개 페이지 표시에 동의해요.</label>
+        <div class="publication-actions"><button class="button primary" id="publish" type="submit">공개하기</button><p id="publication-message" role="status"></p></div>
+      </form>
+    </section>
+
+    <section class="panel published" aria-labelledby="published-title">
+      <div class="panel-head"><div><p class="overline">LIBRARY</p><h2 id="published-title">공개한 분석 결과</h2></div><button class="quiet-button" id="refresh" type="button">목록 새로고침</button></div>
+      <p class="hint" id="published-empty">이 시안에 공개한 결과가 없어요.</p>
+      <ul id="publications" class="publication-list"></ul>
+      <p id="list-message" class="hint" role="status"></p>
+    </section>
+  </main>
+</body>
+</html>

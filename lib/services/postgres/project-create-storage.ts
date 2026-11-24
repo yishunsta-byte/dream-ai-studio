@@ -4,13 +4,17 @@ import type { VerifiedActor } from "@/lib/db/postgres/types";
 import type { PrivateObjectReader } from "@/lib/storage/supabase/reader";
 import { StorageReadError } from "@/lib/storage/supabase/errors";
 import { postgresAssetAvailability } from "./asset-availability";
-import { postgresProjectCreate } from "./project-create";
+import { postgresProjectCreate, type ProjectCreateHooks } from "./project-create";
 
 // Trusted server composition only. No environment, default reader/config, Auth
 // resolution or API activation. Budget stays below the existing pool's 15s idle
 // transaction limit; request signals/controllers never live in shared state.
-export function postgresProjectCreateWithStorage(pool: Pick<Pool, "connect">, reader: PrivateObjectReader, options: Readonly<{ ioTimeoutMs: number }>) {
+export function postgresProjectCreateWithStorage(pool: Pick<Pool, "connect">, reader: PrivateObjectReader, options: Readonly<{
+  ioTimeoutMs: number;
+  hooks?: ProjectCreateHooks;
+}>) {
   const budget = options.ioTimeoutMs;
+  const hooks = options.hooks;
   if (!Number.isSafeInteger(budget) || budget < 1 || budget > 10000) throw new StorageReadError("STORAGE_CONFIG");
   const available = postgresAssetAvailability(reader);
   return Object.freeze({
@@ -39,7 +43,7 @@ export function postgresProjectCreateWithStorage(pool: Pick<Pool, "connect">, re
         },
       };
       try {
-        return await postgresProjectCreate(scopedPool, { assetAvailable: (asset, verifiedActor) => available(asset, verifiedActor, controller.signal) })
+        return await postgresProjectCreate(scopedPool, { hooks, assetAvailable: (asset, verifiedActor) => available(asset, verifiedActor, controller.signal) })
           .create(actor, menuId, input, serverSnapshot);
       } finally { clearTimeout(timer);signal?.removeEventListener("abort", abort);controller.abort(); }
       // No post-COMMIT cancellation error: a confirmed committed ID stays valid.

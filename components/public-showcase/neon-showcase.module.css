@@ -32,13 +32,14 @@
 
 .header { display: flex; align-items: center; gap: 30px; padding: 18px 36px; max-width: 1600px; margin: auto; }
 .brand { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 850; font-size: 21px; letter-spacing: -0.05em; white-space: nowrap; }
+.brand em { font-style: normal; font-weight: 450; color: var(--accent); }
+.brandSymbol { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: linear-gradient(135deg, #e926bd, #6840e0); color: #fff; font-size: 20px; }
 .nav { display: flex; gap: 23px; align-items: center; }
 .nav a { min-height: 44px; min-width: 44px; justify-content: center; padding: 0 4px; display: flex; align-items: center; font-size: 14px; font-weight: 650; color: var(--muted); }
 .nav a[aria-current="page"] { color: var(--ink); }
 .search { margin-left: auto; width: 265px; position: relative; min-width: 0; }
 .search input { width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 24px; padding: 10px 16px 10px 42px; background: var(--surface); }
 .search span { position: absolute; left: 16px; top: 10px; color: var(--muted); font-size: 18px; }
-.notice { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 10px 36px; font-size: 12px; color: var(--muted); }
 
 .page { max-width: 1536px; margin: auto; padding: 25px 36px 40px; }
 .page:focus { outline: none; }
@@ -53,6 +54,11 @@
 .heroCopy h1 { font-size: clamp(48px, 6.3vw, 90px); line-height: 0.98; letter-spacing: -0.055em; font-weight: 850; overflow-wrap: anywhere; }
 .heroCopy p { max-width: 380px; font-size: 16px; color: #e2d8e7; margin: 23px 0 27px; }
 .byline { margin-bottom: 18px; font-size: 12px; letter-spacing: 0.1em; color: #e1cfe4; }
+/* T360: 대표 표지 상태 한 줄. 자리를 늘 잡아 두어 버튼이 움직이지 않는다. 불투명 바탕 위 대비 4.5:1 이상. */
+.coverStatus { min-height: 1.6em; margin: -6px 0 16px; font-size: 13px; line-height: 1.6; }
+.coverStatus:empty { visibility: hidden; }
+.coverStatus:not(:empty) { display: inline-block; color: #e2d8e7; background: #171622; padding: 2px 8px; border-radius: 4px; }
+.heroFallback { background: linear-gradient(120deg, #261435, #15232d); }
 .heroCopy .ghost { border-color: #9d879c; background: #160d1db0; color: #fff; }
 .heroBadge { position: absolute; right: 25px; top: 24px; background: #120e1dc9; color: #fff; border: 1px solid #ffffff55; border-radius: 4px; padding: 5px 9px; font-size: 11px; }
 
@@ -71,10 +77,9 @@
 .rail { display: flex; overflow-x: auto; gap: 20px; scroll-snap-type: x proximity; padding: 5px 4px 18px; margin: 0 -4px; }
 .work { flex: 0 0 30%; min-width: 0; scroll-snap-align: start; }
 .poster { padding: 0; border: 0; display: block; position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius); background: var(--soft); text-align: left; color: #fff; }
-.poster img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.45s; }
+.poster img { position: relative; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.45s; }
 .poster:hover img { transform: scale(1.045); }
 .poster::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, #0a0b16b3, transparent 65%); }
-.sample { position: absolute; top: 12px; right: 12px; z-index: 1; background: #101121cc; color: #fff; padding: 3px 7px; border-radius: 4px; font-size: 11px; }
 .open { position: absolute; bottom: 15px; left: 15px; z-index: 1; background: #fff; color: #18131c; width: 35px; height: 35px; display: grid; place-items: center; border-radius: 50%; font-size: 14px; }
 .workCopy { padding-top: 13px; display: flex; gap: 11px; }
 .creatorDot { width: 33px; height: 33px; border-radius: 50%; background: var(--soft); display: grid; place-items: center; color: var(--accent); font-size: 11px; font-weight: 800; flex-shrink: 0; }
@@ -89,8 +94,9 @@
 .collection h2 { font-size: 31px; margin: 10px 0 14px; }
 .collection p { color: #d5c9de; font-size: 14px; }
 .miniAlbums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
-.miniAlbums button { border: 0; background: transparent; padding: 0; text-align: left; color: #fff; min-width: 0; min-height: 44px; }
-.miniAlbums img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 10px; display: block; margin-bottom: 10px; box-shadow: 0 10px 25px #0005; }
+.miniAlbums button { border: 0; background: transparent; padding: 0; text-align: left; color: #fff; min-width: 0; min-height: 44px; align-self: start; } /* T360: 제목 길이가 달라도 표지 칸 위치를 맞춘다 */
+.coverBox { position: relative; display: block; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 10px; margin-bottom: 10px; background: #171622; box-shadow: 0 10px 25px #0005; }
+.coverBox img { position: relative; width: 100%; height: 100%; object-fit: cover; display: block; }
 .miniAlbums strong { font-size: 12px; display: block; letter-spacing: 0.02em; overflow-wrap: anywhere; }
 
 /* T-243: 크리에이터 로그인과 구분되는 관리자 진입(44px, .link 상속) */
@@ -104,9 +110,30 @@
 .dialog p { color: var(--muted); font-size: 14px; margin: 12px 0; }
 .detailHead { display: flex; gap: 15px; align-items: start; justify-content: space-between; }
 .detailMedia { position: relative; aspect-ratio: 16 / 9; background: #11101b; border-radius: 10px; overflow: hidden; margin: 20px 0; }
-.detailMedia img, .detailMedia video { height: 100%; width: 100%; object-fit: cover; display: block; }
+.detailMedia img, .detailMedia video { position: relative; height: 100%; width: 100%; object-fit: cover; display: block; }
 .audio img { object-fit: contain; }
 .audioPlayer { width: 100%; min-height: 44px; }
+.mediaFeedback {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-block: 12px;
+  padding: 14px 16px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow-wrap: anywhere;
+}
+.mediaFeedback .btn { max-width: 100%; white-space: normal; }
+/* T360(T359): 표지 대체 바탕. 이미지 아래에 깔리고, 이미지가 그려지면 가려진다. 실패하면 이미지를 빼고 이 바탕만 남긴다. */
+.coverPlate { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: linear-gradient(160deg, #242133, #171622); color: #bcb6cd; text-align: center; }
+.coverIcon { width: 24px; height: 19px; border: 2px solid currentColor; border-radius: 4px; flex: none; }
+.coverText { font-size: 12px; line-height: 1.4; max-width: 100%; overflow-wrap: anywhere; }
+.coverBox .coverPlate { gap: 6px; padding: 6px; }
+/* T360-F1: 영상 상세 표지 실패 바탕. 영상 위에 두되 아래 조작 줄(56px)은 비우고 누름은 영상으로 통과시킨다. */
+.mediaPlate { position: absolute; inset: 0 0 56px 0; z-index: 1; pointer-events: none; }
+.coverBox .coverIcon { width: 18px; height: 14px; }
+.coverBox .coverText { font-size: 11px; }
 .infoNote { background: var(--soft); padding: 15px 18px; border-radius: 9px; font-size: 14px; margin-top: 20px; }
 
 @keyframes drift { from { transform: scale(1); } to { transform: scale(1.04); } }
@@ -121,10 +148,10 @@
 @media (max-width: 760px) {
   .header { padding: 14px 18px; gap: 12px; flex-wrap: wrap; }
   .brand { font-size: 19px; }
+  .brandSymbol { width: 29px; height: 29px; }
   .header > .btn { margin-left: auto; padding-inline: 12px; font-size: 13px; }
   .nav { order: 3; gap: 20px; }
   .search { order: 4; width: 100%; margin-left: 0; margin-top: 2px; }
-  .notice { padding: 10px 18px; }
   .page { padding: 20px 18px 28px; }
   .hero { padding: 25px 23px; min-height: 565px; align-items: flex-end; border-radius: 14px; }
   .hero::before { background: linear-gradient(0deg, #0c0814fa, #0c0814c2 42%, #0c081400 85%); }

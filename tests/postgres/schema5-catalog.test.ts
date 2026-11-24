@@ -355,6 +355,77 @@ const capturedB44Primary = {
   }
 };
 
+// B46 NEW small-native both_same policy dependency bag (not B45 data).
+// Projection SHA256 eb93a53873c33b3c4e1fc8be5b48cc96f9cefa56018b155156bbc31fd751442b.
+// No diagnostic ctid is copied; the regression readdresses OIDs into a synthetic graph.
+const capturedB46PolicyEdges = [
+  {
+    "dependent": {
+      "class": "pg_policy",
+      "subId": 0,
+      "nativeOid": "16399"
+    },
+    "referenced": {
+      "class": "pg_class",
+      "subId": 0,
+      "nativeOid": "16392"
+    },
+    "dependencyType": "a"
+  },
+  {
+    "dependent": {
+      "class": "pg_policy",
+      "subId": 0,
+      "nativeOid": "16399"
+    },
+    "referenced": {
+      "class": "pg_proc",
+      "subId": 0,
+      "nativeOid": "16395"
+    },
+    "dependencyType": "n"
+  },
+  {
+    "dependent": {
+      "class": "pg_policy",
+      "subId": 0,
+      "nativeOid": "16399"
+    },
+    "referenced": {
+      "class": "pg_class",
+      "subId": 1,
+      "nativeOid": "16392"
+    },
+    "dependencyType": "n"
+  },
+  {
+    "dependent": {
+      "class": "pg_policy",
+      "subId": 0,
+      "nativeOid": "16399"
+    },
+    "referenced": {
+      "class": "pg_proc",
+      "subId": 0,
+      "nativeOid": "16395"
+    },
+    "dependencyType": "n"
+  },
+  {
+    "dependent": {
+      "class": "pg_policy",
+      "subId": 0,
+      "nativeOid": "16399"
+    },
+    "referenced": {
+      "class": "pg_class",
+      "subId": 1,
+      "nativeOid": "16392"
+    },
+    "dependencyType": "n"
+  }
+];
+
 function fixture(offset = 0, pair = false) {
   const id = (n: number) => String(n + offset), p = (n: number) => ({ principalOid: n === 0 ? "0" : id(n) });
   const r = (n: number, name = "projects", schema = "dream") => ({ nativeOid: id(n), catalog: "pg_class", schema, name });
@@ -454,7 +525,7 @@ describe("B38 all14 synthetic observations; NOT native or golden reference", () 
   it.each(cats)("rejects missing top category %s", c => { const f = fixture(); delete f.raw[c]; invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings)); });
   it.each(cats)("rejects unknown field in %s raw projection", c => { const f = fixture(); row(f, c).extra = true; invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings)); });
   it.each(cats)("rejects missing field in %s raw projection", c => { const f = fixture(); delete row(f, c)[Object.keys(row(f, c))[0]]; invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings)); });
-  it.each(cats)("rejects duplicated %s identity/row", c => { const f = fixture(); f.raw[c].push(structuredClone(f.raw[c][0])); invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings)); });
+  it.each(cats.filter(c => c !== "dependencies"))("rejects duplicated %s identity/row", c => { const f = fixture(); f.raw[c].push(structuredClone(f.raw[c][0])); invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings)); });
   it.each([0, -1, 1.5, "01", "0", "-1", "4294967296", "1\n", null, undefined])("rejects unsafe/noncanonical OID %s", nativeOid => {
     const f = fixture(); row(f, "types").nativeOid = nativeOid; invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
   });
@@ -480,7 +551,7 @@ describe("B38 all14 synthetic observations; NOT native or golden reference", () 
     Object.assign(base.catalog_row, { nativeOid: "6010", name: "unreferenced_probe", identityArgs: "uuid", declaredArgs: "uuid", argumentTypes: ["uuid"], argumentTypeRefs: [structuredClone((row(f, "functions").argumentTypeRefs as Row[])[0])] });
     f.raw.functions.push(base);
     const before = decodePostgresCatalogObservationV3(f.raw, f.bindings);
-    expect(before.descriptorVersion).toBe(3);
+    expect(before.descriptorVersion).toBe(4);
     expect(before.catalog.functions.find(x => x.name === "unreferenced_probe")!.argumentTypeRefs).toEqual([{ schema: "pg_catalog", name: "uuid" }]);
     base.catalog_row.argumentTypeRefs = [structuredClone((row(f, "functions").argumentTypeRefs as Row[])[1])];
     const after = decodePostgresCatalogObservationV3(f.raw, f.bindings);
@@ -780,13 +851,127 @@ describe("B38 all14 synthetic observations; NOT native or golden reference", () 
     row(f, "types").acl = [];
     expect(decodePostgresCatalogObservationV3(f.raw, f.bindings).observationSha256).not.toBe(notNull.observationSha256);
   });
+  it("retains exact repeated native dependency quantity as explicit multiplicity", () => {
+    const f = fixture(); f.raw.dependencies.push(structuredClone(f.raw.dependencies[0]));
+    const observation = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(observation.catalog.dependencies).toHaveLength(f.raw.dependencies.length - 1);
+    expect(observation.catalog.dependencies.filter(d => d.multiplicity === 2)).toHaveLength(1);
+    expect(observation.catalog.dependencies.reduce((n, d) => n + d.multiplicity, 0)).toBe(f.raw.dependencies.length);
+  });
+  it("emits explicit bounded integer count1 for previously unique dependency rows", () => {
+    const f = fixture(), result = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(result.descriptorVersion).toBe(4);
+    expect(result.catalog.dependencies).toHaveLength(f.raw.dependencies.length);
+    expect(result.catalog.dependencies.every(d => Number.isSafeInteger(d.multiplicity) && d.multiplicity === 1)).toBe(true);
+  });
+  it("distinguishes quantity1 from2 in canonical JSON/hash without losing a native row", () => {
+    const f = fixture(), before = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    f.raw.dependencies.push(structuredClone(f.raw.dependencies[0]));
+    const after = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(after.catalog.dependencies).toHaveLength(before.catalog.dependencies.length);
+    expect(after.canonicalJson).not.toBe(before.canonicalJson); expect(after.observationSha256).not.toBe(before.observationSha256);
+    expect(after.approval).toBe(false); expect(after.expectedCatalog).toBe(false);
+  });
+  it("keeps the same dependency multiset invariant under input order and native OID shifts", () => {
+    const observe = (offset: number, reverse: boolean) => {
+      const f = fixture(offset); f.raw.dependencies.push(structuredClone(f.raw.dependencies[0]), structuredClone(f.raw.dependencies[7]));
+      if (reverse) f.raw.dependencies.reverse();
+      return decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    };
+    const first = observe(0, false), shifted = observe(20000, true);
+    expect(shifted.canonicalJson).toBe(first.canonicalJson); expect(shifted.observationSha256).toBe(first.observationSha256);
+    expect(first.catalog.dependencies.reduce((sum, d) => sum + d.multiplicity, 0)).toBe(10);
+  });
+  it("groups only an exact native endpoint/sub-ID/deptype tuple", () => {
+    const f = fixture(), original = structuredClone(f.raw.dependencies[0]), column = structuredClone(original), automatic = structuredClone(original), otherRelation = structuredClone(original);
+    (column.catalog_row.dependent as Row).subId = 1;
+    automatic.catalog_row.dependencyType = "a";
+    (otherRelation.catalog_row.dependent as Row).nativeOid = "900";
+    f.raw.dependencies.push(original, column, automatic, otherRelation);
+    const result = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(result.catalog.dependencies).toHaveLength(f.raw.dependencies.length - 1);
+    expect(result.catalog.dependencies.filter(d => d.multiplicity === 2)).toHaveLength(1);
+    expect(result.catalog.dependencies.reduce((sum, d) => sum + d.multiplicity, 0)).toBe(f.raw.dependencies.length);
+    expect(result.catalog.dependencies.some(d => d.dependent.includes('"kind":"column"') && d.dependencyType === "n")).toBe(true);
+    expect(result.catalog.dependencies.some(d => d.dependent.includes('"schema":"auth"') && d.dependencyType === "n")).toBe(true);
+  });
+  it("keeps catalog classes distinct even when numeric native OIDs coincide", () => {
+    const f = fixture();
+    f.bindings.externalFacts.push(
+      { endpoint: { class: "pg_type", nativeOid: "100", subId: 0 }, identity: { kind: "type", schema: "pg_catalog", name: "fixture_same_oid_type" } },
+      { endpoint: { class: "pg_type", nativeOid: "1", subId: 0 }, identity: { kind: "type", schema: "pg_catalog", name: "fixture_same_ref_oid_type" } },
+    );
+    const dependentClass = structuredClone(f.raw.dependencies[0]), referencedClass = structuredClone(f.raw.dependencies[0]);
+    (dependentClass.catalog_row.dependent as Row).class = "pg_type";
+    (referencedClass.catalog_row.referenced as Row).class = "pg_type";
+    f.raw.dependencies.push(dependentClass, referencedClass);
+    const result = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(result.catalog.dependencies).toHaveLength(f.raw.dependencies.length);
+    expect(result.catalog.dependencies.every(d => d.multiplicity === 1)).toBe(true);
+    expect(result.catalog.dependencies.some(d => d.dependent.includes("fixture_same_oid_type"))).toBe(true);
+    expect(result.catalog.dependencies.some(d => d.referenced.includes("fixture_same_ref_oid_type"))).toBe(true);
+  });
+  it.each([0, -1, 1.5, 2, "2", Infinity])("rejects caller-supplied raw multiplicity %s rather than trusting aggregation", multiplicity => {
+    const f = fixture(); row(f, "dependencies").multiplicity = multiplicity;
+    invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
+  });
+  it("does not hide unresolved endpoints or native-to-semantic aliases behind counts", () => {
+    const f = fixture(), unknown = structuredClone(f.raw.dependencies[0]);
+    (unknown.catalog_row.referenced as Row).nativeOid = "999999";
+    f.raw.dependencies.push(unknown, structuredClone(unknown));
+    invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
+    const g = fixture(), alias = structuredClone(g.bindings.externalFacts[0]); alias.endpoint.nativeOid = "999999"; g.bindings.externalFacts.push(alias);
+    g.raw.dependencies.push(structuredClone(g.raw.dependencies[0]));
+    invalid(() => decodePostgresCatalogObservationV3(g.raw, g.bindings));
+  });
+  it("conserves repeated raw rows within bounds and rejects oversized bags", () => {
+    const f = fixture(); f.raw.dependencies.push(...Array.from({ length: 100 }, () => structuredClone(f.raw.dependencies[0])));
+    const result = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(result.catalog.dependencies.some(d => d.multiplicity === 101)).toBe(true);
+    expect(result.catalog.dependencies.reduce((sum,d) => sum + d.multiplicity, 0)).toBe(f.raw.dependencies.length);
+    const g = fixture(); g.raw.dependencies.push(...Array.from({ length: 10001 - g.raw.dependencies.length }, () => structuredClone(g.raw.dependencies[0])));
+    invalid(() => decodePostgresCatalogObservationV3(g.raw, g.bindings));
+  });
+  it("retains one distinct Auth PK owner edge with repeated physical quantity", () => {
+    const f = fixture(), before = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    f.raw.dependencies.push(structuredClone(f.raw.dependencies[7]));
+    const result = decodePostgresCatalogObservationV3(f.raw, f.bindings);
+    expect(result.catalog.dependencies.some(d => d.dependencyType === "i" && d.referenced.includes('"name":"users_pkey"') && d.multiplicity === 2)).toBe(true);
+    expect(result.observationSha256).not.toBe(before.observationSha256);
+    expect(result.catalog.constraints.find(c => c.scope === "external-prerequisite")!.prerequisite!.indexConstraints).toHaveLength(1);
+  });
+  it("rejects an additional distinct index owner and keeps other-category/ACL duplicates invalid", () => {
+    const f = fixture(), extraOwner = structuredClone(f.raw.dependencies[7]); (extraOwner.catalog_row.referenced as Row).nativeOid = "500";
+    f.raw.dependencies.push(extraOwner); invalid(() => decodePostgresCatalogObservationV3(f.raw, f.bindings));
+    const g = fixture(), grant = { grantor: { principalOid: "11" }, grantee: { principalOid: "12" }, privilege: "SELECT", grantable: false };
+    row(g, "columns").acl = [grant, structuredClone(grant)]; g.raw.dependencies.push(structuredClone(g.raw.dependencies[0]));
+    invalid(() => decodePostgresCatalogObservationV3(g.raw, g.bindings));
+  });
+  it("preserves newly captured both_same policy quantity in an explicitly readdressed synthetic graph", () => {
+    const observe = (offset: number) => {
+      const f = fixture(offset), ids: Record<string, string> = { "16399": f.id(550), "16392": f.id(100), "16395": f.id(6003) };
+      for (const edge of capturedB46PolicyEdges) {
+        const d = structuredClone(edge); d.dependent.nativeOid = ids[d.dependent.nativeOid]; d.referenced.nativeOid = ids[d.referenced.nativeOid];
+        if (!d.dependent.nativeOid || !d.referenced.nativeOid) throw Error("Unmapped captured endpoint");
+        f.raw.dependencies.push({ ...structuredClone(f.raw.dependencies[0]), catalog_row: d });
+      }
+      return { result: decodePostgresCatalogObservationV3(f.raw, f.bindings), rawCount: f.raw.dependencies.length };
+    };
+    const first = observe(0), shifted = observe(20000);
+    expect(first.result.catalog.dependencies.reduce((sum,d)=>sum+d.multiplicity,0)).toBe(first.rawCount);
+    expect(first.rawCount).toBe(13); expect(first.result.catalog.dependencies).toHaveLength(11);
+    expect(first.result.catalog.dependencies.filter(d => d.multiplicity === 2)).toHaveLength(2);
+    expect(shifted.result.canonicalJson).toBe(first.result.canonicalJson);
+    expect(first.result.canonicalJson).not.toContain("ctid"); expect(first.result.expectedCatalog).toBe(false);
+    // Other objects/names/expressions are synthetic; this is not a native full graph.
+  });
   it("observes only the exact M-owned Auth UUID primary prerequisite and preserves its dependency", () => {
     const f = fixture(), observed = decodePostgresCatalogObservationV3(f.raw, f.bindings);
     const primary = observed.catalog.constraints.find(c => c.scope === "external-prerequisite")!;
-    expect(observed.descriptorVersion).toBe(3); expect(Object.keys(observed.catalog)).toHaveLength(14);
+    expect(observed.descriptorVersion).toBe(4); expect(Object.keys(observed.catalog)).toHaveLength(14);
     expect(primary).toMatchObject({ scope: "external-prerequisite", kind: "p", identity: { objectKind: "relation", object: { schema: "auth", name: "users" }, name: "users_pkey" }, keyColumns: [1],
       prerequisite: { relationOwner: { kind: "migration-owner" }, indexOwner: { kind: "migration-owner" }, column: { ordinal: 1, name: "id", type: { schema: "pg_catalog", name: "uuid" } } } });
-    expect(observed.catalog.dependencies).toContainEqual({ dependencyType: "i", dependent: '{"kind":"index","name":"users_pkey","relation":{"name":"users","schema":"auth"}}', referenced: '{"kind":"constraint","name":"users_pkey","object":{"name":"users","schema":"auth"},"objectKind":"relation"}' });
+    expect(observed.catalog.dependencies).toContainEqual({ dependencyType: "i", multiplicity: 1, dependent: '{"kind":"index","name":"users_pkey","relation":{"name":"users","schema":"auth"}}', referenced: '{"kind":"constraint","name":"users_pkey","object":{"name":"users","schema":"auth"},"objectKind":"relation"}' });
     expect(observed.canonicalJson).not.toContain("nativeOid"); expect(observed.approval).toBe(false); expect(observed.expectedCatalog).toBe(false);
   });
   it("normalizes Auth prerequisite constraint/index/UUID native OID shifts without losing semantics", () => {

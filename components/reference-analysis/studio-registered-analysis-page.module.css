@@ -1,0 +1,8 @@
+.page, .guide { display:flex; flex-direction:column; gap:var(--sp-3); min-width:0; }
+.page { gap:var(--sp-6); }
+.guide :is(h2, h3, p, ul) { margin:0; }
+.guide :is(h2, h3) { color:var(--fg-strong); }
+.guide { padding:var(--sp-4); border:1px solid var(--line); border-radius:var(--radius-sm); }
+.state { padding:var(--sp-3); border-left:4px solid var(--line-focus); background:var(--bg-sunken); }
+.kinds { display:flex; flex-direction:column; gap:var(--sp-2); padding-left:var(--sp-5); }
+.guide a { display:inline-flex; align-items:center; min-height:44px; }

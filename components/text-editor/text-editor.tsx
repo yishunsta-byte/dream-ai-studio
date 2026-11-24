@@ -1,11 +1,13 @@
 "use client";
-import { useId, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
+import { useId, useRef, useState, useSyncExternalStore, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { FontRef } from "@/lib/edit/fonts";
 import { fontStack } from "@/lib/edit/fonts";
 import { ANIMATION_LABELS, kindLabel, presetFor, PRESETS, QUICK_LOOK_KINDS, type TextKind } from "@/lib/edit/presets";
+import { subtitleSceneLabel, type SceneInterval } from "@/lib/edit/subtitle-scenes";
 import { formatFrameTime } from "@/lib/edit/preview";
 import { applyPreset, changeKind, insertText, moveInsideSafeArea, moveText, newTextLayer, parseFrameTime, removeText, replaceText, type SafeSide } from "@/lib/edit/text-ops";
 import { canonicalJson, framesToSeconds, TEXT_KINDS, type Timeline, type TimelineText } from "@/lib/edit/timeline";
+import type { FrameStore } from "@/components/player/frame-store";
 import type { MeasureResult } from "@/components/player/text-measure";
 import type { PreviewControl } from "@/components/player/player-panel";
 import type { FontState } from "@/components/player/font-loader";
@@ -19,7 +21,7 @@ import styles from "./text-editor.module.css";
 // (buttons, fields); there is no page-wide shortcut.
 export type TimeState=Record<string,{raw:string;error:string}>;
 export type TextWarning={sides:SafeSide[];lines:number|null;maxLines:number;font:FontState|"checking";beyond:boolean};
-type Props={draft:Timeline;initial:Timeline;setDraft:Dispatch<SetStateAction<Timeline>>;selectedId:string|null;setSelectedId:(id:string|null)=>void;
+type Props={frameStore:FrameStore;savedRevision:number|null;scenes:readonly SceneInterval[];draft:Timeline;initial:Timeline;setDraft:Dispatch<SetStateAction<Timeline>>;selectedId:string|null;setSelectedId:(id:string|null)=>void;
   fonts:readonly FontRef[];required:readonly string[];plannedFrames:number;videoFrames:number;limitFrames:number;aspect:Timeline["aspect"];
   warnings:Record<string,TextWarning>;measure:MeasureResult|null;placeCheck:ReadonlySet<string>;setPlaceCheck:Dispatch<SetStateAction<ReadonlySet<string>>>;
   times:TimeState;setTimes:Dispatch<SetStateAction<TimeState>>;controlRef:MutableRefObject<PreviewControl|null>;p1Times:Record<string,{startSec:number;endSec:number}>|null};
@@ -65,13 +67,16 @@ export function TextEditor(props:Props){
   }
   return <div className={styles.editor}>
     {missing.map(content=><Callout key={content} tone="warning" title={`필요한 표기 '${content}'가 없어요.`}>검수에서 표기 항목을 통과할 수 없어요.<span className={styles.pcOnly}> <Button variant="secondary" size="sm" onClick={()=>add("disclosure",content)}>표기 추가</Button></span></Callout>)}
+    {draft.text.some(layer=>layer.kind==="subtitle")&&<SubtitlePlayhead store={props.frameStore} scenes={props.scenes}/>}
     {draft.text.length===0?<EmptyState title="아직 글자가 없어요." description="PC에서 글자를 추가할 수 있어요."/>:
     <ul ref={listRef} className={styles.list} aria-label="글자 목록">
       {draft.text.map((layer,index)=>{const warning=warnings[layer.id],label=kindLabel(layer.kind),changed=before.get(layer.id)!==canonicalJson(layer);
+        const sceneLabel=layer.kind==="subtitle"?subtitleSceneLabel(props.scenes,layer.timing):null;
         return <li key={layer.id} className={styles.row} data-row={layer.id}>
-          <button type="button" className={styles.pick} aria-pressed={layer.id===selectedId} aria-label={`${label} ${layer.content||"(문구 없음)"} ${shortTime(layer.timing.startFrame)}부터 ${shortTime(layer.timing.endFrame)}까지${hasWarning(warning)?" · 확인할 것 있음":""}${changed?" · 저장 안 된 변경":""}`} onClick={()=>setSelectedId(layer.id)}>
+          <button type="button" className={styles.pick} aria-pressed={layer.id===selectedId} aria-label={`${label} ${sceneLabel?sceneLabel+" · ":""}${layer.content||"(문구 없음)"} ${shortTime(layer.timing.startFrame)}부터 ${shortTime(layer.timing.endFrame)}까지${hasWarning(warning)?" · 확인할 것 있음":""}${changed?" · 저장 안 된 변경":""}`} onClick={()=>setSelectedId(layer.id)}>
             <Badge>{label}</Badge><span className={styles.words}>{layer.content.slice(0,20)||"문구 없음"}</span><span className={styles.time}>{shortTime(layer.timing.startFrame)}–{shortTime(layer.timing.endFrame)}</span>
             <span className={styles.icons} aria-hidden="true">{layer.locked&&<Icon name="lock"/>}{hasWarning(warning)&&<Icon name="warning" className={styles.warn}/>}{warning&&warning.font!=="ok"&&<span>확인 전</span>}{changed&&<span className={styles.changed}/>}</span>
+            {sceneLabel&&<span className={styles.sceneLabel}>{sceneLabel}</span>}
             {placeCheck.has(layer.id)&&<Badge variant="dashed">위치 확인 필요</Badge>}
           </button>
           <span className={`${styles.moves} ${styles.pcOnly}`}>
@@ -91,7 +96,12 @@ export function TextEditor(props:Props){
   </div>;
 }
 
-function TextInspector({layer,index,draft,initial,setDraft,fonts,aspect,warnings,measure,setPlaceCheck,times,setTimes,controlRef,p1Times,limitFrames,onRemoved}:Props&{layer:TimelineText;index:number;onRemoved:(nextId:string|null)=>void}){
+function SubtitlePlayhead({store,scenes}:{store:FrameStore;scenes:readonly SceneInterval[]}){
+  const frame=useSyncExternalStore(store.subscribe,store.get,()=>0);
+  const scene=scenes.find(({startFrame,endFrame})=>startFrame<=frame&&frame<endFrame);
+  return <p className={styles.note} data-subtitle-playhead>현재 재생 위치 <span className={styles.time}>{shortTime(frame)}</span> · {scene?.description??"장면 밖"}</p>;
+}
+function TextInspector({layer,index,draft,initial,savedRevision,setDraft,fonts,aspect,warnings,measure,setPlaceCheck,times,setTimes,controlRef,p1Times,limitFrames,onRemoved}:Props&{layer:TimelineText;index:number;onRemoved:(nextId:string|null)=>void}){
   const notify=useToast(),headingId=useId(),[withBox,setWithBox]=useState(false),[moveNote,setMoveNote]=useState("");
   const label=kindLabel(layer.kind),preset=presetFor(layer.kind),saved=initial.text.find(item=>item.id===layer.id);
   const update=(next:(old:TimelineText)=>TimelineText)=>setDraft(old=>replaceText(old,layer.id,next));
@@ -139,6 +149,11 @@ function TextInspector({layer,index,draft,initial,setDraft,fonts,aspect,warnings
     {layer.locked?<div><p className={styles.note}>문구</p><p>{layer.content}</p></div>:
     <Field label="문구" required help={`최대 ${layer.style.maxLines}줄 · ${!layer.content.trim()?"문구를 적으면 줄 수를 알려 드려요.":measured&&warning?.font==="ok"?`지금 ${measured.lines}줄`:"줄 수 확인 중"} · 한 줄에 ${preset.recommendedCharsPerLine}자 안팎이 읽기 좋아요.`} error={layer.content.trim()?undefined:"문구를 적어 주세요."}>
       <textarea id={`text-content-${layer.id}`} value={layer.content} maxLength={500} placeholder={`${label} 문구를 적어 주세요`} onChange={event=>update(current=>({...current,content:event.target.value}))}/></Field>}
+    {layer.kind==="subtitle"&&<dl className={styles.comparison} aria-label="선택한 자막 문구 비교">
+      <div><dt>{savedRevision===null?"첫 저장 전":`이전 저장본 · r${savedRevision}`}</dt>
+        <dd>{savedRevision!==null&&saved?saved.content||"빈 문구":"저장된 자막 없음"}</dd></div>
+      <div><dt>수정 중</dt><dd>{layer.content||"빈 문구"}</dd></div>
+    </dl>}
     {!layer.locked&&<fieldset className={`${styles.group} ${styles.pcOnly}`}><legend>빠른 모양</legend>
       {fromP1Look&&<p className={styles.note}>P1에서 옮긴 모양 그대로예요. 누르기 전까지 바뀌지 않아요.</p>}
       <div className={styles.chips}>{QUICK_LOOK_KINDS.map(kind=><Button key={kind} variant="secondary" size="sm" onClick={()=>quickLook(kind)}>{PRESETS[kind].label}</Button>)}</div>

@@ -27,6 +27,9 @@ export async function createPublicationShowcaseConnection(openVerifiedReaders?: 
     return Object.freeze({
       showcaseSource: Object.freeze({ mode: "active", store: Object.freeze({ listApproved: listApproved.bind(listStore) }) }),
       coverSource: Object.freeze({ mode: "active", store: Object.freeze({
+        ...(coverStore.media && { media: Object.freeze({
+          findMedia: coverStore.media.findMedia.bind(coverStore.media), readRange: coverStore.media.readRange.bind(coverStore.media),
+        }) }),
         findCover: findCover.bind(coverStore), readObject: readObject.bind(coverStore), confirmCover: confirmCover.bind(coverStore),
       }) }),
     });

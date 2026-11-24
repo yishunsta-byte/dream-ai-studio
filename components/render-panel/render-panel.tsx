@@ -2,7 +2,7 @@
 // P2-4 영상 만들기 화면 (T-102 3~9장). Server values only: what the API does not send is not shown.
 // Polls every 2 seconds while a render is queued or running (T-102 5장).
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, useTransition, type ReactNode, type RefObject } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, useTransition, type ReactNode, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import type { RenderBlocker } from "@/lib/render/input";
 import type { RenderView } from "@/lib/services/renders";
@@ -23,6 +23,18 @@ export function RenderPanel({projectId,data,saved}:{projectId:string;data:Render
   const [busy,setBusy]=useState<""|"request"|"cancel">(""),[error,setError]=useState(""),[confirm,setConfirm]=useState(false),[playing,setPlaying]=useState<string|null>(null),[live,setLive]=useState("");
   const active=data.renders.find(isActive)??null,results=data.renders.filter(render=>!isActive(render));
   const title=useRef<HTMLHeadingElement>(null),focusCard=useRef(false),focusInCard=useRef(false);
+  const panelRef=useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    const frame=requestAnimationFrame(()=>{
+      // Next's fragment navigation scrolls to the destination but can leave focus on the document.
+      const target=document.getElementById(window.location.hash.slice(1));
+      if(document.activeElement===document.body&&target?.hasAttribute("data-render-destination")&&panelRef.current?.contains(target)){
+        target.focus({preventScroll:true});
+      }
+    });
+    return ()=>cancelAnimationFrame(frame);
+  },[]);
+
   const refresh=()=>startRefresh(()=>router.refresh());
 
   useEffect(()=>{if(!active)return;const timer=setInterval(()=>startRefresh(()=>router.refresh()),2000);return()=>clearInterval(timer);},[active,router]);
@@ -68,11 +80,11 @@ export function RenderPanel({projectId,data,saved}:{projectId:string;data:Render
     try{const response=await fetch(`/api/renders/${active.id}/cancel`,{method:"POST"});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error);notify({tone:"success",message:"취소를 요청했어요. 지금 단계가 끝나는 대로 멈춰요."});setConfirm(false);refresh();}
     catch(problem){setError(problem instanceof Error&&problem.message?problem.message:"취소하지 못했어요.");setConfirm(false);}finally{setBusy("");}
   }
-  const makeButton=(label:string,variant:"primary"|"secondary"="primary")=><Button variant={variant} loading={busy==="request"||refreshing} loadingLabel="요청 중" disabledReason={blockedReason} onClick={()=>void request()}>{label}</Button>;
+  const makeButton=(label:string,variant:"primary"|"secondary"="primary")=><Button variant={variant} loading={busy==="request"||refreshing} loadingLabel="요청 중" disabledReason={blockedReason} focusableWhenBlocked={variant==="primary"} onClick={()=>void request()}>{label}</Button>;
 
-  return <div className="stack">
+  return <div ref={panelRef} className="stack">
     <Card><section className="stack" aria-labelledby="render-make">
-      <h2 id="render-make">새 영상 만들기</h2>
+      <h2 id="render-make" tabIndex={-1} data-render-destination>새 영상 만들기</h2>
       <p>{saved?<>저장한 타임라인 r{saved.revision} · {saved.aspect}으로 만들어요. 편집에서 저장하지 않은 변경은 들어가지 않아요.</>:"저장한 타임라인으로만 만들어요."}</p>
       {saved&&<p>{saved.audioMode==="aac"?`저장한 소리 ${saved.audioClips}개를 함께 합쳐요. 이 기기의 재생 음소거는 결과에 영향을 주지 않아요.`:saved.audioMode==="unsupported"?"예전 형식의 소리 설정이에요. 위의 시작 전 확인을 보고 편집에서 다시 저장해 주세요.":"저장한 타임라인으로 소리 없는 영상을 만들어요."}</p>}
       {lines.length>0&&<div className={styles.blockers}><h3>만들기 전에 고칠 것 {lines.length}개</h3><ul>{lines.map(line=><li key={line.key}><span>{line.text}</span>{line.link&&<> <Link href={linkHref(line.link,projectId)}>{linkLabel[line.link]}</Link></>}{line.code&&<span className={styles.code}> {line.code}</span>}</li>)}</ul></div>}
@@ -118,21 +130,27 @@ function ProgressBody({render,title,onCancel}:{render:RenderView;title:RefObject
   </>;
 }
 
+// The inline player needs its click handler. Keep its server-rendered button disabled until hydration.
+const subscribeToHydration = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
+
 function ResultRow({render,playing,onPlay,remake}:{render:RenderView;playing:boolean;onPlay:()=>void;remake:(label:string,variant?:"primary"|"secondary")=>ReactNode}){
+  const playbackReady = useSyncExternalStore(subscribeToHydration, clientReady, serverReady);
   const aspect=aspectLabel(render.width,render.height),videoId=useId(),ok=render.status==="succeeded";
   const usable=ok&&!render.canceledLate&&render.fileExists,failure=render.status==="failed"?failureCopy(render):null;
   const audio=audioResultCopy(render);
   return <li className={styles.row}>
     <div className={`${styles.thumb} ${styles[`a${aspect.replace(":","x")}`]}`} aria-hidden="true">{aspect}</div>
     <div className={styles.body}>
-      <h3 id={`render-${render.id}`} tabIndex={-1} className={styles.name}>{render.fileName}</h3>
+      <h3 id={`render-${render.id}`} tabIndex={-1} data-render-destination className={styles.name}>{render.fileName}</h3>
       <div className={styles.chips}>
         {ok&&render.verify?.result==="passed"&&<StatusPill status="done">파일 확인 통과</StatusPill>}
         {ok&&!render.fileExists&&<StatusPill status="failed">파일 없음</StatusPill>}
         {render.status==="failed"&&<StatusPill status="failed"/>}
         {render.status==="canceled"&&<StatusPill status="canceled"/>}
         {render.canceledLate&&<StatusPill status="canceled">취소 뒤 끝남</StatusPill>}
-        {render.stale&&<StatusPill status="warning">지금 내용과 다름 · 타임라인 r{render.timelineRevision}</StatusPill>}
+        {render.stale?<StatusPill status="warning">보관본 · 타임라인 r{render.timelineRevision} · 지금 내용과 다름</StatusPill>:<Badge>현재 저장본 · 타임라인 r{render.timelineRevision}</Badge>}
         {ok&&<Badge>{audio.badge}</Badge>}{render.isSample&&<SampleBadge size="sm"/>}{render.textOnlyChange&&<Badge>글자만 바뀜</Badge>}
       </div>
       {ok&&<p>{render.width}×{render.height} · {render.durationSec.toFixed(1)}초 · {codecName(render.codec)} · {render.fps}fps · {audio.track}</p>}
@@ -147,7 +165,7 @@ function ResultRow({render,playing,onPlay,remake}:{render:RenderView;playing:boo
       {render.status==="canceled"&&<p>{canceledCopy(render)}</p>}
       <p className={styles.meta}><time dateTime={render.finishedAt??render.createdAt}>{when(render.finishedAt??render.createdAt)}</time>{render.elapsedSec!==null&&` · ${duration(render.elapsedSec)} 걸림`}{render.status==="failed"&&render.errorCode&&<span className={styles.code}> · {render.errorCode}{render.error?` · ${render.error.attempts}/${render.error.maxAttempts}번 시도`:""}</span>}</p>
       <div className={styles.actions}>
-        {usable&&<><Button variant="secondary" aria-expanded={playing} aria-controls={videoId} onClick={onPlay}>{playing?"영상 닫기":"영상 보기"}</Button><a className={styles.download} href={`/api/renders/${render.id}/file?download`} download={render.fileName}>내려받기{render.sizeBytes!==null&&` · ${mb(render.sizeBytes)}`}</a></>}
+        {usable&&<><Button variant="secondary" disabled={!playbackReady} aria-expanded={playing} aria-controls={videoId} onClick={onPlay}>{playing?"영상 닫기":"영상 보기"}</Button><a className={styles.download} href={`/api/renders/${render.id}/file?download`} download={render.fileName}>{render.stale?"보관본 MP4 내려받기":"이 버전 MP4 내려받기"}{render.sizeBytes!==null&&` · ${mb(render.sizeBytes)}`}</a></>}
         {usable&&render.stale&&remake("지금 내용으로 만들기","secondary")}
         {(render.status==="failed"||render.status==="canceled"||(ok&&!render.fileExists))&&remake("다시 만들기","secondary")}
       </div>

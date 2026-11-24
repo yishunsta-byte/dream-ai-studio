@@ -2,11 +2,10 @@
 //
 // Error = |shown boundary − expected boundary|, where the expected boundary is the manually chosen cue time (seconds)
 // turned into 30 fps timeline frames by the product rule (secondsToFrames), and "shown" is
-//   ① the SRT boundary the product writes (timelineSrt), and
+//   ① the SRT and WebVTT boundaries the product writes, and
 //   ② the first/last frame where the cue is actually visible in a real render of a virtual test video
 //      (render child + composition + pinned browser, the same path the worker uses), found by reading pixels.
-// Pass: every maximum absolute error ≤ 0.2 s (6 frames). VTT is not produced by the product (recorded as not
-// implemented). The meaning-level sync with a voice and playback on a real phone are not measured here.
+// Pass: every maximum absolute error ≤ 0.2 s (6 frames). The meaning-level sync with a voice and playback on a real phone are not measured here.
 //
 // Pixel rule: each cue has its own horizontal band (ROI) on a solid, non-white background; a reference strip at the
 // band's left edge (never covered by text) gives the background colour of that frame; a pixel "differs" when its
@@ -153,6 +152,33 @@ export function parseSrt(text:string){
   const ms=(value:string)=>{const [h,m,rest]=value.split(":");const [s,f]=rest.split(",");return ((Number(h)*60+Number(m))*60+Number(s))*1000+Number(f);};
   return [...text.matchAll(/(\d\d:\d\d:\d\d,\d{3}) --> (\d\d:\d\d:\d\d,\d{3})\r?\n([^\r\n]*)/g)].map(match=>({startMs:ms(match[1]),endMs:ms(match[2]),text:match[3]}));
 }
+// Measure the product's single-line WebVTT fixture by layer ID against the manual cues.
+export function measureVtt(source:string|null, layerIds:readonly string[]){
+  const blocks=(source??"").trimEnd().split("\n\n");
+  const header=blocks.shift();
+  const byId=new Map<string,{startMs:number;endMs:number;text:string}>();
+  const stamp=(value:string)=>{
+    const match=/^(\d{2}):([0-5]\d):([0-5]\d)\.(\d{3})$/.exec(value);
+    return match ? ((Number(match[1])*60+Number(match[2]))*60+Number(match[3]))*1000+Number(match[4]) : NaN;
+  };
+  for(const block of blocks){
+    const lines=block.split("\n");
+    const bounds=lines[1]?.split(" --> ");
+    if(lines.length!==3||bounds?.length!==2)continue;
+    const startMs=stamp(bounds[0]),endMs=stamp(bounds[1]);
+    if(endMs>startMs)byId.set(lines[0],{startMs,endMs,text:lines[2]});
+  }
+  const rows=CUES.map((cue,index)=>{
+    const found=byId.get(layerIds[index]);
+    if(!found||found.text!==cue.content)return {id:cue.id,maxErrorSec:null};
+    const startErrorSec=srtErrorSec(found.startMs,secondsToFrames(cue.startSec));
+    const endErrorSec=srtErrorSec(found.endMs,secondsToFrames(cue.endSec));
+    return {id:cue.id,startMs:found.startMs,endMs:found.endMs,startErrorSec,endErrorSec,maxErrorSec:Math.max(startErrorSec,endErrorSec)};
+  });
+  const complete=header==="WEBVTT"&&blocks.length===CUES.length&&rows.every(row=>row.maxErrorSec!==null);
+  const maxErrorSec=complete?Math.max(...rows.map(row=>row.maxErrorSec!)):null;
+  return {rows,maxErrorSec,pass:maxErrorSec!==null&&maxErrorSec<=LIMIT_SEC};
+}
 export const sha256File=(file:string)=>createHash("sha256").update(readFileSync(file)).digest("hex");
 
 // ───────────────────────────── real run ─────────────────────────────
@@ -213,23 +239,24 @@ async function main(argv:readonly string[]){
     for(const threshold of [16,32,96]){const other=await bandCounts(ffmpeg,output,size.width,size.height,bands,threshold,DURATION_FRAMES);
       sensitivity.push({threshold,cues:CUES.map((cue,index)=>{const found=detect(other.counts[index]),scored=score(cue,found);return {id:cue.id,detectedStartFrame:scored.detectedStartFrame,detectedEndFrame:scored.detectedEndFrame,maxErrorFrames:scored.maxErrorFrames,maxErrorSec:scored.maxErrorSec,pass:scored.pass};}),controlShownFrames:detect(other.counts.at(-1)!).shownFrames});}
     // ① SRT the product writes from the same timeline text
-    const srt=timeline.timelineSrt(text as never),srtCues=parseSrt(srt);
+    const srt=timeline.timelineSrt(text),srtCues=parseSrt(srt);
     const srtRows=CUES.map(cue=>{const found=srtCues.find(item=>item.text===cue.content);
       if(!found)return {id:cue.id,srtStartMs:null,srtEndMs:null,startErrorSec:null,endErrorSec:null,maxErrorSec:Infinity,maxErrorSecDisplay:null};
       const startFrame=secondsToFrames(cue.startSec),endFrame=secondsToFrames(cue.endSec),startErrorSec=srtErrorSec(found.startMs,startFrame),endErrorSec=srtErrorSec(found.endMs,endFrame),maxErrorSec=Math.max(startErrorSec,endErrorSec);
       return {id:cue.id,srtStartMs:found.startMs,srtEndMs:found.endMs,startErrorSec,endErrorSec,maxErrorSec,maxErrorSecDisplay:round(maxErrorSec)};});
+    const vtt=measureVtt(timeline.timelineVtt(text),text.map(layer=>layer.id));
     const maxVideo=Math.max(...cues.map(cue=>cue.maxErrorSec??Infinity)),maxVideoFrames=Math.max(...cues.map(cue=>cue.maxErrorFrames??Infinity)),maxSrt=Math.max(...srtRows.map(row=>row.maxErrorSec));
     results.push({aspect,width:size.width,height:size.height,render:{ok:true,seconds:Math.round((Date.now()-started)/100)/10,descendantsLeft:(await descendants(child,started)).length},
       sources:{imageSha256:sha256File(png),videoSha256:sha256File(mp4),fontSha256:sha256File(font.abs)},output:{sha256:sha256File(output),sizeBytes:statSync(output).size,verify:verify.result,probe:verify.probe},
       read:{framesDecoded:read.frames,range:`0-${read.frames-1}`,threshold:THRESHOLD,minPixels:MIN_PIXELS},cues,control:{roi:bands.at(-1)!.roi,shownFrames:control.shownFrames,peakPixels:control.peak},sensitivity,
-      srt:{rows:srtRows,maxErrorSec:maxSrt,maxErrorSecDisplay:round(maxSrt)},maxVideoErrorSec:maxVideo,maxVideoErrorFrames:maxVideoFrames,
-      pass:cues.every(cue=>cue.pass)&&maxSrt<=LIMIT_SEC&&control.shownFrames===0&&verify.result==="passed"});
-    console.log(JSON.stringify({aspect,maxVideoErrorFrames:maxVideoFrames,maxVideoErrorSec:maxVideo,maxSrtErrorSec:maxSrt,control:control.shownFrames,verify:verify.result,cues:cues.map(cue=>`${cue.id} ${cue.startFrame}-${cue.endFrame} -> ${cue.detectedStartFrame}-${cue.detectedEndFrame}`)}));
+      vtt,srt:{rows:srtRows,maxErrorSec:maxSrt,maxErrorSecDisplay:round(maxSrt)},maxVideoErrorSec:maxVideo,maxVideoErrorFrames:maxVideoFrames,
+      pass:vtt.pass&&cues.every(cue=>cue.pass)&&maxSrt<=LIMIT_SEC&&control.shownFrames===0&&verify.result==="passed"});
+    console.log(JSON.stringify({aspect,maxVideoErrorFrames:maxVideoFrames,maxVideoErrorSec:maxVideo,maxSrtErrorSec:maxSrt,maxVttErrorSec:vtt.maxErrorSec,control:control.shownFrames,verify:verify.result,cues:cues.map(cue=>`${cue.id} ${cue.startFrame}-${cue.endFrame} -> ${cue.detectedStartFrame}-${cue.detectedEndFrame}`)}));
   }
   const report={task:"T-127/T-129",measuredAt:new Date().toISOString(),definition:"expected = secondsToFrames(manual cue seconds) at 30 fps; shown = first visible frame, last visible frame + 1",limitSec:LIMIT_SEC,limitFrames:LIMIT_FRAMES,
     detector:"image difference in fixed bands on solid backgrounds; not a text recognizer, not a human-visibility measure",
     renderer:{remotion:REMOTION_VERSION,browser:browser.version,browserSha256:browser.sha256,compositionSourceSha256:sha,path:"render child + composition (lib/render/run.ts runRenderAttempt), no database"},
-    secondsToFramesSameAsProduct:sameFrames,vtt:"not implemented in the product (not measured)",notMeasured:["voice / meaning-level sync","playback on a real phone","videos made by users (the screen keeps 측정 전)"],
+    secondsToFramesSameAsProduct:sameFrames,notMeasured:["voice / meaning-level sync","playback on a real phone","videos made by users (the screen keeps 측정 전)"],
     results,pass:sameFrames&&results.length===3&&results.every(row=>row.pass===true)};
   mkdirSync(dirname(out),{recursive:true});writeFileSync(out,JSON.stringify(report,null,2));
   console.log(JSON.stringify({pass:report.pass,out:out.replace(app,".")}));

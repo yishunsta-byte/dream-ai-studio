@@ -110,6 +110,7 @@ const rawShapes = {
   memberships: z.strictObject({ nativeOid: oid, member: nativePrincipal, parent: nativePrincipal, grantor: nativePrincipal, admin: bool, inherit: bool, set: bool }),
 } as const;
 type RawCatalog = { [K in Category]: z.infer<typeof rawShapes[K]>[] };
+type RawDependency = RawCatalog["dependencies"][number];
 type Principal = Readonly<{ kind: "migration-owner" | "bootstrap" }> | Readonly<{ kind: "reserved-role"; name: "dream_api" | "dream_worker" | "dream_upload_reserver" | "dream_api_login" | "dream_worker_login" }> | Readonly<{ kind: "public" }>;
 type Normalize<T> = T extends { principalOid: string } ? Principal : T extends readonly (infer V)[] ? readonly Normalize<V>[] : T extends object ? { readonly [K in keyof T as K extends "nativeOid" | "catalog" | "defaultNativeOid" | "toast" | "toastNativeOid" ? never : K]: Normalize<T[K]> } : T;
 type Q = Readonly<{ schema: string; name: string }>;
@@ -120,11 +121,12 @@ type TriggerIdentity = Readonly<{ kind: "named"; relation: Q; name: string }> | 
 type TriggerCommon = Normalize<Omit<RawCatalog["triggers"][number], "nativeOid" | "nativeName" | "parentTriggerOid" | "definition">> & Readonly<{ parentTrigger: TriggerIdentity | null }>;
 export type CatalogTriggerObservationV3 = TriggerCommon & (Readonly<{ identity: Extract<TriggerIdentity,{kind:"named"}>; internal: false; definition: string }> | Readonly<{ identity: Extract<TriggerIdentity,{kind:"internal-constraint"}>; internal: true; constraint: C; structuralVersion: 1; structuralSha256: string }>);
 export type CatalogFunctionObservationV3 = Normalize<RawCatalog["functions"][number]> & Readonly<{ argumentTypeRefs: readonly Q[] }>;
+export type CatalogDependencyObservationV3 = Readonly<{ dependent: string; referenced: string; dependencyType: RawDependency["dependencyType"]; multiplicity: number }>;
 export type CatalogRowsObservationV3 = { readonly [K in Exclude<Category, "triggers" | "roles" | "dependencies" | "functions">]: Normalize<RawCatalog[K]> } & Readonly<{
   functions: readonly CatalogFunctionObservationV3[];
   triggers: readonly CatalogTriggerObservationV3[];
   roles: readonly (Normalize<Omit<RawCatalog["roles"][number], "name">> & { readonly principal: Exclude<Principal,{kind:"public"}> })[];
-  dependencies: readonly Readonly<{ dependent: string; referenced: string; dependencyType: string }>[];
+  dependencies: readonly CatalogDependencyObservationV3[];
 }>;
 const binding = z.strictObject({ nativeOid: oid, name: identifier });
 const externalQ = z.strictObject({ schema: z.literal("pg_catalog"), name: identifier });
@@ -145,7 +147,7 @@ const bindingsShape = z.strictObject({ roleProfile: z.enum(["none", "pair"]), mi
   externalFacts: z.array(z.strictObject({ endpoint, identity: externalKey })).max(2000),
 });
 export type CatalogManagementBindingsV3 = z.input<typeof bindingsShape>;
-export type CatalogObservationV3 = Readonly<{ kind: "unvalidated-catalog-observation"; descriptorVersion: 3; serverMajor: 18;
+export type CatalogObservationV3 = Readonly<{ kind: "unvalidated-catalog-observation"; descriptorVersion: 4; serverMajor: 18;
   roleProfile: "none" | "pair"; approval: false; expectedCatalog: false; catalog: CatalogRowsObservationV3; canonicalJson: string; observationSha256: string;
   counts: Readonly<{ namedTriggers: number; internalTriggers: number }> }>;
 export type CatalogReadPortV3 = { query(text: string, values: readonly unknown[]): Promise<{ rows: unknown }> };
@@ -201,7 +203,20 @@ function decodeRows(input: unknown) {
   need(raw.schemas.length === 3 && new Set(raw.schemas.map(r => r.name)).size === 3 && context !== undefined);
   return { raw, context: context! };
 }
+const nativeDependencyKey = (d: RawDependency) => JSON.stringify([d.dependent.class, d.dependent.nativeOid, d.dependent.subId, d.referenced.class, d.referenced.nativeOid, d.referenced.subId, d.dependencyType]);
+function groupNativeDependencies(rows: RawDependency[]): { row: RawDependency; multiplicity: number }[] {
+  need(rows.length <= 10000);
+  const groups = new Map<string, { row: RawDependency; multiplicity: number }>();
+  for (const row of rows) {
+    const key = nativeDependencyKey(row), previous = groups.get(key);
+    if (previous) previous.multiplicity++; else groups.set(key, { row, multiplicity: 1 });
+  }
+  const result = [...groups.values()];
+  need(result.every(g => Number.isSafeInteger(g.multiplicity) && g.multiplicity > 0 && g.multiplicity <= 10000) && result.reduce((sum, g) => sum + g.multiplicity, 0) === rows.length);
+  return result;
+}
 function normalize(raw: RawCatalog, bindings: Bindings): CatalogRowsObservationV3 {
+  const dependencyGroups = groupNativeDependencies(raw.dependencies);
   const registry = new Map<string, unknown>(), semantic = new Map<string, string>(), observed = new Set<string>();
   function register(cls: string, id: string, identity: unknown, sub = 0, external = false) {
     const native = nk(cls, id, sub), stable = canonical(identity);
@@ -314,7 +329,8 @@ function normalize(raw: RawCatalog, bindings: Bindings): CatalogRowsObservationV
     need(canonical(index!.opclasses) === '["pg_catalog.uuid_ops"]' && canonical(index!.collations) === "[null]" && canonical(index!.options) === "[0]");
     need(!c.deferrable && !c.initiallyDeferred && c.enforced && c.validated && c.local && c.inheritedCount === 0 && !c.period && c.referencedRelation === null && c.referencedColumns === null);
     need(c.deleteSetColumns === null && c.fkPrimaryForeignOperators === null && c.fkPrimaryPrimaryOperators === null && c.fkForeignForeignOperators === null && c.exclusionOperators === null && c.expression === null);
-    need(raw.dependencies.filter(d => d.dependencyType === "i" && d.dependent.class === "pg_class" && d.dependent.nativeOid === index!.nativeOid && d.dependent.subId === 0 && d.referenced.class === "pg_constraint" && d.referenced.nativeOid === c.nativeOid && d.referenced.subId === 0).length === 1);
+    const ownerEdges = dependencyGroups.filter(({ row: d }) => d.dependencyType === "i" && d.dependent.class === "pg_class" && d.dependent.nativeOid === index!.nativeOid && d.dependent.subId === 0 && d.referenced.class === "pg_constraint");
+    need(ownerEdges.length === 1 && ownerEdges[0].row.referenced.nativeOid === c.nativeOid && ownerEdges[0].row.referenced.subId === 0);
     walk(proof); // Validate all qualified native column/index/constraint references.
   }
   const byType = new Map([...raw.types, ...raw.domains].map(t => [t.nativeOid, t]));
@@ -389,9 +405,9 @@ function normalize(raw: RawCatalog, bindings: Bindings): CatalogRowsObservationV
         return t.internal ? { ...common, structuralVersion: 1, structuralSha256: sha("internal-trigger:v1\n" + canonical({ ...common, structuralVersion: 1 })) } : { ...common, definition };
       });
     } else if (category === "roles") output.roles = raw.roles.map(({ nativeOid: id, name: _name, ...flags }) => { void _name; return { ...flags, principal: principal(id) }; });
-    else if (category === "dependencies") output.dependencies = raw.dependencies.map(d => {
+    else if (category === "dependencies") output.dependencies = dependencyGroups.map(({ row: d, multiplicity }) => {
       const resolve = (e: z.infer<typeof endpoint>) => { const identity = registry.get(nk(e.class, e.nativeOid, e.subId)); need(identity); return canonical(identity); };
-      return { dependent: resolve(d.dependent), referenced: resolve(d.referenced), dependencyType: d.dependencyType };
+      return { dependent: resolve(d.dependent), referenced: resolve(d.referenced), dependencyType: d.dependencyType, multiplicity };
     });
     else output[category] = raw[category].map(walk);
     output[category] = sortedUnique(output[category] as unknown[], canonical);
@@ -443,8 +459,8 @@ function checkRoles(raw: RawCatalog, b: Bindings) {
 export function decodePostgresCatalogObservationV3(input: unknown, managementBindings: unknown): CatalogObservationV3 {
   try {
     const b = snapshotBindings(managementBindings), { raw } = decodeRows(input), catalog = normalize(raw, b);
-    const canonicalJson = canonical({ descriptorVersion: 3, serverMajor: 18, roleProfile: b.roleProfile, ...catalog });
-    return frozen({ kind: "unvalidated-catalog-observation", descriptorVersion: 3, serverMajor: 18, roleProfile: b.roleProfile,
+    const canonicalJson = canonical({ descriptorVersion: 4, serverMajor: 18, roleProfile: b.roleProfile, ...catalog });
+    return frozen({ kind: "unvalidated-catalog-observation", descriptorVersion: 4, serverMajor: 18, roleProfile: b.roleProfile,
       approval: false, expectedCatalog: false, catalog, canonicalJson, observationSha256: sha("catalog-observation:v3\n" + canonicalJson),
       counts: { namedTriggers: raw.triggers.filter(t => !t.internal).length, internalTriggers: raw.triggers.filter(t => t.internal).length } });
   } catch { throw new PostgresCatalogObservationErrorV3(); }

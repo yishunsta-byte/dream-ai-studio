@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; form-action 'none'; object-src 'none'">
+  <title>DREAM SCREEN · 관리자 분석 스튜디오</title>
+  <link rel="stylesheet" href="studio.css">
+  <script src="studio.js" defer></script>
+</head>
+<body class="studio">
+  <a class="skip" href="#workspace">작업 화면으로 이동</a>
+  <header class="studio-header">
+    <div class="shell studio-top">
+      <a class="brand" href="index.html"><span class="brand-icon" aria-hidden="true">✦</span><span>DREAM <strong>SCREEN</strong><small>운영 관리자</small></span></a>
+      <nav class="program-nav" aria-label="분석 프로그램">
+        <a href="#image" data-section="image"><span class="program-icon" aria-hidden="true">◈</span><span class="program-label"><strong>Style DNA</strong><small>이미지 스타일</small></span></a>
+        <a href="#music" data-section="music"><span class="program-icon" aria-hidden="true">≋</span><span class="program-label"><strong>음악 분석</strong><small>장르·템포·구간</small></span></a>
+        <a href="#shorts" data-section="shorts"><span class="program-icon" aria-hidden="true">▷</span><span class="program-label"><strong>쇼츠 분석</strong><small>YouTube 영상</small></span></a>
+      </nav>
+      <a class="compare-back" href="index.html">시안 비교 <span aria-hidden="true">↗</span></a>
+    </div>
+    <nav class="shell ops-nav" aria-label="운영 메뉴">
+      <a href="#overview" data-section="overview">개요</a>
+      <a href="#projects" data-section="projects">내 프로젝트</a>
+      <a href="#publish" data-section="publish">완성본 검수·게시</a>
+      <a href="#api" data-section="api">API연동</a>
+      <a href="#queue" data-section="queue">렌더 대기열</a>
+      <a href="#account" data-section="account">계정 설정</a>
+    </nav>
+  </header>
+  <main class="shell workspace" id="workspace" tabindex="-1">
+    <noscript>분석 프로그램 시안을 보려면 JavaScript를 켜 주세요.</noscript>
+  </main>
+  <footer class="shell studio-footer"><span>DREAM SCREEN 운영 관리자</span><span>샘플 화면</span></footer>
+</body>
+</html>

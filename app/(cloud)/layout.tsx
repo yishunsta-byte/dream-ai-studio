@@ -3,6 +3,7 @@ import { AccountMenu } from "@/components/auth/account-menu";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { ProtectedContent, SessionBoundary } from "@/components/auth/session-boundary";
 import { currentAccountEmail } from "@/lib/auth/render";
+import { CloudNav } from "./cloud-nav";
 import styles from "./cloud.module.css";
 
 // 클라우드 읽기 전용 화면 레이아웃(T-207). StudioLayout(메뉴·시작 점검·SQLite)을 거치지 않는다.
@@ -15,6 +16,7 @@ export default async function CloudLayout({ children }: { children: ReactNode })
   return <SessionBoundary account={account}>
     <header className={styles.header}>
       <strong className={styles.brand}><BrandLogo /><span className="muted">· 클라우드 보기</span></strong>
+      {account && <CloudNav />}
       {account && <AccountMenu email={account} />}
     </header>
     <main id="main-content" className="content"><ProtectedContent>{children}</ProtectedContent></main>

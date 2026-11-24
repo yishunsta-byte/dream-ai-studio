@@ -19,7 +19,7 @@ const state = vi.hoisted(() => ({
   notFound: vi.fn(() => { throw Object.assign(new Error("NEXT_NOT_FOUND"), { notFound: true }); }),
 }));
 vi.mock("server-only", () => ({}));
-vi.mock("next/navigation", () => ({ redirect: state.redirect, notFound: state.notFound }));
+vi.mock("next/navigation", () => ({ redirect: state.redirect, notFound: state.notFound, usePathname: () => "/cloud/projects" }));
 vi.mock("@/lib/auth/server", () => ({
   createSupabaseServer: async () => ({ auth: { getUser: async () => {
     state.getUser();
@@ -219,12 +219,14 @@ describe("확인된 계정: adapter(요청마다 새로, resolveAuth=getRenderAu
 });
 
 describe("레이아웃", () => {
-  it("계정·로그아웃만, 메뉴·시작 점검·SQLite 0", async () => {
+  it("계정·로그아웃과 클라우드 읽기 메뉴를 표시하며 시작 점검·SQLite는 사용하지 않는다", async () => {
     signedIn();
     const { default: CloudLayout } = await import("@/app/(cloud)/layout");
     const markup = html(await CloudLayout({ children: "내용" }));
     expect(markup).toContain("a@example.invalid");
     expect(markup).toContain("로그아웃");
+    expect(markup).toMatch(/<a\b(?=[^>]*href="\/cloud\/projects")(?=[^>]*aria-current="page")[^>]*>/);
+    expect(markup).toContain('href="/cloud/reference-analysis"');
     expect(markup).toContain("내용");
     legacyUntouched();
   });

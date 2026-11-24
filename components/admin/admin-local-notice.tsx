@@ -16,7 +16,7 @@ export function AdminLocalNotice() {
     <div className={styles.panel}>
       <p className={styles.note}>이 PC에서 작업하려면 작업실을 쓰세요.</p>
       <p><Link className={admin.link} href="/studio">작업실로 가기 →</Link></p>
-      <p><Link className={admin.link} href="/">공개 메인으로</Link></p>
+      <p><a className={admin.link} href="/">공개 메인으로</a></p>
     </div>
   </main>;
 }

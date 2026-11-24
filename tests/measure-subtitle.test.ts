@@ -10,8 +10,8 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 vi.mock("server-only",()=>({}));
 import { mediaBinary } from "@/lib/media/tools";
-import { secondsToFrames as productFrames, timelineSrt, type TimelineText } from "@/lib/edit/timeline";
-import { assertRect, band, bandCounts, CUES, detect, EXIT, LIMIT_SEC, MeasureInputError, parseArgs, parseSrt, score, secondsToFrames, srtErrorSec } from "@/scripts/remotion/measure-subtitle";
+import { secondsToFrames as productFrames, timelineSrt, timelineVtt, type TimelineText } from "@/lib/edit/timeline";
+import { assertRect, band, bandCounts, CUES, detect, EXIT, LIMIT_SEC, MeasureInputError, measureVtt, parseArgs, parseSrt, score, secondsToFrames, srtErrorSec } from "@/scripts/remotion/measure-subtitle";
 
 const W=640,H=360;let dir:string;const ffmpeg=mediaBinary("ffmpeg");
 // background 0x335577 then 0x6a4a2a from frame 60 (like the image → video cut); a white box on frames [from, to]
@@ -39,6 +39,20 @@ describe("측정 규칙",()=>{
   it("제품 SRT를 읽어 글자로 짝짓는다(시작 순 정렬이어도)",()=>{
     const text=[{content:"뒤",timing:{startFrame:51,endFrame:92}},{content:"앞",timing:{startFrame:11,endFrame:46}}].map((item,n)=>({id:String(n),kind:"subtitle",...item})) as unknown as TimelineText[];
     expect(parseSrt(timelineSrt(text))).toEqual([{startMs:367,endMs:1533,text:"앞"},{startMs:1700,endMs:3067,text:"뒤"}]);
+  });
+  it("scores the exported WebVTT by layer ID and rejects missing cues or timing drift",()=>{
+    const layers=CUES.map(cue=>({
+      id:cue.id,kind:"subtitle",content:cue.content,
+      timing:{startFrame:productFrames(cue.startSec),endFrame:productFrames(cue.endSec)},
+    })) as TimelineText[];
+    const ids=layers.map(layer=>layer.id);
+    const source=timelineVtt(layers)!;
+    expect(measureVtt(source,ids).maxErrorSec).toBeCloseTo(1/3000,12);
+    expect(measureVtt(source.replace("00:00:01.700","00:00:01.900"),ids).pass).toBe(true);
+    expect(measureVtt(source.replace("00:00:01.700","00:00:01.901"),ids).pass).toBe(false);
+    expect(measureVtt(source.replace("00:00:01.533","00:00:02.533"),ids).pass).toBe(false);
+    expect(measureVtt(source.replace("c1\n","c2\n"),ids).pass).toBe(false);
+    expect(measureVtt(null,ids).pass).toBe(false);
   });
 });
 

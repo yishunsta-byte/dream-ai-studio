@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>공개 작품 상세 재생 상태 비교 · Dream Screen</title>
+  <style>
+    @font-face{font-family:Pretendard;src:url('../assets/PretendardVariable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    :root{color-scheme:dark;--page:#0d0d16;--surface:#1b1928;--line:#413750;--text:#faf5ff;--muted:#d3c6dd;--pink:#ffacee;--violet:#e2c9ff;font:16px/1.55 Pretendard,system-ui,sans-serif;color:var(--text);background:var(--page)}
+    *,*::before,*::after{box-sizing:border-box}body{margin:0;word-break:keep-all;overflow-wrap:anywhere}h1,h2,p{margin:0}button,input{font:inherit;color:inherit}button{cursor:pointer}a{color:var(--violet)}:where(button,a,input):focus-visible,h2:focus{outline:2px solid #ffce95;outline-offset:4px}h2:focus{width:fit-content;border-radius:3px}
+    .wrap{width:min(1136px,calc(100% - 52px));margin-inline:auto}.header{border-bottom:1px solid #363046;background:#141321}.header .wrap{min-height:59px;display:flex;align-items:center;gap:10px}.mark{display:grid;place-items:center;width:33px;height:33px;border-radius:9px;background:linear-gradient(135deg,#cc3ab7,#7542ca)}.brand{font-weight:860}.brand em{font-style:normal;color:var(--pink)}.header small{margin-left:auto;color:var(--muted)}
+    main{padding:31px 0 40px}.intro{padding:24px;border-radius:13px;border:1px solid #564061;background:linear-gradient(110deg,#39213e,#211a31 68%,#181827)}h1{font-size:clamp(33px,5vw,56px);line-height:1.13;letter-spacing:-.06em}.intro p{margin-top:8px;color:var(--muted)}.cases{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin:14px 0 20px}.case{min-height:48px;background:#211a30;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-weight:750}.case:hover{background:#392750}.case[aria-pressed=true]{background:#453057;border-color:#d995e1;color:#ffddf9}
+    .browse{padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}.browse h2{font-size:25px;letter-spacing:-.03em;margin-bottom:5px}.muted{color:var(--muted);font-size:15px}.work{display:grid;grid-template-columns:minmax(175px,.9fr) minmax(0,1.6fr);align-items:center;gap:16px;padding:10px;margin-top:13px;border:1px solid #473650;border-radius:9px;background:#181323}.thumb{width:100%;height:clamp(105px,15vw,155px);object-fit:cover;border-radius:6px;background:#21182c}.work h3{margin:0;font-size:24px;letter-spacing:-.04em}.work p{font-size:14px;color:var(--muted);margin:4px 0 9px}.action{display:inline-flex;align-items:center;min-height:44px;padding:7px 12px;border-radius:7px;border:1px solid #805a91;background:#442c60;color:#fff0fc;font-weight:750;text-align:left;text-decoration:none}.action:hover{background:#543976}.secondary{background:#282137;border-color:#5e4d73}.return{margin-top:12px}
+    dialog{width:min(710px,calc(100% - 36px));max-height:calc(100dvh - 28px);margin:auto;padding:0;border-radius:14px;border:1px solid #7f5984;background:#1b1728;color:var(--text);overscroll-behavior:contain;overflow:auto}dialog::backdrop{background:#0b0812b5}.detail{padding:15px 18px 17px}.detail-head{display:flex;align-items:start;gap:11px;justify-content:space-between;margin-bottom:11px}.detail-head h2{font-size:27px;line-height:1.18;letter-spacing:-.035em}.detail-head .muted{margin-top:3px}.close{min-width:44px;padding-inline:7px;justify-content:center;flex:none}.media{position:relative;display:grid;min-height:clamp(128px,25vh,214px);overflow:hidden;border-radius:9px;border:1px solid #544062;background:linear-gradient(135deg,#392440,#221932 60%,#181827);margin-bottom:9px}.media img{width:100%;height:clamp(128px,25vh,214px);object-fit:cover;grid-area:1/1}.media.audio img{object-position:50% 44%}.media p{grid-area:1/1;place-self:center;padding:8px;color:#f2def8;font-weight:740}.player{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px;border:1px solid #544363;border-radius:8px;background:#282038}.player input{margin:0;width:100%;min-height:44px;accent-color:#e6a6eb}.player input:disabled{opacity:.56}.player button:disabled{cursor:default;opacity:.72}.time{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}.detail-copy{margin-top:10px;color:var(--muted);font-size:15px}.notice{padding:9px 11px;margin-top:9px;border:1px solid #6a504a;border-radius:7px;background:#33232d;color:#ffdbb9}.notice:empty,.live:empty{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.detail-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}.detail-actions:not(:has(:not([hidden]))){display:none}.list-result{margin-top:8px}.live{color:var(--muted);font-size:14px}[hidden]{display:none!important}
+    @media(max-width:880px){.cases{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:600px){.wrap{width:calc(100% - 28px)}.header .wrap{min-height:53px}main{padding:16px 0 25px}.intro,.browse{padding:14px}.cases{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:13px}.work{grid-template-columns:minmax(0,1fr);gap:8px}.work h3{font-size:20px}.detail{padding:12px}.detail-head h2{font-size:22px}.media,.media img{min-height:128px;height:clamp(128px,22vh,175px)}}
+  </style>
+</head>
+<body>
+  <header class="header"><div class="wrap"><span class="mark" aria-hidden="true">✦</span><span class="brand">DREAM <em>SCREEN</em></span><small>공개 작품</small></div></header>
+  <main class="wrap">
+    <header class="intro" id="intro"><h1>공개 작품 재생 상태 비교</h1><p>상태를 고르고 작품 상세를 열어 확인하세요. 재생 조작과 목록은 시험 자료로 재현합니다.</p></header>
+    <div class="cases" role="group" id="cases" aria-label="공개 작품 재생 시안 상태">
+      <button type="button" class="case" data-case="video" aria-pressed="true">영상 연결</button>
+      <button type="button" class="case" data-case="audio" aria-pressed="false">음원 연결</button>
+      <button type="button" class="case" data-case="cover" aria-pressed="false">영상 표지 실패</button>
+      <button type="button" class="case" data-case="offline" aria-pressed="false">재생 미연결</button>
+      <button type="button" class="case" data-case="error" aria-pressed="false">재생 오류</button>
+      <button type="button" class="case" data-case="missing" aria-pressed="false">조회 후 작품 없음</button>
+    </div>
+    <section class="browse" aria-labelledby="browse-heading">
+      <h2 id="browse-heading" tabindex="-1">공개 작품 예시</h2>
+      <p class="muted" id="browse-caption">시안 상태에 맞는 시험 작품을 열어요.</p>
+      <article class="work" id="work">
+        <div><img id="work-image" class="thumb" alt="" hidden><p id="work-fallback" hidden>표지 조회 실패</p></div>
+        <div><h3 id="work-title"></h3><p id="work-kind"></p><button type="button" class="action" id="work-trigger">작품 자세히 보기</button></div>
+      </article>
+      <p id="catalog-result" class="list-result" role="status" hidden>이 작품을 현재 공개 목록에서 볼 수 없어요.</p>
+      <div class="return" id="comparison-return" hidden><a class="action secondary" href="compare.html">상태 비교로 돌아가기</a></div>
+    </section>
+  </main>
+
+  <dialog id="details" aria-labelledby="detail-heading">
+    <div class="detail">
+      <header class="detail-head"><div><h2 id="detail-heading"></h2><p class="muted" id="detail-kind"></p></div><button type="button" class="action secondary close" id="close" autofocus>닫기</button></header>
+      <div class="media" id="media"><img id="detail-image" alt="" hidden><p id="poster-fallback" hidden>표지를 불러오지 못했어요</p><p id="video-placeholder" hidden>영상 재생 예시</p></div>
+      <div class="player" id="player" hidden>
+        <button type="button" class="action" id="play">재생</button>
+        <input id="seek" type="range" min="0" max="20" value="0" aria-label="예시 재생 위치(초)">
+        <output class="time" id="time" for="seek">0:00 / 0:20</output>
+      </div>
+      <p class="notice" id="player-status" role="status" aria-atomic="true"></p>
+      <div class="detail-actions"><button type="button" class="action" id="retry" hidden>재생 파일 다시 불러오기</button><a class="action secondary" id="reopen-catalog" href="?view=catalog" hidden>최신 작품 목록 열기</a></div>
+      <p class="detail-copy" id="detail-copy"></p>
+    </div>
+  </dialog>
+  <script>
+    const get = id => document.getElementById(id);
+    const detail = get("details"), play = get("play"), seek = get("seek");
+    const video = { title: "옥상 너머", kind: "영상", image: "../assets/neon-rooftop.png", description: "도시가 잠들 무렵 옥상에서 내려다본 밤 풍경이에요." };
+    const audio = { title: "별빛의 결", kind: "음악", image: "../assets/celestial.png", description: "잔잔한 신스 리듬을 겹친 짧은 테마예요." };
+    const params = new URLSearchParams(location.search);
+    const catalog = params.get("view") === "catalog";
+    const missing = catalog && params.get("work") === "missing";
+    let mode = "video", work = video, playing = false, started = false, timer;
+
+    function setImage(id, src, alt = "") {
+      const image = get(id);
+      image.hidden = !src;
+      image.alt = alt;
+      if (src) image.src = src;
+      else image.removeAttribute("src");
+    }
+
+    function showCase(id) {
+      mode = id;
+      work = id === "audio" ? audio : video;
+      for (const button of document.querySelectorAll("[data-case]")) button.setAttribute("aria-pressed", String(button.dataset.case === mode));
+      get("work-title").textContent = work.title;
+      get("work-kind").textContent = `${work.kind} · 시험 작품`;
+      get("work-trigger").setAttribute("aria-label", `${work.title} 작품 자세히 보기`);
+      get("work-fallback").hidden = mode !== "cover";
+      setImage("work-image", mode === "cover" ? null : work.image);
+    }
+
+    function stopPending() {
+      clearTimeout(timer);
+    }
+
+    function updatePlaybackButton() {
+      play.textContent = playing ? "일시 정지" : "재생";
+      play.setAttribute("aria-label", `${work.title} ${work.kind} ${play.textContent} 예시`);
+    }
+
+    function showError() {
+      get("player-status").textContent = "재생 파일을 불러오지 못했어요. 같은 파일을 다시 시도하거나 최신 작품 목록을 열어 주세요.";
+      get("retry").hidden = false;
+      get("reopen-catalog").hidden = false;
+    }
+
+    function startWait(onReady) {
+      stopPending();
+      get("player-status").textContent = "재생 파일을 불러오고 있어요.";
+      timer = setTimeout(onReady, 650);
+    }
+
+    function openDetail() {
+      stopPending();
+      playing = false;
+      started = false;
+      seek.value = 0;
+      get("time").textContent = "0:00 / 0:20";
+      get("detail-heading").textContent = work.title;
+      get("detail-kind").textContent = `${work.kind} · 시험 작품`;
+      get("detail-copy").textContent = work.description;
+      get("media").classList.toggle("audio", mode === "audio");
+      get("poster-fallback").hidden = mode !== "cover";
+      get("video-placeholder").hidden = true;
+      setImage("detail-image", mode === "cover" ? null : work.image, `${work.title} 대표 이미지`);
+      get("player").hidden = mode === "offline";
+      seek.disabled = mode === "error" || mode === "missing";
+      get("retry").hidden = true;
+      get("reopen-catalog").hidden = true;
+      get("reopen-catalog").href = mode === "missing" ? "?view=catalog&work=missing" : "?view=catalog";
+      get("player-status").textContent = mode === "offline" ? "재생할 수 있는 영상 파일이 아직 연결되지 않았어요." : "";
+      updatePlaybackButton();
+      if (mode === "error" || mode === "missing") showError();
+      detail.showModal();
+      get("close").focus();
+    }
+
+    play.addEventListener("click", () => {
+      if (mode === "error" || mode === "missing") {
+        showError();
+        return;
+      }
+      playing = !playing;
+      updatePlaybackButton();
+      if (playing) startWait(() => {
+        started = true;
+        get("player-status").textContent = "";
+        if (mode === "cover") {
+          get("poster-fallback").hidden = true;
+          get("video-placeholder").hidden = false;
+        }
+      });
+      else {
+        stopPending();
+        get("player-status").textContent = "";
+      }
+    });
+    seek.addEventListener("input", () => {
+      get("time").textContent = `0:${seek.value.padStart(2, "0")} / 0:20`;
+      if (playing && started) startWait(() => { get("player-status").textContent = ""; });
+    });
+    get("retry").addEventListener("click", () => {
+      play.focus();
+      get("retry").hidden = true;
+      startWait(showError);
+    });
+    get("close").addEventListener("click", () => detail.close());
+    detail.addEventListener("close", () => {
+      if (detail.open) return;
+      stopPending();
+      playing = false;
+      get("work-trigger").focus();
+    });
+    get("work-trigger").addEventListener("click", openDetail);
+    for (const button of document.querySelectorAll("[data-case]")) button.addEventListener("click", () => showCase(button.dataset.case));
+
+    if (catalog) {
+      get("intro").hidden = true;
+      get("cases").hidden = true;
+      get("browse-heading").textContent = "공개 작품 목록";
+      get("browse-caption").textContent = "새 문서에서 고정 목록을 읽는 예시예요.";
+      get("comparison-return").hidden = false;
+      get("catalog-result").hidden = !missing;
+      get("work").hidden = missing;
+      if (!missing) showCase("video");
+      window.addEventListener("load", () => {
+        if (document.activeElement === document.body) get("browse-heading").focus();
+      }, { once: true });
+    } else showCase("video");
+  </script>
+</body>
+</html>

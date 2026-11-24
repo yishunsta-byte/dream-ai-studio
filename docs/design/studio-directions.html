@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>은영 AI 작업실 · UI 시안 3종</title>
+  <style>
+    :root{color-scheme:light;--ink:#243b53;--muted:#52616d;--line:#dce3df;--cream:#faf8f3;--paper:#fff;--mint:#08756c;--mint-soft:#e1f2ed;--slate:#183343;--coral:#a75031}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--cream);color:var(--ink);font:15px/1.55 system-ui,"Malgun Gothic",sans-serif}
+    button,a{font:inherit}
+    button{cursor:pointer}
+    button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #078176;outline-offset:3px}
+    [hidden]{display:none!important}
+    a{color:var(--mint);text-underline-offset:.2em}
+    h1,h2,h3,p{margin:0}
+    h1,h2,h3{line-height:1.24;letter-spacing:-.035em}
+    p,dd,td{overflow-wrap:anywhere}
+    .wrap{max-width:1400px;margin:auto;padding:clamp(16px,4vw,48px)}
+    .intro{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:24px}
+    .eyebrow{margin-bottom:.5rem;color:var(--mint);font-weight:750;font-size:13px}
+    h1{font-size:clamp(28px,5vw,53px)}
+    .intro p:last-child{color:var(--muted);margin-top:8px}
+    .tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px}
+    .tabs button{background:var(--paper);border:1px solid var(--line);border-radius:12px;text-align:left;padding:12px 14px;color:var(--ink)}
+    .tabs button[aria-selected=true]{border-color:var(--mint);background:var(--mint-soft)}
+    .tabs strong,.tabs small{display:block}
+    .tabs small{color:var(--muted);margin-top:.15rem}
+    .sample{display:flex;align-items:center;gap:8px;color:var(--muted);margin:0 0 10px;font-size:13px}
+    .sample:before{content:"";width:7px;height:7px;background:#bc7235;border-radius:50%;flex:none}
+    .mock{border:1px solid var(--line);border-radius:16px;background:var(--paper);overflow:hidden;min-height:480px;box-shadow:0 12px 30px #263b4a0b}
+    .mock h2{font-size:clamp(24px,3vw,39px)}
+    .mock h3{font-size:17px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+    .brand{font-weight:800}
+    .mark{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--mint);color:#fff;margin-right:6px}
+    .details{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--muted);font-size:13px}
+    .badge{border-radius:99px;background:var(--mint-soft);color:var(--mint);padding:4px 9px;display:inline-block;font-weight:700;font-size:12px}
+    .warn{background:#ffece0;color:#884106}
+    .dash{display:grid;grid-template-columns:180px minmax(0,1fr)}
+    .rail{border-right:1px solid var(--line);padding:12px 9px;background:#f6faf8}
+    .rail span{display:block;padding:9px 12px;border-radius:9px}
+    .rail [aria-current]{background:var(--mint-soft);color:var(--mint);font-weight:800}
+    .body{padding:clamp(17px,3vw,32px);min-width:0}
+    .lead{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+    .cta{display:inline-block;padding:8px 12px;border-radius:8px;background:var(--mint);color:white;font-weight:700;font-size:13px}
+    .grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px}
+    .card{min-width:0;border-radius:12px;border:1px solid var(--line);padding:14px}
+    .feature{padding:0;overflow:hidden}
+    .feature img{display:block;width:100%;aspect-ratio:3.8;object-fit:cover}
+    .feature div{padding:13px}
+    .metric{color:var(--muted);margin-top:4px;font-size:13px}
+    .compact{margin:4px 0 0;padding:0;list-style:none}
+    .compact li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+    .compact li:last-child{border-bottom:0}
+    .strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .strip span{padding:6px 9px;border:1px solid var(--line);border-radius:8px}
+    .editor .top{background:#1a3041;color:#fff;border:0}
+    .editor .details{color:#d5e1e8}
+    .studio-grid{display:grid;grid-template-columns:170px minmax(0,1fr) 240px;gap:1px;background:var(--line)}
+    .studio-grid>div{background:white;padding:16px;min-width:0}
+    .studio-grid .stage{background:#edf2f3}
+    .shot{display:block;border:1px solid var(--line);padding:8px;border-radius:8px;margin-top:8px}
+    .shot.selected{border-color:var(--mint);background:var(--mint-soft)}
+    .shot img{width:100%;height:50px;display:block;object-fit:cover;border-radius:5px;margin-bottom:4px}
+    .frame{margin-top:12px;border-radius:10px;overflow:hidden;background:#172d3b;position:relative}
+    .frame img{display:block;width:100%;aspect-ratio:1.65;object-fit:cover}
+    .frame span{position:absolute;left:10px;bottom:10px;color:#fff;background:#10202edc;padding:4px 8px;border-radius:6px}
+    .inspector p{margin:8px 0;color:var(--muted)}
+    .prompt{background:#f2f6f6;border:1px solid var(--line);border-radius:8px;padding:10px;margin:10px 0}
+    .timeline{margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+    .timeline span{height:8px;background:#b8c8cb;border-radius:10px}.timeline span:nth-child(2){background:var(--mint)}
+    .program-bar{padding:14px 16px;border-bottom:1px solid var(--line);background:#f6faf8}
+    .program-bar h3{margin-bottom:7px}
+    .programs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .programs details{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px}
+    .programs summary{cursor:pointer;font-weight:720}
+    .programs p{margin-top:5px;color:var(--muted);font-size:13px}
+    .chain{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0;padding:0;list-style:none}
+    .chain li{border-radius:7px;background:var(--mint-soft);color:var(--mint);padding:4px 8px;font-size:13px}
+    .review .top{background:#fff5ec}
+    .review .body{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
+    .review .heading{grid-column:1/-1}
+    .review h3{margin-bottom:7px}
+    .comparison{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+    .comparison figure{margin:0}
+    .comparison img{width:100%;aspect-ratio:1.25;object-fit:cover;border-radius:8px;display:block}
+    .comparison figcaption{margin-top:4px;color:var(--muted);font-size:12px}
+    .review .card:last-child{background:#fffaf5}
+    .caption{margin:12px 0 22px;padding:11px 14px;border-left:3px solid var(--mint);background:var(--mint-soft);border-radius:0 8px 8px 0}
+    .caption strong{display:block}
+    .foot{border-top:1px solid var(--line);padding-top:17px;color:var(--muted)}
+    .foot h2{color:var(--ink);font-size:19px;margin-bottom:6px}
+    .foot p+p{margin-top:7px}
+    @media(max-width:920px){.studio-grid{grid-template-columns:125px minmax(0,1fr)}.studio-grid .inspector{grid-column:1/-1}.intro{align-items:start}.dash{grid-template-columns:135px minmax(0,1fr)}}
+    @media(max-width:620px){.intro{display:block}.intro>a{display:inline-block;margin-top:10px}.tabs{grid-template-columns:1fr}.tabs small{display:none}.dash,.grid,.review .body,.programs{grid-template-columns:1fr}.rail{border-right:0;border-bottom:1px solid var(--line);display:flex;overflow:auto;gap:4px}.rail span{white-space:nowrap}.studio-grid{grid-template-columns:1fr}.studio-grid .shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.shots h3{grid-column:1/-1}.top{padding:10px 15px}.lead{align-items:start}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="intro">
+      <div><p class="eyebrow">은영 AI 작업실</p><h1>작업실 UI 시안</h1><p>선택한 디자인은 2안 · 장면 편집 중심입니다.</p></div>
+      <a href="/dev-plan.html">마스터 개발 플랜</a>
+    </header>
+    <div class="tabs" role="tablist" aria-label="작업실 디자인 비교">
+      <button id="tab-projects" role="tab" aria-selected="false" aria-controls="projects" tabindex="-1"><strong>1안 · 프로젝트 중심</strong><small>이번 주 우선 작업에서 바로 이어가요</small></button>
+      <button id="tab-editor" role="tab" aria-selected="true" aria-controls="editor"><strong>2안 · 장면 편집 중심</strong><small>장면과 프롬프트를 한 화면에서 고쳐요</small></button>
+      <button id="tab-review" role="tab" aria-selected="false" aria-controls="review" tabindex="-1"><strong>3안 · 검수·발행 중심</strong><small>결과를 비교하고 승인본을 골라요</small></button>
+    </div>
+    <p class="sample">디자인 검토용 예시. 실제 계정, 생성, 게시와는 연결되지 않습니다.</p>
+    <section id="projects" role="tabpanel" aria-labelledby="tab-projects" tabindex="0" hidden>
+      <div class="mock">
+        <div class="top"><div class="brand"><span class="mark" aria-hidden="true">✦</span>은영 AI 작업실</div><div class="details">개인 작업실 <span class="badge">관리자</span></div></div>
+        <div class="dash">
+          <aside class="rail" aria-label="작업실 메뉴 예시"><span aria-current="page">내 작업실</span><span>새 프로젝트</span><span>자료·캐릭터</span><span>기획·장면 편집</span><span>검수·내보내기</span><span>설정</span></aside>
+          <div class="body">
+            <div class="lead"><div><p class="eyebrow">이번 주 우선 작업</p><h2>오늘 이어서 만들기</h2></div><span class="cta">＋ 새 프로젝트</span></div>
+            <div class="grid">
+              <article class="card feature"><img src="../../public/showcase/t240/wild-coast.png" alt="예시 영상에 쓰인 해안 풍경"><div><h3>해안용품 쇼핑숏츠</h3><p class="metric">기획과 장면 3개 · 다음 작업은 두 번째 장면 수정</p><div class="strip"><span>요구사항 ✓</span><span>참고 분석 ✓</span><span class="badge warn">검수 필요</span></div></div></article>
+              <section class="card"><h3>지금 확인할 일</h3><ul class="compact"><li>장면 2 검수 요청 <span class="badge warn">1건</span></li><li>배경음악 파일 <span class="badge">업로드됨</span></li><li>최종 파일 내보내기 <span class="metric">승인 후</span></li></ul></section>
+              <section class="card"><h3>최근 자료·최종본</h3><p class="metric">제품 컷 · 기존 BGM · 원본 가이드</p></section>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="caption"><strong>비교 시안 · 프로젝트 목록</strong>여러 프로젝트를 번갈아 할 때 우선순위, 놓친 검수, 이어서 할 작업을 먼저 보여 줍니다.</p>
+    </section>
+    <section id="editor" role="tabpanel" aria-labelledby="tab-editor" tabindex="0">
+      <div class="mock editor">
+        <div class="top"><div class="brand"><span class="mark" aria-hidden="true">✦</span>기획·장면 편집</div><div class="details">해안용품 쇼핑숏츠 · 세로 9:16 <span class="badge">기획 승인</span></div></div>
+        <div class="program-bar">
+          <h3>제작 프로그램</h3>
+          <div class="programs">
+            <details><summary>Style DNA Analyzer · 이미지</summary><p>이미지 분석, 한·영 프롬프트 보정, 시험 이미지 생성과 원본 비교.</p></details>
+            <details><summary>Audio Analyzer · 음악</summary><p>음성·음악 보고서, 파형, 음악 구조와 Suno용 프롬프트.</p></details>
+            <details><summary>Shorts Viral Studio · 쇼츠</summary><p>검색·영상 분석, 아이디어, 대본과 장면별 프롬프트.</p></details>
+          </div>
+          <ol class="chain" aria-label="확장할 제작 흐름"><li>이미지 생성 · 버전 선택</li><li>음악 생성 · 음원 선택</li><li>영상 생성 · 이미지와 음원 연결</li></ol>
+        </div>
+        <div class="studio-grid">
+          <div class="shots"><h3>스토리보드</h3><span class="shot"><img src="../../public/showcase/t240/wild-coast.png" alt="">1 · 문제 제시</span><span class="shot selected"><img src="../../public/showcase/t240/neon-rooftop.png" alt="">2 · 제품 사용</span><span class="shot"><img src="../../public/showcase/t240/desert-motion.png" alt="">3 · 행동 유도</span></div>
+          <div class="stage"><p class="eyebrow">선택 장면</p><h2>제품 사용</h2><div class="frame"><img src="../../public/showcase/t240/neon-rooftop.png" alt="장면 2 미리보기 예시"><span>00:05–00:11 · 버전 3</span></div><div class="timeline" aria-label="세 장면 중 두 번째 선택"><span></span><span></span><span></span></div></div>
+          <div class="inspector"><h3>프롬프트와 수정 요청</h3><p><span class="badge warn">수정 요청</span> 제품은 선명하게, 화면 흔들림 줄이기</p><div class="prompt">세로 영상, 제품에 초점. 짧은 전진 이동 뒤 손에 든 모습을 보여 준다.</div><p>참조 이미지 · 고정 캐릭터 · 모델 별도 선택</p><span class="cta">이 장면만 다시 생성</span></div>
+        </div>
+      </div>
+      <p class="caption"><strong>확정 · 장면 편집 중심</strong>장면 순서, 현재 버전, 프롬프트와 수정 요청을 한 화면에 두고 필요한 장면만 다시 만듭니다.</p>
+    </section>
+    <section id="review" role="tabpanel" aria-labelledby="tab-review" tabindex="0" hidden>
+      <div class="mock review">
+        <div class="top"><div class="brand"><span class="mark" aria-hidden="true">✦</span>검수·내보내기</div><div class="details">온라인 생성본과 직접 업로드 <span class="badge">공개 전 검수</span></div></div>
+        <div class="body">
+          <div class="heading"><p class="eyebrow">발행 준비</p><h2>완성본 검수</h2><p class="metric">프로젝트·매체·제작 출처·승인 상태로 작품을 찾습니다.</p></div>
+          <section class="card"><h3>장면 2 버전 비교</h3><div class="comparison"><figure><img src="../../public/showcase/t240/wild-coast.png" alt="기존 승인 후보의 해안 풍경"><figcaption>이전 성공본 · 버전 1</figcaption></figure><figure><img src="../../public/showcase/t240/neon-rooftop.png" alt="현재 검수 후보의 야경"><figcaption>현재 검수본 · 버전 3</figcaption></figure></div><p class="metric">수정 요청과 승인 버전을 결과 파일과 함께 보관합니다.</p></section>
+          <section class="card"><h3>발행 전에 확인</h3><ul class="compact"><li>권리와 원본 출처 <span class="badge">확인됨</span></li><li>수정 요청 반영 <span class="badge warn">검수 필요</span></li><li>MP4 재생과 증빙 <span class="metric">최종 승인본</span></li><li>작품 공개 <span class="metric">비공개 초안</span></li></ul></section>
+        </div>
+      </div>
+      <p class="caption"><strong>최종 승인·공개 모드</strong>온라인 생성본과 직접 올린 파일을 같은 검수 목록에서 보고, 승인한 버전만 공개합니다.</p>
+    </section>
+    <footer class="foot">
+      <h2>세 안에 공통으로 적용할 흐름</h2>
+      <p>계정 설정의 API 키·모델 등록 → 실제 콘텐츠 분석 → 프로젝트·장면으로 프롬프트 전달 → 온라인 생성 또는 직접 업로드 → 수정·검수 → 내보내기 → 승인 작품 공개.</p>
+      <p>공개 웹사이트는 작업실과 분리합니다. 작업실에서 정한 제목·표지·승인 버전만 방문자에게 전달합니다.</p>
+    </footer>
+  </main>
+  <script>
+    const tabList = document.querySelector('[role=tablist]');
+    const tabs = [...tabList.querySelectorAll('[role=tab]')];
+    const stackedTabs = window.matchMedia('(max-width: 620px)');
+    function syncOrientation() {
+      tabList.setAttribute('aria-orientation', stackedTabs.matches ? 'vertical' : 'horizontal');
+    }
+    syncOrientation();
+    stackedTabs.addEventListener('change', syncOrientation);
+    function show(index, focus = false) {
+      tabs.forEach((tab, i) => {
+        const selected = i === index;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+        document.getElementById(tab.getAttribute('aria-controls')).hidden = !selected;
+      });
+      if (focus) tabs[index].focus();
+    }
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => show(index));
+      tab.addEventListener('keydown', (event) => {
+        const last = tabs.length - 1;
+        const previousKey = stackedTabs.matches ? 'ArrowUp' : 'ArrowLeft';
+        const followingKey = stackedTabs.matches ? 'ArrowDown' : 'ArrowRight';
+        const next = event.key === previousKey ? (index + last) % tabs.length
+          : event.key === followingKey ? (index + 1) % tabs.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? last : null;
+        if (next !== null) { event.preventDefault(); show(next, true); }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>자막 부분 수정 · Dream AI Studio</title><link rel="stylesheet" href="tokens.css">
+<style>
+*{box-sizing:border-box}body{margin:0;color:var(--c-navy-900);background:var(--c-cream-100);font:var(--text-md)/1.65 var(--font-sans);word-break:keep-all}header{background:var(--c-navy-900);color:white}header div,main{max-width:1160px;margin:auto;padding:16px 32px}header div{display:flex;gap:18px;align-items:center}header small{color:var(--c-navy-100)}h1,h2,h3,p{margin:0}h1{font-size:var(--text-3xl);letter-spacing:-.04em}h2{font-size:var(--text-xl)}h3{font-size:var(--text-lg)}.intro{margin:20px 0}.meta,small{color:var(--c-navy-500)}.layout,.compare{display:grid;gap:16px}.layout{grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);align-items:start}.compare{grid-template-columns:1fr 1fr}.card{padding:24px;background:var(--c-cream-50);border:1px solid var(--c-navy-300);border-radius:var(--radius-lg);box-shadow:var(--shadow-1);margin-bottom:16px}.scene{color:var(--c-mint-800);font-weight:bold}.time{font:var(--text-sm) var(--font-mono)}.track{display:grid;grid-template-columns:3fr 2fr 3fr;height:10px;gap:3px;margin:10px 0 20px}.track span{background:var(--c-navy-100)}.track .selected{background:var(--c-mint-700)}.version{display:block;border-radius:var(--radius-md);padding:14px;background:var(--c-navy-50);min-width:0}.version.edit{background:var(--c-mint-50)}.version b{display:block;margin-bottom:8px}textarea{width:100%;min-height:85px;border:1px solid var(--c-mint-700);border-radius:var(--radius-sm);padding:9px;font:inherit;color:inherit;resize:vertical}.actions{margin-top:16px}button{min-height:44px;border:1px solid var(--c-mint-700);border-radius:var(--radius-sm);background:var(--c-mint-700);padding:8px 14px;color:white;font:inherit;font-weight:700;cursor:pointer}button:disabled{color:var(--c-navy-500);background:var(--c-navy-50);border-color:var(--c-navy-300);cursor:default}button:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--c-mint-700);outline-offset:3px}.rule{border-top:1px solid var(--c-navy-100);margin:14px 0;padding-top:14px}.output{margin:12px 0;background:var(--c-mint-50);padding:12px;border-radius:var(--radius-sm)}summary{min-height:44px;cursor:pointer;padding-top:8px}.note{font-size:var(--text-sm);margin:12px 0;color:var(--c-navy-500)}[hidden]{display:none!important}@media(max-width:720px){header div,main{padding:14px 16px}.layout,.compare{grid-template-columns:1fr}.card{padding:16px}.intro{margin:12px 0}.compare{gap:8px}}
+</style>
+<header><div><b>DREAM AI STUDIO</b><small>쇼핑숏츠 작업실 · 인터랙션 시안</small></div></header>
+<main><div class="intro"><p class="meta">쇼핑숏츠 / 편집</p><h1>자막 부분 수정</h1></div>
+<div class="layout"><section class="card"><p class="scene">장면 2 · 제품 사용</p><h2>제품 사용 시간 안내</h2><p class="time">00:03.000 – 00:05.000</p><div class="track" aria-hidden="true"><span></span><span class="selected"></span><span></span></div>
+<div class="compare"><div class="version"><b>이전 저장본 · r4</b><p>하루 종일 사용</p></div><label class="version edit"><b id="draftLabel">수정 중 · 같은 자막</b><textarea id="draft" maxlength="500">한 번 충전해 사용</textarea></label></div>
+<div class="actions"><button id="save">장면·글자·소리 설정 저장</button></div><p class="note" id="saveStatus" role="status">저장하지 않은 변경이 있어요.</p></section>
+<aside><section class="card"><h2>현재 내용 검수</h2><p id="reviewHint">변경한 자막을 저장하면 새 타임라인을 검수할 수 있어요.</p><div class="actions"><button disabled id="review">현재 내용 검수하기</button></div>
+<div hidden id="inspection" class="rule"><h3>장면 2 · 자막 확인</h3><p class="time">00:03.000 – 00:05.000</p><p id="savedText"></p><button id="approve">시안에서 검수 완료 상태 보기</button></div></section>
+<section class="card"><h2>영상 만들기</h2><p id="renderHint">새 버전 검수 대기</p><div class="actions"><button disabled id="render">영상 만들기</button></div>
+<div class="output" hidden id="result"><h3>현재 결과 · 타임라인 r5</h3><p>쇼핑숏츠-r5.mp4</p><button id="choose">현재 버전 MP4 선택</button></div>
+<details class="rule"><summary>이전 결과 · 타임라인 r4</summary><p>쇼핑숏츠-r4.mp4 · 이전 문구가 담긴 보관본</p></details>
+<p role="status" id="selection"></p></section></aside></div>
+<p class="note">예시 장면으로 저장·검수·출력 순서를 체험합니다. 실제 파일 생성과 다운로드는 제품의 렌더 결과 화면에서 진행합니다.</p></main>
+<script>
+const byId=id=>document.getElementById(id);
+const draft=byId("draft"),save=byId("save"),review=byId("review"),render=byId("render");
+draft.oninput=()=>{
+ const text=draft.value.trim();
+ save.disabled=!text||text==="하루 종일 사용";
+ byId("saveStatus").textContent=!text?"문구를 적어 주세요.":save.disabled?"저장할 변경이 없어요.":"저장하지 않은 변경이 있어요.";
+};
+save.onclick=()=>{
+ draft.readOnly=true;save.disabled=true;review.disabled=false;
+ byId("draftLabel").textContent="수정 저장본 · r5";
+ byId("saveStatus").textContent="타임라인 r5를 저장했어요. 현재 내용으로 다시 검수해 주세요.";
+ byId("reviewHint").textContent="타임라인 r5 · 재검수 필요";
+ byId("savedText").textContent=draft.value;review.focus();
+};
+review.onclick=()=>{byId("inspection").hidden=false;review.disabled=true;byId("approve").focus()};
+byId("approve").onclick=()=>{byId("inspection").hidden=true;byId("reviewHint").textContent="타임라인 r5 · 검수 완료 예시";byId("renderHint").textContent="저장한 타임라인 r5로 만들어요.";render.disabled=false;render.focus()};
+render.onclick=()=>{render.disabled=true;byId("result").hidden=false;byId("renderHint").textContent="타임라인 r5 · 렌더 결과 예시";byId("choose").focus()};
+byId("choose").onclick=()=>{byId("selection").textContent="선택한 MP4 · 쇼핑숏츠-r5.mp4";byId("choose").textContent="현재 버전 선택됨"};
+</script></html>

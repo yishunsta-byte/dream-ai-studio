@@ -20,6 +20,11 @@ const html=(value:RendersData,saved:SavedRenderTimeline|null={revision:5,aspect:
 const text=(markup:string)=>markup.replace(/<[^>]+>/g," ").replace(/&quot;/g,"\"").replace(/&amp;/g,"&").replace(/\s+/g," ");
 
 describe("영상 만들기 화면", ()=>{
+  it("소리가 든 영상의 10분 한계 초과분을 프레임까지 표시한다",()=>{
+    const [line]=blockerLines([{code:"AUDIO_TOO_LONG",params:{frames:18001,maxFrames:18000}}]);
+    expect(line.text).toContain("10분 0초 1프레임");
+    expect(line.link).toBe("edit");
+  });
   it("막는 이유를 전부, 장면은 묶어서, 갈 곳과 함께 보여 주고 버튼을 막는다", ()=>{
     const blockers=[
       {code:"RENDER_INPUT_MISSING" as const,params:{reason:"empty_slot" as const,sceneId:"s3",sceneNumber:3,sceneTitle:"마무리"}},
@@ -41,7 +46,8 @@ describe("영상 만들기 화면", ()=>{
     expect(page).toContain("위 이유를 고치면 만들 수 있어요.");
     const markup=html(data({check:{ready:false,blockers}}));
     expect(markup).toContain('href="/projects/p1/produce"');expect(markup).toContain('href="/projects/p1/edit"');
-    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>영상 만들기<\/button>/);
+    expect(markup).toMatch(/<button[^>]*aria-disabled="true"[^>]*aria-describedby="[^"]+"[^>]*>영상 만들기<\/button>/);
+    expect(markup).not.toMatch(/\sdisabled=""[^>]*>영상 만들기<\/button>/);
     expect(blockerLines([{code:"RENDER_INPUT_MISSING",params:{reason:"no_timeline"}}])[0]).toMatchObject({text:"아직 저장한 타임라인이 없어요. 편집에서 한 번 저장해 주세요.",link:"edit"});
   });
   it("막는 이유가 없으면 버튼을 켜고, 처리기가 꺼져 있으면 알려 준다", ()=>{
@@ -76,13 +82,13 @@ describe("영상 만들기 화면", ()=>{
     const markup=html(data({renders:[base]})),page=text(markup);
     expect(page).toContain("파일 확인 통과");expect(page).toContain("1080×1920 · 30.0초 · H.264 · 30fps · 소리 트랙 없음");
     expect(page).toContain("확인 안 한 것: 자막 표시 오차 측정 전 · 휴대폰 재생 확인 전");
-    expect(page).toContain("영상 보기");expect(markup).not.toContain(">재생<");
-    expect(markup).toContain('href="/api/renders/r1/file?download"');expect(page).toContain("내려받기 · 12.4MB");expect(markup).toContain('download="핸드크림_9x16_r5.mp4"');
+    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*>영상 보기<\/button>/);expect(page).toContain("영상 보기");expect(markup).not.toContain(">재생<");
+    expect(markup).toContain('href="/api/renders/r1/file?download"');expect(page).toContain("이 버전 MP4 내려받기 · 12.4MB");expect(page).toContain("현재 저장본 · 타임라인 r5");expect(markup).toContain('download="핸드크림_9x16_r5.mp4"');
     expect(markup).toContain('aria-expanded="false"');expect(page).not.toContain("완성 영상이에요");
   });
   it("예전 버전은 보관만, 샘플은 표시, 파일이 없으면 오류로 보여 준다", ()=>{
     const page=text(html(data({renders:[view({id:"r2",stale:true,isSample:true,fileName:"핸드크림_9x16_r4_SAMPLE.mp4",timelineRevision:4}),view({id:"r3",fileExists:false})]})));
-    expect(page).toContain("지금 내용과 다름 · 타임라인 r4");expect(page).toContain("보관만 해요.");expect(page).toContain("지금 내용으로 만들기");expect(page).toContain("샘플");
+    expect(page).toContain("보관본 · 타임라인 r4 · 지금 내용과 다름");expect(page).toContain("보관본 MP4 내려받기");expect(page).toContain("보관만 해요.");expect(page).toContain("지금 내용으로 만들기");expect(page).toContain("샘플");
     expect(page).toContain("파일 없음");expect(page).toContain("영상 파일을 찾지 못했어요. 백업에 함께 들어가는 파일이라 원래 있어야 해요.");
   });
   it("확인 실패는 실패 행이고 틀린 항목을 말하며 재생·받기가 없다", ()=>{

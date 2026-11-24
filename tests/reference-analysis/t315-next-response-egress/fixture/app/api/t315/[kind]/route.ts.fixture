@@ -1,0 +1,59 @@
+// [T315 격리 사본 전용 시험 파일] 합성 보호 응답(HTML·RSC 유사·POST JSON). 설치 위치: app/api/t315/[kind]/route.ts
+// 반환 전 대기(hold=handler) 또는 첫 pull 대기(hold=stream) 뒤 허가를 다시 확인하고, 첫 pull에서 소비한다.
+// 사건: handler:enter/hold/released/reject/return, stream:firstPull/hold/released/consumed/stop/enqueue(누적)/close/cancel,
+//       request:abort, after:run. 요청 ID는 클라이언트 머리글 x-t315-request.
+import { after } from "next/server";
+import { marker, mark, statusFor, tickets, type Ticket } from "@/lib/t315/gate";
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+const TYPES: Record<string, string> = { html: "text/html; charset=utf-8", rsc: "text/x-component; charset=utf-8", post: "application/json; charset=utf-8" };
+const empty = (status: number) => new Response(null, { status, headers: { "cache-control": "private, no-store" } });
+function chunk(t: Ticket, i: number) {
+  const base = t.kind === "html" ? `<main>${marker(t.id)}#${i}</main>\n` : t.kind === "rsc" ? `${i}:["${marker(t.id)}"]\n` : `{"analysis":"${marker(t.id)}","part":${i}}\n`;
+  return new TextEncoder().encode(t.chunkBytes > base.length ? base + "x".repeat(t.chunkBytes - base.length) : base);
+}
+async function handle(request: Request, kind: string) {
+  const id = new URL(request.url).searchParams.get("ticket") ?? "";
+  const req = request.headers.get("x-t315-request") ?? "";
+  const t = tickets.get(id);
+  if (!t || t.kind !== kind || !TYPES[kind]) return empty(404);
+  mark(t, "handler:enter", req);
+  request.signal.addEventListener("abort", () => mark(t, "request:abort", req));
+  after(() => mark(t, "after:run", req));
+  if (statusFor(t) !== 200) { mark(t, `handler:reject:${t.state}`, req); return empty(statusFor(t)); }
+  if (t.hold === "handler") { mark(t, "handler:hold", req); await t.released.promise; mark(t, "handler:released", req); }
+  if (statusFor(t) !== 200) { mark(t, `handler:reject:${t.state}`, req); return empty(statusFor(t)); }
+  let sent = 0;
+  const body = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      t.pulls++;
+      if (sent === 0) {
+        mark(t, "stream:firstPull", req);
+        if (t.hold === "stream") { mark(t, "stream:hold", req); await t.released.promise; mark(t, "stream:released", req); }
+        if (t.state !== "issued") { mark(t, `stream:stop:${t.state}`, req); controller.error(new Error("T315 permit closed before first byte")); return; }
+        t.state = "consumed";
+        mark(t, "stream:consumed", req);
+      } else if (t.state === "revoked" || t.state === "expired") {
+        mark(t, `stream:stop:${t.state}`, req, { enqueued: t.enqueued }); controller.error(new Error("T315 permit closed mid-stream")); return;
+      }
+      if (sent >= t.chunks) { mark(t, "stream:close", req, { enqueued: t.enqueued }); controller.close(); return; }
+      const bytes = chunk(t, sent++);
+      t.enqueued += bytes.byteLength;
+      controller.enqueue(bytes);
+      mark(t, "stream:enqueue", req, { n: sent, cum: t.enqueued });
+    },
+    cancel() { mark(t, "stream:cancel", req, { enqueued: t.enqueued }); },
+  }, { highWaterMark: 0 });
+  mark(t, "handler:return", req);
+  return new Response(body, { status: 200, headers: { "content-type": TYPES[kind], "cache-control": "private, no-store" } });
+}
+export async function GET(request: Request, ctx: { params: Promise<{ kind: string }> }) {
+  const { kind } = await ctx.params;
+  return kind === "post" ? empty(405) : handle(request, kind);
+}
+export async function POST(request: Request, ctx: { params: Promise<{ kind: string }> }) {
+  const { kind } = await ctx.params;
+  if (kind !== "post") return empty(405);
+  await request.text();
+  return handle(request, kind);
+}

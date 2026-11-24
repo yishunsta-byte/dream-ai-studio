@@ -3,15 +3,26 @@ import { statusDisplay, type Status } from "@/lib/ui/status";
 import { Icon, type IconName } from "./Icon";
 import styles from "./ui.module.css";
 
-export function Button({ variant = "primary", size = "md", loading = false, loadingLabel = "저장 중", disabledReason, children, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & {
+export function Button({ variant = "primary", size = "md", loading = false, loadingLabel = "저장 중", disabledReason, focusableWhenBlocked = false, children, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost" | "danger"; size?: "sm" | "md" | "lg";
-  loading?: boolean; loadingLabel?: string; disabledReason?: string;
+  loading?: boolean; loadingLabel?: string; disabledReason?: string; focusableWhenBlocked?: boolean;
 }) {
   // T-177: the shown reason is the button's description (aria-describedby), added to any description the caller gave.
   // useId is also available in Server Components (React 19 react-server build), where this file is used too.
   const reasonId = `${useId()}-reason`;
   const describedBy = [props["aria-describedby"], disabledReason && reasonId].filter(Boolean).join(" ") || undefined;
-  const button = <button {...props} type={props.type ?? "button"} disabled={props.disabled || loading || !!disabledReason} aria-busy={loading || undefined} aria-describedby={describedBy} className={`${styles.button} ${styles[variant]} ${styles[size]} ${className}`}>
+  const blockedButFocusable = focusableWhenBlocked && !!disabledReason && !loading && !props.disabled &&
+    (props.type === undefined || props.type === "button");
+  const button = <button
+    {...props}
+    type={props.type ?? "button"}
+    disabled={props.disabled || loading || (!!disabledReason && !blockedButFocusable)}
+    aria-disabled={blockedButFocusable || props["aria-disabled"]}
+    aria-busy={loading || undefined}
+    aria-describedby={describedBy}
+    onClick={blockedButFocusable ? undefined : props.onClick}
+    className={`${styles.button} ${styles[variant]} ${styles[size]} ${className}`}
+  >
     {loading && <Icon name="spinner" className={styles.spin} />}{loading ? loadingLabel : children}
   </button>;
   return disabledReason ? <span className={styles.disabledGroup}>{button}<span id={reasonId} className={styles.reason}>{disabledReason}</span></span> : button;

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dream Screen 관리자 · 상단 메뉴 3안</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="preview.js" defer></script>
+</head>
+<body>
+  <div class="preview" aria-label="시안 선택">
+    <div class="preview-inner">
+      <strong>관리자 UI 시안</strong>
+      <div class="options" role="group" aria-label="관리자 디자인">
+        <a href="?design=1" data-design="1">01 운영 브리핑</a>
+        <a href="?design=2" data-design="2">02 작업 콘솔</a>
+        <a href="?design=3" data-design="3">03 프로젝트 스튜디오</a>
+      </div>
+      <label class="mode"><input type="checkbox" id="live-mode"> 운영 미연결 상태 보기</label>
+    </div>
+  </div>
+  <header class="header">
+    <div class="shell header-inner">
+      <button type="button" class="brand" data-section="overview" aria-label="Dream Screen 관리자 개요">
+        <span class="mark" aria-hidden="true">✦</span>
+        <span>DREAM <em>SCREEN</em><small>운영 관리자</small></span>
+      </button>
+      <nav aria-label="관리자 주 메뉴">
+        <button type="button" data-section="overview">개요</button>
+        <button type="button" data-section="projects">프로젝트</button>
+        <button type="button" data-section="publication">검수·게시</button>
+        <button type="button" data-section="account">계정</button>
+      </nav>
+      <button type="button" class="avatar" data-section="account" aria-label="계정 설정">DS</button>
+    </div>
+  </header>
+  <main class="shell" id="workspace"></main>
+  <footer class="shell foot"><span>DREAM SCREEN</span><span>샘플 데이터와 화면 조작을 보여주는 디자인 시안</span></footer>
+</body>
+</html>

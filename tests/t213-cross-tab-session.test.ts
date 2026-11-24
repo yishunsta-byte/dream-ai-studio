@@ -220,9 +220,8 @@ describe("화면 연결(정적 계약)", () => {
     expect(readFileSync("components/auth/login.module.css", "utf8")).not.toMatch(/\.accountNotice[^{]*\{[^}]*display:\s*none/);
     // 좁은 화면에서 화면 밖(top:100% 절대 위치)으로 밀려나지 않게: 안내는 절대 위치를 쓰지 않는다
     expect(readFileSync("components/auth/login.module.css", "utf8")).not.toMatch(/\.accountNotice[^{]*\{[^}]*position:\s*absolute/);
-    expect(menu.match(/announceSessionChange\(\)/g)).toHaveLength(2);
-    expect(menu).toMatch(/state === "ended"\) \{ announceSessionChange\(\)/);
-    expect(menu).toMatch(/state === "partial"\) \{ announceSessionChange\(\)/);
+    expect(menu.match(/announceSessionChange\(\)/g)).toHaveLength(1);
+    expect(menu).toMatch(/if \(result\.state !== "failed"\) \{\s*announceSessionChange\(\);\s*window\.location\.assign\(logoutLoginPath\(window\.location\.pathname, result\.state\)\)/);
   });
   it("로그인 성공·비밀번호 변경 뒤 로그아웃(완료·부분)만 알린다", () => {
     const login = read("components/auth/login-form.tsx");
