@@ -8,6 +8,8 @@ import { PostgresAccessError } from "@/lib/db/postgres/types";
 // selected only by DREAM_SCENE_READ_BACKEND; the same Supabase project and host rules as the managed project core.
 type Env = Readonly<Record<string, string | undefined>>;
 export const sceneReadRole = "dream_scene_read_app";
+// 장면을 읽는 두 분야. 장면 읽기 설치 0001(쇼핑숏츠)과 0002(주제별 쇼츠)의 프로젝트 정책과 같은 목록이다.
+export const sceneReadMenus: readonly string[] = Object.freeze(["shopping-shorts", "topic-shorts"]);
 const backend = "supabase-postgres";
 
 function boundPublicKey(key: string, ref: string) {

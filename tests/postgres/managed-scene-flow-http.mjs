@@ -348,3 +348,98 @@ export async function verifySceneFlow(context, draftConfig) {
   out("flow-scope", { roleScopesUnchangedAfterFlow: Object.keys(scopes), existingPrivilegesUnchanged: true, browserGrants: 0, directAccess: direct });
   out("flow-result", { result: "PASS" });
 }
+
+// P2-MANAGED-TOPIC-SHORTS-SCENE-READ: 실제 HTTP(next start)에서 기획 승인까지 마친 같은 주제별 쇼츠 프로젝트의 장면 읽기.
+// verifySceneFlow(장면 읽기 0001)와 verifyTopicPlan(기획 0003) 뒤에 부르고, 여기서 장면 읽기 0002를 더한다.
+export async function verifyTopicSceneRead(context, baseEnv, ids) {
+  const { admin, rootPath, projectRef, dbHost, cert, users, startProfile, body } = context;
+  const file = "managed-scene-read/0002_topic_shorts.sql";
+  const text = (await readFile(new URL("lib/db/postgres/" + file, rootPath), "utf8")).replaceAll("\r\n", "\n");
+  assert.equal(digest(text), "25dead46f9affe0b8944363c962c618fa78333f514acf05c154712371c7298e9");
+  // 읽기 로그인 비밀번호는 이 확인용으로 새로 정한다(출력하지 않는다).
+  const sRead = randomBytes(28).toString("hex");
+  await admin.query("ALTER ROLE dream_scene_read_app PASSWORD '" + sRead + "'");
+  const env = { ...baseEnv, DREAM_SCENE_READ_BACKEND: "supabase-postgres",
+    DREAM_SCENE_READ_DB_URL: "postgresql://dream_scene_read_app:" + sRead + "@" + dbHost + ":5432/postgres", DREAM_SCENE_READ_DB_CA: cert };
+  const scenesPath = id => "/api/projects/" + id + "/scenes";
+  const olderPath = (id, scene, cursor) => scenesPath(id) + "?scene=" + encodeURIComponent(scene) + "&cursor=" + encodeURIComponent(cursor);
+  const snapshot = async () => (await admin.query(`SELECT md5(string_agg(t,'|' ORDER BY t)) h FROM (SELECT to_jsonb(x)::text t FROM dream.projects x
+    UNION ALL SELECT to_jsonb(x)::text FROM dream.scenes x UNION ALL SELECT to_jsonb(x)::text FROM dream.scene_versions x
+    UNION ALL SELECT to_jsonb(x)::text FROM dream.stage_states x UNION ALL SELECT to_jsonb(x)::text FROM dream.plans x
+    UNION ALL SELECT to_jsonb(x)::text FROM dream.activity_log x) s`)).rows[0].h;
+  const scope = async () => (await admin.query(`SELECT jsonb_build_object(
+      'columns', (SELECT jsonb_agg(table_schema||'.'||table_name||':'||privilege_type||'('||column_name||')' ORDER BY 1) FROM information_schema.column_privileges WHERE grantee='dream_scene_read_app'),
+      'policies', (SELECT jsonb_agg(c.relname::text||':'||p.polname::text||':'||p.polcmd::text ORDER BY 1) FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE 'dream_scene_read_app'::regrole::oid=ANY(p.polroles)),
+      'role', (SELECT to_jsonb(r) - 'oid' - 'rolpassword' - 'rolvaliduntil' FROM pg_roles r WHERE rolname='dream_scene_read_app')) AS s`)).rows[0].s;
+  // 쇼핑숏츠 비교 대상: 장면 흐름에서 버전이 가장 많은 승인 프로젝트(이전 버전 페이지가 있는 것).
+  const { rows: [shop] } = await admin.query(`SELECT p.id FROM dream.projects p WHERE p.owner_id=$1 AND p.menu_id='shopping-shorts'
+    AND p.approved_plan_id IS NOT NULL AND p.archived_at IS NULL
+    ORDER BY (SELECT count(*) FROM dream.scene_versions v JOIN dream.scenes s ON (s.owner_id,s.id)=(v.owner_id,v.scene_id) WHERE s.project_id=p.id) DESC, p.id LIMIT 1`, [users[0].id]);
+  assert(shop?.id, "shopping project with scenes");
+
+  // 0002 전: 쇼핑숏츠 장면·이전 버전 페이지를 읽어 두고, 주제별 쇼츠는 읽기 역할이 보지 못해 404다.
+  const before = await snapshot();
+  let shopBefore, shopOlder;
+  await startProfile(env, async call => {
+    shopBefore = await body(call(scenesPath(shop.id)), 200, "shopping scenes before 0002");
+    const paged = shopBefore.scenes.find(s => s.olderCursor);
+    assert(paged, "shopping scene with older versions");
+    shopOlder = { path: olderPath(shop.id, paged.id, paged.olderCursor) };
+    shopOlder.page = await body(call(shopOlder.path), 200, "shopping older before 0002");
+    for (const id of [ids.approved, ids.waiting, ids.draft]) await body(call(scenesPath(id)), 404, "topic scenes before 0002");
+  });
+  assert.equal(await snapshot(), before);
+
+  const scopeBefore = await scope();
+  await admin.query("SET ROLE p102_migrate");
+  try {
+    await admin.query("SELECT set_config('dream.scene_read.install_ref',$1,false),set_config('dream.scene_read.install_database','postgres',false)", [projectRef]);
+    assert.equal((await admin.query(text)).at(-1).command, "COMMIT");
+    await assert.rejects(admin.query(text), { message: "SCENE_READ_TOPIC_SHORTS_TARGET" });
+    await admin.query("ROLLBACK");
+  } finally { await admin.query("RESET ROLE"); }
+  assert.deepEqual(await scope(), scopeBefore);
+  assert.equal(await snapshot(), before);
+
+  let codes;
+  await startProfile(env, async call => {
+    // 쇼핑숏츠: 장면과 이전 버전 페이지가 0002 전과 같다.
+    assert.deepEqual(await body(call(scenesPath(shop.id)), 200), shopBefore);
+    assert.deepEqual(await body(call(shopOlder.path), 200), shopOlder.page);
+
+    // 승인한 같은 주제별 쇼츠 프로젝트: 장면 3개, 위치 순서, 버전 없음, 프로젝트 리비전·승인 기획 일치.
+    const { rows } = await admin.query(`SELECT s.id, p.content_revision::int AS revision, p.approved_plan_id FROM dream.scenes s
+      JOIN dream.projects p ON (p.owner_id,p.id)=(s.owner_id,s.project_id) WHERE s.project_id=$1 AND s.archived_at IS NULL ORDER BY s.position`, [ids.approved]);
+    assert.equal(rows.length, 3);
+    const first = await body(call(scenesPath(ids.approved)), 200, "topic scenes");
+    assert.deepEqual([first.projectId, first.revision, first.approvedPlanId, first.stages],
+      [ids.approved, rows[0].revision, rows[0].approved_plan_id, { plan: "approved", produce: "todo" }]);
+    assert.deepEqual(first.scenes.map(s => [s.id, s.position, s.selectedVersionId, s.selectedVersion, s.recentVersions, s.olderCursor]),
+      rows.map((row, index) => [row.id, index + 1, null, null, [], null]));
+    const project = await body(call("/api/projects/" + ids.approved), 200);
+    assert.equal(project.project.approvedPlanId, first.approvedPlanId);
+    for (let i = 0; i < 3; i++) assert.deepEqual(await body(call(scenesPath(ids.approved)), 200), first);
+    // 쇼핑숏츠 커서를 주제별 쇼츠 장면에 쓰면 거부된다.
+    const foreign = new URL(shopOlder.path, "http://x").searchParams.get("cursor");
+    await body(call(olderPath(ids.approved, rows[0].id, foreign)), 400, "foreign cursor");
+
+    // 승인 전: 브리프 대기·초안만 있는 프로젝트는 빈 장면과 단계 상태.
+    const waiting = await body(call(scenesPath(ids.waiting)), 200);
+    const draft = await body(call(scenesPath(ids.draft)), 200);
+    assert.deepEqual([waiting.scenes, waiting.approvedPlanId, waiting.stages], [[], null, { plan: "locked", produce: "locked" }]);
+    assert.deepEqual([draft.scenes, draft.approvedPlanId, draft.stages], [[], null, { plan: "todo", produce: "locked" }]);
+
+    const status = async (path, options) => { const response = await call(path, options); await response.body?.cancel(); return response.status; };
+    codes = { anonymous: await status(scenesPath(ids.approved), { actor: null }), otherAccount: await status(scenesPath(ids.approved), { actor: 1 }),
+      lockedMenu: await status(scenesPath(ids.locked)) };
+    assert.equal(await snapshot(), before);
+    await admin.query("UPDATE dream.projects SET archived_at=now() WHERE id=$1", [ids.draft]);
+    try { codes.archived = await status(scenesPath(ids.draft)); }
+    finally { await admin.query("UPDATE dream.projects SET archived_at=NULL WHERE id=$1", [ids.draft]); }
+    assert.deepEqual(codes, { anonymous: 401, otherAccount: 404, lockedMenu: 404, archived: 404 });
+  });
+  assert.equal(await snapshot(), before);
+  out("topic-scene-read", { install: file, sha256LF: digest(text), before0002: 404, rerunRejected: true, roleScopeUnchanged: true,
+    shoppingScenesAndOlderPageUnchanged: true, scenes: 3, revisionMatches: true, repeatReads: 4, foreignCursor: 400,
+    emptyBeforeApproval: { waiting: "locked", draft: "todo" }, codes, writes: 0 });
+}

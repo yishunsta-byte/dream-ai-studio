@@ -2,7 +2,7 @@ import "server-only";
 import type { Pool } from "pg";
 import { AUTH_MESSAGES } from "@/lib/auth/config";
 import { resolveServerAuth, type ServerAuthResult } from "@/lib/auth/resolve";
-import { openManagedSceneRead } from "@/lib/cloud/managed-scene-read";
+import { openManagedSceneRead, sceneReadMenus } from "@/lib/cloud/managed-scene-read";
 import { withActorTransaction, type ActorTransactionOptions } from "@/lib/db/postgres/transaction";
 import { actorFromVerifiedUserId, isVerifiedActor, PostgresAccessError, type ActorTransaction, type VerifiedActor } from "@/lib/db/postgres/types";
 import { isProjectReadError, projectReadError, projectReadFailure } from "./project-read-errors";
@@ -93,7 +93,7 @@ function decodeCursor(raw: string): Cursor {
 
 async function readProject(tx: ActorTransaction, projectId: string) {
   const { rows: [project] } = await tx.query(`SELECT id,content_revision,approved_plan_id FROM dream.projects
-    WHERE owner_id=$1 AND id=$2 AND menu_id='shopping-shorts' AND archived_at IS NULL`, [tx.actorId, projectId]);
+    WHERE owner_id=$1 AND id=$2 AND menu_id=ANY($3::text[]) AND archived_at IS NULL`, [tx.actorId, projectId, sceneReadMenus]);
   return project as Row | undefined;
 }
 

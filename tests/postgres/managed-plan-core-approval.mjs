@@ -168,7 +168,7 @@ export async function verifyPlanApproval(context, draftConfig) {
 
 // P2-MANAGED-TOPIC-SHORTS-PLAN: 주제별 쇼츠 같은 프로젝트로 생성 → 브리프 승인 → 메뉴별 기획 초안 저장·조회 → 명시 승인.
 // managed-project-core 0003(verifyTopicShorts)이 설치된 뒤에 부르고, 여기서 기획 0003을 더한다.
-export async function verifyTopicPlan(context, approvalRun) {
+export async function verifyTopicPlan(context, approvalRun, {sceneRead=false}={}) {
   const {admin,rootPath,projectRef,startProfile,body,connect,users,loseResponse}=context;
   // --scene-flow가 앞에서 승인 역할 비밀번호를 바꾸므로, 이 확인에 쓸 두 로그인 비밀번호를 새로 정한다(출력하지 않는다).
   const draftSecret=randomBytes(25).toString("hex"), secret=randomBytes(25).toString("hex");
@@ -220,7 +220,7 @@ export async function verifyTopicPlan(context, approvalRun) {
   assert.match(policies[0].check,/reviewed_plan_id/);
   assert.deepEqual([policies[1].check,policies[3].check],["false","false"]);
 
-  let audited, locked;
+  let audited, locked, waitingId, draftId;
   await startProfile(approvalConfig.env,async (call,origin)=>{
     // 0003 전에 만든 같은 프로젝트를 그대로 이어 간다.
     const opened=await body(call(route(early.id)),200);
@@ -230,6 +230,7 @@ export async function verifyTopicPlan(context, approvalRun) {
     assert.deepEqual(opened.capabilities,{saveDraft:true,importShortsDraft:true,approvePlan:false});
 
     const waiting=await topicBrief(call,{},false);
+    waitingId=waiting.id;
     assert.equal((await body(call(route(waiting.id)),409)).error,"브리프를 먼저 승인해 주세요.");
     await body(call(route(waiting.id),{input:draftOf(waiting)}),409);
 
@@ -280,6 +281,7 @@ export async function verifyTopicPlan(context, approvalRun) {
 
     // 길이가 다른 초안은 저장되지만 승인할 수 없다(프로젝트 길이 30초, 초안 20초).
     const longer=await topicBrief(call,{lengthSec:30,keyMessageLength:"50"});
+    draftId=longer.id;
     const short=await body(call(route(longer.id),{input:draftOf(longer)}),201);
     assert.equal((await body(call(route(longer.id)),200)).canApprove,false);
     await body(call(route(longer.id),{input:approvalCommand(short)}),409);
@@ -312,4 +314,9 @@ export async function verifyTopicPlan(context, approvalRun) {
     briefLocked:true,menuSteps:["hook","message","support","close"],cas:[201,409],lostSaveRecovered:true,staleVersion:409,
     lostApprovalReplayed:true,concurrentReplays:[200,200],scenes:3,snapshotMatches:true,lengthMismatchBlocked:true,
     ownerIsolation:true,lockedMenuHidden:true}));
+  // --scene-flow(장면 읽기 0001 설치) 뒤면 같은 승인 프로젝트로 장면 읽기 0002를 확인한다.
+  if (sceneRead) {
+    const {verifyTopicSceneRead}=await import("./managed-scene-flow-http.mjs");
+    await verifyTopicSceneRead(context,approvalConfig.env,{approved:audited,waiting:waitingId,draft:draftId,locked});
+  }
 }

@@ -43,7 +43,8 @@ const pinned = [
 ];
 const sources = {};
 for (const [file, hash] of pinned) { sources[file] = await sql(file); assert.equal(digest(sources[file]), hash, file); }
-for (const file of ["managed-project-plan/0002_approval.sql", "managed-scene-read/0001_install.sql"]) sources[file] = await sql(file);
+for (const file of ["managed-project-plan/0002_approval.sql", "managed-scene-read/0001_install.sql", "managed-scene-read/0002_topic_shorts.sql"]) sources[file] = await sql(file);
+assert.equal(digest(sources["managed-scene-read/0002_topic_shorts.sql"]), "25dead46f9affe0b8944363c962c618fa78333f514acf05c154712371c7298e9");
 const sourceHashes = Object.fromEntries(Object.entries(sources).map(([file, text]) => [file, digest(text)]));
 const out = (name, value) => console.log(JSON.stringify({ check: name, ...value }));
 
@@ -165,12 +166,12 @@ try {
   const videoA = await registeredAsset(admin, A, "video"), imageA = await registeredAsset(admin, A, "image"), videoB = await registeredAsset(admin, B, "video");
   const filePaths = (await admin.query("SELECT file_path FROM dream.assets")).rows.map(r => r.file_path);
   const stageRows = (approved, produce) => [["intake", "approved"], ["brief", "approved"], ["plan", approved ? "approved" : "todo"], ["produce", approved ? produce : "locked"], ["edit", "locked"], ["review", "locked"], ["export", "locked"]];
-  async function seedProject(owner, { approved = true, produce = "in_progress", revision = 4, positions = [3, 1, 2], archived = false } = {}) {
+  async function seedProject(owner, { approved = true, produce = "in_progress", revision = 4, positions = [3, 1, 2], archived = false, menu = "shopping-shorts" } = {}) {
     const project = v7(), plan = v7(), scenes = positions.map(() => v7());
     await admin.query("BEGIN");
     try {
       await admin.query(`INSERT INTO dream.projects(owner_id,id,menu_id,template_version,template_snapshot_json,inputs_json,title,goal,target,aspect,length_sec,content_revision,created_at,updated_at)
-        VALUES($1,$2,'shopping-shorts','1','{}','{}','synthetic','goal','target','9:16',30,$3,now(),now())`, [owner, project, revision]);
+        VALUES($1,$2,$4,'1','{}','{}','synthetic','goal','target','9:16',30,$3,now(),now())`, [owner, project, revision, menu]);
       if (approved) {
         await admin.query(`INSERT INTO dream.plans(owner_id,id,project_id,version,steps_json,script,status,approved_scene_snapshot_json,approved_at,created_at)
           VALUES($1,$2,$3,2,'[]','script','approved',$4,now(),now())`, [owner, plan, project, JSON.stringify(scenes.map((id, i) => ({ id, position: positions[i] })))]);
@@ -535,6 +536,93 @@ try {
   out("response-bound", { scenes200x6: { status: 200, versionsInBody: 200 * 5, bytes: wideBytes }, scenes201: failures.overLimit,
     databaseFailures: { unreachableInitial: failures.unreachableInitial, unreachableOlderPage: failures.unreachableOlderPage, lockTimeout: failures.lockTimeout, lockWaitMs: lockWait.ms },
     distinctCodes: true, afterRecovery: 200, writes: 0 });
+
+  // 9) P2-MANAGED-TOPIC-SHORTS-SCENE-READ: topic-shorts projects. Before 0002 the read role does not see them (404);
+  // 0002 widens only the project policy's menu condition. Shopping reads and paging stay byte-identical.
+  const topic = await seedProject(A, { menu: "topic-shorts", positions: [2, 1, 3] });
+  const [tA, tB, tC] = topic.scenes; // positions 2, 1, 3
+  await bulkVersions(A, topic, tA, 1, 7);
+  const topicDraft = await seedProject(A, { menu: "topic-shorts", approved: false });
+  const topicArchived = await seedProject(A, { menu: "topic-shorts", archived: true });
+  const topicOther = await seedProject(B, { menu: "topic-shorts" });
+  const lockedMenu = await seedProject(A, { menu: "travel-shorts" });
+  await rebase();
+  const shopBefore = { main: (await get(main.project)).raw, long: (await get(long.project)).raw,
+    older: (await get(long.project, { query: olderQuery(L, fl.olderCursor) })).raw };
+  const hidden = { topic: codeOf(await get(topic.project)), draft: codeOf(await get(topicDraft.project)) };
+  assert.deepEqual(hidden, { topic: "404:NOT_FOUND", draft: "404:NOT_FOUND" });
+  const scopeOf = async () => (await admin.query(`SELECT table_schema||'.'||table_name AS t, string_agg(privilege_type||'('||column_name||')', ',' ORDER BY privilege_type,column_name) AS p
+    FROM information_schema.column_privileges WHERE grantee='dream_scene_read_app' GROUP BY 1 ORDER BY 1`)).rows;
+  const scopeBefore = await scopeOf();
+  const topicSql = "managed-scene-read/0002_topic_shorts.sql";
+  const readSettings = { "dream.scene_read.install_ref": projectRef, "dream.scene_read.install_database": "postgres" };
+  await admin.query("SET ROLE p102_migrate");
+  try {
+    await admin.query("SELECT set_config('dream.scene_read.install_ref','zzzzzzzzzzzzzzzzzzzz',false)");
+    await assert.rejects(admin.query(sources[topicSql]), { message: "SCENE_READ_TOPIC_SHORTS_TARGET" });
+    await admin.query("ROLLBACK");
+  } finally { await admin.query("RESET ROLE"); }
+  await install(topicSql, readSettings);
+  await admin.query("SET ROLE p102_migrate");
+  try {
+    await assert.rejects(admin.query(sources[topicSql]), { message: "SCENE_READ_TOPIC_SHORTS_TARGET" });
+    await admin.query("ROLLBACK");
+  } finally { await admin.query("RESET ROLE"); }
+  const { rows: [readPolicy] } = await admin.query(`SELECT pg_get_expr(polqual,polrelid) AS qual, polcmd FROM pg_policy
+    WHERE polrelid='dream.projects'::regclass AND polname='scene_read'`);
+  assert.match(readPolicy.qual, /menu_id = ANY \(ARRAY\['shopping-shorts'::text, 'topic-shorts'::text\]\)/);
+  assert.match(readPolicy.qual, /owner_id = \( SELECT dream\.actor_id\(\)/);
+  assert.match(readPolicy.qual, /archived_at IS NULL/);
+  assert.equal(readPolicy.polcmd, "r");
+  assert.deepEqual(await scopeOf(), scopeBefore);
+  assert.deepEqual(await aclSnapshot(), beforeAcl);
+  assert.equal(await fixtureState(), stateBefore);
+
+  // Shopping: the same bytes for the scene read and an older-versions page.
+  assert.deepEqual({ main: (await get(main.project)).raw, long: (await get(long.project)).raw,
+    older: (await get(long.project, { query: olderQuery(L, fl.olderCursor) })).raw }, shopBefore);
+
+  // Topic: scenes by position, newest five versions, then the older page with the cursor; repeat reads are identical.
+  const topicRead = await get(topic.project);
+  assert.equal(topicRead.status, 200); assert.equal(topicRead.cache, "no-store");
+  assert.deepEqual([topicRead.body.projectId, topicRead.body.revision, topicRead.body.approvedPlanId, topicRead.body.stages],
+    [topic.project, 4, topic.plan, { plan: "approved", produce: "in_progress" }]);
+  assert.deepEqual(topicRead.body.scenes.map(s => [s.id, s.position]), [[tB, 1], [tA, 2], [tC, 3]]);
+  const topicA = topicRead.body.scenes[1];
+  assert.deepEqual(topicA.recentVersions.map(v => v.version), [7, 6, 5, 4, 3]);
+  assert.equal(typeof topicA.olderCursor, "string");
+  assert(topicRead.body.scenes.filter(s => s.id !== tA).every(s => s.recentVersions.length === 0 && s.olderCursor === null));
+  const topicOlder = await get(topic.project, { query: olderQuery(tA, topicA.olderCursor) });
+  assert.equal(topicOlder.status, 200);
+  assert.deepEqual([topicOlder.body.sceneId, topicOlder.body.versions.map(v => v.version), topicOlder.body.olderCursor], [tA, [2, 1], null]);
+  assert.equal((await get(topic.project)).raw, topicRead.raw);
+  assert.equal((await get(topic.project, { query: olderQuery(tA, topicA.olderCursor) })).raw, topicOlder.raw);
+  assert.equal(codeOf(await get(topic.project, { query: olderQuery(tA, fl.olderCursor) })), "400:INVALID_CURSOR");
+  const topicEmpty = await get(topicDraft.project);
+  assert.deepEqual([topicEmpty.status, topicEmpty.body.scenes, topicEmpty.body.approvedPlanId, topicEmpty.body.stages],
+    [200, [], null, { plan: "todo", produce: "locked" }]);
+  const topicCodes = {
+    anonymous: codeOf(await get(topic.project, { auth: async () => ({ kind: "denied", status: 401, code: "AUTH_REQUIRED" }) })),
+    otherOwner: codeOf(await get(topic.project, { auth: verified(B) })),
+    ownerReadsOther: codeOf(await get(topicOther.project)),
+    archived: codeOf(await get(topicArchived.project)),
+    lockedMenu: codeOf(await get(lockedMenu.project)),
+    otherOwnOwn: codeOf(await get(topicOther.project, { auth: verified(B) })),
+  };
+  assert.deepEqual(topicCodes, { anonymous: "401:AUTH_REQUIRED", otherOwner: "404:NOT_FOUND", ownerReadsOther: "404:NOT_FOUND",
+    archived: "404:NOT_FOUND", lockedMenu: "404:NOT_FOUND", otherOwnOwn: "200:ok" });
+  const topicDirect = {
+    topic: await direct(A, "SELECT id FROM dream.projects WHERE id=$1", [topic.project]),
+    lockedMenu: await direct(A, "SELECT id FROM dream.projects WHERE id=$1", [lockedMenu.project]),
+    otherOwner: await direct(B, "SELECT id FROM dream.projects WHERE id=$1", [topic.project]),
+    update: await direct(A, "UPDATE dream.projects SET content_revision=content_revision WHERE id=$1", [topic.project]),
+  };
+  assert.deepEqual(topicDirect, { topic: "rows:1", lockedMenu: "rows:0", otherOwner: "rows:0", update: "42501" });
+  assert.equal(await fixtureState(), stateBefore);
+  out("topic-shorts", { before0002: hidden, install: topicSql, sha256LF: digest(sources[topicSql]), wrongRefRejected: true, rerunRejected: true,
+    policy: "menu_id IN (shopping-shorts, topic-shorts)", columnScopeUnchanged: true, aclUnchanged: true, shoppingBytesUnchanged: true,
+    scenes: 3, recent: [7, 6, 5, 4, 3], olderPage: [2, 1], repeatIdentical: true, foreignCursor: "400:INVALID_CURSOR", empty: "200 scenes []",
+    codes: topicCodes, direct: topicDirect, writes: 0 });
 
   // 8) A read never writes; existing roles and grants are unchanged.
   assert.equal(await fixtureState(), stateBefore);

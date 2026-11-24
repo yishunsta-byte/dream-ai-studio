@@ -291,7 +291,7 @@ export async function verifyHttp({ admin, rootPath, connect, cert, key, dbHost, 
     // 주제별 쇼츠 기획은 생성 0003 뒤에 기획 0003을 더해 같은 프로젝트 흐름으로 확인한다(--plan-approval일 때).
     if (topicPlan) {
       const {verifyTopicPlan}=await import("./managed-plan-core-approval.mjs");
-      await verifyTopicPlan(topicPlan.context,topicPlan.approval);
+      await verifyTopicPlan(topicPlan.context,topicPlan.approval,{sceneRead:process.argv.includes("--scene-flow")});
     }
   } finally { await new Promise(resolve=>authServer.close(resolve)); }
 }
