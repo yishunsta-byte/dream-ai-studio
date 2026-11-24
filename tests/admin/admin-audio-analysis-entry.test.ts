@@ -143,14 +143,13 @@ describe("P1-07-AUDIO-ORIGINAL-PARITY-UI G1 이용 가이드 창", () => {
     expect(html).toContain("관리자 키 연동 원칙");
     for (const banned of ["회원", "Rule 00", "Google AI Studio", "평문", "localStorage", "똑같은", "전문을 기록", "Cut-off를 감지", "뻥튀기"]) expect(html, banned).not.toContain(banned);
   });
-  it("사이드바·상단 바·히어로 세 단추가 같은 창을 열고(aria-haspopup=dialog), 창은 스튜디오 안에 하나만 있다", async () => {
+  it("사용 매뉴얼은 왼쪽 메뉴 단추 하나로만 열고(aria-haspopup=dialog), 창은 스튜디오 안에 하나만 있다(주인님 지시 2026-11-24)", async () => {
     const { AudioStudio } = await import("@/components/admin/audio-original/audio-studio");
     const { createElement } = await import("react");
     const html = renderToStaticMarkup(createElement(AudioStudio, { embedded: true } as never));
-    expect(html.match(/aria-haspopup="dialog"/g)).toHaveLength(3);
+    expect(html.match(/aria-haspopup="dialog"/g)).toHaveLength(1);
     expect(html).toContain("📖 연동 &amp; 사용 매뉴얼");
-    expect(html).toContain("<span aria-hidden=\"true\">📖</span>사용 매뉴얼</button>");
-    expect(html).toContain("<span aria-hidden=\"true\">📖</span>사용 매뉴얼 보기</button>");
+    for (const gone of ["사용 매뉴얼</button>", "사용 매뉴얼 보기", "API 키 설정", "Gemini API 설정", "<span>API키등록·플랫폼연동</span>"]) expect(html, gone).not.toContain(gone);
     expect(html.match(/<dialog\b/g)).toHaveLength(1);
     expect(html).toContain('href="#admin-api-integrations"');
     const source = readFileSync("components/admin/audio-original/audio-studio.tsx", "utf8");

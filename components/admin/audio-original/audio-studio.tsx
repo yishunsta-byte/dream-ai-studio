@@ -203,9 +203,8 @@ export function AudioStudio({ embedded = false, onPrepare }: Props = {}) {
         <p className={s.online}><span className={s.dot} aria-hidden="true" /><strong>AI Audio 분석 스튜디오 온라인</strong>
           <span className={s.sep} aria-hidden="true">|</span>
           <span className={s.engine}>엔진 모드: <strong>{engine.find(item => item.mode === mode)!.bar}</strong></span></p>
+        {/* 주인님 지시(2026-11-24): 사용 매뉴얼은 왼쪽 메뉴 하나로 합치고, API 설정 버튼은 위쪽 관리자 메뉴 하나만 둔다. */}
         <div className={s.barActions}>
-          <button type="button" className={s.guideBar} aria-haspopup="dialog" onClick={openGuide}><span aria-hidden="true">📖</span>사용 매뉴얼</button>
-          <a className={s.keyLink} href={settingsHref}><span aria-hidden="true">🔑</span>API 키 설정</a>
           {file && <button type="button" className={s.fresh} onClick={clear}>+ 새 파일 분석</button>}
         </div>
       </div>
@@ -215,10 +214,6 @@ export function AudioStudio({ embedded = false, onPrepare }: Props = {}) {
           <p className={s.chip}><span className={s.dot} aria-hidden="true" />Cyber Neon Audio Intelligence Console</p>
           <h3 className={s.heroTitle}><span aria-hidden="true">🎙️ </span>Gemini 멀티모달 오디오 인텔리전스</h3>
           <p className={s.heroLead}>음성 대화 회의록부터 Suno v6 음악 역설계, 고주파 위변조 포렌식까지. WAV, MP3 음원을 드래그앤드롭하여 사운드를 초정밀 해체하세요.</p>
-        </div>
-        <div className={s.heroActions}>
-          <button type="button" className={s.heroGuide} aria-haspopup="dialog" onClick={openGuide}><span aria-hidden="true">📖</span>사용 매뉴얼 보기</button>
-          <a className={s.heroKey} href={settingsHref}><span aria-hidden="true">🔑</span>Gemini API 설정</a>
         </div>
       </div>
       <ul className={s.kpis}>

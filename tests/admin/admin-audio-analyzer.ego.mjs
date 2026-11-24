@@ -177,7 +177,9 @@ for (const width of [1440, 390, 320]) {
   await wait(root => document.activeElement === document.querySelector(`${root} input[type=file]`), root);
   assert.equal(await page.evaluate(root => document.querySelector(`${root} textarea`)?.value, root), "합성 분석 맥락");
   if (width === 1440) {
-    await page.click('loc=role:link[name="API 키 설정"]');
+    // 2026-11-24: 스튜디오 안 API 설정 버튼을 없애 매뉴얼 창의 연동 링크로 같은 이동을 확인한다.
+    await page.click('loc=role:button[name="📖 연동 & 사용 매뉴얼 GUIDE"]');
+    await page.click('loc=role:link[name="API키등록·플랫폼연동 열기"]');
     await wait(() => location.pathname === "/admin" && location.hash === "#admin-api-integrations");
     await page.evaluate(() => history.back());
     await wait(root => location.hash === root && document.querySelector(`${root} [data-audio-studio=embedded]`), root);
