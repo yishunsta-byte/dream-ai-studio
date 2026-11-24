@@ -79,10 +79,13 @@ export type StyleDnaMedia = {
   mime: "image/webp"; width: number; height: number; sha256: string;
   palette: { hex: string; share: number }[]; href: string;
 };
+export type StyleDnaRecordedEngine = StyleDnaEngineBasis | {
+  provider: "gemini"; modelId: string; credentialVersion: number;
+};
 export type StyleDnaRevision = {
   revision: number; prompts: { ko?: string; en?: string }; feedback?: string; note?: string; createdAt: string;
   styleDna?: StyleDnaReportSections;
-  engine?: StyleDnaEngineBasis;
+  engine?: StyleDnaRecordedEngine;
 };
 export type StyleDnaTestBasis = {
   promptMode: "revision" | "edited"; promptSha256: string;
@@ -100,6 +103,6 @@ export type StyleDnaRecord = {
   semantic: ImageSemanticResult; revisions: StyleDnaRevision[]; tests: StyleDnaTestResult[];
   styleDna?: StyleDnaAnalysisReport;
   comparison?: StyleDnaComparison;
-  engine?: StyleDnaEngineBasis;
+  engine?: StyleDnaRecordedEngine;
 };
 export type StyleDnaSummary = Pick<StyleDnaRecord, "id" | "title" | "revision" | "mode" | "original" | "createdAt" | "updatedAt">;

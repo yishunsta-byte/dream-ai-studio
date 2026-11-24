@@ -8,7 +8,7 @@ import type { GeminiSettings } from "./analysis-gemini-settings";
 import { referenceFileFormat, referenceUploadByteLimit } from "./input";
 import { AnalysisStageError, MediaUrlError } from "./media-url-error";
 import { styleDnaAnalyze, styleDnaAnalyzeSource, styleDnaCompare, styleDnaId, styleDnaImageModels, styleDnaPath, styleDnaRatio, styleDnaRefine,
-  styleDnaTest, styleDnaTestWithReference, type StyleDnaMedia, type StyleDnaRecord, type StyleDnaRevision, type StyleDnaTestBasis,
+  styleDnaTest, styleDnaTestWithReference, type StyleDnaMedia, type StyleDnaRecord, type StyleDnaRecordedEngine, type StyleDnaRevision, type StyleDnaTestBasis,
   type StyleDnaTestOptions, type StyleDnaTestResult } from "./style-dna-contract";
 import { createStyleDnaProvider, measureStyleDnaImage, styleDnaTestPrompt, StyleDnaProviderError,
   type MeasuredStyleDnaImage, type StyleDnaAnalysisSettings, type StyleDnaProvider, type StyleDnaSource } from "./style-dna-provider";
@@ -25,13 +25,13 @@ type UploadSource = StyleDnaSource | { kind: "record"; id: string };
 type RecordRoute = { params: Promise<{ id: string }> };
 type MediaRoute = { params: Promise<{ id: string; media: string }> };
 type Change = Parameters<StyleDnaStore["finish"]>[2];
-type Work = (settings: StyleDnaAnalysisSettings, engine?: StyleDnaEngineBasis) => Promise<Change>;
+type Work = (settings: StyleDnaAnalysisSettings, engine: StyleDnaRecordedEngine) => Promise<Change>;
 const failure = (code: string, status: number): Extract<Change, { kind: "failure" }> =>
   ({ kind: "failure", outcome: { status, body: { code } } });
 const providerStatus = { subject_required: 400, stale_credential: 409, storage_unavailable: 503, timed_out: 504,
   model_error: 502, invalid_model_response: 502 } as const;
 
-async function runWork(work: Work, settings: StyleDnaAnalysisSettings, engine?: StyleDnaEngineBasis): Promise<Change> {
+async function runWork(work: Work, settings: StyleDnaAnalysisSettings, engine: StyleDnaRecordedEngine): Promise<Change> {
   try { return await work(settings, engine); }
   catch (error) {
     if (error instanceof MediaUrlError) return failure(error.code, error.status ?? 400);
@@ -183,7 +183,7 @@ export function createStyleDnaHttp(overrides: Partial<typeof defaults> = {}) {
     else if (saved.version !== credentialVersion) change = failure("stale_credential", 409);
     else if (encoded.includes(saved.apiKey)) change = failure("invalid_input", 400);
     else {
-      change = await runWork(work, { key: saved.apiKey, model });
+      change = await runWork(work, { key: saved.apiKey, model }, { provider: "gemini", modelId: model, credentialVersion });
       if (change.kind !== "failure") {
         if (!(await creds?.metadata(owner))?.some(item => item.group === "reference" && item.version === credentialVersion)) {
           change = failure("stale_credential", 409);
@@ -225,8 +225,7 @@ export function createStyleDnaHttp(overrides: Partial<typeof defaults> = {}) {
         const record: StyleDnaRecord = { id, title: title?.certainty === "estimated" ? title.description.slice(0, 60) : "이미지 분석",
           mode: options.mode, options, revision: 1, result: generated.result, semantic: generated.semantic,
           original: imageDto(generated.original, id, "original"), createdAt, updatedAt: createdAt,
-          revisions: [{ revision: 1, createdAt, prompts: generated.semantic.prompts, ...(basis && { engine: basis }) }], tests: [],
-          ...(basis && { engine: basis }),
+          revisions: [{ revision: 1, createdAt, prompts: generated.semantic.prompts, engine: basis }], tests: [], engine: basis,
           ...(generated.styleDna && { styleDna: generated.styleDna }) };
         return { kind: "analysis", record, original: generated.original.bytes };
       }, engine, source.kind === "record" ? source.id : undefined);
@@ -288,8 +287,7 @@ export function createStyleDnaHttp(overrides: Partial<typeof defaults> = {}) {
         const { blueprint, style } = prior.styleDna ?? record.styleDna ?? {};
         const sections = blueprint || style ? { ...(blueprint && { blueprint }), ...(style && { style }) } : undefined;
         const { ko, en, note, styleDna } = await deps.provider.refine(record.options, prior, feedback, settings, sections);
-        const next: StyleDnaRevision = { revision: revision + 1, prompts: { ko, en }, feedback, note, createdAt: stamp(),
-          ...(basis && { engine: basis }),
+        const next: StyleDnaRevision = { revision: revision + 1, prompts: { ko, en }, feedback, note, createdAt: stamp(), engine: basis,
           ...((sections || styleDna) && { styleDna: { ...sections, ...styleDna } }) };
         return { kind: "refine", recordId: id, baseRevision: revision, revision: next };
       }, engine, id);
