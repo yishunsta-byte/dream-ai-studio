@@ -32,3 +32,20 @@ it("allows the bundled analysis binaries in the two audio functions only",()=>{
   for(const route of ["app/api/admin/audio-analysis/route.js.nft.json","app/api/admin/audio-uploads/[id]/route.js.nft.json"])expect(check(bin,route).status,route).toBe(0);
   for(const route of ["app/api/admin/audio-uploads/route.js.nft.json","app/api/admin/audio-uploads/[id]/chunks/route.js.nft.json","app/api/admin/music-semantic/route.js.nft.json"])expect(check(bin,route).status,route).not.toBe(0);
 });
+// 오디오 422 조치: 운영 빌드는 세 분석 함수에 도구가 찾는 공유 라이브러리(바로가기 아닌 실제 파일)까지 실어야 한다.
+it("requires the real analysis libraries in every analysis function on Vercel",()=>{
+  const media=join(app,"node_modules/.dream-reference-media");
+  const names=["bin/ffmpeg","bin/ffmpeg.bin","bin/ffprobe","bin/ffprobe.bin","lib/libavcodec.so.62"];
+  for(const name of names){mkdirSync(dirname(join(media,name)),{recursive:true});writeFileSync(join(media,name),"fixture");}
+  const routes=["app/api/admin/reference-analysis/route.js.nft.json","app/api/admin/audio-analysis/route.js.nft.json","app/api/admin/audio-uploads/[id]/route.js.nft.json"];
+  const run=(files:(route:string)=>string[])=>{for(const route of routes){const manifest=join(app,".next/server",route);mkdirSync(dirname(manifest),{recursive:true});
+    writeFileSync(manifest,JSON.stringify({files:files(route).map(name=>relative(dirname(manifest),join(media,name)))}));}
+    return spawnSync(process.execPath,[script],{cwd:app,env:{...process.env,DREAM_DATA_ROOT:external,VERCEL:"1"},encoding:"utf8"});};
+  expect(run(()=>names).status).toBe(0);
+  const missing=run(route=>route.includes("audio-analysis")?names.filter(name=>!name.startsWith("lib/")):names);
+  expect(missing.status).not.toBe(0);expect(missing.stderr).toContain("공유 라이브러리");
+  rmSync(join(media,"lib/libavcodec.so.62"));writeFileSync(join(media,"lib/libavcodec.so.62.28.103"),"fixture");
+  symlinkSync("libavcodec.so.62.28.103",join(media,"lib/libavcodec.so.62"),"file");
+  const linked=run(()=>names);
+  expect(linked.status).not.toBe(0);expect(linked.stderr).toContain("바로가기");
+});

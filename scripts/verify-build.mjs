@@ -1,4 +1,4 @@
-﻿import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+﻿import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { Buffer } from "node:buffer";
 import { dirname, join, relative, resolve, isAbsolute, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,6 +45,10 @@ export function verifyBuild(project=process.cwd(),runtime=process.env.DREAM_DATA
     if(kinds.has("tool"))throw new Error("빌드 파일 목록에 이 PC의 실행 도구(.tools·ffmpeg·ffprobe)가 포함되어 중단했어요.");
     throw new Error("빌드 파일 목록에 영상 만들기 도구(렌더러·번들러·브라우저)가 포함되어 중단했어요.");}
   if(process.env.VERCEL&&![...mediaFiles.values()].every((files)=>ANALYSIS_BINARIES.every((file)=>files.has(file))))throw new Error("관리자 콘텐츠·오디오 분석 함수에 FFmpeg와 FFprobe 도구가 모두 포함돼야 합니다.");
+  // 오디오 422 조치: 도구가 찾는 공유 라이브러리(바로가기가 아닌 실제 파일)도 세 분석 함수에 모두 실려야 한다.
+  if(process.env.VERCEL){const libRoot=join(analysisRoot,"lib");const libs=existsSync(libRoot)?readdirSync(libRoot).map((name)=>`lib/${name}`).filter((name)=>ANALYSIS_LIB.test(name)):[];
+    if(!libs.length||libs.some((name)=>lstatSync(join(analysisRoot,name)).isSymbolicLink()))throw new Error("분석 도구의 공유 라이브러리가 없거나 바로가기로 남아 있어요.");
+    if(![...mediaFiles.values()].every((files)=>libs.every((name)=>files.has(name))))throw new Error("관리자 콘텐츠·오디오 분석 함수에 분석 도구의 공유 라이브러리가 모두 포함돼야 합니다.");}
   return traces;}
 // T-182: 화면에 내려가는 파일(.next/static)에 서비스 키가 섞이면 누구나 RLS를 우회할 수 있다.
 // 환경변수 값이 그대로 있거나, role이 service_role인 JWT가 보이면 실패한다.
