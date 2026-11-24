@@ -137,6 +137,7 @@ const guardedRoutes = [
   "backups/configuration", "backups", "characters", "exports/[id]", "jobs",
   "library/archive", "projects/[id]/finishing", "projects/[id]/production",
   "projects/[id]/renders", "projects/[id]/timeline", "projects/[id]/workflow",
+  "projects/[id]/brief", "projects/[id]/plan", "projects/[id]/scene-results", "projects/[id]/scene-selection", "projects/[id]/scenes", "projects/asset-choices",
   "projects", "projects/[id]", "renders/[id]/cancel", "renders/[id]/file", "restore/finish", "restore/inspect",
 ];
 const modulePath = (route: string) => `../app/api/${route}/route.ts`;

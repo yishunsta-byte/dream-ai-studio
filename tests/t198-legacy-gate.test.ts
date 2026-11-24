@@ -23,7 +23,11 @@ vi.mock("better-sqlite3", () => ({ default: vi.fn(function Database() { state.sq
 vi.mock("@/lib/services/startup", () => ({ checkStartup: state.startup, checkStorageStartup: state.startup }));
 
 const UID = "00000000-0000-4000-8000-000000000198";
-const KEYS = ["DREAM_AUTH_MODE", "VERCEL", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "DREAM_ALLOWED_EMAILS", "DREAM_PROJECT_READ_BACKEND", "DATABASE_URL", "DREAM_SITE_URL"] as const;
+const KEYS = ["DREAM_AUTH_MODE", "VERCEL", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "DREAM_ALLOWED_EMAILS",
+  "DREAM_PROJECT_READ_BACKEND", "DATABASE_URL", "DREAM_SITE_URL", "DREAM_PROJECT_CORE_BACKEND", "DREAM_PROJECT_CORE_DB_URL", "DREAM_PROJECT_CORE_DB_CA",
+  "DREAM_PROJECT_PLAN_BACKEND", "DREAM_PROJECT_PLAN_DB_URL", "DREAM_PROJECT_PLAN_DB_CA",
+  "DREAM_PROJECT_PLAN_APPROVAL_BACKEND", "DREAM_PROJECT_PLAN_APPROVAL_DB_URL", "DREAM_PROJECT_PLAN_APPROVAL_DB_CA", "DREAM_PROJECT_CREATE_BACKEND",
+  "DREAM_PRIVATE_UPLOAD_BACKEND", "DREAM_OWNED_CREATE_PG_PORT", "DREAM_OWNED_CREATE_PG_PASSWORD"] as const;
 const saved: Record<string, string | undefined> = {};
 beforeEach(() => {
   for (const key of KEYS) { saved[key] = process.env[key]; delete process.env[key]; }
@@ -120,6 +124,12 @@ const CLOUD_ONLY: Record<string, string[]> = {
   "../app/api/admin/youtube-credentials/route.ts": ["GET", "PUT"],
   "../app/api/admin/render-queue/route.ts": ["GET"],
   "../app/api/projects/route.ts": ["GET"], "../app/api/projects/[id]/route.ts": ["GET"],
+  "../app/api/projects/[id]/brief/route.ts": ["GET", "POST"],
+  "../app/api/projects/[id]/plan/route.ts": ["GET", "POST"],
+  "../app/api/projects/[id]/scenes/route.ts": ["GET"],
+  "../app/api/projects/[id]/scene-selection/route.ts": ["POST"],
+  "../app/api/projects/[id]/scene-results/route.ts": ["POST"],
+  "../app/api/projects/asset-choices/route.ts": ["GET"],
   "../app/api/admin/publications/route.ts": ["GET", "POST"],
   // Style DNA methods use their own administrator guard, covered by api-auth.test.ts.
   "../app/api/admin/style-dna/route.ts": ["GET", "POST"],

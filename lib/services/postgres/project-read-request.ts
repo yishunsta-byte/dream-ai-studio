@@ -3,6 +3,8 @@ import type { Pool } from "pg";
 import { AUTH_MESSAGES, authMode } from "@/lib/auth/config";
 import { resolveServerAuth, type ServerAuthResult } from "@/lib/auth/resolve";
 import { actorFromVerifiedUserId, type VerifiedActor } from "@/lib/db/postgres/types";
+import { openManagedProjectCore } from "@/lib/cloud/managed-project-core";
+import type { ActorTransactionOptions } from "@/lib/db/postgres/transaction";
 import { selectProjectReadBackend } from "./project-read-backend";
 import { projectReadError, projectReadFailure } from "./project-read-errors";
 import { getProcessProjectReadPool } from "./project-read-pool";
@@ -15,6 +17,7 @@ type Dependencies = {
   resolveAuth: () => Promise<ServerAuthResult>;
   environment: () => Readonly<Record<string, string | undefined>>;
   getPool: (connectionString: string) => Pick<Pool, "connect">;
+  openManaged: typeof openManagedProjectCore;
 };
 const headers = Object.freeze({ "cache-control": "no-store" as const });
 function failure(status: Failure["status"], error: string, code: string): Failure {
@@ -39,9 +42,11 @@ export function createProjectReadRequest(overrides: Partial<Dependencies> = {}) 
     resolveAuth: resolveServerAuth,
     environment: () => ({ ...process.env }),
     getPool: getProcessProjectReadPool,
+    openManaged: openManagedProjectCore,
     ...overrides,
   };
-  type Access = { ok: true; actor: VerifiedActor; pool: Pick<Pool, "connect"> } | { ok: false; reply: Failure };
+  type Access = { ok: true; actor: VerifiedActor; pool: Pick<Pool, "connect">;
+    prepareSession?: ActorTransactionOptions["prepareSession"] } | { ok: false; reply: Failure };
   let access: Promise<Access> | undefined;
   async function resolveAccess(): Promise<Access> {
     let auth: ServerAuthResult;
@@ -54,6 +59,11 @@ export function createProjectReadRequest(overrides: Partial<Dependencies> = {}) 
     catch { return { ok: false, reply: authUnavailable() }; }
     try {
       const env = dependencies.environment();
+      if (env.DREAM_PROJECT_CORE_BACKEND !== undefined) {
+        const managed = dependencies.openManaged(env);
+        if (!managed) throw projectReadError("PROJECT_READ_UNAVAILABLE");
+        return { ok: true, actor, ...managed };
+      }
       const selection = selectProjectReadBackend(env, authMode(env));
       // This adapter is cloud-read-only. A local selection never calls SQLite.
       if (selection.backend !== "postgres") throw projectReadError("PROJECT_READ_UNAVAILABLE");
@@ -64,7 +74,7 @@ export function createProjectReadRequest(overrides: Partial<Dependencies> = {}) 
     access ??= resolveAccess();
     const resolved = await access;
     if (!resolved.ok) return resolved.reply;
-    try { return { status: 200, body: await read(postgresProjectReads(resolved.pool), resolved.actor), headers }; }
+    try { return { status: 200, body: await read(postgresProjectReads(resolved.pool,resolved.prepareSession), resolved.actor), headers }; }
     catch (error) { return safeFailure(error); }
   }
   return Object.freeze({

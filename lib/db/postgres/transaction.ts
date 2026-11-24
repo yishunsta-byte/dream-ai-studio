@@ -7,6 +7,9 @@ const scope = new AsyncLocalStorage<object>();
 
 export type ActorTransactionOptions = Readonly<{
   mode?: "read-only-repeatable-read";
+  // Server-owned connection setup for a dedicated LOGIN that must never inherit
+  // or SET ROLE to the legacy dream_api principal.
+  prepareSession?: (client: Pick<PoolClient, "query">) => Promise<void>;
   // Trusted server policy only. Used only for a callback's own error after a
   // successful rollback, with no failed query/connection or uncertain commit.
   preserveDomainError?: (error: unknown) => error is Error;
@@ -16,6 +19,7 @@ export async function withActorTransaction<T>(pool: Pick<Pool, "connect">, actor
   if (!isVerifiedActor(actor)) throw new PostgresAccessError("ACTOR_REQUIRED");
   if (scope.getStore()) throw new PostgresAccessError("TX_NESTED");
   if ((options.mode !== undefined && options.mode !== "read-only-repeatable-read") ||
+    (options.prepareSession !== undefined && typeof options.prepareSession !== "function") ||
     (options.preserveDomainError !== undefined && typeof options.preserveDomainError !== "function")) throw new PostgresAccessError("PG_CONFIG");
   let client: PoolClient;
   try { client = await pool.connect(); } catch { throw new PostgresAccessError("PG_UNAVAILABLE"); }
@@ -47,7 +51,8 @@ export async function withActorTransaction<T>(pool: Pick<Pool, "connect">, actor
   });
   try {
     await client.query(options.mode === "read-only-repeatable-read" ? "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY" : "BEGIN"); begun = true;
-    await client.query("SET LOCAL ROLE dream_api");
+    if (options.prepareSession) await options.prepareSession(client);
+    else await client.query("SET LOCAL ROLE dream_api");
     await client.query("SELECT set_config('dream.actor_id', $1, true)", [actor.id]);
     active = true;
     let value: T;

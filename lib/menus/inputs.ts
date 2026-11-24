@@ -16,6 +16,7 @@ export function validateProjectInputs(snapshot:MenuSnapshot,input:unknown) {
     if(raw===undefined || raw===null || raw==="") {
       if(field.type==="checkbox")raw=false;
       else if(["assets","characters","multiselect"].includes(field.type))raw=[];
+      else if(field.type==="select" && field.default!==undefined)raw=field.default;
       else if(!field.required)continue;
     }
     let rule:z.ZodType;
@@ -24,7 +25,8 @@ export function validateProjectInputs(snapshot:MenuSnapshot,input:unknown) {
       let number=z.number().finite().int();
       if(field.min!==undefined)number=number.min(field.min);
       if(field.max!==undefined)number=number.max(field.max);
-      rule=number;
+      const options=field.id==="lengthSec"?snapshot.menu.lengthOptions:undefined;
+      rule=options?number.refine((sec)=>options.includes(sec)):number;
     } else if(field.type==="checkbox")rule=field.required ? z.literal(true):z.boolean();
     else if(["assets","characters","multiselect"].includes(field.type)) {
       let array=z.array(field.type==="multiselect" ? z.string().refine((item)=>!!field.options?.includes(item)):z.uuidv7());
@@ -44,6 +46,11 @@ export function validateProjectInputs(snapshot:MenuSnapshot,input:unknown) {
     const result=rule.safeParse(raw);
     if(!result.success)errors[field.id]=`${field.label} 항목의 ${field.type==="number" ? "숫자와 허용 범위를" : field.type==="url" ? "웹 주소를" : "필수 값과 형식을"} 확인해 주세요.`;
     else values[field.id]=result.data;
+  }
+  // 핵심 메시지 글자 수 선택(주제별 쇼츠): 고른 상한까지 허용하고 넘으면 거부한다. 길이 계산은 위 maxLength와 같은 방식(앞뒤 공백 제거 뒤 길이)이다.
+  const messageLimit=values.keyMessageLength, message=values.keyMessage;
+  if(typeof messageLimit==="string" && typeof message==="string" && message.length>Number(messageLimit)) {
+    errors.keyMessage=`${fields.find((field)=>field.id==="keyMessage")?.label ?? "핵심 메시지"} 항목의 필수 값과 형식을 확인해 주세요.`;
   }
   return Object.keys(errors).length ? {ok:false as const,errors}:{ok:true as const,values};
 }
