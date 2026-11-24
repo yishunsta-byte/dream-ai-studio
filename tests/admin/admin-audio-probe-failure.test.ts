@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
-import { classifyProbeFailure } from "@/lib/reference-analysis/admin-audio-media";
+import { AudioUploadError, classifyProbeFailure, measureInlineAudio } from "@/lib/reference-analysis/admin-audio-media";
 // @ts-expect-error 빌드 스크립트(.mjs)라 타입 선언이 없다.
 import { flattenLibraryLinks } from "../../scripts/reference-media-libs.mjs";
 
@@ -53,5 +53,21 @@ describe("flattenLibraryLinks", () => {
     root = realpathSync(mkdtempSync(join(tmpdir(), "dream-media-libs-")));
     writeFileSync(join(root, "README"), "x");
     await expect(flattenLibraryLinks(root)).rejects.toThrow();
+  });
+});
+
+// 오디오 422 2차 보완: 측정 필수(requireProbe)면 도구가 없을 때 측정을 건너뛰지 않고 media_unavailable을 던진다.
+describe("measureInlineAudio requireProbe", () => {
+  const mp4 = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from("ftypisom"), Buffer.alloc(4), Buffer.from("isommp41"), Buffer.alloc(64)]);
+  afterEach(() => { vi.unstubAllEnvs(); });
+
+  it("skips only when the probe is optional", async () => {
+    vi.stubEnv("FFPROBE_PATH", join(tmpdir(), "dream-missing-tool", "ffprobe-not-here"));
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const audio = { bytes: mp4, mime: "audio/mp4" };
+    expect(await measureInlineAudio(audio, AbortSignal.timeout(10_000))).toEqual({ source: "unavailable", reason: "probe_unavailable" });
+    const required = await measureInlineAudio(audio, AbortSignal.timeout(10_000), true).catch((error: unknown) => error);
+    expect(required).toBeInstanceOf(AudioUploadError);
+    expect((required as AudioUploadError).code).toBe("media_unavailable");
   });
 });

@@ -48,14 +48,15 @@ export function classifyProbeFailure(error: unknown, stage: ProbeStage): ProbeFa
 }
 const positiveInteger = z.int().positive();
 
-export async function measureInlineAudio(audio: AudioPayload, signal: AbortSignal): Promise<AudioMeasurement> {
+// requireProbe: 측정을 건너뛰지 않는다(도구를 쓸 수 없으면 media_unavailable을 그대로 던진다). FLAC과 모호한 M4A(mp4 판별)가 쓴다.
+export async function measureInlineAudio(audio: AudioPayload, signal: AbortSignal, requireProbe = false): Promise<AudioMeasurement> {
   const format = (Object.keys(audioUploadMime) as AudioUploadFormat[]).find(key => audioUploadMime[key] === audio.mime);
   if (!format) return probeUnavailable;
   try {
     return await withVerifiedAudio({ filename: `inline.${format}`, sizeBytes: audio.bytes.length, signal,
       read: async offset => audio.bytes.subarray(offset, offset + adminAudioChunkBytes) }, async verified => verified.measurement);
   } catch (error) {
-    if (format !== "flac" && error instanceof AudioUploadError && error.code === "media_unavailable") return probeUnavailable;
+    if (format !== "flac" && !requireProbe && error instanceof AudioUploadError && error.code === "media_unavailable") return probeUnavailable;
     throw error;
   }
 }
