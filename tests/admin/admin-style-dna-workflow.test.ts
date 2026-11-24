@@ -103,6 +103,17 @@ describe("P1-06 Style DNA 작업실(화면 쪽 통신)", () => {
     expect(await readStyleDnaRecord("0190b0b0-0000-7000-8000-00000000b001")).toEqual({ kind: "error", code: "not_found", status: 404 });
   });
 
+  it("보관함 설정: 새 대상 목록·엔진 상태 칸을 그대로 받고, 그 칸이 없는 이전 응답도 그대로 읽는다(CMD-20261125-011)", async () => {
+    const settings = { storage: "ready", credentialVersion: 3, analysisModel: "m", testModels: [{ id: "gemini-nano-banana-2.1", size: "2K", label: "Nano Banana 2.1" }],
+      promptTargets: [{ id: "flux-3", label: "FLUX 3", vendor: "Black Forest Labs", testable: false }],
+      analysisEngines: [{ provider: "gemini", configured: true, modelId: "m", version: 3 }, { provider: "openai", configured: false, modelId: null, version: 0 },
+        { provider: "anthropic", configured: false, modelId: null, version: 0 }], engineStorage: "ready" };
+    const old = { storage: "ready", credentialVersion: 2, analysisModel: null, testModels: [] };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(reply(200, { items: [], settings })).mockResolvedValueOnce(reply(200, { items: [], settings: old })));
+    expect(await readStyleDnaLibrary()).toEqual({ kind: "ok", items: [], settings });
+    expect(await readStyleDnaLibrary()).toEqual({ kind: "ok", items: [], settings: old });
+  });
+
   it("색 근접도·피사체 자리·변형 단계 표시", () => {
     const palette = [{ hex: "#1f6f6a", share: 0.6 }, { hex: "#e8d5b0", share: 0.4 }];
     expect(paletteProximity(palette, palette)).toBe(100);

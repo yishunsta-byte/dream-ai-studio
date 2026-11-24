@@ -7,7 +7,7 @@ import { openRuntimeGeminiCredentialStore, openRuntimeStyleDnaEngineCredentialSt
 import type { GeminiSettings } from "./analysis-gemini-settings";
 import { referenceFileFormat, referenceUploadByteLimit } from "./input";
 import { AnalysisStageError, MediaUrlError } from "./media-url-error";
-import { styleDnaAnalyze, styleDnaAnalyzeSource, styleDnaCompare, styleDnaId, styleDnaImageModels, styleDnaPath, styleDnaRatio, styleDnaRefine,
+import { styleDnaAnalyze, styleDnaAnalyzeSource, styleDnaCompare, styleDnaId, styleDnaImageModels, styleDnaPath, styleDnaPromptTargets, styleDnaRatio, styleDnaRefine,
   styleDnaTest, styleDnaTestWithReference, type StyleDnaMedia, type StyleDnaRecord, type StyleDnaRevision, type StyleDnaTestBasis,
   type StyleDnaTestOptions, type StyleDnaTestResult } from "./style-dna-contract";
 import { createStyleDnaProvider, measureStyleDnaImage, styleDnaTestPrompt, StyleDnaProviderError,
@@ -197,10 +197,22 @@ export function createStyleDnaHttp(overrides: Partial<typeof defaults> = {}) {
   return {
     list: () => withStore(async (owner, store) => {
       const creds = deps.credentials();
-      const [items, configured] = await Promise.all([store.list(owner), creds?.metadata(owner)]);
+      const engineStore = deps.engineCredentials();
+      const [items, configured, engines] = await Promise.all([store.list(owner), creds?.metadata(owner),
+        engineStore ? engineStore.metadata(owner).catch(() => null) : null]);
       const settings = configured?.find(item => item.group === "reference");
+      // 분석 엔진 설정 상태(키 값 없이 등록 여부·모델·버전만). 화면은 configured인 엔진만 고를 수 있다.
+      const engineState = (provider: "openai" | "anthropic") => {
+        const saved = engines?.[provider];
+        return saved ? { provider, configured: true, modelId: saved.modelId, version: saved.version }
+          : { provider, configured: false, modelId: null, version: 0 };
+      };
       return styleDnaJson({ items, settings: { storage: "ready", credentialVersion: settings?.version ?? 0,
-        analysisModel: settings?.models.image ?? null, testModels: Object.entries(styleDnaImageModels).map(([id, info]) => ({ id, ...info })) } });
+        analysisModel: settings?.models.image ?? null, testModels: Object.entries(styleDnaImageModels).map(([id, info]) => ({ id, ...info })),
+        promptTargets: styleDnaPromptTargets,
+        analysisEngines: [{ provider: "gemini", configured: Boolean(settings), modelId: settings?.models.image ?? null, version: settings?.version ?? 0 },
+          engineState("openai"), engineState("anthropic")],
+        engineStorage: !engineStore ? "not_configured" : engines ? "ready" : "unavailable" } });
     }),
     analyze: (request: Request) => withStore(async (owner, store) => {
       const input = await readAnalysisInput(request);

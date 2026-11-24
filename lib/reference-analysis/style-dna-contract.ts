@@ -5,18 +5,35 @@ import type { StyleDnaAnalysisReport, StyleDnaReportSections } from "./style-dna
 import { styleDnaEngineSelection, type StyleDnaEngineBasis } from "./style-dna-engine-credential-contract";
 
 export const styleDnaPath = "/api/admin/style-dna";
+// 시험 생성(실제 Gemini 호출) 모델. 이 목록만 시험 생성 입력·호출에 쓴다.
 export const styleDnaImageModels = {
   "gemini-nano-banana-2.1": { size: "2K", label: "Nano Banana 2.1" },
   "gemini-3.1-flash-lite-image": { size: "1K", label: "Nano Banana 2 Lite" },
 } as const;
+// 프롬프트 문법만 맞추는 분석 대상(CMD-20261125-011). 이 이름으로 모델을 호출하거나 공급자·요금 경로를 만들지 않는다.
+export const styleDnaPromptOnlyTargets = {
+  "gpt-image-2.6": { label: "GPT Image 2.6", vendor: "OpenAI" },
+  "flux-3": { label: "FLUX 3", vendor: "Black Forest Labs" },
+  "mai-image-2.7": { label: "MAI-Image-2.7", vendor: "Microsoft" },
+  "seedream-5.5": { label: "Seedream 5.5", vendor: "ByteDance" },
+  "kling-image-4.0": { label: "Kling Image 4.0", vendor: "Kuaishou" },
+} as const;
+export type StyleDnaTestModel = keyof typeof styleDnaImageModels;
+export type StyleDnaPromptTarget = StyleDnaTestModel | keyof typeof styleDnaPromptOnlyTargets;
+// 화면과 서버가 같이 쓰는 분석 프롬프트 대상 목록. testable은 시험 생성(Gemini)까지 되는지다.
+export const styleDnaPromptTargets: readonly { id: StyleDnaPromptTarget; label: string; vendor: string; testable: boolean }[] = Object.freeze([
+  ...Object.entries(styleDnaImageModels).map(([id, { label }]) => ({ id: id as StyleDnaTestModel, label, vendor: "Google", testable: true })),
+  ...Object.entries(styleDnaPromptOnlyTargets).map(([id, { label, vendor }]) => ({ id: id as StyleDnaPromptTarget, label, vendor, testable: false })),
+].map(item => Object.freeze(item)));
 const text = (limit: number) => z.string().trim().max(limit).refine(value => !value.includes("\0"));
-const target = z.enum(Object.keys(styleDnaImageModels) as [keyof typeof styleDnaImageModels, ...(keyof typeof styleDnaImageModels)[]]);
+const target = z.enum(Object.keys(styleDnaImageModels) as [StyleDnaTestModel, ...StyleDnaTestModel[]]);
+const promptTarget = z.enum(styleDnaPromptTargets.map(item => item.id) as [StyleDnaPromptTarget, ...StyleDnaPromptTarget[]]);
 export const styleDnaRatio = z.enum(["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]);
 export const styleDnaId = z.uuidv7();
 const operation = z.strictObject({ requestId: z.uuid(), authorized: z.literal(true), credentialVersion: z.int().min(1).max(2_147_483_647) });
 export const styleDnaAnalyze = operation.extend({
   mode: z.enum(["replicate", "mutate"]), guidance: text(800).default(""), mutationLevel: z.int().min(0).max(100).default(30),
-  includeImageTag: z.boolean().default(false), targetModel: target.default("gemini-nano-banana-2.1"),
+  includeImageTag: z.boolean().default(false), targetModel: promptTarget.default("gemini-nano-banana-2.1"),
   engine: styleDnaEngineSelection.optional(),
 });
 export const styleDnaAnalyzeSource = styleDnaAnalyze.extend({
