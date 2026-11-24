@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { StyleDnaComparison } from "@/lib/reference-analysis/style-dna-contract";
 import {
   averageDiff, bestTrendIndex, colorDiffPercent, containPoint, defaultSplit, percentAt, percentForKey, promptPreview, sparklinePoints, sparklineXY,
@@ -13,32 +13,38 @@ import c from "./studio-compare.module.css";
 // 제품 차이: 저장·추세는 서버(e440d72·3fae275)가 저장된 원본·결과에서 다시 잰 값이고(원본은 브라우저 값), 추세 기록은 작업실이 새 결과를 받을 때 한다(과거 기록 열기로는 안 함).
 // 회차 패널의 외부 링크(이미지 스튜디오·바나나 캔버스)는 원본 키트에서도 숨겨져 있어 넣지 않는다. 접근성: 슬라이더에 원본·생성 비율 문구(aria-valuetext).
 type Pixels = { data: Uint8ClampedArray; w: number; h: number; natW: number; natH: number };
+/** 픽셀 읽기 상태(CMD-20261125-014): 읽는 중·준비됨·실패를 나눈다. 주소가 바뀌면 그 주소의 결과가 올 때까지 '읽는 중'이고 이전 픽셀을 쓰지 않는다. */
+type PixelState = { status: "loading" } | { status: "failed" } | { status: "ready"; px: Pixels };
+const LOADING: PixelState = { status: "loading" };
 const MAX_SPOTS = 8;
 
 /** 색 집게용: 이미지를 최대 1024px로 줄여 픽셀을 한 번 읽어 둔다(서버 측정과 같은 크기). */
-function usePixels(src: string): Pixels | null {
-  const [px, setPx] = useState<{ src: string; px: Pixels } | null>(null);
+function usePixels(src: string): PixelState {
+  const [state, setState] = useState<{ src: string; value: PixelState } | null>(null);
   useEffect(() => {
     let cancelled = false;
     const img = new Image();
     img.crossOrigin = "anonymous";
+    const fail = () => { if (!cancelled) setState({ src, value: { status: "failed" } }); };
+    img.onerror = fail;
     img.onload = () => {
-      if (cancelled || !img.naturalWidth || !img.naturalHeight) return;
+      if (cancelled) return;
+      if (!img.naturalWidth || !img.naturalHeight) return fail();
       const scale = Math.min(1, 1024 / Math.max(img.naturalWidth, img.naturalHeight));
       const w = Math.max(1, Math.round(img.naturalWidth * scale));
       const h = Math.max(1, Math.round(img.naturalHeight * scale));
       const canvas = document.createElement("canvas");
       canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
+      if (!ctx) return fail();
       ctx.drawImage(img, 0, 0, w, h);
-      try { setPx({ src, px: { data: ctx.getImageData(0, 0, w, h).data, w, h, natW: img.naturalWidth, natH: img.naturalHeight } }); }
-      catch { /* 읽을 수 없는 이미지면 색 집게만 숨긴다 */ }
+      try { setState({ src, value: { status: "ready", px: { data: ctx.getImageData(0, 0, w, h).data, w, h, natW: img.naturalWidth, natH: img.naturalHeight } } }); }
+      catch { fail(); /* 읽을 수 없는 이미지(교차 출처 등) */ }
     };
     img.src = src;
-    return () => { cancelled = true; };
+    return () => { cancelled = true; img.onload = null; img.onerror = null; };
   }, [src]);
-  return px?.src === src ? px.px : null;
+  return state?.src === src ? state.value : LOADING;
 }
 
 /** 틀 안 위치의 색(주변 5×5 평균). 그림 밖 여백이면 null */
@@ -93,8 +99,14 @@ export function StudioCompare({ before, after, label, maxHeight = 640, compariso
   const [saveMsg, setSaveMsg] = useState("");
   const [saving, setSaving] = useState(false);
   const [pickedTrend, setPickedTrend] = useState<number | null>(null);
-  const beforePx = usePixels(before);
-  const afterPx = usePixels(after);
+  const noteId = `${useId()}-pixels`;
+  const beforeState = usePixels(before);
+  const afterState = usePixels(after);
+  const beforePx = beforeState.status === "ready" ? beforeState.px : null;
+  const afterPx = afterState.status === "ready" ? afterState.px : null;
+  // 지점 저장·불러오기는 두 이미지의 픽셀과 크기가 있는 틀이 모두 준비된 뒤에만(준비 전 '—'가 지점에 고정되던 문제). 준비 뒤의 '—'는 실제 여백이다.
+  const pixelsFailed = beforeState.status === "failed" || afterState.status === "failed";
+  const pixelsReady = !!beforePx && !!afterPx && !!frame && frame.w > 0 && frame.h > 0;
   const split: SplitMode = mode ?? (size ? defaultSplit(size.w, size.h) : "horizontal");
   const savedSpots = comparison?.spots ?? [];
   const trend = comparison?.trends ?? [];
@@ -137,9 +149,12 @@ export function StudioCompare({ before, after, label, maxHeight = 640, compariso
     try { setSaveMsg(await onSaveSpots(spots.map((s) => ({ x: s.x, y: s.y })), { width: Math.max(1, Math.round(frame.w)), height: Math.max(1, Math.round(frame.h)) })); }
     finally { setSaving(false); }
   };
-  const loadSaved = () => setSpots(savedSpots.map((sp) => ({ id: nextId.current++, x: sp.x, y: sp.y,
-    a: frame ? pick(beforePx, frame.w, frame.h, sp.x, sp.y) : null, b: frame ? pick(afterPx, frame.w, frame.h, sp.x, sp.y) : null })));
-  const saveSpot = () => { if (spots.length < MAX_SPOTS) setSpots((list) => [...list, { id: nextId.current++, x: pos, y: posY, a, b }]); };
+  const loadSaved = () => { if (!pixelsReady || !frame) return; setSpots(savedSpots.map((sp) => ({ id: nextId.current++, x: sp.x, y: sp.y,
+    a: pick(beforePx, frame.w, frame.h, sp.x, sp.y), b: pick(afterPx, frame.w, frame.h, sp.x, sp.y) }))); };
+  const saveSpot = () => { if (pixelsReady && spots.length < MAX_SPOTS) setSpots((list) => [...list, { id: nextId.current++, x: pos, y: posY, a, b }]); };
+  const pixelNote = pixelsReady ? null : pixelsFailed
+    ? `${beforeState.status !== "failed" ? "생성" : afterState.status === "failed" ? "원본·생성" : "원본"} 이미지의 색을 읽지 못해 지점을 저장할 수 없어요. 결과를 다시 열어 주세요.`
+    : "이미지를 불러오는 중이에요. 원본과 생성 이미지가 모두 준비되면 이 자리를 저장할 수 있어요.";
 
   return <div className={c.root} aria-label={label} role="group">
     <div className={c.modes}>
@@ -178,14 +193,16 @@ export function StudioCompare({ before, after, label, maxHeight = 640, compariso
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); saveSpot(); }
         }}>{split === "vertical" ? "⇅" : "⇆"}</span>
     </div>
-    {(beforePx || afterPx) && <div className={c.panel} aria-label="색 집게">
+    <div className={c.panel} aria-label="색 집게">
       <div className={c.picker}>
         <Swatch label="원본 색" rgb={a} />
         <div className={c.center}><p>색 차이</p><p className={c.value}>{nowDiff === null ? "—" : `${nowDiff}%`}</p></div>
         <Swatch label="생성 색" rgb={b} />
       </div>
-      <button type="button" className={c.wide} onClick={saveSpot} disabled={spots.length >= MAX_SPOTS}>📍 이 자리 저장 ({spots.length}/{MAX_SPOTS})</button>
-    </div>}
+      <button type="button" className={c.wide} onClick={saveSpot} disabled={!pixelsReady || spots.length >= MAX_SPOTS}
+        aria-describedby={pixelNote ? noteId : undefined}>📍 이 자리 저장 ({spots.length}/{MAX_SPOTS})</button>
+      {pixelNote && <p id={noteId} className={c.small} role="status" data-pixels={pixelsFailed ? "failed" : "loading"}>{pixelNote}</p>}
+    </div>
     {spots.length > 0 && <div className={c.panel} aria-label="점검 지점">
       <div className={c.panelHead}>
         <p>점검 지점 {spots.length}곳 · 평균 차이 <span data-avg>{avg === null ? "—" : `${avg}%`}</span></p>
@@ -207,7 +224,7 @@ export function StudioCompare({ before, after, label, maxHeight = 640, compariso
       <div className={c.panelHead}>
         <p>이전 기록과 비교 · 평균 <span data-prev-avg>{prevAvg === null ? "—" : `${prevAvg}%`}</span> → <span data-now-avg>{nowAvg === null ? "—" : `${nowAvg}%`}</span>
           {avgChange && <TrendMark trend={avgChange.trend} delta={avgChange.delta} />}</p>
-        <button type="button" className={c.sky} onClick={loadSaved}>지점 불러오기</button>
+        <button type="button" className={c.sky} onClick={loadSaved} disabled={!pixelsReady}>지점 불러오기</button>
       </div>
       {trendValues.length > 0 && <div className={c.trend} aria-label="추세">
         <svg width="132" height="34" viewBox="0 0 132 34" role="group" aria-label="추세 회차 고르기">

@@ -8,6 +8,8 @@ import assert from "node:assert/strict";
 // 4. 유실 → '결과 다시 확인'으로 받은 결과도 추세 1번(같은 시험 두 번 아님). 지난 시험 고르기·기록 다시 열기로는 추세 PATCH가 늘지 않는다.
 // 5. 추세 점(키보드) → 회차·프롬프트 미리보기 → '✏ 이 프롬프트를 편집 칸으로 불러오기' → 직접 편집 칸·'추세 N회차 프롬프트를 불러왔습니다.' → '되돌리기'로 이전 상태.
 // 6. 다른 곳에서 지점이 바뀐 뒤 저장 → 409 stale_spot_version 안내·기록 다시 불러옴. 각 폭 넘침 0, 외부 요청 0, 비교 영역 글자 대비 4.5:1 이상.
+// 7. 픽셀 준비(1574·390): 생성 이미지만 늦추면 준비 전 클릭·Enter·Space·지점 불러오기로 지점이 생기지 않고 '불러오는 중' 안내, 준비 뒤 저장·평균·실제 여백 '—',
+//    새 결과 주소는 이전 픽셀 없이 다시 기다림, 생성 이미지 실패는 '읽지 못해' 안내와 저장 잠김.
 const base = globalThis.FIXTURE_ORIGIN;
 const out = globalThis.FIXTURE_OUTPUT_DIR ?? ".";
 assert.match(base ?? "", /^http:\/\/127\.0\.0\.1:\d+$/);
@@ -118,7 +120,9 @@ const run = async (expect) => {
   if (expect === "lost") { await until((R) => /응답을 받지 못했어요/.test(document.querySelector(R).textContent), "lost", R); return; }
   await until(([R, n]) => /프롬프트로 시험 이미지를 만들었어요/.test(document.querySelector(R).textContent) && window.__premiere.styleDna.records[0].tests.length > n, "tested", [R, before]);
 };
-const pixels = async () => until((CMP) => (eval(CMP)?.querySelector("[aria-label='색 집게'] p:nth-child(2)")?.textContent ?? "—") !== "—", "picker", CMP);
+// 두 이미지 픽셀이 준비돼 '이 자리 저장'이 풀릴 때까지(CMD-20261125-014 뒤로는 원본 색만 보이고 생성 이미지가 읽는 중이면 저장이 잠긴다).
+const pixels = async () => until((CMP) => { const picker = eval(CMP)?.querySelector("[aria-label='색 집게']");
+  return (picker?.querySelector("p:nth-child(2)")?.textContent ?? "—") !== "—" && !!picker.querySelector("button") && !picker.querySelector("button").disabled; }, "picker", CMP);
 const trendCount = async () => (await patches()).filter((body) => body.action === "record-trend").length;
 const min45 = (ratios, label) => { for (const [name, value] of Object.entries(ratios)) if (value !== null) assert.ok(value >= 4.5, `${label} ${name} ${value}`); };
 const ORIGINAL = { center: "#E8D5B0", edge: "#1F6F6A" }, RESULT = { center: "#F4F1EA", edge: "#C96A3B" };
@@ -290,6 +294,81 @@ try {
     assert.equal(external, 0);
     assert.ok(!(await notice()).includes("undefined"));
     results.push({ width, overflow: v.overflow, external, trends: await trendCount(), ratios: v.ratios });
+
+    // 7. 픽셀 준비(CMD-20261125-014): 생성 이미지만 4초 늦춘 화면 — 준비 전에는 단추 클릭·동그라미 Enter·Space로 지점이 저장되지 않고 '불러오는 중' 안내.
+    //    준비 뒤 저장·평균은 정상, 실제 여백 자리는 '—'. 새 결과(주소 바뀜)는 이전 픽셀을 쓰지 않고 다시 기다린다. 생성 이미지 실패는 '읽지 못해' 안내와 저장 잠김.
+    if (width === 1574 || width === 390) {
+      console.log("STEP 7 " + width);
+      const pix = () => page.evaluate((CMP) => { const cmp = eval(CMP); const picker = cmp?.querySelector("[aria-label='색 집게']");
+        const note = picker?.querySelector("[data-pixels]"); const button = picker?.querySelector("button");
+        return { note: note ? [note.dataset.pixels, note.textContent.trim(), button.getAttribute("aria-describedby") === note.id] : null, disabled: button?.disabled ?? null,
+          after: picker ? [...picker.querySelectorAll("p")][5]?.textContent.trim() : null, marks: cmp.querySelectorAll("[data-spot]").length,
+          load: [...cmp.querySelectorAll("button")].find((b) => b.textContent === "지점 불러오기")?.disabled ?? null }; }, CMP);
+      const tryAll = async () => {
+        await page.evaluate((CMP) => eval(CMP).querySelector("[aria-label='색 집게'] button").click(), CMP);
+        await key("Enter"); await key("Space");
+        await page.evaluate((CMP) => [...eval(CMP).querySelectorAll("button")].find((b) => b.textContent === "지점 불러오기")?.click(), CMP);
+        await settle(150);
+      };
+      const WAIT = "이미지를 불러오는 중이에요. 원본과 생성 이미지가 모두 준비되면 이 자리를 저장할 수 있어요.";
+      await open(`styleDnaReport=1&styleDnaSeed=1&styleDnaResultMedia=delay:4000&w=${width}`);
+      await analyze();
+      await press("3. 결과 테스트");
+      await until((TS) => !!eval(TS), "test stage 7", TS);
+      await typeInto(TEXT, "a cat on a neon rooftop");
+      await run();
+      await until((CMP) => !!eval(CMP), "compare 7", CMP);
+      let p = await pix();
+      assert.deepEqual([p.note, p.disabled, p.after, p.marks], [["loading", WAIT, true], true, "—", 0], "생성 이미지 준비 전");
+      await tryAll();
+      p = await pix();
+      assert.deepEqual([p.note?.[0], p.marks], ["loading", 0], "준비 전 클릭·Enter·Space·불러오기로 지점 없음");
+      assert.equal(await page.evaluate((CMP) => !!eval(CMP).querySelector("[aria-label='점검 지점']"), CMP), false);
+      if (p.load !== null) assert.equal(p.load, true, "준비 전 지점 불러오기 잠김");
+      await page.evaluate((CMP) => eval(CMP).scrollIntoView({ block: "start" }), CMP); await settle(200);
+      await page.screenshot({ path: `${out}/compare-pixels-wait-${width}.png` });
+      await until((CMP) => { const b = eval(CMP).querySelector("[aria-label='색 집게'] button"); return !!b && !b.disabled; }, "pixels ready 7", CMP);
+      p = await pix();
+      assert.deepEqual([p.note, p.disabled, p.after], [null, false, RESULT.center], "준비 뒤");
+      await key("Enter");
+      // 10%: 원본(640×400)은 그림 안(바탕색), 세로 생성 이미지(400×640)는 틀 가운데 39%만 그려져 실제 여백. 0%는 틀 소수점 차이로 원본도 밖이 될 수 있다.
+      await key("Home");
+      for (let i = 0; i < 5; i++) await key("ArrowRight");
+      await key("Space");
+      let v = await view();
+      const d0 = diff(ORIGINAL.center, RESULT.center);
+      assert.deepEqual(v.spotRows.map((row) => row.slice(0, 5)), [["1", ORIGINAL.center, "→", RESULT.center, `${d0}%`], ["2", ORIGINAL.edge, "→", "—", "—"]], "준비 뒤 저장·실제 여백 대시");
+      assert.match(v.spotHead, new RegExp(`^점검 지점 2곳 · 평균 차이 ${d0}%`));
+      // 새 결과: 이미지 주소가 바뀌면 이전 결과 픽셀을 쓰지 않고 다시 기다린다(모은 지점 목록은 그대로).
+      await run();
+      p = await pix();
+      assert.deepEqual([p.note?.[0], p.disabled, p.after, p.marks], ["loading", true, "—", 2], "새 결과 주소는 다시 준비 전");
+      await tryAll();
+      assert.equal((await pix()).marks, 2, "새 결과 준비 전 지점 그대로");
+      await until((CMP) => { const b = eval(CMP).querySelector("[aria-label='색 집게'] button"); return !!b && !b.disabled; }, "pixels ready 7b", CMP);
+      // 생성 이미지 읽기 실패
+      await page.evaluate(() => sessionStorage.clear());
+      await open(`styleDnaReport=1&styleDnaSeed=1&styleDnaResultMedia=fail&w=${width}`);
+      await analyze();
+      await press("3. 결과 테스트");
+      await until((TS) => !!eval(TS), "test stage 7c", TS);
+      await typeInto(TEXT, "a cat on a neon rooftop");
+      await run();
+      await until((CMP) => !!eval(CMP)?.querySelector("[data-pixels='failed']"), "pixels failed", CMP);
+      await tryAll();
+      p = await pix();
+      assert.deepEqual([p.note, p.disabled, p.after, p.marks], [["failed", "생성 이미지의 색을 읽지 못해 지점을 저장할 수 없어요. 결과를 다시 열어 주세요.", true], true, "—", 0], "생성 이미지 실패");
+      v = await view();
+      assert.equal(v.overflow, 0, `픽셀 안내 넘침 ${width}`);
+      min45({ swatch: v.ratios.swatch, help: v.ratios.help }, `픽셀 안내 ${width}`);
+      const note = await page.evaluate((CMP) => { const n = eval(CMP).querySelector("[data-pixels]"); const s = getComputedStyle(n);
+        const rgb = (x) => x.match(/[\d.]+/g).map(Number); const lum = ([r, g, b]) => [r, g, b].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((t, c, i) => t + c * [0.2126, 0.7152, 0.0722][i], 0);
+        let bg = null; for (let e = n; e && !bg; e = e.parentElement) { const c = rgb(getComputedStyle(e).backgroundColor); if (c.length === 3 || c[3] === 1) bg = c.slice(0, 3); }
+        const a = lum(rgb(s.color)), b = lum(bg ?? [255, 255, 255]); return Math.round(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)) * 100) / 100; }, CMP);
+      assert.ok(note >= 4.5, `픽셀 안내 대비 ${note}`);
+      if (width === 390) { await page.evaluate((CMP) => eval(CMP).scrollIntoView({ block: "start" }), CMP); await settle(200); await page.screenshot({ path: `${out}/compare-pixels-failed-${width}.png` }); }
+      results.at(-1).pixels = { wait: true, ready: true, changed: true, failed: true, noteContrast: note };
+    }
   }
   console.log("STYLE-DNA-COMPARE-RESULT" + JSON.stringify(results));
 } finally {

@@ -1,4 +1,4 @@
-/* global URL, process, console */
+/* global URL, process, console, setTimeout */
 // 작업실 기준 관리 화면(AdminHub) 대역: 실제 관리 부품을 esbuild로 묶고, 브라우저 안 fetch 대역(window.__premiere)으로 서버 응답을 만든다.
 // 594dff8 admin-premiere-publication-run.mjs에서 이 기준에 있는 화면(이미지 분석·작업실 문맥·API 연동)만 남겼다. 키는 합성 값만 쓴다.
 import { build } from "esbuild";
@@ -223,7 +223,9 @@ const styleDna={
   records:[] as SdRecord[], hold:sdQuery.get("styleDnaHold")??"", seq:0, done:{} as Record<string,{hash:string;status:number;body:unknown}>,
   faults:{list:sdQuery.get("styleDnaListFault")?[{status:Number(sdQuery.get("styleDnaListFault")),body:{code:"failed"}}]:[],get:[],analyze:[],refine:[],test:[],engines:sdQuery.get("styleDnaEnginesFault")?[{status:Number(sdQuery.get("styleDnaEnginesFault")),body:{code:"failed"}}]:[],compare:[],delete:[]} as Record<string,({status:number;body:unknown}|{lost:true|"before"})[]>,
   media(id:string,name:string,width:number,height:number,palette:{hex:string;share:number}[]){
-    return {mime:"image/webp",width,height,sha256:(name+id).padEnd(64,"0").slice(0,64),palette,href:"/api/admin/style-dna/"+id+"/media/"+name}; },
+    // 비교 픽셀 준비(CMD-20261125-014): ?styleDnaResultMedia=delay:<ms>|fail이면 원본이 아닌(시험 결과) 이미지 주소에 ?m=을 붙여 서버가 늦추거나 실패한다.
+    const late=name!=="original"?sdQuery.get("styleDnaResultMedia"):null;
+    return {mime:"image/webp",width,height,sha256:(name+id).padEnd(64,"0").slice(0,64),palette,href:"/api/admin/style-dna/"+id+"/media/"+name+(late?"?m="+encodeURIComponent(late):"")}; },
   create(options:Record<string,unknown>, title:string){
     styleDna.seq+=1;
     const id="0190b0b0-0000-7000-8000-00000000b"+String(styleDna.seq).padStart(3,"0");
@@ -798,9 +800,15 @@ const server = createServer((request, response) => {
   if (sdMedia) {
     const original = sdMedia[1] === "original";
     const [w, h] = original ? [640, 400] : [400, 640];
-    return response.writeHead(200, { "content-type": "image/svg+xml", "cache-control": "no-store" }).end(
+    // ?m=fail: 이미지 읽기 실패, ?m=delay:<ms>: 그만큼 늦게 보낸다(원본은 언제나 바로).
+    const late = original ? "" : parsed.searchParams.get("m") ?? "";
+    if (late === "fail") return response.writeHead(500, { "cache-control": "no-store" }).end();
+    const send = () => response.writeHead(200, { "content-type": "image/svg+xml", "cache-control": "no-store" }).end(
       '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '"><rect width="100%" height="100%" fill="' + (original ? "#1f6f6a" : "#c96a3b") + '"/>' +
       '<circle cx="50%" cy="50%" r="30%" fill="' + (original ? "#e8d5b0" : "#f4f1ea") + '"/></svg>');
+    const delay = /^delay:(\d{1,5})$/.exec(late);
+    if (delay) { setTimeout(send, Number(delay[1])); return; }
+    return send();
   }
   response.writeHead(404).end();
 });
