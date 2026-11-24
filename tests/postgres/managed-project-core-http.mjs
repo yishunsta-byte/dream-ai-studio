@@ -286,5 +286,132 @@ export async function verifyHttp({ admin, rootPath, connect, cert, key, dbHost, 
       await verifyAssetChoices({admin,rootPath,projectRef,users,startProfile,body,command,counts,good,foreign,expired});
     }
     if (draft) await draft.verifyDraftChoices({admin,rootPath,projectRef,users,startProfile,body,good,foreign,expired});
+    await verifyTopicShorts({admin,rootPath,connect,users,startProfile,body,command,counts,loseResponse,good,foreign,expired});
   } finally { await new Promise(resolve=>authServer.close(resolve)); }
+}
+
+// P2-MANAGED-GENERAL-SHORTS-ENTRY-CORE(배정 2): 주제별 쇼츠(topic-shorts) 생성·브리프. 기존 0001 설치 그대로에서 시작해 0003을 더한다.
+async function verifyTopicShorts({admin,rootPath,connect,users,startProfile,body,command,counts,loseResponse,good,foreign,expired}) {
+  const sql=(await readFile(new URL("lib/db/postgres/managed-project-core/0003_topic_shorts.sql",rootPath),"utf8")).replaceAll("\r\n","\n");
+  assert.equal(digest(sql),"c1ea73be2b4c639dacbbb7373482783e57307376120abc23064023bb911656c0");
+  const projectPath="/api/projects", briefPath=id=>projectPath+"/"+id+"/brief";
+  const topicInputs={title:"Topic project",goal:"Goal",target:"Audience",aspect:"9:16",lengthSec:30,
+    topic:"겨울철 실내 습도",keyMessage:"습도 40~60%를 지키면 감기 예방에 도움이 된다."};
+  const topic=inputs=>({menuId:"topic-shorts",inputs:{...topicInputs,...inputs}});
+  const zero={projects:0,stages:0,audit:0,links:0,receipts:0,plans:0,scenes:0};
+  const delta=async before=>{const after=await counts();return Object.fromEntries(Object.keys(zero).map(k=>[k,after[k]-before[k]]));};
+
+  // 0003 전: 기존 정책은 주제별 쇼츠 저장을 막아 503이고 아무것도 남지 않는다. 쇼핑숏츠는 그대로 저장된다.
+  const beforeInstall=await counts();
+  await startProfile({},async call=>{
+    await body(call(projectPath,{input:topic()}),503,"topic before 0003");
+    await body(call(projectPath,{input:command({title:"Shopping before 0003"})}),201,"shopping before 0003");
+  });
+  assert.deepEqual(await delta(beforeInstall),{...zero,projects:1,stages:7,audit:1,links:1,receipts:1});
+  await admin.query("SET ROLE p102_migrate");
+  try {
+    assert.equal((await admin.query(sql)).at(-1).command,"COMMIT");
+    await assert.rejects(admin.query(sql),{message:"PROJECT_TOPIC_SHORTS_INSTALL_TARGET"});
+    await admin.query("ROLLBACK");
+  } finally { await admin.query("RESET ROLE"); }
+  const {rows:[policy]}=await admin.query(`SELECT pg_get_expr(polwithcheck,polrelid) AS check FROM pg_policy
+    WHERE polrelid='dream.projects'::regclass AND polname='core_insert'`);
+  assert.match(policy.check,/'shopping-shorts'::text, 'topic-shorts'::text/);
+  assert.match(policy.check,/content_revision = 1/);
+
+  const start=await counts();
+  let created, otherOwner;
+  await startProfile({},async (call,origin)=>{
+    for (const [label,input,status] of [
+      ["no topic",topic({topic:""}),400],["topic 81",topic({topic:"가".repeat(81)}),400],
+      ["no message",topic({keyMessage:""}),400],["default 100 over",topic({keyMessage:"나".repeat(101)}),400],
+      ["limit 50 over",topic({keyMessageLength:"50",keyMessage:"나".repeat(51)}),400],["limit 75",topic({keyMessageLength:"75"}),400],
+      ["limit number",topic({keyMessageLength:100}),400],["fact sources removed",topic({factSources:"출처"}),400],
+      ["length 45",topic({lengthSec:45}),400],["length 120",topic({lengthSec:120}),400],["length 25 text",topic({lengthSec:"25"}),400],
+      ["shopping field",topic({productName:"Product"}),400],["foreign asset",topic({referenceAssets:[foreign]}),400],
+      ["expired asset",topic({referenceAssets:[expired]}),400],["owner field",topic({owner_id:users[1].id}),400],
+      ["locked menu",{menuId:"travel-shorts",inputs:topicInputs},409],["unknown menu",{menuId:"missing-shorts",inputs:topicInputs},409],
+    ]) await body(call(projectPath,{input}),status,label);
+    await body(call(projectPath,{actor:null,input:topic()}),401);
+    await body(call(projectPath,{actor:2,input:topic()}),403);
+    assert.deepEqual(await delta(start),zero);
+
+    const key=v7();
+    const replies=await Promise.all([body(call(projectPath,{input:topic(),key}),201,"topic create"),
+      body(call(projectPath,{input:topic(),key}),201,"concurrent topic create")]);
+    assert.deepEqual(replies[0],replies[1]);
+    created=replies[0].id;
+    assert.equal((await body(call(projectPath,{input:topic({topic:"다른 주제"}),key}),409)).code,"IDEMPOTENCY_CONFLICT");
+    assert.equal((await body(call(projectPath,{input:command(),key}),409)).code,"IDEMPOTENCY_CONFLICT");
+    assert.deepEqual(await delta(start),{...zero,projects:1,stages:7,audit:1,receipts:1});
+    for (const [lengthSec,limit] of [[10,"50"],[60,"200"]]) {
+      await body(call(projectPath,{input:topic({lengthSec,keyMessageLength:limit,keyMessage:"나".repeat(Number(limit)),title:"Length "+lengthSec})}),201,"length "+lengthSec);
+    }
+    const withAsset=(await body(call(projectPath,{input:topic({referenceAssets:[good],keyMessageLength:"300",keyMessage:"나".repeat(300),title:"With asset"})}),201)).id;
+    const shopping=(await body(call(projectPath,{input:command({title:"Shopping after 0003",lengthSec:45})}),201,"shopping 45s")).id;
+    assert.deepEqual(await delta(start),{...zero,projects:5,stages:35,audit:5,links:2,receipts:5});
+
+    const item=(await body(call(projectPath),200)).find(project=>project.id===created);
+    assert.equal(item.menuId,"topic-shorts");
+    assert.equal(item.nextStage,"brief");
+    assert.equal((await body(call(projectPath+"/"+created),200)).project.id,created);
+    await body(call(projectPath+"/"+created,{actor:1}),404);
+    assert.deepEqual(await body(call(briefPath(created)),200),{menuId:"topic-shorts",title:"Topic project",goal:"Goal",target:"Audience",
+      aspect:"9:16",lengthSec:30,revision:1,facts:null,product:null,rights:null,sources:null,topic:topicInputs.topic,
+      keyMessage:topicInputs.keyMessage,keyMessageLength:"100",stages:{intake:"approved",brief:"todo",plan:"locked"}});
+    const full=await body(call(briefPath(withAsset)),200);
+    assert.deepEqual([full.keyMessageLength,full.keyMessage.length,full.sources],["300",300,null]);
+    const shop=await body(call(briefPath(shopping)),200);
+    assert.deepEqual([shop.menuId,shop.product,shop.facts,shop.rights,shop.sources,shop.lengthSec],["shopping-shorts","Product","Fact","직접 촬영",null,45]);
+    assert(!("topic" in shop) && !("keyMessage" in shop));
+    await body(call(briefPath(created),{actor:null}),401);
+    await body(call(briefPath(created),{actor:1}),404);
+    await body(call(briefPath(created),{actor:1,input:{acknowledged:true,revision:1}}),404);
+    assert.equal((await body(call(briefPath(created),{input:{acknowledged:true,revision:2}}),409)).code,"BRIEF_CONFLICT");
+    const brief={acknowledged:true,revision:1}, keys=[v7(),v7()];
+    const pending=await Promise.all(keys.map(value=>call(briefPath(created),{input:brief,key:value})));
+    assert.deepEqual(pending.map(resp=>resp.status).sort(),[200,409]);
+    const won=keys[pending.findIndex(resp=>resp.status===200)];
+    for (const resp of pending) await resp.body?.cancel();
+    assert.deepEqual(await body(call(briefPath(created),{input:brief,key:won}),200),{stage:"plan",revision:1});
+    assert.equal((await body(call(briefPath(created),{input:{...brief,revision:2},key:won}),409)).code,"IDEMPOTENCY_CONFLICT");
+    assert.deepEqual((await body(call(briefPath(created)),200)).stages,{intake:"approved",brief:"approved",plan:"todo"});
+    assert.equal((await body(call(briefPath(created),{input:brief}),409)).code,"BRIEF_CONFLICT");
+
+    const lostKey=v7();
+    await loseResponse(origin,projectPath,lostKey,topic({title:"Lost topic"}));
+    const recovered=(await body(call(projectPath,{input:topic({title:"Lost topic"}),key:lostKey}),201)).id;
+    const lostBrief=v7();
+    await loseResponse(origin,briefPath(recovered),lostBrief,brief);
+    assert.deepEqual(await body(call(briefPath(recovered),{input:brief,key:lostBrief}),200),{stage:"plan",revision:1});
+    otherOwner=(await body(call(projectPath,{actor:1,input:topic(),key}),201)).id;
+    assert.notEqual(otherOwner,created);
+    const otherList=(await body(call(projectPath,{actor:1}),200)).map(project=>project.id);
+    assert(otherList.includes(otherOwner) && !otherList.includes(created));
+    await body(call(briefPath(otherOwner)),404);
+  });
+  const persisted={...zero,projects:7,stages:49,audit:9,links:2,receipts:9};
+  assert.deepEqual(await delta(start),persisted);
+
+  // 제한 역할 직접 쓰기: 두 분야만 정책을 통과하고, 잠긴 분야와 다른 소유자는 RLS가 막는다.
+  const restricted=await connect(role);
+  try {
+    await restricted.query("BEGIN");
+    await restricted.query("SELECT set_config('dream.actor_id',$1,true)",[users[0].id]);
+    const clone=(menu,owner)=>restricted.query(`INSERT INTO dream.projects(owner_id,id,menu_id,template_version,template_snapshot_json,
+      inputs_json,title,goal,target,aspect,length_sec,content_revision,created_at,updated_at)
+      SELECT coalesce($4::uuid,owner_id),$2,$3,template_version,template_snapshot_json,inputs_json,title,goal,target,aspect,length_sec,1,
+        created_at,updated_at FROM dream.projects WHERE id=$1`,[created,v7(),menu,owner??null]);
+    assert.equal((await clone("topic-shorts")).rowCount,1);
+    for (const [menu,owner] of [["travel-shorts",null],["topic-shorts",users[1].id]]) {
+      await restricted.query("SAVEPOINT denied");
+      await assert.rejects(clone(menu,owner),{code:"42501"});
+      await restricted.query("ROLLBACK TO SAVEPOINT denied");
+    }
+    await restricted.query("ROLLBACK");
+  } finally { await restricted.end(); }
+  assert.deepEqual(await delta(start),persisted);
+  console.log(JSON.stringify({topicShorts:{before0003:"503-no-state",install:"0003",rerunRejected:true,rejectedInputs:19,keyMessageLimits:["50","100","200","300"],
+    lengths:[10,30,45,60],ownerIsolation:true,retryResponses:true,briefRace:true,staleBrief:true,shoppingFieldsKept:true,
+    restrictedRole:{topicInsert:true,lockedMenuDenied:true,foreignOwnerDenied:true},persisted}}));
 }

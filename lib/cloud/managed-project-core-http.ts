@@ -27,6 +27,9 @@ const missing = () => json({code:"PROJECT_NOT_FOUND",error:"프로젝트를 찾�
 const conflict = () => json({code:"IDEMPOTENCY_CONFLICT",error:"같은 요청 번호로 다른 내용을 저장할 수 없어요."},409);
 const invalid = (error: string) => json({code:"INVALID_INPUT",errors:{_form:error}},400);
 type Operation = "create" | "brief";
+// 관리형 생성·브리프를 여는 두 분야. DB 정책(managed-project-core 0001·0003)과 메뉴 검증도 같은 두 ID만 허용한다.
+const shoppingMenu = "shopping-shorts", topicMenu = "topic-shorts";
+const managedMenus: readonly string[] = [shoppingMenu, topicMenu];
 type Saved = { projectId: string; revision: number | null };
 
 async function requestJson(request: Request) {
@@ -138,7 +141,7 @@ export function managedProjectCreate(request: Request) {
     return transact(tx => receipt(tx,"create",key.data.toLowerCase(),sha,async () => {
       const config = getMenuConfig();
       const menu = config.menus.find(item=>item.id===menuId);
-      if (!menu || menu.availability !== "active" || menu.id !== "shopping-shorts") {
+      if (!menu || menu.availability !== "active" || !managedMenus.includes(menu.id)) {
         return json({code:"STAGE_LOCKED",error:"이 분야의 프로젝트를 만들 수 없어요."},409);
       }
       const insert = preparePostgresProjectCreate(actor,menuId,inputs,snapshotForMenu(config,menu),hasCurrentAssetReceipt);
@@ -185,19 +188,27 @@ export function managedProjectBrief(request: Request, params: Promise<{ id: stri
 
 async function briefView(tx: ActorTransaction, projectId: string, lock: boolean) {
   const keys = [tx.actorId,projectId];
-  const {rows:[project]} = await tx.query<{revision:string;lengthSec:string;title:string;goal:string;target:string;
-    aspect:string;facts:string|null;product:string|null;rights:string|null;sources:string|null}>(`
-    SELECT title,goal,target,aspect,length_sec AS "lengthSec",content_revision AS revision,
+  const {rows:[project]} = await tx.query<{menuId:string;revision:string;lengthSec:string;title:string;goal:string;target:string;
+    aspect:string;facts:string|null;product:string|null;rights:string|null;sources:string|null;topic:string|null;keyMessage:string|null;keyMessageLength:string|null}>(`
+    SELECT menu_id AS "menuId",title,goal,target,aspect,length_sec AS "lengthSec",content_revision AS revision,
       inputs_json::jsonb->>'facts' AS facts,inputs_json::jsonb->>'productName' AS product,
-      inputs_json::jsonb->>'usageRights' AS rights,inputs_json::jsonb->>'factSources' AS sources
-    FROM dream.projects WHERE owner_id=$1 AND id=$2 AND menu_id='shopping-shorts' AND archived_at IS NULL`
-    + (lock ? " FOR UPDATE" : ""),keys);
+      inputs_json::jsonb->>'usageRights' AS rights,inputs_json::jsonb->>'factSources' AS sources,
+      inputs_json::jsonb->>'topic' AS topic,inputs_json::jsonb->>'keyMessage' AS "keyMessage",
+      inputs_json::jsonb->>'keyMessageLength' AS "keyMessageLength"
+    FROM dream.projects WHERE owner_id=$1 AND id=$2 AND menu_id=ANY($3::text[]) AND archived_at IS NULL`
+    + (lock ? " FOR UPDATE" : ""),[...keys,managedMenus]);
   if (!project) return null;
   const {rows} = await tx.query<{stage:string;status:string}>(`SELECT stage,status FROM dream.stage_states
     WHERE owner_id=$1 AND project_id=$2 AND stage IN ('intake','brief','plan')`,keys);
   const revision = Number(project.revision), lengthSec = Number(project.lengthSec);
-  if (rows.length !== 3 || !Number.isSafeInteger(revision) || revision < 1 || !Number.isSafeInteger(lengthSec) || lengthSec < 1) {
+  const topical = project.menuId === topicMenu;
+  if (rows.length !== 3 || !Number.isSafeInteger(revision) || revision < 1 || !Number.isSafeInteger(lengthSec) || lengthSec < 1 ||
+    (topical && (!project.topic || !project.keyMessage || !project.keyMessageLength))) {
     throw new Error("Brief storage is incomplete");
   }
-  return {...project,revision,lengthSec,stages:Object.fromEntries(rows.map(row=>[row.stage,row.status]))};
+  const {topic,keyMessage,keyMessageLength,...common} = project;
+  const stages = Object.fromEntries(rows.map(row=>[row.stage,row.status]));
+  // 쇼핑 응답은 기존 필드를 그대로 둔다. 주제별 쇼츠 응답도 같은 필드를 채워(상품 필드는 null) 기존 화면 해석과 맞춘다.
+  if (!topical) return {...common,revision,lengthSec,stages};
+  return {...common,facts:null,product:null,rights:null,sources:null,topic,keyMessage,keyMessageLength,revision,lengthSec,stages};
 }
