@@ -21,7 +21,8 @@ export type MeasuredStyleDnaImage = { bytes: Buffer } & Omit<StyleDnaMedia, "hre
 export type StyleDnaAnalysisSettings = GeminiSettings | ExternalStyleDnaSettings;
 const imageLimits = { limitInputPixels: 12_000_000, failOn: "warning" } as const;
 const maxGeneratedBytes = 8 * 1024 * 1024;
-const analysisTimeoutMs = 60_000;
+// 최초 분석 전체 기한. 원본 v1.01은 분석 호출을 따로 끊지 않고 함수 300초 안에서 기다린다(저장·응답 여유 20초).
+const analysisTimeoutMs = 280_000;
 const formats = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" } as const;
 const attachedImageTag = "[첨부 이미지]";
 export class StyleDnaProviderError extends Error {

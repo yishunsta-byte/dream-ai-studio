@@ -53,7 +53,7 @@ function candidate(value: unknown) {
 }
 
 describe("관리자 Style DNA 이미지 의미 분석", () => {
-  it("Style DNA 업로드는 전용 60초·45초 한도를 사용하고 일반 이미지 분석은 15초를 유지한다", async () => {
+  it("Style DNA 최초 분석은 원본처럼 전체 280초 기한만 쓰고 일반 이미지 분석은 15초를 유지한다", async () => {
     const bytes = Buffer.from(await syntheticImage());
     const send = vi.fn<typeof fetch>(async () => candidate({
       findings: Object.fromEntries(imageSemanticCategories.map(category =>
@@ -70,9 +70,11 @@ describe("관리자 Style DNA 이미지 의미 분석", () => {
       await expect(createStyleDnaProvider(send).analyze({ kind: "file", name: "synthetic.png", bytes }, {
         mode: "replicate", guidance: "", mutationLevel: 30, includeImageTag: false, targetModel: "gemini-nano-banana-2.1",
       }, config)).resolves.toMatchObject({ semantic: { status: "ready" } });
-      expect(timeout).toHaveBeenCalledWith(60_000);
-      expect(timeout).toHaveBeenCalledWith(45_000);
-      expect(timeout).not.toHaveBeenCalledWith(15_000);
+      expect(timeout).toHaveBeenCalledWith(280_000);
+      // 옛 짧은 제한(Gemini 15초·45초, 전체 60초)은 Style DNA 최초 분석에서 쓰지 않는다.
+      expect(timeout.mock.calls.map(([ms]) => ms)).not.toEqual(expect.arrayContaining([15_000]));
+      expect(timeout.mock.calls.map(([ms]) => ms)).not.toEqual(expect.arrayContaining([45_000]));
+      expect(timeout.mock.calls.map(([ms]) => ms)).not.toEqual(expect.arrayContaining([60_000]));
     } finally {
       timeout.mockRestore();
     }

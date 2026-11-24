@@ -114,7 +114,8 @@ function requestImageAnalysis(config: GeminiSettings, send: typeof fetch, styleI
   const style = styleInstructions !== undefined;
   const schema = style ? styleDnaAnalysisResponseJson : responseJsonSchema;
   return async (source: string | Buffer, deadline: AbortSignal): Promise<ImageAnalysis> => {
-    const signal = AbortSignal.any([deadline, AbortSignal.timeout(style ? 45_000 : 15_000)]);
+    // Style DNA 최초 분석은 원본 v1.01처럼 Gemini 호출을 따로 끊지 않고 분석 전체 기한(deadline)만 따른다. 일반 이미지 분석은 15초를 유지한다.
+    const signal = style ? deadline : AbortSignal.any([deadline, AbortSignal.timeout(15_000)]);
 
     let image: Buffer;
     try {
