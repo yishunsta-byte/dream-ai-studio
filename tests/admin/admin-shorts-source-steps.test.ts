@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ShortsSourceAnalyze } from "@/components/admin/shorts-source-steps/shorts-source-analyze";
 import { ShortsSourceSearch } from "@/components/admin/shorts-source-steps/shorts-source-search";
 import {
-  filterShorts, picksKey, presetValues, sameOrder, shortsCsv, SOURCE_MAX_SELECT, toPick, togglePick,
+  activeFilterLabels, filterMisses, filterShorts, picksKey, presetValues, sameOrder, shortsCsv, SOURCE_MAX_SELECT, toPick, togglePick,
   type ShortsSourceAnalysis, type ShortsSourceMultiAnalysis, type ShortsSourceSnapshot,
 } from "@/components/admin/shorts-source-steps/source-step-data";
 import { shortsAnalysisResultSchema, shortsMultiAnalysisResultSchema } from "@/lib/reference-analysis/shorts-analysis-contract";
@@ -93,7 +93,9 @@ describe("P1-08 원본 ① 떡상 쇼츠 검색 화면", () => {
     vi.stubGlobal("fetch", send);
     const html = renderToStaticMarkup(createElement(ShortsSourceSearch, { onPick: () => {}, onAnalyze: () => {}, initialSnapshot: snapshot, picked: [toPick(items[1], snapshot)] }));
     expect(send).not.toHaveBeenCalled();
-    expect(html).toContain("(2개 / 전체 4개)");
+    expect(html).toContain("(결과 필터에 맞는 2개 / 받은 후보 4개)");
+    expect(html).toContain("결과 필터: 3분 이내");
+    expect(html).toContain("결과 필터 끄고 전체 4개 보기");
     const table = html.slice(html.indexOf("<table"));
     expect(table.indexOf("합성 후보 Aa000000001")).toBeLessThan(table.indexOf("합성 후보 Bb000000002"));
     expect(html).not.toContain("합성 후보 Dd000000004");
@@ -258,5 +260,91 @@ describe("P1-08 ①② 여러 영상(최대 3개)", () => {
     expect(shortsMultiAnalysisResultSchema.safeParse({ ...base, videoIds: [a.videoId, b.videoId], findings: { ...base.findings, segments: [{ video: 3, timestamp: "00:01", evidence: "x" }] } }).success).toBe(false);
     expect(shortsMultiAnalysisResultSchema.safeParse({ ...base, videoIds: [a.videoId, a.videoId] }).success).toBe(false);
     expect(shortsMultiAnalysisResultSchema.safeParse({ ...base, videoIds: [a.videoId, b.videoId, c.videoId] }).success).toBe(true);
+  });
+});
+
+// P1-08-SHORTS-SEARCH-VISIBLE-CANDIDATES(Master msg_77c18434642a 배정 1): 50개를 받았는데 결과 필터 때문에 0개로 보이던 문제.
+// 원인: 서버는 YouTube videoDuration=short(4분 미만)로 받는데 화면 기본 결과 필터는 '3분 이내'이고, 길이 값이 없으면(null) 뺀다.
+// 그래서 3~4분 영상·길이 미확인 영상만 오면 사용자가 아무 필터를 고르지 않아도 0개가 된다. 전체 보기·필터 변경·검색 재호출 0은 브라우저 대역에서 확인(인계).
+describe("P1-08 검색 결과가 결과 필터에 모두 걸릴 때", () => {
+  const fifty = Array.from({ length: 50 }, (_, index) => candidate(`Zz${String(index).padStart(9, "0")}`,
+    index < 35 ? { durationSeconds: 181 + index, views: 5_000 + index } : { durationSeconds: null, views: 70_000 }));
+  const fiftySnapshot: ShortsSourceSnapshot = { ...snapshot, items: fifty };
+  const defaults = { maxDuration: "180", minViews: "", maxSubs: "" } as const;
+
+  it("합성 재현: 기본 결과 필터(3분 이내)만으로 50개가 0개가 되고, 조건별 빠진 수가 원인을 가리킨다", () => {
+    expect(filterShorts(fifty, defaults)).toHaveLength(0);
+    expect(activeFilterLabels(defaults)).toEqual(["3분 이내"]);
+    expect(filterMisses(fifty, defaults)).toEqual([{ label: "3분 넘는 영상", count: 35 }, { label: "길이 정보 없음", count: 15 }]);
+    // 필터를 끄면(같은 응답) 50개 모두 보인다.
+    expect(filterShorts(fifty, { maxDuration: "all", minViews: "", maxSubs: "" })).toHaveLength(50);
+  });
+
+  it("켜진 필터 이름과 조건별 수는 filterShorts와 같은 판정이다(빈 칸·숫자 아님은 꺼짐, 겹치면 조건마다 셈)", () => {
+    expect(activeFilterLabels({ maxDuration: "all", minViews: " ", maxSubs: "abc" })).toEqual([]);
+    expect(activeFilterLabels({ maxDuration: "60", minViews: "50000", maxSubs: "1000" })).toEqual(["1분 이내", "최소 조회수 50,000", "최대 구독자 1,000"]);
+    const filters = { maxDuration: "60", minViews: "50000", maxSubs: "50000" } as const;
+    expect(filterMisses(items, filters)).toEqual([
+      { label: "1분 넘는 영상", count: 2 }, { label: "길이 정보 없음", count: 1 }, { label: "조회수 50,000 미만", count: 2 },
+      { label: "조회수 비공개", count: 1 }, { label: "구독자 50,000 초과", count: 1 }, { label: "구독자 비공개", count: 1 }]);
+    expect(filterShorts(items, filters).map(item => item.id)).toEqual(["Aa000000001"]);
+    expect(filterMisses(items, { maxDuration: "all", minViews: "", maxSubs: "" })).toEqual([]);
+  });
+
+  it("화면: 필터 통과 0개면 누르지 않아도 받은 50개 행을 바로 보이고, 상태·조건별 수를 쓰며 필터 값은 그대로 둔다(요청 없음, CSV 열림)", () => {
+    const send = vi.fn();
+    vi.stubGlobal("fetch", send);
+    const html = renderToStaticMarkup(createElement(ShortsSourceSearch, { onPick: () => {}, onAnalyze: () => {}, initialSnapshot: fiftySnapshot }));
+    expect(send).not.toHaveBeenCalled();
+    expect(html).toContain("(결과 필터 통과 0개 · 받은 후보 50개 전체 표시)");
+    expect(html).toContain("결과 필터(3분 이내)에 맞는 영상이 0개라 받은 후보 50개를 모두 보여요. 필터 값은 그대로 있어서, 값을 바꾸면 그 조건으로 다시 걸러요.");
+    expect(html).toContain("3분 넘는 영상 35개 · 길이 정보 없음 15개");
+    const rows = html.slice(html.indexOf("<tbody>"), html.indexOf("</tbody>")).match(/<tr[ >]/g) ?? [];
+    expect(rows).toHaveLength(50);
+    for (const item of fifty) expect(html).toContain(`합성 후보 ${item.id}`);
+    expect(html.match(/결과 필터 밖/g)).toHaveLength(50);
+    // 필터 값은 그대로(3분 이내 선택 유지), 자동 전체 상태에서는 끄기 단추가 필요 없다.
+    expect(html).toMatch(/<option value="180" selected="">/);
+    expect(html).not.toContain("결과 필터 끄고 전체");
+    expect(html).not.toContain("조건에 맞는 영상이 없어요");
+    expect(html).not.toContain("YouTube에서 받은 후보가 없어요");
+    expect(html).toMatch(/<button type="button" class="[^"]*">📥 CSV 내보내기<\/button>/);
+    // CSV는 지금 보이는 목록(50개)과 같다.
+    expect(shortsCsv(fifty, NOW).split("\r\n")).toHaveLength(51);
+  });
+
+  it("부분 일치는 맞는 행만 보이고 '결과 필터 밖' 표시가 없다(끄기 단추로 같은 응답 전체를 볼 수 있음)", () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const html = renderToStaticMarkup(createElement(ShortsSourceSearch, { onPick: () => {}, initialSnapshot: snapshot }));
+    expect(html).toContain("(결과 필터에 맞는 2개 / 받은 후보 4개)");
+    expect(html).not.toContain("결과 필터 밖");
+    expect(html).not.toContain("전체 표시");
+    expect(html.slice(html.indexOf("<tbody>"), html.indexOf("</tbody>")).match(/<tr[ >]/g)).toHaveLength(2);
+  });
+
+  it("응답 0개는 필터 문구 없이 '받은 후보 0개'로, 실패와도 다른 문구다", () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const html = renderToStaticMarkup(createElement(ShortsSourceSearch, { onPick: () => {}, initialSnapshot: { ...snapshot, items: [] } }));
+    expect(html).toContain("(받은 후보 0개)");
+    expect(html).toContain("YouTube에서 받은 후보가 없어요. 다른 검색어나 기간으로 다시 검색해 보세요.");
+    expect(html).not.toContain("결과 필터");
+    expect(html).not.toContain("검색하지 못했어요");
+  });
+
+  it("위 검색 완료 안내는 받은 후보 수만 말하고, 결과 필터 수·범위는 아래 결과 표에서만 실시간으로 말한다", () => {
+    const source = read("shorts-source-search.tsx");
+    const success = source.slice(source.indexOf('if (outcome.kind === "ok")'), source.indexOf('if (outcome.kind === "login")')).replace(/\/\/.*$/gm, "");
+    expect(success).toContain("공개 쇼츠 후보 ${outcome.items.length}개를 받았어요.");
+    expect(success).not.toMatch(/filters|activeFilterLabels|filterShorts|결과 필터/);
+  });
+
+  it("표에 없는 고른 영상(결과 필터에 가려짐)이 있으면 표시하고 분석 단추를 막는다", () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const hidden = toPick(items[3], snapshot); // 200초: 기본 3분 이내에 가려짐
+    const html = renderToStaticMarkup(createElement(ShortsSourceSearch, { onPick: () => {}, onAnalyze: () => {}, initialSnapshot: snapshot, picked: [toPick(items[0], snapshot), hidden] }));
+    expect(html).toContain("지금 표에 없음");
+    expect(html).toContain("고른 영상 중 1개가 결과 필터에 가려 지금 표에 없어요.");
+    expect(html).toMatch(/<button type="button" class="[^"]*" disabled="">선택 영상 2개 묶음 분석하기 ➔<\/button>/);
+    expect(html.match(/checked=""/g)).toHaveLength(1);
   });
 });

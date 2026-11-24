@@ -68,6 +68,50 @@ export function filterShorts<T extends Pick<YouTubeShortCandidate, "durationSeco
   });
 }
 
+// P1-08-SHORTS-SEARCH-VISIBLE-CANDIDATES: 받은 후보가 결과 필터에 모두 걸려도 무엇이 몇 개를 뺐는지 보이고 필터만 끌 수 있게 한다.
+// 판정은 filterShorts와 같다(빈 칸·숫자가 아닌 값은 꺼진 조건). 요청 없음.
+const countText = (value: number) => value.toLocaleString("ko-KR");
+const filterNumber = (raw: string) => {
+  if (!raw.trim()) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+};
+const durationLabels = { "60": "1분", "180": "3분" } as const;
+
+/** 지금 켜진 결과 필터의 이름(켜진 것이 없으면 빈 목록). */
+export function activeFilterLabels(filters: SourceFilters): string[] {
+  const minViews = filterNumber(filters.minViews);
+  const maxSubs = filterNumber(filters.maxSubs);
+  return [
+    ...(filters.maxDuration === "all" ? [] : [`${durationLabels[filters.maxDuration]} 이내`]),
+    ...(minViews === null ? [] : [`최소 조회수 ${countText(minViews)}`]),
+    ...(maxSubs === null ? [] : [`최대 구독자 ${countText(maxSubs)}`]),
+  ];
+}
+
+export type FilterMiss = { label: string; count: number };
+/** 결과 필터가 받은 후보를 조건별로 몇 개씩 빼는지 센다. 한 후보가 여러 조건에 걸리면 조건마다 센다(합이 빠진 수보다 클 수 있다). 0개인 조건은 뺀다. */
+export function filterMisses(items: readonly Pick<YouTubeShortCandidate, "durationSeconds" | "views" | "subscribers">[], filters: SourceFilters): FilterMiss[] {
+  const maxDuration = filters.maxDuration === "all" ? null : Number(filters.maxDuration);
+  const minViews = filterNumber(filters.minViews);
+  const maxSubs = filterNumber(filters.maxSubs);
+  const count = (test: (item: (typeof items)[number]) => boolean) => items.filter(test).length;
+  const rows: FilterMiss[] = [];
+  if (maxDuration !== null) {
+    rows.push({ label: `${durationLabels[filters.maxDuration as "60" | "180"]} 넘는 영상`, count: count(item => item.durationSeconds !== null && item.durationSeconds > maxDuration) });
+    rows.push({ label: "길이 정보 없음", count: count(item => item.durationSeconds === null) });
+  }
+  if (minViews !== null) {
+    rows.push({ label: `조회수 ${countText(minViews)} 미만`, count: count(item => item.views !== null && item.views < minViews) });
+    rows.push({ label: "조회수 비공개", count: count(item => item.views === null) });
+  }
+  if (maxSubs !== null) {
+    rows.push({ label: `구독자 ${countText(maxSubs)} 초과`, count: count(item => item.subscribers !== null && item.subscribers > maxSubs) });
+    rows.push({ label: "구독자 비공개", count: count(item => item.subscribers === null) });
+  }
+  return rows.filter(row => row.count > 0);
+}
+
 /** UTC 날짜(검색 API 기간은 UTC 날짜 기준). */
 export function isoDay(now: number, offsetDays: number) {
   return new Date(now + offsetDays * 86_400_000).toISOString().slice(0, 10);

@@ -7,7 +7,7 @@ import { arrangeShorts, gradeRule, ratioText, viewsPerHour, vphText, vsGrade, vs
 import { keyStatusText, readYouTubeKey, recordKeyCheck, useKeyCheck, useLatestKey, type KeyRead } from "../youtube-key-client";
 import { searchYouTubeShorts, type SearchCode } from "../youtube-search-client";
 import {
-  filterShorts, presetValues, shortsCsv, SOURCE_MAX_SELECT, toPick, togglePick, watchUrl,
+  activeFilterLabels, filterMisses, filterShorts, presetValues, shortsCsv, SOURCE_MAX_SELECT, toPick, togglePick, watchUrl,
   type PresetKind, type SearchOrder, type ShortsSourcePick, type ShortsSourceSnapshot, type SourceFilters, type SourceQuery,
 } from "./source-step-data";
 import s from "./source-steps.module.css";
@@ -16,6 +16,10 @@ import s from "./source-steps.module.css";
 // 통신은 운영 공용 함수 그대로: 키 상태 GET 한 번(공급자 호출 없음), '쇼츠 검색'을 누를 때만 POST(/api/admin/shorts-search). 결과는 화면 메모리에만 두고 저장하지 않는다.
 // 영상을 고르기만 해서는 분석·저장·게시하지 않고 onPick으로 셸에 알린다. P1-08-SHORTS-MULTI-VIDEO-ANALYSIS-UI: 원본처럼 최대 3개를 고른 순서대로 고르고(4번째는 막고 안내),
 // 고른 영상 목록에서 순서 번호를 보이며 해제할 수 있다. 2개 이상이면 ②가 한 번에 묶어 분석한다.
+// P1-08-SHORTS-SEARCH-VISIBLE-CANDIDATES: 결과 필터(길이·최소 조회·최대 구독)는 받은 후보만 거른다. 켜진 필터와 받은 수·보이는 수를 나눠 보이고,
+// 받은 후보가 있는데 결과 필터에 맞는 영상이 0개면 누르지 않아도 같은 응답의 전체 후보 행을 바로 보이고, '필터 통과 0개 · 전체 표시'와 조건별로 빠진 수를 알린다
+// (주인님 요청, Master msg_6f0e97ed782a). 필터 값은 그대로 두어 값을 바꾸면 그 조건으로 다시 거른다. 일부가 맞을 때는 '결과 필터 끄고 전체 보기'로 같은 응답 전체를 본다(다시 검색하지 않음).
+// 선택·분석·CSV는 지금 표에 보이는 목록 기준이다: 표에 없는 고른 영상이 있으면 분석을 막고 알린다(해제하거나 필터를 끄면 풀림).
 const loginHref = adminLoginPath({ next: "/admin/shorts-analysis" });
 const orderLabels: Record<SearchOrder, string> = { viewCount: "조회수 높은 순", relevance: "관련도 순", date: "최신 순" };
 const viewLabels: Record<ShortsView, string> = { ratio: "조회÷구독 높은 순", vph: "시간당 조회수(VPH) 높은 순", search: "검색 순서 그대로" };
@@ -58,6 +62,8 @@ export function ShortsSourceSearch({ picked = [], onPick, onAnalyze, initialSnap
     return { query: "", order: "viewCount", dateFrom: preset.dateFrom, dateTo: preset.dateTo };
   });
   const [filters, setFilters] = useState<SourceFilters>({ maxDuration: "180", minViews: "", maxSubs: "" });
+  // 결과 필터를 잠시 끄고 받은 후보 전체를 보는지(조건 값은 그대로). 필터 값을 바꾸거나 새로 검색하면 다시 켠다.
+  const [showAll, setShowAll] = useState(false);
   const [view, setView] = useState<ShortsView>("ratio");
   const [results, setResults] = useState<ShortsSourceSnapshot | null>(initialSnapshot);
   const [running, setRunning] = useState(false);
@@ -88,7 +94,11 @@ export function ShortsSourceSearch({ picked = [], onPick, onAnalyze, initialSnap
   function applyPreset(kind: PresetKind) {
     const preset = presetValues(kind, Date.now());
     change({ dateFrom: preset.dateFrom, dateTo: preset.dateTo });
-    setFilters(preset.filters);
+    changeFilters(preset.filters);
+  }
+  function changeFilters(patch: Partial<SourceFilters>) {
+    setShowAll(false);
+    setFilters(previous => ({ ...previous, ...patch }));
   }
 
   async function submit(event?: FormEvent) {
@@ -119,7 +129,9 @@ export function ShortsSourceSearch({ picked = [], onPick, onAnalyze, initialSnap
       // 원본: 새 검색이면 앞 선택을 비운다.
       if (picked.length) onPick([]);
       setPickNote("");
-      setNotice({ text: outcome.items.length ? `공개 쇼츠 후보 ${outcome.items.length}개를 찾았어요.` : "" });
+      setShowAll(false);
+      // 위 안내는 받은 후보 수만 말한다. 결과 필터 수·범위는 필터를 바꿀 때마다 아래 결과 표 머리와 필터 줄이 실시간으로 말한다(Master msg_5b96609fbf00).
+      setNotice({ text: outcome.items.length ? `공개 쇼츠 후보 ${outcome.items.length}개를 받았어요.` : "YouTube에서 받은 공개 쇼츠 후보가 없어요." });
       return;
     }
     if (outcome.kind === "login") { setError("로그인이 끝났어요."); setNotice({ text: "", login: true }); return; }
@@ -143,7 +155,21 @@ export function ShortsSourceSearch({ picked = [], onPick, onAnalyze, initialSnap
     setError(messages[code]);
   }
 
-  const shown = useMemo(() => results ? arrangeShorts(filterShorts(results.items, filters), view, results.measuredAt) : [], [results, filters, view]);
+  const fitting = useMemo(() => results ? filterShorts(results.items, filters) : [], [results, filters]);
+  const received = results?.items.length ?? 0;
+  // 필터에 맞는 영상이 0개면 받은 후보 전체를 저절로 보인다(필터 값은 그대로).
+  const autoAll = !showAll && received > 0 && fitting.length === 0;
+  const allShown = showAll || autoAll;
+  const shown = useMemo(() => results ? arrangeShorts(allShown ? results.items : fitting, view, results.measuredAt) : [], [results, fitting, allShown, view]);
+  const fitIds = useMemo(() => new Set(fitting.map(item => item.id)), [fitting]);
+  const filterLabels = activeFilterLabels(filters);
+  const misses = autoAll ? filterMisses(results!.items, filters) : [];
+  // 표에 보이지 않는 고른 영상(결과 필터에 가려짐). 있으면 분석을 막는다.
+  const hiddenPicks = results ? picked.filter(pick => !shown.some(item => item.id === pick.videoId)) : [];
+  const resultCount = !results ? "" : received === 0 ? "(받은 후보 0개)"
+    : autoAll ? `(결과 필터 통과 0개 · 받은 후보 ${received}개 전체 표시)`
+    : showAll ? `(전체 후보 ${received}개 · 결과 필터 꺼짐)`
+      : filterLabels.length ? `(결과 필터에 맞는 ${fitting.length}개 / 받은 후보 ${received}개)` : `(받은 후보 ${received}개 전체)`;
   function toggle(itemId: string) {
     if (!results) return;
     const item = results.items.find(candidate => candidate.id === itemId);
@@ -225,7 +251,7 @@ export function ShortsSourceSearch({ picked = [], onPick, onAnalyze, initialSnap
           </select>
         </label>
         <label className={s.label}>영상 길이
-          <select className={s.input} value={filters.maxDuration} onChange={event => setFilters(previous => ({ ...previous, maxDuration: event.target.value as SourceFilters["maxDuration"] }))}>
+          <select className={s.input} value={filters.maxDuration} onChange={event => changeFilters({ maxDuration: event.target.value as SourceFilters["maxDuration"] })}>
             <option value="60">1분 이내</option>
             <option value="180">3분 이내 (쇼츠 최대)</option>
             <option value="all">전체</option>
@@ -233,10 +259,10 @@ export function ShortsSourceSearch({ picked = [], onPick, onAnalyze, initialSnap
         </label>
         <div className={s.pair}>
           <label className={s.label}>최소 조회수
-            <input className={s.input} type="number" min={0} inputMode="numeric" placeholder="10000" value={filters.minViews} onChange={event => setFilters(previous => ({ ...previous, minViews: event.target.value }))} />
+            <input className={s.input} type="number" min={0} inputMode="numeric" placeholder="10000" value={filters.minViews} onChange={event => changeFilters({ minViews: event.target.value })} />
           </label>
           <label className={s.label}>최대 구독자
-            <input className={s.input} type="number" min={0} inputMode="numeric" placeholder="50000" value={filters.maxSubs} onChange={event => setFilters(previous => ({ ...previous, maxSubs: event.target.value }))} />
+            <input className={s.input} type="number" min={0} inputMode="numeric" placeholder="50000" value={filters.maxSubs} onChange={event => changeFilters({ maxSubs: event.target.value })} />
           </label>
         </div>
       </fieldset>
@@ -250,24 +276,35 @@ export function ShortsSourceSearch({ picked = [], onPick, onAnalyze, initialSnap
 
     <section className={s.card} aria-labelledby={`${id}-results`}>
       <div className={s.cardHead}>
-        <h3 id={`${id}-results`}>검색 결과 <span className={s.count}>({shown.length}개 / 전체 {results?.items.length ?? 0}개)</span></h3>
+        <h3 id={`${id}-results`}>검색 결과 {resultCount && <span className={s.count}>{resultCount}</span>}</h3>
         <div className={s.actions} style={{ marginTop: 0 }}>
           <span className={s.count} style={{ fontWeight: 700 }} aria-live="polite">선택 {picked.length}/{SOURCE_MAX_SELECT}</span>
           <button type="button" className={`${s.ghost} ${s.small}`} disabled={shown.length === 0} onClick={exportCsv}>📥 CSV 내보내기</button>
-          {onAnalyze && <button type="button" className={`${s.primary} ${s.small}`} disabled={picked.length === 0}
-            onClick={() => { if (picked.length) onAnalyze([...picked]); }}>{picked.length > 1 ? `선택 영상 ${picked.length}개 묶음 분석하기 ➔` : "선택 영상 분석하기 ➔"}</button>}
+          {onAnalyze && <button type="button" className={`${s.primary} ${s.small}`} disabled={picked.length === 0 || hiddenPicks.length > 0}
+            onClick={() => { if (picked.length && !hiddenPicks.length) onAnalyze([...picked]); }}>{picked.length > 1 ? `선택 영상 ${picked.length}개 묶음 분석하기 ➔` : "선택 영상 분석하기 ➔"}</button>}
         </div>
       </div>
       {pickNote && <p className={s.error} role="alert" style={{ marginBottom: 12 }}>{pickNote}</p>}
+      {results && received > 0 && <div className={s.filterBar}>
+        <div className={s.filterText}>{autoAll ? <>
+          <p className={s.filterLine}>결과 필터({filterLabels.join(" · ")})에 맞는 영상이 0개라 받은 후보 {received}개를 모두 보여요. 필터 값은 그대로 있어서, 값을 바꾸면 그 조건으로 다시 걸러요.</p>
+          {misses.length > 0 && <p className={s.filterDetail}>조건별로 빠진 수(한 영상이 여러 조건에 걸릴 수 있어요): {misses.map(miss => `${miss.label} ${miss.count}개`).join(" · ")}</p>}
+        </> : <p className={s.filterLine}>{showAll ? <>결과 필터 꺼짐 · 받은 후보 전체를 보여요. 설정한 조건({filterLabels.join(" · ")})은 그대로 있어요.</>
+          : filterLabels.length ? <>결과 필터: {filterLabels.join(" · ")}</> : "결과 필터 없음 · 받은 후보 전체를 보여요."}</p>}</div>
+        {filterLabels.length > 0 && !autoAll && <button type="button" className={`${s.ghost} ${s.small}`} aria-pressed={showAll}
+          onClick={() => { setShowAll(value => !value); setPickNote(""); }}>{showAll ? "결과 필터 다시 켜기" : `결과 필터 끄고 전체 ${received}개 보기`}</button>}
+      </div>}
       {picked.length > 0 && <div className={s.pickList}>
         <p className={s.pickListTitle} id={`${id}-picked`}>고른 영상 · 고른 순서대로 분석해요</p>
         <ol className={s.pickItems} aria-labelledby={`${id}-picked`}>
           {picked.map((pick, index) => <li key={pick.videoId} className={s.pickItem}>
             <span className={s.pickOrder} aria-hidden="true">{index + 1}</span>
             <span className={s.pickTitle} title={pick.title}>영상 {index + 1} · {pick.title}</span>
+            {hiddenPicks.includes(pick) && <span className={s.pickHidden}>지금 표에 없음</span>}
             <button type="button" className={s.textLink} aria-label={`영상 ${index + 1} ${pick.title} 해제`} onClick={() => unpick(pick.videoId)}>해제</button>
           </li>)}
         </ol>
+        {hiddenPicks.length > 0 && <p className={s.pickWarn} role="status">고른 영상 중 {hiddenPicks.length}개가 결과 필터에 가려 지금 표에 없어요. 해제하거나 결과 필터를 끄면 분석할 수 있어요.</p>}
       </div>}
       {results && results.items.length > 0 && <div className={s.actions} style={{ marginTop: 0, marginBottom: 12 }}>
         <label className={s.viewPick}>결과 보기 순서
@@ -277,8 +314,7 @@ export function ShortsSourceSearch({ picked = [], onPick, onAnalyze, initialSnap
         </label>
         <span className={s.count}>&lsquo;{results.query}&rsquo; · {orderLabels[results.order]} · 검색 시각 {clock.format(results.measuredAt)}</span>
       </div>}
-      {shown.length === 0 ? <p className={s.empty}>{!results ? "아직 검색 결과가 없어요. 키워드를 입력해 검색해 보세요."
-        : results.items.length === 0 ? "검색 결과가 없어요. 다른 검색어나 기간으로 다시 검색해 보세요." : "조건에 맞는 영상이 없어요. 필터를 조정해 보세요."}</p>
+      {shown.length === 0 ? <p className={s.empty}>{!results ? "아직 검색 결과가 없어요. 키워드를 입력해 검색해 보세요." : "YouTube에서 받은 후보가 없어요. 다른 검색어나 기간으로 다시 검색해 보세요."}</p>
         : <div className={s.tableWrap}><table className={s.table}>
           <caption className={s.hidden}>공개 쇼츠 검색 결과. 영상을 최대 {SOURCE_MAX_SELECT}개 고르면 다음 단계에서 고른 순서대로 분석할 수 있어요.</caption>
           <thead><tr>
@@ -306,6 +342,7 @@ export function ShortsSourceSearch({ picked = [], onPick, onAnalyze, initialSnap
                 <div style={{ minWidth: 0 }}>
                   <p className={s.videoTitle} title={item.title}>{item.title}</p>
                   <p className={s.videoMeta}>{item.channelTitle} · <time dateTime={item.publishedAt}>{day.format(new Date(item.publishedAt))}</time></p>
+                  {allShown && filterLabels.length > 0 && !fitIds.has(item.id) && <p className={s.outside}>결과 필터 밖</p>}
                 </div>
               </div></td>
               <td className={s.strong}>{metricText(item.views)}</td>
