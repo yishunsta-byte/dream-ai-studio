@@ -129,11 +129,11 @@ try {
     await until((ST) => eval(ST).querySelectorAll("[aria-label='미학적 팔레트'] li").length === 2, "preview palette", ST);
     v = await studio();
     assert.deepEqual([v.viewerImage, v.palette, v.paletteNote], [true, ["#E11D4867%", "#2563EB33%"], "고른 파일에서 브라우저가 직접 잰 색이에요(서버로 보내지 않아요). 분석하면 서버 실측 5색으로 바뀌어요."]);
+    assert.equal(v.runDisabled, false, "파일을 고르면 분석을 시작할 수 있음");
     assert.equal((await rows()).filter((item) => item.method === "POST").length, 0);
 
     console.log("STEP 4 " + width);
     await page.evaluate(() => { window.__premiere.styleDna.hold = "analyze"; });
-    await agree("분석 설정");
     await press("이미지 시퀀싱 시작");
     await until((ST) => !!eval(ST).querySelector("[aria-label^='스캔 뷰어'] img[data-scanning]"), "scanning", ST);
     v = await studio();
@@ -205,23 +205,24 @@ try {
     if (width === 1574 || width === 390) await shot(`studio-old-record-${width}.png`);
 
     console.log("STEP 7 " + width);
-    // 7. 실패: 모델 오류(502 model_error) → 안내, 스캔 해제, 빈 칸 유지, 기록 추가 0. 키 미등록 → 엔진 경고, 동의·실행 잠김.
+    // 7. 실패: 모델 오류(502 model_error) → 안내, 스캔 해제, 빈 칸 유지, 기록 추가 0. 키 미등록 → 엔진 경고, 실행 잠김.
     await page.evaluate(() => sessionStorage.clear());
     await open(`styleDnaReport=1&w=${width}`);
     await page.evaluate(() => window.__premiere.styleDna.faults.analyze.push({ status: 502, body: { code: "model_error" } }));
     await mark(`[...(${ST}).querySelectorAll("label")].find((label) => label.textContent.trim() === "HTTPS 주소").querySelector("input")`, "Space");
     await typeInto(`(${ST}).querySelector("input[type=url]")`, "https://images.example.com/fail.png");
-    await agree("분석 설정");
     await press("이미지 시퀀싱 시작");
     await until((R) => /Gemini가 결과를 만들지 못했어요/.test(document.querySelector(R).textContent), "model error", R);
     v = await studio();
     assert.deepEqual([v.scanning, v.run, v.report, v.camera.map((item) => item[1])], [false, "이미지 시퀀싱 시작", "분석된 프롬프트 리포트 대기 중", EMPTY10]);
     assert.equal(await page.evaluate(() => window.__premiere.styleDna.records.length), 0);
     await open(`styleDnaModel=none&styleDnaReport=1&w=${width}`);
+    await mark(`[...(${ST}).querySelectorAll("label")].find((label) => label.textContent.trim() === "HTTPS 주소").querySelector("input")`, "Space");
+    await typeInto(`(${ST}).querySelector("input[type=url]")`, "https://images.example.com/no-key.png");
     v = await studio();
-    assert.deepEqual(await page.evaluate((ST) => { const st = eval(ST); const box = [...st.querySelectorAll("form[aria-label='분석 설정'] input[type=checkbox]")].find((item) => /동의해요/.test(item.closest("label").textContent));
-      return [st.querySelector("[aria-label='시스템 가이던스'] [role=note]:not(details *)")?.textContent ?? null, box.disabled, [...st.querySelectorAll("[aria-label='시스템 가이던스'] select")].at(-1).selectedOptions[0].textContent]; }, ST),
-      ["이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요.", true, "등록 안 됨"]);
+    assert.deepEqual(await page.evaluate((ST) => { const st = eval(ST);
+      return [st.querySelector("[id$='-operation-status']")?.textContent ?? null, [...st.querySelectorAll("[aria-label='시스템 가이던스'] select")].at(-1).selectedOptions[0].textContent]; }, ST),
+      ["이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요.", "등록 안 됨"]);
     assert.equal(v.runDisabled, true);
     if (width === 390 || width === 1574) await shot(`studio-no-key-${width}.png`);
     row.external = (await page.evaluate(() => window.__premiere.requests().filter((item) => !item.path.startsWith("/")).length));

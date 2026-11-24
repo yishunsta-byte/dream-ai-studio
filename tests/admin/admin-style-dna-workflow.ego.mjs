@@ -1,7 +1,7 @@
 /* global taskSpace, window, document, navigator, console, innerWidth, setTimeout, Event, HTMLInputElement, HTMLTextAreaElement, HTMLSelectElement, sessionStorage */
 import assert from "node:assert/strict";
 // P1-06 Style DNA 작업실: admin-hub-fixture-run.mjs가 연 루프백 주소에서 실행한다(Backend ab798b1 계약 대역: fixture.styleDna).
-// 확인: 보관함·설정 GET만 하고 실행 전 POST 0, 동의 전 실행 잠김. ① 주소·파일 분석(복제·변형 강도·지침·첨부 구문·문법 모델) → 기록·보고서·실측 5색, 보관함 증가.
+// 확인: 보관함·설정 GET만 하고 실행 전 POST 0, 분석 소스 선택 전 실행 잠김. ① 주소·파일 분석(복제·변형 강도·지침·첨부 구문·문법 모델) → 기록·보고서·실측 5색, 보관함 증가.
 // ② 빠른 피드백 보정 → 새 버전·이력, 오래된 버전 409(다시 읽기)·등록 버전 409(설정 다시 읽기·동의 풀림). ③ 피사체 필수·비율·원본 첨부 → 시험 이미지·슬라이더 비교·색 근접도,
 // 응답 유실 → 같은 요청으로 다시 확인(결과 하나). 멈추기·다른 기록 열기 → 끊김·늦은 결과 0. 새로고침 뒤 마지막 기록 다시 열기. 모델 미등록 안내. 320·390·1280 넘침 없음.
 // P1-06 원본 분석 화면(1단계) 뒤: 분석 단계는 원본 스튜디오(이미지 시퀀싱 시작·분석 뒤에도 분석 화면 유지·제목은 리포트 KR 줄·팔레트는 미학적 팔레트). 원본 화면 자체 확인은 admin-style-dna-studio.ego.mjs.
@@ -25,7 +25,7 @@ const view = () => page.evaluate((SEC) => {
     items: [...sec.querySelectorAll("section[aria-label='보관함'] li")].map((item) => item.querySelector("button > span:nth-of-type(2)")?.textContent ?? null),
     steps: [...sec.querySelectorAll("[aria-label='Style DNA 단계'] button")].map((button) => [button.textContent, button.getAttribute("aria-pressed"), button.disabled]),
     settings: sec.querySelector("[aria-label='Style DNA 설정']")?.textContent ?? null,
-    run: run?.disabled ?? null, consent: checks.at(-1)?.checked ?? null, consentDisabled: checks.at(-1)?.disabled ?? null,
+    run: run?.disabled ?? null, consent: checks.at(-1)?.checked ?? null,
     record: sec.querySelector("[aria-label='열린 분석'] h4")?.textContent ?? sec.querySelector("[aria-label='분석 리포트'] p + p")?.textContent.replace(/^KR: /, "") ?? null,
     recordNote: sec.querySelector("[aria-label='열린 분석'] p")?.textContent ?? null,
     palette: [...sec.querySelectorAll("[aria-label='원본 실측 5색'] li, [aria-label='미학적 팔레트'] li")].map((item) => item.textContent),
@@ -36,7 +36,7 @@ const view = () => page.evaluate((SEC) => {
     prompts: [...sec.querySelectorAll("form strong, [aria-label='현재 프롬프트'] h6")].map((item) => item.textContent).filter((text) => text.startsWith("마스터") || text.startsWith("시험에")),
     compare: !!sec.querySelector("[role=group][aria-label^='원본과 시험 결과'] [role=slider]"), proximity: sec.querySelector("[aria-label='색감 일치율'] p + p")?.textContent ?? null,
     tests: [...sec.querySelectorAll("[aria-label='시험 기록'] input[type=radio]")].length,
-    notice: [...sec.querySelectorAll(":scope > p[role]")].map((item) => item.textContent).filter(Boolean).join(" | "),
+    notice: [...sec.querySelectorAll(":scope > p[role], p[id$='-operation-status']")].map((item) => item.textContent).filter(Boolean).join(" | "),
     retry: [...sec.querySelectorAll(":scope > p button")].some((button) => button.textContent === "결과 다시 확인"),
     stop: [...sec.querySelectorAll(":scope > div button")].some((button) => button.textContent.trim() === "멈추기") };
 }, SEC);
@@ -61,7 +61,7 @@ const type = (expression, value) => page.evaluate(([expression, value]) => {
   Object.getOwnPropertyDescriptor(proto, "value").set.call(input, value);
   input.dispatchEvent(new Event(input instanceof HTMLSelectElement ? "change" : "input", { bubbles: true }));
 }, [expression, value]);
-const noticeIs = (pattern, label) => until(([SEC, source]) => new RegExp(source).test([...eval(SEC).querySelectorAll(":scope > p[role]")].map((item) => item.textContent).join(" ")), label, [SEC, pattern.source]);
+const noticeIs = (pattern, label) => until(([SEC, source]) => new RegExp(source).test([...eval(SEC).querySelectorAll(":scope > p[role], p[id$='-operation-status']")].map((item) => item.textContent).join(" ")), label, [SEC, pattern.source]);
 const open = async (query) => {
   await page.goto("about:blank");
   await page.goto(`${base}/admin?page=style-dna-panel&${query}${R}`);
@@ -77,18 +77,18 @@ try {
     const row = { width };
 
     console.log("STEP 1 " + width);
-    // 1. 보관함 1개·설정 표시, 보정·시험 단계 잠김, 동의 전 실행 잠김, POST 0
+    // 1. 보관함 1개·설정 표시, 보정·시험 단계 잠김, 분석 소스 선택 전 실행 잠김, POST 0
     await open(`styleDnaSeed=1&w=${width}`);
     let v = await view();
     assert.deepEqual([v.library, v.libraryOpen, v.items, v.steps.map((item) => item[2]), v.run], ["보관함 1", "true", ["보관된 도심 인물 사진"], [false, true, true], null], "첫 화면은 보관함");
     await press("1. 이미지 분석");
     v = await view();
-    assert.deepEqual([v.libraryOpen, v.run, v.consent], ["false", true, false]);
+    assert.deepEqual([v.libraryOpen, v.run, v.consent], ["false", true, null]);
     assert.equal(v.settings, "분석 모델 gemini-fixture-image · Gemini 등록 버전 3 · 시험 생성 모델 Nano Banana 2.1, Nano Banana 2 Lite");
     assert.deepEqual([(await rows()).length, (await posts()).length], [2, 0], "열기만 하면 목록·엔진 설정 GET 두 건, POST 0");
 
     console.log("STEP 2 " + width);
-    // 2. 주소 분석: 변형 80(파격)·지침·문법 모델 → 동의 → POST 1(JSON) → 기록·보고서·5색, 보정 단계로, 보관함 2
+    // 2. 주소 분석: 변형 80(파격)·지침·문법 모델 → 시작 클릭 → POST 1(JSON) → 기록·보고서·5색, 보관함 2
     await pick("HTTPS 주소");
     await type(labelled("이미지 주소"), "https://images.example.com/city.png");
     await press("스타일 변형");
@@ -96,17 +96,17 @@ try {
     assert.match(await page.evaluate(`(${RANGE}).closest("div").textContent`), /변형 강도80%파격 \(과감한 재해석\)/);
     await type(labelled("추가 분석 지침", "textarea"), "조명과 표면 질감을 집중 분석");
     await type(labelled("타겟 이미지 모델", "select"), "gemini-3.1-flash-lite-image");
-    assert.equal((await view()).run, true);
-    await consent();
     assert.equal((await view()).run, false);
+    assert.equal((await posts()).length, 0, "주소와 설정을 입력해도 POST 0");
     await press("이미지 시퀀싱 시작");
     await noticeIs(/분석을 마치고 보관함에 저장했어요\. '주소 분석'/, "analyzed url");
+    assert.equal((await posts("style-dna")).length, 1);
     const sent = (await posts()).at(-1).body;
     assert.deepEqual({ ...sent, requestId: "id" }, { requestId: "id", authorized: true, credentialVersion: 3, mode: "mutate", guidance: "조명과 표면 질감을 집중 분석",
       mutationLevel: 80, includeImageTag: true, targetModel: "gemini-3.1-flash-lite-image", source: { kind: "url", url: "https://images.example.com/city.png" } });
     await until((SEC) => eval(SEC).querySelector("[aria-label='Style DNA 단계']").previousElementSibling.textContent === "보관함 2", "library 2", SEC);
     v = await view();
-    assert.deepEqual([v.record, v.steps.map((item) => item[1]), v.palette.length, v.consent], ["주소 분석", ["true", "false", "false"], 5, false]);
+    assert.deepEqual([v.record, v.steps.map((item) => item[1]), v.palette.length, v.consent], ["주소 분석", ["true", "false", "false"], 5, null]);
 
     console.log("STEP 3 " + width);
     // 3. 보정: 빠른 피드백 두 개 → 동의 → v2·이력. 오래된 버전 409 → 기록 다시 읽기. 등록 버전 409 → 설정 다시 읽기·동의 풀림
@@ -186,15 +186,16 @@ try {
       data.items.add(new File([new Uint8Array([137, 80, 78, 71])], "studio.png", { type: "image/png" })); input.files = data.files;
       input.dispatchEvent(new Event("change", { bubbles: true })); })()`);
     await press("스타일 복제");
-    await consent();
+    assert.equal((await view()).run, false, "파일을 고르면 분석을 시작할 수 있음");
+    const analyzesBeforeFile = (await posts("style-dna")).length;
     await press("이미지 시퀀싱 시작");
     await noticeIs(/분석을 마치고 보관함에 저장했어요\. '파일 studio\.png'/, "analyzed file");
+    assert.equal((await posts("style-dna")).length, analyzesBeforeFile + 1);
     const formBody = (await posts()).filter((item) => item.path === "/api/admin/style-dna").at(-1).body;
     assert.deepEqual([formBody.form, formBody.file, formBody.options.mode, formBody.options.mutationLevel], [["file", "options"], "studio.png", "replicate", 30]);
     const before = await page.evaluate(() => window.__premiere.styleDna.records.length);
     await press("1. 이미지 분석");
     await page.evaluate(() => { window.__premiere.styleDna.hold = "analyze"; });
-    await consent();
     await press("이미지 시퀀싱 시작");
     assert.equal((await view()).stop, true);
     await press("멈추기");
@@ -202,7 +203,6 @@ try {
     assert.equal((await posts()).filter((item) => item.path === "/api/admin/style-dna").at(-1).aborted, true);
     assert.match((await view()).notice, /요청을 멈췄어요/);
     await page.evaluate(() => { window.__premiere.styleDna.hold = "analyze"; });
-    await consent();
     await press("이미지 시퀀싱 시작");
     await mark(LIBRARY, "Enter");
     await openCard("보관된 도심 인물 사진");
@@ -212,7 +212,7 @@ try {
     row.aborted = (await rows()).filter((item) => item.aborted).length;
 
     console.log("STEP 6 " + width);
-    // 6. 새로고침 뒤 마지막으로 연 기록(보관된 도심 인물 사진)을 다시 연다. 모델 미등록이면 안내·동의 잠김
+    // 6. 새로고침 뒤 마지막으로 연 기록(보관된 도심 인물 사진)을 다시 연다. 모델 미등록이면 실행 잠김
     await page.goto(`${base}/admin?page=style-dna-panel&styleDnaSeed=1&w=${width}${R}`);
     await until((SEC) => { try { return eval(SEC).querySelector("[aria-label='분석 리포트'] p + p")?.textContent === "KR: 보관된 도심 인물 사진"; } catch { return false; } }, "reopened", SEC);
     row.overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
@@ -226,8 +226,10 @@ try {
     assert.equal(v.library, "보관함 0");
     assert.match(await page.evaluate(`(${SEC}).querySelector("section[aria-label='보관함']").textContent`), /아직 분석한 이미지가 없습니다\./);
     await press("1. 이미지 분석");
+    await pick("HTTPS 주소");
+    await type(labelled("이미지 주소"), "https://images.example.com/no-key.png");
     v = await view();
-    assert.deepEqual([v.consentDisabled, v.run], [true, true]);
+    assert.deepEqual([v.consent, v.run], [null, true]);
     results.push(row);
   }
 } finally {

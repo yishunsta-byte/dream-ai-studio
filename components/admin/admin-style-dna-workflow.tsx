@@ -39,6 +39,7 @@ const UPLOAD_LIMIT = 4 * 1024 * 1024;
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
 const LIMITS = { guidance: 800, feedback: 600, subject: 500, url: 4096 };
 type Step = "library" | "analyze" | "refine" | "test";
+type ConsentStep = "refine" | "test";
 type Model = StyleDnaTestResult["model"];
 const modelIds = Object.keys(styleDnaImageModels) as Model[];
 export const mutationStage = (level: number) => level <= 30 ? { label: "안정", full: "안정 (원본 스타일 충실)", desc: "원본 스타일 엄격 보존, 미세 질감 개선만" }
@@ -136,7 +137,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const [engines, setEngines] = useState<EngineCredentials | null>(null);
   const [engine, setEngine] = useState<EngineChoice>("gemini");
   // 동의는 단계별로 그때 고른 엔진·모델·등록 버전에 묶는다(시험 생성은 Gemini 등록 버전).
-  const [consent, setConsent] = useState<{ step: Step; version: number; engine: string } | null>(null);
+  const [consent, setConsent] = useState<{ step: ConsentStep; version: number; engine: string } | null>(null);
   const active = useRef<AbortController | null>(null);
   const reading = useRef<AbortController | null>(null);
   const reopened = useRef(false);
@@ -178,9 +179,9 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   });
   const engineWarn = !settings || engineReady ? null : engine === "gemini" ? "이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요."
     : `${engineLabel(engine)} 키가 등록되지 않았거나 바뀌었어요. API키등록·플랫폼연동에서 확인하거나 다른 AI를 선택해 주세요.`;
-  const agreed = (target: Step) => target === "test" ? ready && consent?.step === "test" && consent.version === version
+  const agreed = (target: ConsentStep) => target === "test" ? ready && consent?.step === "test" && consent.version === version
     : engineReady && consent?.step === target && consent.version === engineVersion && consent.engine === engineKey;
-  const agree = (target: Step, checked: boolean) => {
+  const agree = (target: ConsentStep, checked: boolean) => {
     setNotice(null);
     setConsent(checked ? target === "test" ? { step: target, version, engine: "gemini" } : { step: target, version: engineVersion, engine: engineKey } : null);
   };
@@ -189,7 +190,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
     ...(engine !== "gemini" && engineModel ? { engine: { provider: engine, modelId: engineModel } } : {}) });
   const say = (code: StyleDnaCode, provider: EngineChoice) => provider === "gemini" ? messages[code] : messages[code].replace("Gemini", engineLabel(provider));
   const stop = () => { active.current?.abort(); active.current = null; setRunning(""); };
-  const changed = () => { if (active.current) { stop(); setNotice({ tone: "status", text: "조건이 바뀌어 진행 중이던 요청을 멈췄어요. 다시 동의하고 실행해 주세요." }); } setConsent(null); };
+  const changed = () => { if (active.current) { stop(); setNotice({ tone: "status", text: "조건이 바뀌어 진행 중이던 요청을 멈췄어요. 설정을 확인하고 다시 실행해 주세요." }); } setConsent(null); };
   const reloadLibrary = () => { setConsent(null); setLibrary({ kind: "loading" }); setAttempt(value => value + 1); };
   const pickEngine = (next: EngineChoice) => { if (next === engine) return; changed(); setEngine(next); };
 
@@ -329,7 +330,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const analyzeReady = !!source && !fileProblem && !urlProblem && [...guidance].length <= LIMITS.guidance;
   function submitAnalyze(event: FormEvent) {
     event.preventDefault();
-    if (!analyzeReady || !source || !agreed("analyze")) return;
+    if (!analyzeReady || !source || !engineReady) return;
     const request = analyzeRequest(source, options, engineOp());
     void execute("이미지 분석", signal => analyzeStyleDna(request, { signal }), value => {
       // 원본처럼 분석 화면에 결과를 그대로 보여 준다(보정은 아래 추론 막대 또는 2단계).
@@ -450,9 +451,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
       {{ login: "로그인이 끝났어요.", forbidden: "이 계정에는 Style DNA 권한이 없어요.", unavailable: "Style DNA 저장소가 준비되지 않았어요.", failed: "보관함을 읽지 못했어요." }[library.kind]}
       {library.kind === "login" ? <> <a className={panel.link} href={loginLink}>관리자 로그인</a></> : <> <button type="button" className={panel.link} onClick={reloadLibrary}>다시 확인</button></>}
     </p> : null;
-  const analyzeHint = step === "analyze" && !busy && !notice
-    ? engineWarn ?? (analyzeReady && engineReady && !agreed("analyze") ? `${engineShort} 전송 동의에 체크하면 분석을 시작할 수 있어요.` : null)
-    : null;
+  const analyzeHint = step === "analyze" ? engineWarn : null;
   const operationFeedback = <>
     <p id={`${id}-operation-status`} className={panel.status} role={notice?.tone === "alert" ? "alert" : "status"}>
       {running ? `${running} 중이에요.` : notice?.text ?? analyzeHint ?? ""}
@@ -533,10 +532,8 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
               <input type="url" inputMode="url" maxLength={LIMITS.url} value={url} aria-invalid={!!urlProblem || undefined} placeholder="https://"
                 onChange={event => { changed(); setUrl(event.target.value); }} /></label>}
             {sourceKind === "record" && record && <p className={studio.cardNote}>&apos;{record.title}&apos;의 저장된 원본({record.original.width}×{record.original.height})을 새 기록으로 다시 분석해요.</p>}
-            <label className={studio.consent}><input type="checkbox" checked={agreed("analyze")} disabled={!engineReady || busy}
-              onChange={event => agree("analyze", event.target.checked)} />
-              분석할 권리가 있으며, 이미지 사본과 아래 옵션을 {engineShort}에 보내 분석하고 결과를 내 보관함에 저장하는 데 동의해요.</label>
-            <button type="submit" className={studio.primary} aria-describedby={`${id}-operation-status`} disabled={!analyzeReady || !agreed("analyze") || busy}>
+            <p className={studio.cardNote} id={`${id}-analyze-info`}>시작하면 이미지 사본과 분석 설정을 {engineShort}에 보내고 결과를 보관함에 저장해요.</p>
+            <button type="submit" className={studio.primary} aria-describedby={`${id}-analyze-info ${id}-operation-status`} disabled={!analyzeReady || !engineReady || busy}>
               {analyzing ? <Loader2 size={16} className={studio.spin} /> : <Sparkles size={16} />}{analyzing ? "이미지 시퀀싱 중..." : "이미지 시퀀싱 시작"}</button>
             {libraryFeedback}
             {operationFeedback}

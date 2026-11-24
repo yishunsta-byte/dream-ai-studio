@@ -107,7 +107,6 @@ const analyze = async () => {
   const ST = `document.querySelector("${R} [aria-label='이미지 스타일 분석기']")`;
   await mark(`[...(${ST}).querySelectorAll("label")].find((label) => label.textContent.trim() === "HTTPS 주소").querySelector("input")`, "Space");
   await typeInto(`(${ST}).querySelector("input[type=url]")`, "https://images.example.com/city.png");
-  await mark(`[...(${ST}).querySelectorAll("form[aria-label='분석 설정'] input[type=checkbox]")].find((box) => /동의해요/.test(box.closest("label").textContent))`, "Space");
   await pressIn(ST, "이미지 시퀀싱 시작");
   await until((ST) => /Dusk City Portrait/.test(eval(ST).textContent), "analyzed", ST);
 };
