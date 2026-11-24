@@ -13,7 +13,7 @@ import analysisStyles from "./admin-reference-analysis.module.css";
 import type { PublicationDraft } from "./admin-reference-analysis-model";
 import { ADMIN_SETTINGS_HREF, SettingsLink, type SettingsHref } from "./admin-settings-link";
 import { SunoPrompt } from "./admin-suno-prompt";
-import { AudioAnalysisProgress, audioWaitSeconds } from "./audio-analysis-progress";
+import { AudioAnalysisProgress } from "./audio-analysis-progress";
 import { directAudioIssue } from "./audio-upload-client";
 
 // P1-07 관리자 오디오 분석. 음악 모드는 첫 이식 그대로(3febbd9 화면, Backend a849538 /api/admin/music-semantic 호출·DTO),
@@ -147,7 +147,7 @@ function MusicFileAnalysis({ file, client, disabled, onPrepare, settingsHref, mo
       <Button type="button" loading={busy} loadingLabel="분석 중" disabled={!!fileIssue || disabled} onClick={analyze}>{detail ? `${current.run} (상세)` : current.run}</Button>
     </>}
     {busy && <p role="status">{analyzingStatus(mode)}</p>}
-    {busy && <AudioAnalysisProgress limitSeconds={detail ? audioWaitSeconds.detailed : audioWaitSeconds.basic} />}
+    {busy && <AudioAnalysisProgress />}
     {error && <p role="alert">{error}</p>}
     {outcome?.mode === "music" && <MusicReport result={outcome.result} onPrepare={onPrepare} />}
     {outcome && outcome.mode !== "music" && outcome.mode !== "detail" && <AudioReport result={outcome.result} />}
