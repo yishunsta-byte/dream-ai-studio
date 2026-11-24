@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/primitives";
 import styles from "./admin-music-semantic.module.css";
 import { SceneDraftSave, useSceneDraftTarget } from "./admin-scene-draft-save";
@@ -14,6 +14,16 @@ export function SunoPrompt({ original }: { original: string }) {
   const prompt = useRef<HTMLTextAreaElement>(null);
   const edited = draft !== original;
   const scene = useSceneDraftTarget();
+  // 주인님 지시(2026-11-24): 분석 프롬프트가 칸 안에 잘리지 않고 다 보이게, 칸 높이를 글 길이에 맞춘다(고치거나 화면 폭이 바뀔 때도).
+  useLayoutEffect(() => fitPrompt(prompt.current), [draft]);
+  useEffect(() => {
+    const box = prompt.current;
+    if (!box || typeof ResizeObserver === "undefined") return;
+    let width = box.clientWidth;
+    const observer = new ResizeObserver(() => { if (box.clientWidth !== width) { width = box.clientWidth; fitPrompt(box); } });
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, []);
   async function copyPrompt() {
     try { await navigator.clipboard.writeText(draft); setCopy("Suno 프롬프트를 복사했어요."); }
     catch { prompt.current?.focus(); prompt.current?.select(); setCopy("선택된 프롬프트를 직접 복사해 주세요."); }
@@ -30,4 +40,11 @@ export function SunoPrompt({ original }: { original: string }) {
     <p role="status">{copy}</p>
     <SceneDraftSave input={{ suggested: original, text: draft }} />
   </>;
+}
+
+// 칸 높이를 내용 높이로 맞춘다(테두리 두께까지 더해 마지막 줄이 가려지지 않게).
+export function fitPrompt(box: HTMLTextAreaElement | null) {
+  if (!box) return;
+  box.style.height = "auto";
+  box.style.height = `${box.scrollHeight + box.offsetHeight - box.clientHeight}px`;
 }

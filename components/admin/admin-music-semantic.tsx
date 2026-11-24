@@ -13,6 +13,7 @@ import analysisStyles from "./admin-reference-analysis.module.css";
 import type { PublicationDraft } from "./admin-reference-analysis-model";
 import { ADMIN_SETTINGS_HREF, SettingsLink, type SettingsHref } from "./admin-settings-link";
 import { SunoPrompt } from "./admin-suno-prompt";
+import { AudioAnalysisProgress, audioWaitSeconds } from "./audio-analysis-progress";
 import { directAudioIssue } from "./audio-upload-client";
 
 // P1-07 관리자 오디오 분석. 음악 모드는 첫 이식 그대로(3febbd9 화면, Backend a849538 /api/admin/music-semantic 호출·DTO),
@@ -41,9 +42,10 @@ const modes = [
 ] as const satisfies readonly { mode: AdminAudioMode; label: string; run: string; busy: string }[];
 const kindName = { music: "음악", speech: "음성", undetermined: "판별 불가" } as const;
 /** P1-07-AUDIO-ORIGINAL-PARITY-UI G2: 원본 '분석 엔진 가동 중 (길이에 따라 …)' 안내를 기존 모드별 진행 문장 뒤에 붙인다.
- *  바로 분석 경로 한도(음악 75초·자동/음성 90초)를 넘는 '몇 분'은 쓰지 않는다. 분석 중에만 role=status 한 줄로 나온다. */
+ *  분석 중에만 role=status 한 줄로 나오고, 바로 아래 AudioAnalysisProgress가 움직이는 막대와 지난 시간을 보여 준다.
+ *  2026-11-24 대기 시간을 원본처럼 늘려(기본 120초·상세 200초) 안내도 '몇 분'으로 바꿨다. */
 export function analyzingStatus(mode: AdminAudioMode) {
-  return `${modes.find(item => item.mode === mode)!.busy} 파일 길이에 따라 수십 초 걸릴 수 있어요.`;
+  return `${modes.find(item => item.mode === mode)!.busy} 파일 길이에 따라 몇 분 걸릴 수 있어요.`;
 }
 
 type Props = {
@@ -145,6 +147,7 @@ function MusicFileAnalysis({ file, client, disabled, onPrepare, settingsHref, mo
       <Button type="button" loading={busy} loadingLabel="분석 중" disabled={!!fileIssue || disabled} onClick={analyze}>{detail ? `${current.run} (상세)` : current.run}</Button>
     </>}
     {busy && <p role="status">{analyzingStatus(mode)}</p>}
+    {busy && <AudioAnalysisProgress limitSeconds={detail ? audioWaitSeconds.detailed : audioWaitSeconds.basic} />}
     {error && <p role="alert">{error}</p>}
     {outcome?.mode === "music" && <MusicReport result={outcome.result} onPrepare={onPrepare} />}
     {outcome && outcome.mode !== "music" && outcome.mode !== "detail" && <AudioReport result={outcome.result} />}

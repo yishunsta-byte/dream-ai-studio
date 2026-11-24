@@ -115,12 +115,12 @@ describe("music semantic integration client", () => {
 });
 
 describe("P1-07-AUDIO-ORIGINAL-PARITY-UI G2 바로 분석 진행 안내", () => {
-  it("모드별 기존 진행 문장 뒤에 '수십 초' 안내를 붙이고, 경로 한도(75·90초)를 넘는 '몇 분'은 쓰지 않는다", async () => {
+  it("모드별 기존 진행 문장 뒤에 '몇 분' 안내를 붙인다(대기 한도 기본 120초·상세 200초, 경로 300초)", async () => {
     const { analyzingStatus } = await import("@/components/admin/admin-music-semantic");
-    expect(analyzingStatus("music")).toBe("장르, 악기, 템포와 구간 구조를 분석하는 중이에요. 파일 길이에 따라 수십 초 걸릴 수 있어요.");
-    expect(analyzingStatus("auto")).toBe("음악인지 음성인지 판별한 뒤 분석하는 중이에요. 파일 길이에 따라 수십 초 걸릴 수 있어요.");
-    expect(analyzingStatus("speech")).toBe("요약, 주제, 할 일과 화자별 전사를 분석하는 중이에요. 파일 길이에 따라 수십 초 걸릴 수 있어요.");
-    for (const mode of ["music", "auto", "speech"] as const) expect(analyzingStatus(mode)).not.toMatch(/몇 ?분|\d+ ?분/);
+    expect(analyzingStatus("music")).toBe("장르, 악기, 템포와 구간 구조를 분석하는 중이에요. 파일 길이에 따라 몇 분 걸릴 수 있어요.");
+    expect(analyzingStatus("auto")).toBe("음악인지 음성인지 판별한 뒤 분석하는 중이에요. 파일 길이에 따라 몇 분 걸릴 수 있어요.");
+    expect(analyzingStatus("speech")).toBe("요약, 주제, 할 일과 화자별 전사를 분석하는 중이에요. 파일 길이에 따라 몇 분 걸릴 수 있어요.");
+    for (const mode of ["music", "auto", "speech"] as const) expect(analyzingStatus(mode)).not.toMatch(/수십 초|\d+ ?분/);
   });
   it("진행 안내는 분석 중(busy)에만 role=status 한 줄로 그리고, 단추 쪽 진행 표시는 aria-busy만 쓴다", () => {
     const source = readFileSync("components/admin/admin-music-semantic.tsx", "utf8");

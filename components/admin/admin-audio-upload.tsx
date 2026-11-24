@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/primitives";
 import type { AdminAudioMode } from "@/lib/reference-analysis/admin-audio-contract";
 import { completedDetail, DetailedAudioReport } from "./admin-audio-detail-report";
 import { AudioReport } from "./admin-music-semantic";
+import { AudioAnalysisProgress, audioWaitSeconds, largeFilePreparationSeconds } from "./audio-analysis-progress";
 import {
   createAudioUploadClient, guidance, guidanceLimit, type AudioUploadClient, type AudioUploadView, type UploadReply,
 } from "./audio-upload-client";
@@ -371,6 +372,7 @@ function UploadBody({ file, client, settingsHref, mode = "music", detail = false
     </ol>}
     {work === "send" && <p role="status">파일을 나눠 올리는 중이에요.</p>}
     {work === "analyze" && <p role="status">{modeName(sent?.mode ?? mode)} 모드로 분석하는 중이에요. 큰 파일은 몇 분 걸릴 수 있어요.</p>}
+    {work === "analyze" && <AudioAnalysisProgress limitSeconds={largeFilePreparationSeconds + (sent?.reportVersion === 2 ? audioWaitSeconds.detailed : audioWaitSeconds.basic)} />}
     {notice && <p role={notice.tone}>{notice.text}</p>}
     {ended && upload && <div className={own.row}>
       <p className={styles.hint}>서버에 올린 조각은 지웠어요. {cleanupText[upload.cleanup]}</p>

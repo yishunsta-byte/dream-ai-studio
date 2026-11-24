@@ -1,0 +1,36 @@
+/* 오디오 분석 중 진행 막대: 응답을 기다리는 동안 계속 움직인다(퍼센트 아님). */
+.wrap {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  margin-block-start: 0.5rem;
+}
+.track {
+  position: relative;
+  overflow: hidden;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-accent-soft, rgba(127, 127, 127, 0.2));
+}
+.bar {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 35%;
+  border-radius: inherit;
+  background: var(--accent, currentColor);
+  animation: slide 1.4s ease-in-out infinite;
+}
+@keyframes slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+.time {
+  margin: 0;
+  color: var(--fg-muted, inherit);
+  font-size: var(--text-sm, 0.875rem);
+}
+/* 움직임 줄이기 설정이면 막대는 멈춘 채 반투명으로 두고, 1초마다 늘어나는 시간으로 진행을 알린다. */
+@media (prefers-reduced-motion: reduce) {
+  .bar { animation: none; inline-size: 100%; opacity: 0.45; }
+}
