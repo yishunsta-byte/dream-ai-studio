@@ -3,8 +3,8 @@ import { z } from "zod";
 import { createProject, ProjectInputError } from "@/lib/services/projects";
 import { WorkflowError } from "@/lib/domain/stages";
 import { createProjectReadRequest } from "@/lib/services/postgres/project-read-request";
+import { managedProjectCreate } from "@/lib/cloud/managed-project-core-http";
 export const runtime="nodejs";
-// New cloud-read API. The existing POST below keeps its local creation contract.
 export async function GET() {
  const reads=createProjectReadRequest();
  const reply=await reads.list();
@@ -12,6 +12,7 @@ export async function GET() {
 }
 const requestSchema=z.strictObject({menuId:z.string().min(1).max(80),inputs:z.record(z.string(),z.unknown())});
 export async function POST(request:Request){
+ if (process.env.DREAM_PROJECT_CORE_BACKEND !== undefined) return managedProjectCreate(request);
  const denied=await requireApiAuth();if(denied)return denied;
 
  let input:unknown;try{input=await request.json();}catch{return Response.json({errors:{_form:"입력 내용을 읽을 수 없어요."}},{status:400});}

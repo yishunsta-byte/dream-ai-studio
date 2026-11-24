@@ -231,7 +231,7 @@ describe("레이아웃", () => {
 });
 
 describe("새 프로젝트 준비 안내 /cloud/projects/new(T-219): 만들기 미개통, 인증 판정만", () => {
-  async function pendingPage() { return (await import("@/app/(cloud)/cloud/projects/new/page")).default(); }
+  async function pendingPage() { return (await import("@/app/(cloud)/cloud/projects/new/page")).default({ searchParams: Promise.resolve({}) }); }
   it.each([
     ["no session", "/login?next=%2Fcloud%2Fprojects%2Fnew"],
     ["forbidden", "/login?error=forbidden"],

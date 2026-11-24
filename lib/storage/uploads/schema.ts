@@ -7,7 +7,7 @@ export const digestSchema = z.string().regex(/^[a-f0-9]{64}$/);
 export const contextSchema = z.strictObject({ principalId: id, now: counter, expectedRevision: counter });
 export type Context = z.infer<typeof contextSchema>;
 export class ProtocolError extends Error {
-  constructor(public readonly code: "INPUT" | "OWNER" | "AUTHORITY" | "CONFLICT" | "EXPIRED" | "FENCE" | "STATE" | "RECONCILE") { super(code); }
+  constructor(public readonly code: "INPUT" | "OWNER" | "AUTHORITY" | "CONFLICT" | "EXPIRED" | "FENCE" | "STATE" | "RECONCILE" | "OBSERVATION") { super(code); }
 }
 export function requireProtocol(condition: unknown, code: ProtocolError["code"]): asserts condition {
   if (!condition) throw new ProtocolError(code);
@@ -66,6 +66,10 @@ const formats = {
   "image/png": ["image", "png"], "image/jpeg": ["image", "jpg"], "image/webp": ["image", "webp"],
   "video/mp4": ["video", "mp4"], "video/quicktime": ["video", "mov"], "video/webm": ["video", "webm"],
 } as const;
+// Media family of a supported upload MIME, or null when the MIME is not accepted for uploads.
+export function uploadFormatKind(mime: string): "image" | "video" | null {
+  return Object.hasOwn(formats, mime) ? formats[mime as keyof typeof formats][0] : null;
+}
 export const identitySchema = z.strictObject({
   ownerId: id, assetId: recordId, bucket: z.string().regex(/^[a-z][a-z0-9-]{0,62}$/),
   key: z.string().max(256), sha256: digestSchema, sizeBytes: z.number().int().positive().max(2 * 1024 ** 3),
@@ -81,6 +85,16 @@ export const sourceSchema = z.strictObject({ bucket: z.string().regex(/^[a-z][a-
   key: z.string().min(1).max(512).regex(/^[a-zA-Z0-9/_.-]+$/).refine(v => v.split("/").every(p => p !== "" && p !== "." && p !== "..")),
   providerVersion: z.string().min(1).max(256).nullable() });
 export const mediaSchema = z.strictObject({ width: counter.min(1), height: counter.min(1), durationMs: counter.min(1).nullable() });
+// Observation v1: what the verifier actually read and decoded before asking for a receipt (or a rejection).
+// format/media are null when detection/decoding failed; published is the re-read of the final key after an initial publish.
+const observedBytesSchema = z.strictObject({ sha256: digestSchema, sizeBytes: counter });
+export const observationSchema = z.strictObject({
+  v: z.literal(1), kind: z.enum(["initial", "reverify"]), source: sourceSchema, bytes: observedBytesSchema,
+  format: z.strictObject({ mime: z.string().regex(/^[a-z0-9][a-z0-9.+-]{0,63}\/[a-z0-9][a-z0-9.+-]{0,63}$/), kind: z.enum(["image", "video", "other"]) }).nullable(),
+  media: mediaSchema.nullable(), published: observedBytesSchema.nullable(),
+  tools: z.strictObject({ verifierVersion: z.string().min(1).max(128), toolVersion: z.string().min(1).max(128) }),
+});
+export type Observation = z.infer<typeof observationSchema>;
 export const receiptBodySchema = z.strictObject({
   id: recordId, objectId: recordId, identity: identitySchema, operationId: recordId,
   generation: counter.min(1), fence: counter.min(1), policyEpoch: counter, policyDigest: digestSchema, source: sourceSchema, media: mediaSchema,
@@ -124,8 +138,11 @@ export const commandSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("renew"), operationId: recordId, fingerprint: digestSchema, expectedFence: counter, leaseUntil: counter }),
   z.strictObject({ type: z.literal("reservePublication"), operationId: recordId, fingerprint: digestSchema, expectedFence: counter, identity: identitySchema }),
   z.strictObject({ type: z.literal("finalize"), operationId: recordId, fingerprint: digestSchema, expectedFence: counter,
-    receiptId: recordId, identity: identitySchema, source: sourceSchema, media: mediaSchema, notAfter: counter, verifierVersion: z.string().min(1).max(128), toolVersion: z.string().min(1).max(128) }),
-  z.strictObject({ type: z.literal("rejectVerification"), operationId: recordId, fingerprint: digestSchema, expectedFence: counter, failureCode: verificationFailureSchema }),
+    receiptId: recordId, identity: identitySchema, source: sourceSchema, media: mediaSchema, notAfter: counter, verifierVersion: z.string().min(1).max(128), toolVersion: z.string().min(1).max(128),
+    // Optional on the wire so exact replay of a pre-observation terminal keeps its digest; required for every new issuance.
+    observation: observationSchema.optional() }),
+  z.strictObject({ type: z.literal("rejectVerification"), operationId: recordId, fingerprint: digestSchema, expectedFence: counter, failureCode: verificationFailureSchema,
+    observation: observationSchema.optional() }),
   z.strictObject({ type: z.literal("cancel") }),
   z.strictObject({ type: z.literal("claimCleanup"), cleanupId: recordId }),
   z.strictObject({ type: z.literal("observeCleanup"), cleanupId: recordId, expectedBarrierFence: counter, absent: z.boolean(), writerQuiescent: z.boolean(), identityDigest: digestSchema }),

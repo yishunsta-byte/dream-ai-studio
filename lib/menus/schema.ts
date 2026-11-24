@@ -5,13 +5,20 @@ const id = text.regex(/^[a-z][a-zA-Z0-9.-]*$/, "영문 소문자로 시작하는
 const inputType = z.enum(["text", "textarea", "url", "number", "select", "multiselect", "date", "datetime", "checkbox", "assets", "characters"]);
 const phase = z.enum(["P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"]);
 const labeled = { id, label: text };
+// 관리형 생성 서버·DB 정책(managed-project-core 0003)과 같은 두 분야만 활성화한다.
+const activeMenuPhases = new Map([["shopping-shorts", "P1"], ["topic-shorts", "P2"]]);
 const input = z.strictObject({
   ...labeled, type: inputType, required: z.boolean(), help: text.optional(),
   maxLength: z.number().int().positive().optional(),
   min: z.number().nonnegative().optional(), max: z.number().nonnegative().optional(),
   options: z.array(text).min(1).optional(),
   accept: z.array(z.enum(["image", "video", "audio", "doc"])).min(1).optional(),
+  // 비워 두면 서버가 적용하는 선택 값(select만). 화면은 같은 값을 처음 선택으로 보여 준다.
+  default: text.optional(),
 }).superRefine((value, ctx) => {
+  if (value.default !== undefined && (value.type !== "select" || !value.options?.includes(value.default))) {
+    ctx.addIssue({ code: "custom", path: ["default"], message: "기본값은 선택 항목 목록 중 하나여야 합니다" });
+  }
   if (["select", "multiselect"].includes(value.type) && !value.options) {
     ctx.addIssue({ code: "custom", path: ["options"], message: "선택 항목 목록이 필요합니다" });
   }
@@ -27,6 +34,8 @@ const menu = z.strictObject({
   ...labeled, group: id, phase, availability: z.enum(["active", "skeleton", "planned"]),
   description: text, source: z.array(text).min(1),
   defaultAspect: z.enum(["9:16", "16:9", "1:1"]), defaultLengthSec: z.number().int().nonnegative(),
+  // 고를 수 있는 목표 길이(초). 있으면 서버 입력 검증과 화면이 이 목록만 쓴다. 없는 분야(기존 쇼핑숏츠·저장된 스냅샷)는 공통 범위를 그대로 쓴다.
+  lengthOptions: z.array(z.number().int().positive()).min(1).optional(),
   inputs: z.array(input),
   planSteps: z.array(z.strictObject({ ...labeled, help: text.optional() })).min(1),
   reviseOptions: z.array(z.strictObject(labeled)).min(1),
@@ -80,8 +89,25 @@ export const menusSchema = z.strictObject({
   value.menus.forEach((item, index) => {
     const base = ["menus", index];
     if (!value.groups.some((group) => group.id === item.group)) issue([...base, "group"], "존재하지 않는 그룹입니다");
-    if (item.availability === "active" && (item.id !== "shopping-shorts" || item.phase !== "P1")) {
-      issue([...base, "availability"], "현재 단계에서는 쇼핑숏츠(P1)만 활성화할 수 있습니다");
+    if (item.availability === "active" && activeMenuPhases.get(item.id) !== item.phase) {
+      issue([...base, "availability"], "현재 단계에서는 쇼핑숏츠(P1)와 주제별 쇼츠(P2)만 활성화할 수 있습니다");
+    }
+    if (item.lengthOptions) {
+      const length = value.commonInputs.find((field) => field.id === "lengthSec");
+      const sorted = item.lengthOptions.every((sec, at) => at === 0 || item.lengthOptions![at - 1] < sec);
+      const inRange = item.lengthOptions.every((sec) => (length?.min ?? 0) <= sec && sec <= (length?.max ?? Infinity));
+      if (!sorted || !inRange) issue([...base, "lengthOptions"], "길이 선택지는 겹치지 않게 오름차순이고 공통 길이 범위 안이어야 합니다");
+      if (!item.lengthOptions.includes(item.defaultLengthSec)) issue([...base, "defaultLengthSec"], "기본 길이는 길이 선택지 중 하나여야 합니다");
+    }
+    const messageLength = item.inputs.findIndex((field) => field.id === "keyMessageLength");
+    if (messageLength >= 0) {
+      // 핵심 메시지 글자 수 선택: 숫자 문자열 목록이고, 가장 큰 값이 핵심 메시지의 최대 길이와 같아야 한다.
+      const limits = item.inputs[messageLength].options ?? [];
+      const message = item.inputs.find((field) => field.id === "keyMessage");
+      if (item.inputs[messageLength].type !== "select" || !limits.every((limit) => /^[1-9]\d*$/.test(limit)) ||
+        message?.maxLength !== Math.max(...limits.map(Number))) {
+        issue([...base, "inputs", messageLength], "핵심 메시지 글자 수 선택지는 숫자이고 가장 큰 값이 핵심 메시지 최대 길이와 같아야 합니다");
+      }
     }
     unique(item.inputs, [...base, "inputs"], value.commonInputs.map((field) => field.id));
     unique(item.review, [...base, "review"], [...value.commonReview, ...value.conditionalReview].map((field) => field.id));
