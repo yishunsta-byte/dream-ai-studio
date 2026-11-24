@@ -266,6 +266,7 @@ export async function verifyHttp({ admin, rootPath, connect, cert, key, dbHost, 
       persisted:await counts(),rolePrivileges:true}));
     const verifyPlan = process.argv.includes("--plan-draft") || process.argv.includes("--plan-approval");
     const verifyChoices = process.argv.includes("--asset-choices");
+    let topicPlan;
     if (verifyPlan && verifyChoices) throw new Error("Run plan and asset choice verification separately so each uses a fresh database.");
     if (verifyPlan) {
       const {verifyPlanDrafts} = await import("./managed-plan-core-http.mjs");
@@ -273,7 +274,7 @@ export async function verifyHttp({ admin, rootPath, connect, cert, key, dbHost, 
       const draft=await verifyPlanDrafts(context);
       if (process.argv.includes("--plan-approval")) {
         const {verifyPlanApproval}=await import("./managed-plan-core-approval.mjs");
-        await verifyPlanApproval(context,draft);
+        topicPlan={context,approval:await verifyPlanApproval(context,draft)};
       }
       if (process.argv.includes("--scene-flow")) {
         if (!process.argv.includes("--plan-approval")) throw new Error("--scene-flow runs after --plan-approval.");
@@ -287,6 +288,11 @@ export async function verifyHttp({ admin, rootPath, connect, cert, key, dbHost, 
     }
     if (draft) await draft.verifyDraftChoices({admin,rootPath,projectRef,users,startProfile,body,good,foreign,expired});
     await verifyTopicShorts({admin,rootPath,connect,users,startProfile,body,command,counts,loseResponse,good,foreign,expired});
+    // 주제별 쇼츠 기획은 생성 0003 뒤에 기획 0003을 더해 같은 프로젝트 흐름으로 확인한다(--plan-approval일 때).
+    if (topicPlan) {
+      const {verifyTopicPlan}=await import("./managed-plan-core-approval.mjs");
+      await verifyTopicPlan(topicPlan.context,topicPlan.approval);
+    }
   } finally { await new Promise(resolve=>authServer.close(resolve)); }
 }
 

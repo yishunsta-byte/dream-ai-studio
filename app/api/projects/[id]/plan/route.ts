@@ -7,7 +7,8 @@ import { resolveServerAuth } from "@/lib/auth/resolve";
 import { localProjectFormEnabled } from "@/lib/cloud/local-project-form-enabled";
 import { localPlanTransaction, openLocalPlanAccess } from "@/lib/cloud/local-plan-access";
 import {
-  managedPlanApprovalConfiguration, managedPlanApprovalUnavailable, managedPlanConfiguration, managedPlanMaxBytes, managedPlanUnavailable,
+  managedPlanApprovalConfiguration, managedPlanApprovalUnavailable, managedPlanConfiguration, managedPlanMaxBytes, managedPlanMenus,
+  managedPlanUnavailable,
   openManagedPlanApprovalTransaction, openManagedPlanTransaction,
 } from "@/lib/cloud/managed-project-plan";
 import { readBoundedUpload } from "@/lib/cloud/read-bounded-upload";
@@ -161,8 +162,8 @@ async function plan(request: Request, { params }: { params: Promise<{ id: string
     const key = [access.owner, id];
     // Saves and approvals serialize on the same project row.
     const { rows: [project] } = await client.query(`SELECT content_revision, approved_plan_id, template_snapshot_json, length_sec
-      FROM dream.projects WHERE owner_id=$1 AND id=$2 AND menu_id='shopping-shorts' AND archived_at IS NULL`
-      + (write ? " FOR UPDATE" : ""), key);
+      FROM dream.projects WHERE owner_id=$1 AND id=$2 AND menu_id=ANY($3::text[]) AND archived_at IS NULL`
+      + (write ? " FOR UPDATE" : ""), [...key, managedPlanMenus]);
     if (!project) return missing();
     const { rows: states } = await client.query(`SELECT stage,status FROM dream.stage_states
       WHERE owner_id=$1 AND project_id=$2 AND stage IN ('brief','plan','produce')`, key);
