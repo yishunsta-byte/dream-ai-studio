@@ -264,8 +264,10 @@ try {
       await page.screenshot({ path: `${out}/studio-estimate-${width}.png` }); }
     // 새로 만든 기록이 '마지막에 연 기록'으로 남으면 다음 시험 첫 화면이 바뀐다.
     await page.evaluate(() => sessionStorage.clear());
-    // 9. 대상 모델(CMD-20261125-012): 예전 서버는 두 개 그대로, ?styleDnaTargets=new면 서버 목록 7개(새 5개). 키보드로 FLUX 3을 고르면 안내가 붙고
-    //    고르기만으로는 POST 0. 분석 POST 본문 targetModel=flux-3. 3단계 '이미지 생성 모델'은 그대로 Gemini 두 개. =bad(중복 id)는 예전 목록.
+    // 9. 대상 모델(Backend 066c554 promptTargets): 예전 서버는 두 개 그대로, ?styleDnaTargets=new면 서버 목록 7개(새 5개, testable=false). 키보드로 FLUX 3을 고르면
+    //    안내가 붙고 고르기만으로는 POST 0. 분석 POST 본문 targetModel=flux-3. 3단계 '이미지 생성 모델'은 그대로 Gemini 두 개. =bad(중복 id)는 예전 목록.
+    //    엔진(analysisEngines·engineStorage, 1574): 새 서버는 /engine-credentials 따로 조회 0, ready는 등록대로, unavailable·모양 어긋남은 '확인 실패', not_configured는
+    //    '준비 안 됨'(어느 경우도 '키 미등록' 아님). 예전 서버는 따로 조회 1건.
     const TARGET = `[...(${ST}).querySelectorAll("label")].find((label) => label.firstChild?.textContent.trim() === "타겟 이미지 모델").querySelector("select")`;
     const targetState = () => page.evaluate((TARGET) => { const select = eval(TARGET); const note = select.getAttribute("aria-describedby");
       return { value: select.value, options: [...select.options].map((option) => option.textContent), note: note ? document.getElementById(note)?.textContent.trim() ?? "없는 id" : null }; }, TARGET);
@@ -275,6 +277,28 @@ try {
       assert.deepEqual(await targetState(), { value: "gemini-nano-banana-2.1", options: ["Nano Banana 2.1", "Nano Banana 2 Lite"], note: null });
       await open(`styleDnaReport=1&styleDnaTargets=bad&w=${width}`);
       assert.deepEqual((await targetState()).options, ["Nano Banana 2.1", "Nano Banana 2 Lite"]);
+      const ENGINES = `(${ST}).querySelector("[role=group][aria-describedby$='engine']")`;
+      const engineRow = async () => { await until((ENGINES) => !!eval(ENGINES) && !/확인 중/.test(eval(ENGINES).textContent), "engines settled", ENGINES);
+        return page.evaluate((ENGINES) => [...eval(ENGINES).querySelectorAll("button")].map((button) => [button.title, button.disabled]), ENGINES); };
+      const engineGets = async () => (await rows()).filter((item) => item.method === "GET" && item.path === "/api/admin/style-dna/engine-credentials").length;
+      const engineCases = [
+        ["", [["Google Gemini", false], ["OpenAI", false], ["Anthropic Claude (키 미등록)", true]], 1],
+        ["ready", [["Google Gemini", false], ["OpenAI", false], ["Anthropic Claude (키 미등록)", true]], 0],
+        ["unavailable", [["Google Gemini", false], ["OpenAI (확인 실패)", true], ["Anthropic Claude (확인 실패)", true]], 0],
+        ["bad", [["Google Gemini", false], ["OpenAI (확인 실패)", true], ["Anthropic Claude (확인 실패)", true]], 0],
+        ["not_configured", [["Google Gemini", false], ["OpenAI (준비 안 됨)", true], ["Anthropic Claude (준비 안 됨)", true]], 0],
+      ];
+      const engineSeen = {};
+      for (const [mode, expected, gets] of engineCases) {
+        await open(`styleDnaReport=1&styleDnaTargets=new&styleDnaEngines=openai${mode ? `&styleDnaEngineList=${mode}` : ""}&w=${width}`);
+        assert.deepEqual(await engineRow(), expected, `엔진 ${mode || "예전 서버"}`);
+        assert.equal(await engineGets(), gets, `엔진 따로 조회 ${mode || "예전 서버"}`);
+        if (mode && mode !== "ready") assert.equal(await page.evaluate((ST) => /키 미등록/.test(eval(ST).textContent), ST), false, `${mode}는 키 미등록 아님`);
+        engineSeen[mode || "legacy"] = expected.map(([label]) => label);
+      }
+      if (width === 1574) { await page.evaluate((ENGINES) => eval(ENGINES).scrollIntoView({ block: "center" }), ENGINES); await settle(200);
+        await page.screenshot({ path: `${out}/studio-engines-not-configured-${width}.png` }); }
+      row.engines = engineSeen;
     }
     await open(`styleDnaReport=1&styleDnaTargets=new&w=${width}`);
     v = await targetState();
