@@ -1,8 +1,8 @@
 /* global taskSpace, window, document, console, setTimeout, Event, sessionStorage */
 import assert from "node:assert/strict";
 // P1-06 원본 전체 화면(/admin/style-dna 본문, ?page=style-dna 루프백 대역)에서 조작 결과 화면을 남긴다(1280·390).
-// 보관 기록 열기 → 사이드바 2단계 → 빠른 피드백 두 개·동의·'미세 보정 요청' → 보정 기록 1건·프롬프트 버전 2(보정 2버전 표시)
-// → 사이드바 3단계 → '프롬프트 직접 편집'을 연 상태로 편집·동의·'공정 시작' → 원본과 생성 결과 비교. 단계마다 가로 넘침 0(실제 화면 폭 기준), 외부 요청 0.
+// 보관 기록 열기 → 사이드바 2단계 → 빠른 피드백 두 개·'미세 보정 요청'(동의 체크 없음) → 보정 기록 1건·프롬프트 버전 2(보정 2버전 표시)
+// → 사이드바 3단계 → '프롬프트 직접 편집'을 연 상태로 편집·'공정 시작'(동의 체크 없음) → 원본과 생성 결과 비교. 단계마다 가로 넘침 0(실제 화면 폭 기준), 외부 요청 0.
 const base = globalThis.FIXTURE_ORIGIN;
 const out = globalThis.FIXTURE_OUTPUT_DIR ?? ".";
 assert.match(base ?? "", /^http:\/\/127\.0\.0\.1:\d+$/);
@@ -24,7 +24,8 @@ const typeInto = (expression, value) => page.evaluate(([expression, value]) => {
   Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value").set.call(input, value);
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }, [expression, value]);
-const agree = (scope) => `[...(${scope}).querySelectorAll("form input[type=checkbox]")].find((box) => /동의해요/.test(box.closest("label").textContent))`;
+// CMD-044: 보정·시험은 따로 동의 체크 없이 단추를 누르면 바로 보낸다. 그 폼에 동의 체크 상자가 없어야 한다.
+const noConsent = async (scope) => assert.equal(await page.evaluate((scope) => [...eval(scope).querySelectorAll("form input[type=checkbox]")].filter((box) => /동의/.test(box.closest("label")?.textContent ?? "")).length, scope), 0, "동의 체크 상자 없음");
 const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 const side = async (mobile, prefix) => {
   if (mobile) { await press("메뉴 열기", "document"); await until(() => !!document.querySelector("[data-dna-shell] [id] nav"), "drawer"); }
@@ -44,12 +45,12 @@ for (const width of [1280, 390]) {
   await press("보관된 도심 인물 사진 열기");
   await until(() => !!document.querySelector("main [aria-label='이미지 스타일 분석기']"), "analyze");
 
-  // 2단계: 피드백 두 개 → 동의 → 보정 v2
+  // 2단계: 피드백 두 개 → 보정 v2(동의 체크 없음)
   await side(mobile, "2프롬프트보정");
   await until((RF) => !!eval(RF), "refine", RF);
   await press("색감을 더 따뜻하게", RF);
   await press("배경을 단순하게", RF);
-  await mark(agree(RF), "Space");
+  await noConsent(RF);
   await press("미세 보정 요청", RF);
   await until(() => /새 보정 버전을 저장했어요\(버전 2\)/.test(document.querySelector("main").textContent), "refined");
   row.refine = await page.evaluate((RF) => { const rf = eval(RF); return { history: [...rf.querySelectorAll("h5, h4")].map((node) => node.textContent.trim()).find((text) => text.startsWith("보정 기록")), v2: /v2|버전 2/.test(rf.textContent) }; }, RF);
@@ -58,13 +59,13 @@ for (const width of [1280, 390]) {
   await page.evaluate((RF) => eval(RF).scrollIntoView({ block: "start" }), RF); await settle(250);
   await page.screenshot({ path: `${out}/original-refine-v2-${width}.png` });
 
-  // 3단계: 직접 편집 연 상태 → 동의 → 합성 → 결과 비교
+  // 3단계: 직접 편집 연 상태 → 합성 → 결과 비교(동의 체크 없음)
   await side(mobile, "3결과테스트");
   await until((TS) => !!eval(TS), "test", TS);
   await press("프롬프트 직접 편집", TS);
   const edited = "Edited: a cat on a neon rooftop, teal and amber city glow";
   await typeInto(`(${TS}).querySelector("form textarea")`, edited);
-  await mark(agree(TS), "Space");
+  await noConsent(TS);
   await press("공정 시작 (이미지 1장 합성)", TS);
   await until(() => /프롬프트로 시험 이미지를 만들었어요/.test(document.querySelector("main").textContent), "tested");
   row.test = await page.evaluate((TS) => { const ts = eval(TS); return { editing: [...ts.querySelectorAll("button")].some((item) => item.textContent.trim() === "기본 프롬프트 모드로"), images: ts.querySelectorAll("img").length }; }, TS);

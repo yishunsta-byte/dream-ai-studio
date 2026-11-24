@@ -3,13 +3,13 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 // P1-06 3단계: 원본 Style DNA v1.39 '결과 테스트 및 이미지 합성' 화면 이관 확인(3a). admin-hub-fixture-run.mjs 루프백 주소, ?styleDnaReport=1.
 // 1. 주소 분석 → '3. 결과 테스트': 원본 단계 머리, 넓은 화면 2열(380px/나머지)·모바일 1열, 왼쪽 '추론 및 생성 설정'(직접 편집 전환·버전·피사체(필수)·참조 이미지 위젯·
-//    생성 모델·비율·Gemini 동의·'공정 시작 (이미지 1장 합성)'·유료 안내), 결과 전 원본·미리보기 두 카드와 빈 문구, 피사체가 없으면 잠김. 작은 글자 대비 4.5:1 이상.
-// 2. 피사체 → '프롬프트 직접 편집': 시작값 = 피사체를 넣은 버전 프롬프트, 2400자 칸, 자리표시자가 남으면 잠김 → 동의 → 본문 customPrompt·subject ""·원본 첨부.
+//    생성 모델·비율·Gemini로 보낼 내용 안내(CMD-044, 동의 체크 상자 없음)·'공정 시작 (이미지 1장 합성)'·유료 안내), 결과 전 원본·미리보기 두 카드와 빈 문구, 피사체가 없으면 잠김. 작은 글자 대비 4.5:1 이상.
+// 2. 피사체 → '프롬프트 직접 편집': 시작값 = 피사체를 넣은 버전 프롬프트, 2400자 칸, 자리표시자가 남으면 잠김 → 바로 열림(POST 0) → 한 번 누르면 POST 1, 본문 customPrompt·subject ""·원본 첨부.
 //    결과: 두 카드 접힘·'원본 ↔ 생성 비교'·색감 일치율·다운로드(결과 주소·파일 이름)·시험 기록 '직접 편집 · 원본 참조'.
 // 3. '개별 이미지 보기'(두 카드 다시 보임), 확대 창: 닫기 단추로 포커스, Esc로 닫고 연 단추로 포커스 복귀.
-// 4. 기본 모드 → '참조 이미지 변경'(PNG): 썸네일·초기화·동의 문구 '고른 참조 이미지' → multipart customReference+options(원본 첨부 끔·파일 sha256 일치) → 기록 '바꾼 참조'.
-// 5. GIF는 거절(안내, 참조 그대로). 초기화 → 원본 썸네일. '참조 이미지 없음' → 동의 문구에서 이미지 빠짐 → JSON attachImage false.
-// 각 폭 가로 넘침 0, 외부 요청 0, 동의 없이 POST 0.
+// 4. 기본 모드 → '참조 이미지 변경'(PNG): 썸네일·초기화·안내 문구 '고른 참조 이미지' → multipart customReference+options(원본 첨부 끔·파일 sha256 일치) → 기록 '바꾼 참조'.
+// 5. GIF는 거절(안내, 참조 그대로). 초기화 → 원본 썸네일. '참조 이미지 없음' → 안내 문구에서 이미지 빠짐 → JSON attachImage false.
+// 각 폭 가로 넘침 0, 외부 요청 0, 준비만 하면 POST 0.
 const base = globalThis.FIXTURE_ORIGIN;
 const out = globalThis.FIXTURE_OUTPUT_DIR ?? ".";
 assert.match(base ?? "", /^http:\/\/127\.0\.0\.1:\d+$/);
@@ -37,7 +37,6 @@ const putFile = (name, type) => page.evaluate(([TS, name, type, bytes]) => {
   const data = new DataTransfer(); data.items.add(new File([new Uint8Array(bytes)], name, { type })); input.files = data.files;
   input.dispatchEvent(new Event("change", { bubbles: true }));
 }, [TS, name, type, BYTES]);
-const AGREE = `[...(${TS}).querySelectorAll("form input[type=checkbox]")].find((box) => /동의해요/.test(box.closest("label").textContent))`;
 const SUBJECT = `(${TS}).querySelector("form textarea")`;
 const posts = (suffix) => page.evaluate((suffix) => window.__premiere.requests().filter((row) => row.method === "POST" && row.path.endsWith(suffix)), suffix);
 const notice = () => page.evaluate((R) => [...document.querySelectorAll(`${R} section > p[role]`)].map((item) => item.textContent).join(" | "), R);
@@ -45,7 +44,7 @@ const state = () => page.evaluate((TS) => {
   const ts = eval(TS);
   const text = (selector, root = ts) => root.querySelector(selector)?.textContent.trim() ?? null;
   const form = ts.querySelector("form[aria-label='추론 및 생성 설정']");
-  const box = [...form.querySelectorAll("input[type=checkbox]")].find((item) => /동의해요/.test(item.closest("label").textContent));
+  const info = [...form.querySelectorAll("p")].find((item) => /'공정 시작'을 누르면/.test(item.textContent));
   const ref = form.querySelector("[aria-label^='참조 이미지']");
   const singles = ts.querySelector("[aria-label='원본 레퍼런스']").parentElement;
   const rgb = (value) => value.match(/[\d.]+/g).map(Number);
@@ -70,7 +69,8 @@ const state = () => page.evaluate((TS) => {
       image: ref.querySelector("img")?.getAttribute("alt") ?? null, src: ref.querySelector("img")?.getAttribute("src") ?? null,
       pick: !!ref.querySelector("input[type=file]"), reset: !![...ref.querySelectorAll("button")].find((button) => button.textContent.trim() === "초기화") },
     models: [...form.querySelectorAll("select")].map((select) => select.selectedOptions[0]?.textContent ?? null),
-    consent: [box.checked, box.disabled, box.closest("label").textContent.trim()],
+    // CMD-044: [동의 체크 상자 수, 단추 옆 안내 문구]
+    consent: [form.querySelectorAll("input[type=checkbox]").length, info?.textContent.trim() ?? null],
     run: [...form.querySelectorAll("button[type=submit]")].map((button) => [button.textContent.trim(), button.disabled])[0],
     paid: [...form.querySelectorAll(":scope > p")].at(-1)?.textContent ?? null,
     singles: !singles.hidden, cards: [...singles.querySelectorAll("section h5")].map((node) => node.textContent),
@@ -81,7 +81,7 @@ const state = () => page.evaluate((TS) => {
     tests: [...ts.querySelectorAll("[aria-label='시험 기록'] li span")].map((node) => node.textContent),
     toggle: text("[aria-label='원본 ↔ 생성 비교'] button"),
     ratios: { textButton: ratio(form.firstElementChild.querySelector("button")), hint: ratio(form.querySelector("textarea + small")), refText: ratio(ref.querySelector("p")),
-      refHead: ratio(ref.querySelector("div > span")), refPick: ratio(ref.querySelector("label span")), consent: ratio(box.closest("label")), paid: ratio([...form.querySelectorAll(":scope > p")].at(-1)),
+      refHead: ratio(ref.querySelector("div > span")), refPick: ratio(ref.querySelector("label span")), consent: ratio(info), paid: ratio([...form.querySelectorAll(":scope > p")].at(-1)),
       placeholder: ratio(ts.querySelector("[aria-label='DNA 합성 미리보기'] div span")), ratio: ratio(ts.querySelector("[aria-label='원본 레퍼런스'] h5 + span")),
       matchLabel: match ? ratio(match.querySelector("p")) : null, matchValue: match ? ratio(match.querySelector("p + p")) : null, matchNote: match ? ratio(match.querySelector("p + p + p")) : null,
       testTime: ratio(ts.querySelector("[aria-label='시험 기록'] time")), toggle: ratio(ts.querySelector("[aria-label='원본 ↔ 생성 비교'] button")) },
@@ -127,12 +127,11 @@ try {
     assert.match(v.hint, /\[INSERT SUBJECT HERE\] 자리에 들어갑니다/);
     assert.deepEqual([v.reference.head, v.reference.toggle, v.reference.image, v.reference.pick, v.reference.reset],
       ["참조 이미지 (Visual DNA Anchor)", ["참조 이미지 연결됨", "true"], "참조 이미지(원본)", true, false]);
-    assert.deepEqual(v.consent, [false, false, "버전 1의 프롬프트와 원본 이미지를 Gemini 이미지 모델에 보내 시험 이미지 1장을 만들고 보관하는 데 동의해요."]);
+    assert.deepEqual(v.consent, [0, "'공정 시작'을 누르면 버전 1의 프롬프트와 원본 이미지를 Gemini 이미지 모델에 보내 시험 이미지 1장을 만들고 보관해요(호출 1건)."]);
     assert.deepEqual(v.run, ["공정 시작 (이미지 1장 합성)", true]);
     assert.equal(v.paid, "생성 1회마다 등록한 Gemini 이미지 호출 1건(유료)이 발생합니다.");
     assert.deepEqual([v.singles, v.cards, v.placeholder, v.compare, v.match], [true, ["원본 레퍼런스", "DNA 합성 미리보기"], "왼쪽에서 피사체를 입력하고 공정 시작을 눌러주세요.", false, null]);
     min45(v.ratios, `빈 화면 ${width}`);
-    await mark(AGREE, "Space");
     assert.deepEqual((await state()).run, ["공정 시작 (이미지 1장 합성)", true], "피사체 없으면 잠김");
     assert.equal((await posts("/test-image")).length, 0);
     await shot(`test-empty-${width}.png`);
@@ -142,17 +141,17 @@ try {
     await press("프롬프트 직접 편집");
     v = await state();
     assert.equal(v.textarea.value, PROMPT.replace("[INSERT SUBJECT HERE]", "a cat on a neon rooftop"), "시작값 = 피사체를 넣은 프롬프트");
-    assert.deepEqual([v.head[1], v.labels[1], v.textarea.max, v.consent[0]], ["기본 프롬프트 모드로", "대상 프롬프트 직접 편집 (Target Prompt)", 2400, false]);
-    assert.match(v.consent[2], /버전 1의 직접 편집한 프롬프트와 원본 이미지를/);
+    assert.deepEqual([v.head[1], v.labels[1], v.textarea.max, v.consent[0]], ["기본 프롬프트 모드로", "대상 프롬프트 직접 편집 (Target Prompt)", 2400, 0]);
+    assert.match(v.consent[1], /버전 1의 직접 편집한 프롬프트와 원본 이미지를/);
     await typeInto(SUBJECT, "Still [INSERT SUBJECT HERE] here");
-    await mark(AGREE, "Space");
     assert.equal((await state()).run[1], true, "자리표시자가 남으면 잠김");
     const edited = "Edited: a cat on a neon rooftop, teal and amber city glow";
     await typeInto(SUBJECT, edited);
-    assert.equal((await state()).consent[0], false, "편집하면 동의 풀림");
-    await mark(AGREE, "Space");
+    assert.equal((await state()).run[1], false, "피사체·편집이 맞으면 동의 없이 바로 열림");
+    assert.equal((await posts("/test-image")).length, 0, "준비만 하면 POST 0");
     await press("공정 시작 (이미지 1장 합성)");
     await until((R) => /버전 1 프롬프트로 시험 이미지를 만들었어요/.test(document.querySelector(R).textContent), "tested edited", R);
+    assert.equal((await posts("/test-image")).length, 1, "한 번 누르면 POST 1");
     let body = (await posts("/test-image")).at(-1).body;
     assert.deepEqual({ ...body, requestId: "id" }, { requestId: "id", authorized: true, credentialVersion: 3, revision: 1, model: "gemini-nano-banana-2.1",
       subject: "", attachImage: true, customPrompt: edited });
@@ -207,8 +206,7 @@ try {
     v = await state();
     assert.deepEqual([v.reference.image, v.reference.reset], ["바꾼 참조 이미지 ref.png", true]);
     assert.match(v.reference.src, /^blob:/);
-    assert.match(v.consent[2], /버전 1의 프롬프트와 고른 참조 이미지를/);
-    await mark(AGREE, "Space");
+    assert.match(v.consent[1], /버전 1의 프롬프트와 고른 참조 이미지를/);
     await press("공정 시작 (이미지 1장 합성)");
     await until((count) => window.__premiere.styleDna.records.at(-1).tests.length > count, "tested upload", 1);
     body = (await posts("/test-image")).at(-1).body;
@@ -226,8 +224,7 @@ try {
     await press("참조 이미지 연결됨");
     v = await state();
     assert.deepEqual([v.reference.toggle, v.reference.image], [["참조 이미지 없음", "false"], null]);
-    assert.equal(v.consent[2], "버전 1의 프롬프트를 Gemini 이미지 모델에 보내 시험 이미지 1장을 만들고 보관하는 데 동의해요.");
-    await mark(AGREE, "Space");
+    assert.equal(v.consent[1], "'공정 시작'을 누르면 버전 1의 프롬프트를 Gemini 이미지 모델에 보내 시험 이미지 1장을 만들고 보관해요(호출 1건).");
     await press("공정 시작 (이미지 1장 합성)");
     await until((count) => window.__premiere.styleDna.records.at(-1).tests.length > count, "tested none", 2);
     body = (await posts("/test-image")).at(-1).body;

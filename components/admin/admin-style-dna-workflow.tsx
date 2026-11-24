@@ -29,7 +29,8 @@ import styles from "./admin-style-dna-workflow.module.css";
 // 분석은 파일·직접 HTTPS 주소·보관 기록 재분석, 복제·변형(강도 0~100)·분석 지침·첨부 이미지 구문·대상 모델 문법을 보낸다. 결과는 기존 Style DNA 보고서
 // (픽셀 측정·비율·구도·조명 근거·한영 프롬프트)를 그대로 쓰고, 서버 실측 5색 팔레트를 함께 보여 준다. 보정은 최신 버전에만 피드백을 보내 새 버전을 쌓고,
 // 시험은 고른 버전의 프롬프트로 이미지 1장을 만들어 원본과 슬라이더로 비교한다(색 근접도는 서버 실측 5색으로 화면에서 계산).
-// 모든 호출은 따로 동의해야 나가고, 동의는 그때 고른 엔진(Gemini·OpenAI·Anthropic)과 모델·등록 버전에 묶인다(엔진을 바꾸면 풀림, 시험 생성은 언제나 Gemini). 진행 중 다른 기록을 열거나 메뉴를 떠나면 요청을 끊고 늦은 응답을 버린다.
+// 원본 Style DNA v1.01처럼 분석·보정·시험 모두 따로 전송 동의 체크를 받지 않는다(CMD-044): 관리자가 실행 단추를 누르는 것이 실행 의사이고(서버에는 authorized: true),
+// 무엇을 어디로 보내는지는 단추 옆 안내 문구로만 보여 준다. 엔진(Gemini·OpenAI·Anthropic)·모델·등록 버전은 누른 순간의 값을 보낸다(시험 생성은 언제나 Gemini). 진행 중 다른 기록을 열거나 메뉴를 떠나면 요청을 끊고 늦은 응답을 버린다.
 // 연결이 끊기면 같은 요청 ID·같은 내용으로만 다시 확인한다(서버가 새 호출 없이 저장된 결과를 돌려준다).
 // P1-06 원본 전체 화면(/admin/style-dna, layout="original")은 원본 사이드바 껍데기 안에서 그리고 로그인 뒤 같은 화면으로 돌아온다.
 const panelLogin = adminLoginPath({ next: "/admin#admin-style-dna" });
@@ -39,7 +40,6 @@ const UPLOAD_LIMIT = 4 * 1024 * 1024;
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
 const LIMITS = { guidance: 800, feedback: 600, subject: 500, url: 4096 };
 type Step = "library" | "analyze" | "refine" | "test";
-type ConsentStep = "refine" | "test";
 type Model = StyleDnaTestResult["model"];
 const modelIds = Object.keys(styleDnaImageModels) as Model[];
 export const mutationStage = (level: number) => level <= 30 ? { label: "안정", full: "안정 (원본 스타일 충실)", desc: "원본 스타일 엄격 보존, 미세 질감 개선만" }
@@ -55,9 +55,9 @@ const messages: Record<StyleDnaCode, string> = {
   invalid_input: "입력을 확인해 주세요. 주소는 직접 열리는 HTTPS 이미지여야 해요.",
   too_large: "이미지가 4MiB를 넘어요. 더 작은 파일을 골라 주세요.",
   not_found: "기록이나 원본 이미지를 찾을 수 없어요. 보관함을 다시 불러와 주세요.",
-  stale_credential: "Gemini 등록 버전이 바뀌었어요. 최신 설정을 다시 읽었으니 다시 동의하고 실행해 주세요.",
+  stale_credential: "Gemini 등록 버전이 바뀌었어요. 최신 설정을 다시 읽었으니 다시 실행해 주세요.",
   stale_revision: "다른 곳에서 새 보정 버전이 먼저 저장됐어요. 최신 기록을 다시 읽었어요.",
-  request_conflict: "같은 요청 번호에 다른 내용이 있어요. 다시 동의하고 새로 실행해 주세요.",
+  request_conflict: "같은 요청 번호에 다른 내용이 있어요. 새로 실행해 주세요.",
   limit_reached: "보관 한도(100개)에 닿았어요.",
   not_configured: "이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 먼저 등록해 주세요.",
   storage_unavailable: "Style DNA 저장소가 준비되지 않았어요.",
@@ -136,8 +136,6 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   // 분석·보정 엔진(서버 f2d7e63): 원본처럼 하나를 골라 분석과 보정에 함께 쓴다. OpenAI·Anthropic 설정은 키 원문 없이 등록 여부·모델·버전만 읽는다.
   const [engines, setEngines] = useState<EngineCredentials | null>(null);
   const [engine, setEngine] = useState<EngineChoice>("gemini");
-  // 동의는 단계별로 그때 고른 엔진·모델·등록 버전에 묶는다(시험 생성은 Gemini 등록 버전).
-  const [consent, setConsent] = useState<{ step: ConsentStep; version: number; engine: string } | null>(null);
   const active = useRef<AbortController | null>(null);
   const reading = useRef<AbortController | null>(null);
   const reopened = useRef(false);
@@ -171,7 +169,6 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const engineModel = engine === "gemini" ? settings?.analysisModel ?? null : engineSetting?.configured ? engineSetting.modelId : null;
   const engineVersion = engine === "gemini" ? version : engineSetting?.version ?? 0;
   const engineReady = engine === "gemini" ? ready : !!settings && !!engineModel && engineVersion > 0;
-  const engineKey = `${engine}:${engineModel ?? ""}`;
   const engineShort = { gemini: "Gemini", openai: "OpenAI", anthropic: "Claude" }[engine];
   const engineChoices = (["gemini", "openai", "anthropic"] as const).map(value => {
     const off = value !== "gemini" && !engines?.[value]?.configured;
@@ -179,26 +176,20 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   });
   const engineWarn = !settings || engineReady ? null : engine === "gemini" ? "이미지 분석 모델이 등록되지 않았어요. API키등록·플랫폼연동에서 등록해 주세요."
     : `${engineLabel(engine)} 키가 등록되지 않았거나 바뀌었어요. API키등록·플랫폼연동에서 확인하거나 다른 AI를 선택해 주세요.`;
-  const agreed = (target: ConsentStep) => target === "test" ? ready && consent?.step === "test" && consent.version === version
-    : engineReady && consent?.step === target && consent.version === engineVersion && consent.engine === engineKey;
-  const agree = (target: ConsentStep, checked: boolean) => {
-    setNotice(null);
-    setConsent(checked ? target === "test" ? { step: target, version, engine: "gemini" } : { step: target, version: engineVersion, engine: engineKey } : null);
-  };
   /** 분석·보정 요청의 동작 값: 고른 엔진의 등록 버전, OpenAI·Anthropic이면 engine을 싣는다. */
   const engineOp = () => ({ requestId: newRequestId(), credentialVersion: engineVersion,
     ...(engine !== "gemini" && engineModel ? { engine: { provider: engine, modelId: engineModel } } : {}) });
   const say = (code: StyleDnaCode, provider: EngineChoice) => provider === "gemini" ? messages[code] : messages[code].replace("Gemini", engineLabel(provider));
   const stop = () => { active.current?.abort(); active.current = null; setRunning(""); };
-  const changed = () => { if (active.current) { stop(); setNotice({ tone: "status", text: "조건이 바뀌어 진행 중이던 요청을 멈췄어요. 설정을 확인하고 다시 실행해 주세요." }); } setConsent(null); };
-  const reloadLibrary = () => { setConsent(null); setLibrary({ kind: "loading" }); setAttempt(value => value + 1); };
+  const changed = () => { if (active.current) { stop(); setNotice({ tone: "status", text: "조건이 바뀌어 진행 중이던 요청을 멈췄어요. 설정을 확인하고 다시 실행해 주세요." }); } };
+  const reloadLibrary = () => { setLibrary({ kind: "loading" }); setAttempt(value => value + 1); };
   const pickEngine = (next: EngineChoice) => { if (next === engine) return; changed(); setEngine(next); };
 
   async function open(recordId: string, quiet = false) {
     stop(); reading.current?.abort();
     const controller = new AbortController();
     reading.current = controller;
-    setPending(null); setConsent(null); if (!quiet) setNotice(null);
+    setPending(null); if (!quiet) setNotice(null);
     const outcome = await readStyleDnaRecord(recordId, controller.signal).catch(() => (controller.signal.aborted ? null : { kind: "error" as const, code: "failed" as const, status: 0 }));
     if (!outcome || controller.signal.aborted || reading.current !== controller) return;
     reading.current = null;
@@ -293,7 +284,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
       const outcome = await call(signal);
       if (signal.aborted) return;
       active.current = null; setRunning("");
-      if (outcome.kind === "ok") { setPending(null); setConsent(null); done(outcome.value); return; }
+      if (outcome.kind === "ok") { setPending(null); done(outcome.value); return; }
       if (outcome.kind === "lost") {
         setPending({ label, run });
         setNotice({ tone: "alert", retry: true, text: "응답을 받지 못했어요. 이미 저장됐을 수 있어요. '결과 다시 확인'은 같은 요청을 다시 물어봐요(새로 만들지 않아요)." });
@@ -304,7 +295,6 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
         setNotice({ tone: "alert", text: outcome.kind === "login" ? "로그인이 끝났어요." : "이 계정에는 Style DNA 권한이 없어요.", login: outcome.kind === "login" });
         return;
       }
-      setConsent(null);
       setNotice({ tone: "alert", text: say(outcome.code, provider), retry: outcome.code === "in_progress" });
       if (outcome.code === "stale_credential" || outcome.code === "not_configured") reloadLibrary();
       if ((outcome.code === "stale_revision" || outcome.code === "not_found") && record) void open(record.id, true);
@@ -344,7 +334,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const refineReady = !!record && !!latest && !!feedback.trim() && [...feedback].length <= LIMITS.feedback;
   function submitRefine(event: FormEvent) {
     event.preventDefault();
-    if (!record || !latest || !refineReady || !agreed("refine")) return;
+    if (!record || !latest || !refineReady || !engineReady) return;
     const body = refineRequest({ revision: latest.revision, feedback }, engineOp());
     void execute("프롬프트 보정", signal => refineStyleDna(record.id, body, latest.revision + 1, { signal }), value => {
       show(value); setFeedback("");
@@ -370,7 +360,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   useEffect(() => () => { setReference(previous => { if (previous) URL.revokeObjectURL(previous.href); return null; }); }, []);
   async function submitTest(event: FormEvent) {
     event.preventDefault();
-    if (!record || !chosen || !testReady || !agreed("test")) return;
+    if (!record || !chosen || !testReady || !ready) return;
     const input = { revision: chosen.revision, model: testModel, subject, attachImage: attach, ...(ratio && { aspectRatio: ratio }),
       ...(editing && { customPrompt }) };
     const op = { requestId: newRequestId(), credentialVersion: version };
@@ -464,7 +454,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const body = <section className={`${panel.panel} ${styles.workflow}`} data-layout={layout} aria-labelledby={`${id}-title`}>
     {original ? <h1 id={`${id}-title`} className={styles.srOnly}>{{ library: "보관함", analyze: "1단계 이미지 분석", refine: "2단계 프롬프트 보정", test: "3단계 결과 테스트" }[step]}</h1>
       : <div className={panel.head}><h3 id={`${id}-title`}>Style DNA 작업실 · 분석 → 보정 → 결과 테스트</h3></div>}
-    {!original && <p className={panel.note}>원본 Style DNA v1.39의 세 단계를 이어서 써요. 분석·보정·시험 결과는 내 보관함에 저장되고 다시 열 수 있어요. 각 실행은 따로 동의해야 Gemini를 불러요.</p>}
+    {!original && <p className={panel.note}>원본 Style DNA v1.39의 세 단계를 이어서 써요. 분석·보정·시험 결과는 내 보관함에 저장되고 다시 열 수 있어요. 실행 단추를 누를 때만 Gemini(또는 고른 AI)를 불러요.</p>}
     {step !== "library" && step !== "analyze" && libraryFeedback}
     {/* 원본 전체 화면에는 이 설정 줄이 없다(엔진·모델은 분석 화면에서 고른다). 미등록일 때만 안내로 남긴다. */}
     {settings && (!original || !ready) && <p className={panel.note} aria-label="Style DNA 설정">{ready ? `분석 모델 ${settings.analysisModel} · Gemini 등록 버전 ${version}` : "이미지 분석 모델이 등록되지 않아 실행할 수 없어요. API키등록·플랫폼연동에서 등록해 주세요."}
@@ -611,12 +601,10 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
             <input id={`${id}-refine`} className={studio.refineInput} type="text" maxLength={LIMITS.feedback} disabled={!record || busy} value={feedback}
               placeholder={record ? "스타일 보정을 위한 피드백 입력 (예: '조명을 더 따뜻하게', '배경을 단순하게')..." : "분석 완료 후 보정 피드백을 입력할 수 있습니다..."}
               onChange={event => { changed(); setFeedback(event.target.value); }} />
-            <button type="submit" className={studio.refineButton} disabled={!refineReady || !agreed("refine") || busy}>
+            <button type="submit" className={studio.refineButton} disabled={!refineReady || !engineReady || busy}>
               {running === "프롬프트 보정" ? <Loader2 size={14} className={studio.spin} /> : <Wand2 size={14} />}미세 보정 요청</button>
           </div>
-          {record && latest && <label className={studio.consent}><input type="checkbox" checked={agreed("refine")} disabled={!engineReady || busy}
-            onChange={event => agree("refine", event.target.checked)} />
-            현재 버전 {latest.revision}의 프롬프트와 피드백을 {engineShort}({engineModel ?? "모델 미등록"})에 보내 새 보정 버전을 만드는 데 동의해요(호출 1건).</label>}
+          {record && latest && <p className={studio.consent}>'미세 보정 요청'을 누르면 현재 버전 {latest.revision}의 프롬프트와 피드백을 {engineShort}({engineModel ?? "모델 미등록"})에 보내 새 보정 버전을 만들어요(호출 1건).</p>}
         </div>
         <button type="button" className={studio.testLink} disabled={!record || busy} onClick={() => { changed(); setStep("test"); }}>
           <FlaskConical size={16} />3단계 결과 테스트</button>
@@ -630,13 +618,12 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
 
     {step === "refine" && record && latest && view && <StudioRefine id={id} image={record.original.href} view={view}
       revisions={record.revisions.map(item => ({ ...item, engineText: basisText(item) }))}
-      feedback={feedback} limit={LIMITS.feedback} quick={REFINE_QUICK} busy={busy} running={running === "프롬프트 보정"} ready={engineReady} agreed={agreed("refine")}
+      feedback={feedback} limit={LIMITS.feedback} quick={REFINE_QUICK} busy={busy} running={running === "프롬프트 보정"} ready={engineReady}
       engine={{ value: engine, short: engineShort, model: engineModel, choices: engineChoices, warn: engineWarn, onChange: pickEngine }}
       when={when} onCopied={setCopied} onSubmit={submitRefine}
       onFeedback={value => { changed(); setFeedback(value); }}
       onQuick={text => { changed(); setFeedback(value => value.trim() ? `${value.trim()}, ${text}` : text); }}
       onClear={() => { changed(); setFeedback(""); }}
-      onConsent={checked => agree("refine", checked)}
       onTest={revision => { changed(); setTestRevision(revision); setStep("test"); }} />}
 
     {step === "test" && record && <StudioTest id={id} original={record.original} aspect={autoRatio ?? null}
@@ -651,8 +638,8 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
       onReference={file => { changed(); pickReference(file); }} onReferenceClear={() => { changed(); pickReference(null); }}
       models={settings?.testModels ?? modelIds.map(model => ({ id: model, ...styleDnaImageModels[model] }))} model={testModel}
       onModel={value => { changed(); setTestModel(value as Model); }} ratio={ratio} ratios={styleDnaRatio.options} onRatio={value => { changed(); setRatio(value); }}
-      ready={ready} agreed={agreed("test")} onConsent={checked => agree("test", checked)}
-      consent={`버전 ${chosen?.revision ?? "-"}의 ${editing ? "직접 편집한 프롬프트" : "프롬프트"}${attach ? reference ? "와 고른 참조 이미지" : "와 원본 이미지" : ""}를 Gemini 이미지 모델에 보내 시험 이미지 1장을 만들고 보관하는 데 동의해요.`}
+      ready={ready}
+      sendNote={`'공정 시작'을 누르면 버전 ${chosen?.revision ?? "-"}의 ${editing ? "직접 편집한 프롬프트" : "프롬프트"}${attach ? reference ? "와 고른 참조 이미지" : "와 원본 이미지" : ""}를 Gemini 이미지 모델에 보내 시험 이미지 1장을 만들고 보관해요(호출 1건).`}
       busy={busy} running={running === "시험 이미지 생성"} canRun={testReady} onSubmit={event => void submitTest(event)} missing={!!settings && !ready}
       tests={record.tests} shown={shown} onShow={setShown} modelLabel={model => styleDnaImageModels[model as Model]?.label ?? model}
       proximity={proximity} when={when}
@@ -670,7 +657,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
     <p className={panel.status} role="status">{copied}</p>
   </section>;
   if (!original) return body;
-  // 원본 사이드바: 단계를 바꾸면 진행 중 요청·동의를 푼다(기존 단계 단추와 같은 동작).
+  // 원본 사이드바: 단계를 바꾸면 진행 중 요청을 푼다(기존 단계 단추와 같은 동작).
   return <StudioShell embedded={embedded} step={step} account={account} guideHref={embedded ? "#admin-manual" : "/admin#admin-manual"} settingsHref={settingsLink}
     onStep={next => { if (next !== step) { changed(); setStep(next); } }}>{body}</StudioShell>;
 }

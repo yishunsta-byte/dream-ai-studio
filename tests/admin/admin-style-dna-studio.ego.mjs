@@ -55,7 +55,9 @@ const mark = async (expression, key) => {
 };
 const button = (text) => `[...(${ST}).querySelectorAll("button")].find((item) => item.textContent.trim() === ${JSON.stringify(text)})`;
 const press = (text) => mark(button(text), "Enter");
-const agree = (form) => mark(`[...(${ST}).querySelectorAll("form[aria-label='${form}'] input[type=checkbox]")].find((box) => /동의해요/.test(box.closest("label").textContent))`, "Space");
+// CMD-044: 분석 아래 보정 줄에는 동의 체크 상자가 없고, 보낼 내용은 안내 문구로만 보인다.
+const noConsent = async (form) => assert.deepEqual(await page.evaluate(([ST, form]) => { const f = eval(ST).querySelector(`form[aria-label='${form}']`);
+  return [f.querySelectorAll("input[type=checkbox]").length, [...f.querySelectorAll("p")].some((p) => /'미세 보정 요청'을 누르면 현재 버전 \d+의 프롬프트와 피드백을 .+에 보내 새 보정 버전을 만들어요\(호출 1건\)/.test(p.textContent))]; }, [ST, form]), [0, true]);
 const typeInto = (expression, value) => page.evaluate(([expression, value]) => {
   const input = eval(expression);
   Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value").set.call(input, value);
@@ -173,8 +175,8 @@ try {
     assert.match(await page.evaluate(() => window.__clip.at(-1)), /^A portrait of/);
     const refine = async (feedback, revision) => {
       await typeInto(`(${ST}).querySelector("form[aria-label='추론 인터페이스'] input[type=text]")`, feedback);
-      assert.equal((await studio()).refineRun, true, "refine needs consent");
-      await agree("추론 인터페이스");
+      assert.equal((await studio()).refineRun, false, "피드백만 넣으면 보정 단추가 바로 열림");
+      await noConsent("추론 인터페이스");
       await press("미세 보정 요청");
       await until(([ST, revision]) => !!eval(ST).querySelector(`section[aria-label='마스터 프롬프트 (EN) v${revision}']`), "refined " + revision, [ST, revision]);
     };

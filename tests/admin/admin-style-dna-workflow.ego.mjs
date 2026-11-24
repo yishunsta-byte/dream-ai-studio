@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // P1-06 Style DNA 작업실: admin-hub-fixture-run.mjs가 연 루프백 주소에서 실행한다(Backend ab798b1 계약 대역: fixture.styleDna).
 // 확인: 보관함·설정 GET만 하고 실행 전 POST 0, 분석 소스 선택 전 실행 잠김. ① 주소·파일 분석(복제·변형 강도·지침·첨부 구문·문법 모델) → 기록·보고서·실측 5색, 보관함 증가.
-// ② 빠른 피드백 보정 → 새 버전·이력, 오래된 버전 409(다시 읽기)·등록 버전 409(설정 다시 읽기·동의 풀림). ③ 피사체 필수·비율·원본 첨부 → 시험 이미지·슬라이더 비교·색 근접도,
+// ② 빠른 피드백 보정 → 새 버전·이력, 오래된 버전 409(다시 읽기)·등록 버전 409(설정 다시 읽기). 보정·시험은 동의 체크 상자 없이 단추로 바로 실행(CMD-044). ③ 피사체 필수·비율·원본 첨부 → 시험 이미지·슬라이더 비교·색 근접도,
 // 응답 유실 → 같은 요청으로 다시 확인(결과 하나). 멈추기·다른 기록 열기 → 끊김·늦은 결과 0. 새로고침 뒤 마지막 기록 다시 열기. 모델 미등록 안내. 320·390·1280 넘침 없음.
 // P1-06 원본 분석 화면(1단계) 뒤: 분석 단계는 원본 스튜디오(이미지 시퀀싱 시작·분석 뒤에도 분석 화면 유지·제목은 리포트 KR 줄·팔레트는 미학적 팔레트). 원본 화면 자체 확인은 admin-style-dna-studio.ego.mjs.
 const base = globalThis.FIXTURE_ORIGIN;
@@ -19,7 +19,7 @@ const view = () => page.evaluate((SEC) => {
   const sec = eval(SEC);
   const form = sec.querySelector("form");
   const run = form ? [...form.querySelectorAll("button[type=submit]")][0] : null;
-  const checks = form ? [...form.querySelectorAll("input[type=checkbox]")].filter((box) => /동의해요/.test(box.closest("label")?.textContent ?? "")) : [];
+  const checks = form ? [...form.querySelectorAll("input[type=checkbox]")].filter((box) => /동의/.test(box.closest("label")?.textContent ?? "")) : [];
   const lib = sec.querySelector("[aria-label='Style DNA 단계']")?.previousElementSibling;
   return { library: lib?.textContent ?? null, libraryOpen: lib?.getAttribute("aria-pressed") ?? null,
     items: [...sec.querySelectorAll("section[aria-label='보관함'] li")].map((item) => item.querySelector("button > span:nth-of-type(2)")?.textContent ?? null),
@@ -52,7 +52,8 @@ const LIBRARY = `(${SEC}).querySelector("[aria-label='Style DNA 단계']").previ
 const openCard = (title) => mark(`[...[...(${SEC}).querySelectorAll("section[aria-label='보관함'] li")].find((li) => li.querySelector("button > span:nth-of-type(2)")?.textContent === ${JSON.stringify(title)}).querySelectorAll("button")][1]`, "Enter");
 const labelled = (text, tag = "input") => `[...(${SEC}).querySelectorAll("label")].find((label) => label.textContent.trim().startsWith(${JSON.stringify(text)})).querySelector("${tag}")`;
 const pick = (text) => mark(labelled(text), "Space");
-const consent = async () => { if (!(await view()).consent) await mark(`[...(${SEC}).querySelector("form").querySelectorAll("input[type=checkbox]")].find((box) => /동의해요/.test(box.closest("label")?.textContent ?? ""))`, "Space"); };
+// CMD-044: 보정·시험에는 동의 체크 상자가 없다. 예전에 동의하던 자리에서는 체크 상자가 없는지만 확인한다.
+const consent = async () => assert.equal((await view()).consent, null, "동의 체크 상자 없음");
 const RANGE = `(${SEC}).querySelector("[aria-label='시스템 가이던스'] input[type=range]")`;
 const FILE = `(${SEC}).querySelector("input[type=file]")`;
 const type = (expression, value) => page.evaluate(([expression, value]) => {
@@ -109,7 +110,7 @@ try {
     assert.deepEqual([v.record, v.steps.map((item) => item[1]), v.palette.length, v.consent], ["주소 분석", ["true", "false", "false"], 5, null]);
 
     console.log("STEP 3 " + width);
-    // 3. 보정: 빠른 피드백 두 개 → 동의 → v2·이력. 오래된 버전 409 → 기록 다시 읽기. 등록 버전 409 → 설정 다시 읽기·동의 풀림
+    // 3. 보정: 빠른 피드백 두 개 → v2·이력(동의 체크 없음). 오래된 버전 409 → 기록 다시 읽기. 등록 버전 409 → 설정 다시 읽기
     await press("2. 프롬프트 보정");
     // 원본 2단계: 왼쪽 카드에 썸네일·제목, 보정 기록은 비어 있으면 원본 문구. 아래 '열린 분석'은 2단계에 없다(원본 카드와 겹침).
     v = await view();
@@ -132,14 +133,14 @@ try {
     await press("미세 보정 요청");
     await noticeIs(/다른 곳에서 새 보정 버전이 먼저 저장됐어요/, "stale revision");
     await until((count) => window.__premiere.requests().filter((item) => item.method === "GET" && /b00[0-9]$/.test(item.path)).length > count, "reread", gets);
-    assert.equal((await view()).consent, false);
+    assert.equal((await view()).consent, null, "409 뒤에도 동의 체크 상자 없음");
     await fault("refine", { status: 409, body: { code: "stale_credential" } });
     await consent();
     const lists = (await rows()).filter((item) => item.method === "GET" && item.path === "/api/admin/style-dna").length;
     await press("미세 보정 요청");
     await noticeIs(/Gemini 등록 버전이 바뀌었어요/, "stale credential");
     await until((count) => window.__premiere.requests().filter((item) => item.method === "GET" && item.path === "/api/admin/style-dna").length > count, "relist", lists);
-    assert.equal((await view()).consent, false);
+    assert.equal((await view()).consent, null, "409 뒤에도 동의 체크 상자 없음");
 
     console.log("STEP 4 " + width);
     // 4. 시험: 버전 1로 → 피사체 필수(비면 잠김) → 9:16·원본 첨부 → 시험 이미지·슬라이더·색 근접도. 응답 유실 → 같은 요청 다시 확인 → 결과 하나

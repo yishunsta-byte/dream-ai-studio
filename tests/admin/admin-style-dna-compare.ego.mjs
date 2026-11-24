@@ -39,7 +39,8 @@ const typeInto = (expression, value) => page.evaluate(([expression, value]) => {
   Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), "value").set.call(input, value);
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }, [expression, value]);
-const AGREE = `[...(${TS}).querySelectorAll("form input[type=checkbox]")].find((box) => /동의해요/.test(box.closest("label").textContent))`;
+// CMD-044: 보정·시험은 따로 동의 체크 없이 단추를 누르면 바로 보낸다. 그 폼에 동의 체크 상자가 없어야 한다.
+const noConsent = async (scope) => assert.equal(await page.evaluate((scope) => [...eval(scope).querySelectorAll("form input[type=checkbox]")].filter((box) => /동의/.test(box.closest("label")?.textContent ?? "")).length, scope), 0, "동의 체크 상자 없음");
 const TEXT = `(${TS}).querySelector("form textarea")`;
 const patches = () => page.evaluate(() => window.__premiere.requests().filter((row) => row.method === "PATCH" && /\/api\/admin\/style-dna\/[^/]+$/.test(row.path)).map((row) => row.body));
 const notice = () => page.evaluate((R) => [...document.querySelectorAll(`${R} section > p[role]`)].map((item) => item.textContent).join(" | "), R);
@@ -112,7 +113,7 @@ const analyze = async () => {
 };
 const run = async (expect) => {
   const before = (await record()).tests.length;
-  await mark(AGREE, "Space");
+  await noConsent(TS);
   await press("공정 시작 (이미지 1장 합성)");
   if (expect === "lost") { await until((R) => /응답을 받지 못했어요/.test(document.querySelector(R).textContent), "lost", R); return; }
   await until(([R, n]) => /프롬프트로 시험 이미지를 만들었어요/.test(document.querySelector(R).textContent) && window.__premiere.styleDna.records[0].tests.length > n, "tested", [R, before]);

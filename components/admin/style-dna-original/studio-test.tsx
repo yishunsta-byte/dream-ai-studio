@@ -5,10 +5,10 @@ import { Download, FlaskConical, ImageIcon, Loader2, Maximize2, Sparkles, X } fr
 import r from "./studio-refine.module.css";
 import t from "./studio-test.module.css";
 
-// P1-06 3단계 원본(v1.39 app/(dashboard)/test/page.tsx) '결과 테스트 및 이미지 합성' 화면. 화면만 맡고 요청·동의·기록은 작업실이 맡는다.
+// P1-06 3단계 원본(v1.39 app/(dashboard)/test/page.tsx) '결과 테스트 및 이미지 합성' 화면. 화면만 맡고 요청·기록은 작업실이 맡는다.
 // 원본 구성: 단계 머리 → 왼쪽 380px '추론 및 생성 설정'(직접 편집 전환, 피사체 또는 대상 프롬프트, 참조 이미지 위젯, 이미지 생성 모델, 공정 시작, 유료 안내)
 // → 오른쪽 원본 레퍼런스·DNA 합성 미리보기 두 카드(결과가 나오면 접고 '개별 이미지 보기'), '원본 ↔ 생성 비교', 색감 일치율·확대·다운로드, 확대 창.
-// 제품 차이: 시험할 프롬프트 버전 고르기, 화면 비율, 실행마다 Gemini 동의, 시험 결과가 보관함에 남아 '시험 기록'에서 다시 볼 수 있음,
+// 제품 차이: 시험할 프롬프트 버전 고르기, 화면 비율, 따로 동의 없이 단추 옆에 Gemini로 보낼 내용 안내(CMD-044), 시험 결과가 보관함에 남아 '시험 기록'에서 다시 볼 수 있음,
 // 일치율은 서버가 저장된 원본·결과에서 잰 5색 비교(원본은 브라우저 히스토그램), 참조 이미지는 PNG·JPG·WebP 4MB까지.
 type Model = { id: string; label: string; size: string };
 type TestItem = { id: string; revision: number; model: string; createdAt: string; image: { href: string; width: number; height: number };
@@ -22,7 +22,8 @@ type Props = {
   attach: boolean; onAttach: (attach: boolean) => void; reference: { href: string; name: string } | null;
   referenceAccept: string; onReference: (file: File | undefined) => void; onReferenceClear: () => void;
   models: Model[]; model: string; onModel: (model: string) => void; ratio: string; ratios: readonly string[]; onRatio: (ratio: string) => void;
-  ready: boolean; agreed: boolean; consent: string; onConsent: (checked: boolean) => void;
+  /** ready: Gemini 등록 준비. sendNote: 단추 옆 전송 안내(CMD-044, 따로 동의 체크 없음). */
+  ready: boolean; sendNote: string;
   busy: boolean; running: boolean; canRun: boolean; onSubmit: (event: FormEvent) => void; missing: boolean;
   tests: TestItem[]; shown: string | null; onShow: (id: string) => void; modelLabel: (model: string) => string;
   proximity: number | null; when: (iso: string) => string; compare: ReactNode;
@@ -120,8 +121,8 @@ export function StudioTest(p: Props) {
               {p.ratios.map(value => <option key={value} value={value}>{value}</option>)}</select></label>
         </div>
 
-        <label className={r.consent}><input type="checkbox" checked={p.agreed} disabled={!p.ready || p.busy} onChange={event => p.onConsent(event.target.checked)} />{p.consent}</label>
-        <button type="submit" className={r.primary} disabled={!p.canRun || !p.agreed || p.busy}>
+        <p className={r.consent}>{p.sendNote}</p>
+        <button type="submit" className={r.primary} disabled={!p.canRun || !p.ready || p.busy}>
           {p.running ? <Loader2 size={16} className={r.spin} aria-hidden /> : <FlaskConical size={16} aria-hidden />}
           {p.running ? "DNA 합성 시뮬레이션 중…" : "공정 시작 (이미지 1장 합성)"}</button>
         {p.missing && <p className={t.error} role="note">이미지 생성에는 Google Gemini API 키가 필요합니다. API키등록·플랫폼연동에서 등록해 주세요.</p>}

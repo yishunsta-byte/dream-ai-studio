@@ -5,8 +5,8 @@ import assert from "node:assert/strict";
 //    단추는 키보드(Enter)로 고르고, 분석 응답을 붙잡은 동안 세 단추가 모두 잠긴다.
 // 2. 엔진을 바꾸면 안내 문구의 공급자가 바뀐다. OpenAI로 분석 → 본문 engine·OpenAI 등록 버전 2, 리포트에 실제 실행 엔진.
 // 3. 2단계에서 Claude로 보정 → 본문 engine·버전 5, 기록·현재 카드에 실제 엔진. 1단계 리포트의 v1 엔진(OpenAI)은 그대로.
-// 4. 키 교체(Claude 버전 6) → 409 → 공급자 이름이 든 안내, 엔진 설정 다시 읽기, 동의 풀림, 기록 보존 → 다시 동의하면 버전 6으로 성공.
-// 5. 시험 생성: 동의 문구 Gemini, 본문에 engine 없음·Gemini 버전 3. 6. 미등록 공급자는 '(키 미등록)'으로 잠김. 7. 엔진 칸 없는 이전 기록은 'Gemini · 모델 기록 없음'.
+// 4. 키 교체(Claude 버전 6) → 409 → 공급자 이름이 든 안내, 엔진 설정 다시 읽기, 기록 보존 → 다시 누르면 버전 6으로 성공(CMD-044: 동의 체크 상자 없음).
+// 5. 시험 생성: 단추 옆 안내 문구 Gemini, 본문에 engine 없음·Gemini 버전 3. 6. 미등록 공급자는 '(키 미등록)'으로 잠김. 7. 엔진 칸 없는 이전 기록은 'Gemini · 모델 기록 없음'.
 // 각 폭(1574·390)에서 가로 넘침 0, 외부 요청 0.
 const base = globalThis.FIXTURE_ORIGIN;
 const out = globalThis.FIXTURE_OUTPUT_DIR ?? ".";
@@ -40,11 +40,12 @@ const typeInto = (expression, value) => page.evaluate(([expression, value]) => {
 }, [expression, value]);
 const pickAnalysis = (value) => mark(`(${ST}).querySelector("[aria-label='시스템 가이던스'] [role=group][aria-describedby$='engine'] button[value='${value}']")`, "Enter");
 const REF_ENGINE = `(${RF}).querySelector("form select[aria-describedby$='engine']")`;
-const consentOf = (scope, form) => `[...(${scope}).querySelectorAll("${form} input[type=checkbox]")].find((box) => /동의해요/.test(box.closest("label").textContent))`;
 const engineState = (scope, form) => page.evaluate(([scope, form]) => {
   const root = eval(scope);
   const selects = [...root.querySelectorAll(`${form} select[aria-describedby$='engine']`)];
-  const box = [...root.querySelectorAll(`${form} input[type=checkbox]`)].find((item) => /동의해요/.test(item.closest("label").textContent));
+  // CMD-044: 보정·시험에는 동의 체크 상자가 없고 단추 옆 안내 문구만 있다. consent = 그 폼의 동의 체크 상자 수.
+  const boxes = [...root.querySelectorAll(`${form} input[type=checkbox]`)].filter((item) => /동의/.test(item.closest("label")?.textContent ?? ""));
+  const info = [...root.querySelectorAll(`${form} p`)].find((item) => /'(미세 보정 요청|공정 시작)'을 누르면/.test(item.textContent));
   // 분석 화면: 플랫폼 단추(이름표 title = 전체 이름·미등록 표시), 모델은 안내 문구의 '키(모델)'. 보정 화면: 기존 고르는 칸 두 개.
   const group = root.querySelector(`${form} [role=group][aria-describedby$='engine']`);
   const buttons = group ? [...group.querySelectorAll("button")] : [];
@@ -53,7 +54,7 @@ const engineState = (scope, form) => page.evaluate(([scope, form]) => {
     value: buttons.find((button) => button.getAttribute("aria-pressed") === "true")?.value ?? null, model: /키\(([^)]+)\)로/.exec(note)?.[1] ?? null, selects: selects.length }
     : { options: [...selects[0].options].map((option) => [option.textContent, option.disabled]), value: selects[0].value, model: selects[1].selectedOptions[0]?.textContent ?? null };
   return { ...pick,
-    consent: box?.checked ?? null, consentText: box?.closest("label").textContent.trim() ?? root.querySelector(`${form} [id$='analyze-info']`)?.textContent.trim(),
+    consent: boxes.length, consentText: info?.textContent.trim() ?? root.querySelector(`${form} [id$='analyze-info']`)?.textContent.trim(),
     warn: root.querySelector(`${form} [role=note]:not(details *)`)?.textContent ?? null };
 }, [scope, form]);
 const posts = (suffix) => page.evaluate((suffix) => window.__premiere.requests().filter((row) => row.method === "POST" && row.path.endsWith(suffix)), suffix);
@@ -91,7 +92,7 @@ try {
     await typeInto(`(${ST}).querySelector("input[type=url]")`, "https://images.example.com/engine.png");
     await pickAnalysis("openai");
     e = await engineState(ST, "form[aria-label='분석 설정']");
-    assert.deepEqual([e.value, e.model, e.consent], ["openai", "gpt-fixture-vision", null]);
+    assert.deepEqual([e.value, e.model, e.consent], ["openai", "gpt-fixture-vision", 0]);
     assert.match(e.consentText, /OpenAI에 보내고/);
     assert.equal((await posts("style-dna")).length, 0, "엔진 선택만으로 POST 0");
     // 분석 응답을 붙잡은 동안 세 단추가 모두 잠기는지, 클릭 한 번에 POST 1건인지
@@ -114,9 +115,8 @@ try {
     assert.equal(await page.evaluate((RF) => eval(RF).querySelector("[aria-label='실행 엔진']").textContent, RF), "v1 실행 엔진 · OpenAI · gpt-fixture-vision · 등록 버전 2");
     await choose(REF_ENGINE, "anthropic");
     await press("색감을 더 따뜻하게", RF);
-    await mark(consentOf(RF, "form"), "Space");
     e = await engineState(RF, "form");
-    assert.deepEqual([e.value, e.model, e.consent], ["anthropic", "claude-fixture-vision", true]);
+    assert.deepEqual([e.value, e.model, e.consent], ["anthropic", "claude-fixture-vision", 0]);
     assert.match(e.consentText, /Claude\(claude-fixture-vision\)에 보내/);
     await press("미세 보정 요청", RF);
     await until((R) => /새 보정 버전을 저장했어요\(버전 2\)/.test(document.querySelector(R).textContent), "refined", R);
@@ -134,29 +134,27 @@ try {
     if (width === 1574 || width === 390) { await page.evaluate(`(${RF}).scrollIntoView({ block: "start" })`); await settle(250); await page.screenshot({ path: `${out}/engine-refine-${width}.png` }); }
 
     console.log("STEP 4 " + width);
-    // 다른 곳에서 Claude 키를 바꿈(버전 6) → 화면의 동의는 버전 5에 묶여 있어 서버가 409
+    // 다른 곳에서 Claude 키를 바꿈(버전 6) → 화면은 아직 버전 5를 보내서 서버가 409
     await page.evaluate(() => { window.__premiere.styleDna.engines.anthropic.version = 6; });
     await press("조명을 더 부드럽게", RF);
-    await mark(consentOf(RF, "form"), "Space");
     const before = await gets("/api/admin/style-dna/engine-credentials");
     await press("미세 보정 요청", RF);
     await until((R) => /Anthropic Claude 등록 버전이 바뀌었어요/.test(document.querySelector(R).textContent), "stale", R);
     await until((count) => window.__premiere.requests().filter((row) => row.method === "GET" && row.path === "/api/admin/style-dna/engine-credentials").length > count, "reread engines", before);
     await settle(300);
     e = await engineState(RF, "form");
-    assert.equal(e.consent, false, "409 뒤 동의 풀림");
+    assert.equal(e.consent, 0, "409 뒤에도 동의 체크 상자 없음");
     assert.equal(await page.evaluate((RF) => eval(RF).querySelectorAll("[aria-label='보정 기록'] li").length, RF), 1, "기록 보존");
-    await mark(consentOf(RF, "form"), "Space");
     await press("미세 보정 요청", RF);
     await until((R) => /새 보정 버전을 저장했어요\(버전 3\)/.test(document.querySelector(R).textContent), "refined 3", R);
     assert.equal((await posts("/refine")).at(-1).body.credentialVersion, 6);
 
     console.log("STEP 5 " + width);
     await press("처음 분석(버전 1)으로 시험", RF);
-    const testBox = await page.evaluate((R) => [...document.querySelectorAll(`${R} form input[type=checkbox]`)].map((box) => box.closest("label").textContent).find((text) => /시험 이미지 1장/.test(text)), R);
+    const testBox = await page.evaluate((R) => [...document.querySelectorAll(`${R} form p`)].map((item) => item.textContent).find((text) => /'공정 시작'을 누르면.*시험 이미지 1장/.test(text)), R);
+    assert.equal(await page.evaluate((R) => [...document.querySelectorAll(`${R} form input[type=checkbox]`)].filter((box) => /동의/.test(box.closest("label")?.textContent ?? "")).length, R), 0, "시험 생성 동의 체크 상자 없음");
     assert.match(testBox, /Gemini 이미지 모델에 보내/);
     await typeInto(`[...(${SEC}).querySelectorAll("label")].find((label) => label.textContent.trim().startsWith("피사체")).querySelector("textarea")`, "a cat");
-    await mark(`[...(${SEC}).querySelectorAll("form input[type=checkbox]")].find((box) => /시험 이미지 1장/.test(box.closest("label").textContent))`, "Space");
     await press("공정 시작 (이미지 1장 합성)");
     await until((R) => /시험 이미지를 만들었어요/.test(document.querySelector(R).textContent), "tested", R);
     const tested = (await posts("/test-image")).at(-1).body;

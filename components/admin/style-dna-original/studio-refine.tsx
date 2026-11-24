@@ -2,9 +2,9 @@
 
 // P1-06 2단계: 원본 Style DNA v1.39 '프롬프트 보정' 화면(app/(dashboard)/refine/page.tsx)을 옮겼다.
 // 원본 구성: 단계 머리(2·프롬프트 보정·설명) → 왼쪽 카드(썸네일·제목 두 줄·마스터 프롬프트 EN/KO 상자) · 오른쪽(추론 인터페이스 카드, 보정 기록 카드).
-// 제품 차이: 보정 AI는 등록한 엔진(Gemini·OpenAI·Anthropic)만 고를 수 있고 1단계와 같은 선택을 쓴다(모델은 등록된 것 하나), 실행마다 동의,
+// 제품 차이: 보정 AI는 등록한 엔진(Gemini·OpenAI·Anthropic)만 고를 수 있고 1단계와 같은 선택을 쓴다(모델은 등록된 것 하나), 따로 동의 없이 단추 옆에 보낼 내용 안내(CMD-044),
 // 프롬프트 상자에 버전 번호와 그 버전의 실제 실행 엔진, 보정 기록마다 실행 엔진과 '이 버전으로 시험'.
-// 요청·동의·멈춤·오류 안내는 작업실(admin-style-dna-workflow)이 그대로 맡고, 이 부품은 화면만 그린다.
+// 요청·멈춤·오류 안내는 작업실(admin-style-dna-workflow)이 그대로 맡고, 이 부품은 화면만 그린다.
 import type { FormEvent } from "react";
 import { FlaskConical, Loader2, Wand2 } from "./icons";
 import { CopyButton } from "./studio-parts";
@@ -26,16 +26,16 @@ function PromptBox({ label, text, lang, onCopied }: { label: string; text?: stri
   </section>;
 }
 
-export function StudioRefine({ id, image, view, revisions, feedback, limit, quick, busy, running, ready, agreed, engine, onFeedback, onQuick, onClear, onConsent, onSubmit, onTest, onCopied, when }: {
+export function StudioRefine({ id, image, view, revisions, feedback, limit, quick, busy, running, ready, engine, onFeedback, onQuick, onClear, onSubmit, onTest, onCopied, when }: {
   id: string; image: string; view: StudioView; revisions: Revision[]; feedback: string; limit: number; quick: readonly string[];
-  busy: boolean; running: boolean; ready: boolean; agreed: boolean; engine: Engine;
-  onFeedback: (value: string) => void; onQuick: (value: string) => void; onClear: () => void; onConsent: (checked: boolean) => void;
+  busy: boolean; running: boolean; ready: boolean; engine: Engine;
+  onFeedback: (value: string) => void; onQuick: (value: string) => void; onClear: () => void;
   onSubmit: (event: FormEvent) => void; onTest: (revision: number) => void; onCopied: (message: string) => void; when: (iso: string) => string;
 }) {
   const latest = revisions.at(-1)!;
   const refined = revisions.filter(item => item.revision > 1);
   const count = [...feedback].length;
-  const canRun = ready && agreed && !!feedback.trim() && count <= limit && !busy;
+  const canRun = ready && !!feedback.trim() && count <= limit && !busy;
   return <div className={r.page} role="region" aria-label="프롬프트 보정">
     <header className={r.stepHead}>
       <div className={r.stepTitle}><span className={r.stepNo} aria-hidden="true">2</span><h4>프롬프트 보정</h4></div>
@@ -71,8 +71,7 @@ export function StudioRefine({ id, image, view, revisions, feedback, limit, quic
           </div>
           {engine.warn && <p className={r.warn} role="note">{engine.warn}</p>}
           <p className={r.note} id={`${id}-refine-engine`}>API키등록·플랫폼연동에 등록한 {engine.short} 키로 호출되며 요금은 그 계정에 청구돼요.</p>
-          <label className={r.consent}><input type="checkbox" checked={agreed} disabled={!ready || busy} onChange={event => onConsent(event.target.checked)} />
-            현재 버전 {latest.revision}의 프롬프트와 피드백을 {engine.short}({engine.model ?? "모델 미등록"})에 보내 새 보정 버전을 만드는 데 동의해요(호출 1건).</label>
+          <p className={r.consent}>'미세 보정 요청'을 누르면 현재 버전 {latest.revision}의 프롬프트와 피드백을 {engine.short}({engine.model ?? "모델 미등록"})에 보내 새 보정 버전을 만들어요(호출 1건).</p>
           <button type="submit" className={r.primary} disabled={!canRun}>
             {running ? <Loader2 size={16} className={r.spin} /> : <Wand2 size={16} />}{running ? "보정 중" : "미세 보정 요청"}</button>
           <p className={r.note}>보정 1회마다 AI 호출 1건(유료)이 발생합니다. 영어·한국어 프롬프트가 함께 고쳐집니다.</p>
