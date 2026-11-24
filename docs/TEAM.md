@@ -30,7 +30,17 @@ Master가 직접 수행한 결과와 모든 세션의 작업 결과를 [마스�
 
 2026-11-22 00:33 KST. Design의 원본 3종 UI 확인 기준 전달 `msg_a469be45393d`를 플랜에 반영했다. 기존 담당과 이미지 → 오디오 → 쇼츠 순서를 사용하며 제품 브라우저에서 키 미등록·실패·저장 후 재열기를 검수한다. 이미지 비교 서버 `e440d72` 독립 통과 및 분리 합본 반영.
 
-## 현재 세션 재확인 · 2026-11-24 11:50 KST
+## 현재 담당 갱신 · 2026-11-25
+
+| 담당 역할 | 현재 Orca 터미널 | 책임과 작업 위치 |
+| --- | --- | --- |
+| Codex(Master) | `term_17af78d9-1177-4953-9000-d52d0457d46e` | 총괄·통합·독립 검수. 단일 원격 `master` 통합 사본 `D:/starwork/review-scratch/unified-master-source-1125/candidate`에서 작업한다. |
+| Codex(Tester) | `term_aa937f35-4d21-4632-a0d9-317c42da42e0` | 테스트·결함 재현·원인 진단·개선 제안. Orca 작업공간 `D:/starwork`. 현재 활성 검수 브랜치가 없으며 최근 검수는 `audio-compat3-2bf2615-independent/source` 고정 사본에서 했다. 다음 기준은 원격 `master`다. 회신 `msg_d039dc724a8e`·`msg_9a2a9f23510b`. |
+| Codex(Shots) | `term_35e57ca2-f7f7-4058-aab7-a5ac75623495` | 영상 분석·주제별 일반 쇼츠 제작 연결과 9:16 MP4 검수. 상세 보고서 검수 사본 `D:/starwork/review-scratch/shots-report-eb5475d`, 단일 `master` 기준. 회신 `msg_00f211fb01da`. [영상·쇼츠 계획](handoffs/SHOTS-VIDEO-ANALYSIS-DEVELOPMENT-PLAN.md). |
+
+Front·Backend·Design은 아래 세션 재확인의 터미널을 이어 사용한다. 배정과 운영 진척은 [마스터 플랜](MASTER_DEVELOPMENT_PLAN.md)에서 확인한다.
+
+## 이전 세션 재확인 · 2026-11-24 11:50 KST
 
 `CMD-20261124-013`에 따라 새 Orca 연결과 각 담당자 회신을 대조한다. 아래 터미널 5개는 같은 Windows 호스트 `local`의 Orca 작업공간 `D:/starwork`에서 연결·쓰기 가능으로 조회됐다. 구체적인 Git 작업 사본·브랜치·배정과 파일 점유는 현재 담당자에게 확인한다.
 

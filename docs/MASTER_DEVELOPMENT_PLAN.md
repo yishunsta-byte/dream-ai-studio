@@ -10,7 +10,7 @@
 
 ### 진행 상황과 담당
 
-#### 현재 개발 상태와 남은 작업 · 2026-11-25 03:34 KST
+#### 현재 개발 상태와 남은 작업 · 2026-11-25 03:42 KST
 
 **이미지 렌즈·초점 거리 격리 합본 검수 통과.** Front `msg_6a1fd0541f65`의 `ddfa570`와 Backend `e530c4c`를 운영 `82263a9` 위에 합친 `961e4ae2fdf603f72b80ba7128ca65473b662ed8`의 7경로는 객체·모드가 원본과 일치한다. 관련 시험 768건과 빌드 검사를 통과했다. 합성 브라우저에서 폭 320·390·1280·1574px의 렌즈·초점 거리 추정 표시, 근거 안내, 값이 없는 경우의 대시를 확인했다. 격리 검수의 운영 기준은 `82263a9`였다. [Front 보고](D:/starwork/review-scratch/style-dna-lens-focus-estimate-display-front-1125/report.md). [합본 시험](D:/starwork/review-scratch/master-style-dna-lens-focus-combined-1125/focus.log). [브라우저 검수](D:/starwork/review-scratch/master-style-dna-lens-focus-combined-1125/fixture-browser.log).
 
@@ -66,11 +66,23 @@ Front `msg_f57fad4ae6ae`와 보고서 해시를 대조했다. Vercel Production 
 
 공개 작품의 재생·철회 보호, 개발 환경의 작업실과 검증 자료 처리, 운영의 이미지 모델·오디오 빌드 설정, 관리형 쇼츠 데이터 경로를 한 사본에서 결합했다. 전체 Vitest 4,444개 통과와 설정에 따른 409개 건너뜀, 운영 Webpack 및 빌드 산출물 검사 통과를 확인했다. 로컬 실제 HTTP에서 홈 200, 관리자·크리에이터 로그인 링크, 직접 재생 API 404를 확인했다. 격리 PG17.12/TLS에서 주제별 프로젝트의 기획·장면 조회·등록·선택, 역순 되돌리기, 재설치와 기존 쇼핑 호환을 확인했다. 운영 DB 설치는 다음 작업이다.
 
+통합 커밋 `eb5475d`의 원격 `master`와 Vercel 성공을 확인했다. 운영 홈·관리자 로그인 각각 200, 이미지 도구 로그인 복귀 307, 보호 API 401, 직접 재생 API 404였다. 통합 이력이 `master`에서 도달하는지 확인한 뒤 임시 원격 브랜치 두 개를 정리했다. [통합 커밋](https://github.com/yishunsta-byte/dream-ai-studio/commit/eb5475d0d66abf946a108f61036bcb0492a14355). [Vercel 배포](https://vercel.com/yishunsta-6158/dream-ai-studio/DsXRpYSgZUNNHRY4BBQRHngy7zjH).
+
+**CMD-20261125-023 · 테스터 명칭과 영상·쇼츠 담당 갱신.** `msg_d039dc724a8e`의 현재 명칭은 Codex(Tester)다. 테스트·결함 재현·디버깅과 개선의 독립 검수를 맡는다. `msg_69ab60c00052`의 Codex(Shots)는 기존 영상 분석과 주제별 일반 쇼츠 제작을 같은 프로젝트에 연결한다. 상세 보고서 Gemini 검증 → 보관함 저장·재열기 복구 → 분석·제작 연결 → 실제 장면 생성·9:16 MP4 출력과 재생 순서다. 최신 운영 기준은 단일 `master`다. [팀 연락표](TEAM.md). [영상·쇼츠 합격 기준](handoffs/SHOTS-VIDEO-ANALYSIS-DEVELOPMENT-PLAN.md).
+
+Codex(Shots)에게 운영 `eb5475d` 기준으로 상세 보고서의 합성 검수를 먼저 이어가도록 요청했다(`msg_7c585cd5cdd9`). 실제 Gemini 검증은 전용 설정과 승인 범위를 확인한 뒤 진행한다. Codex(Tester)는 작업공간 `D:/starwork`와 독립 검수 기준을 회신했다(`msg_9a2a9f23510b`).
+
+Codex(Shots) `msg_00f211fb01da`의 `6703b14` 최신 통합 후보는 15경로에서 분석·보관함·기획·장면 합성 시험 253개와 변경 경로 린트를 통과했다. 대본 15·30·60초와 작업실 10·20·30·40·50·60초 중 공통이며 승인 때 프로젝트 길이가 일치하는 30초를 첫 실제 9:16 종단 검수 목표로 맞췄다. 실제 Gemini 시험은 전용 설정과 비용 범위 확인을 기다린다.
+
+**Seedream·Kling 프롬프트 문구 후속 검수.** Front `msg_bb2f0d7b9d98`의 `dab8aba`를 단일 운영 기준에 합친 격리 후보 `c3eb810d`에서 관련 시험 54개가 통과했다. Design 독립 시험 53개도 통과했다(`msg_2b74dfc9fe6a`). Seedream 편집의 변경·유지 요구는 5.5 자료에서, 간결한 문장과 표시 문구 규칙은 계열 가이드에서 확인했다. Kling은 서사형 이미지 문단의 구성과 타이포그래피 안내를 반영했다. 후속 후보의 운영 반영은 승인 대기다. [BytePlus 작성 안내](https://ai.byteplus.com/ark/region%3Aap-southeast-1/docs/seedream-4-0-5-0-prompt-guide). [Kling 작성 안내](https://kling.ai/quickstart/kling-image-4-user-guide).
+
 **MASTER-INSPECTION-20261125-0201 · 정기 점검.** Orca에서 Front의 인계 범위와 Backend 사본의 응답 계약을 확인했다. Front 배정 2를 전송했고, Backend 모델 작업과 그 뒤 주제별 쇼츠 장면 조회의 대기 상태를 대조했다. 열린 관리자 직접 조치 3건과 기존 미확정 전송 2건을 확인했다. 포그라운드 요청에 따라 기존 Orca Backend 터미널을 선택했다.
 
 **MASTER-INSPECTION-20261125-0231 · 정기 점검.** 운영 원격 `e1efc33`과 Controller·Orca 수신을 대조했다. Front의 비교 지점 보완 사본에서 허용 범위 화면·시험 3개 파일, Backend 장면 조회 사본에서 허용 범위 조회·SQL·시험 7개 파일의 작업 중 변경을 확인했다. 고정 후보와 인계 보고는 대기다. 모델 목록 화면 재검수는 Front 비교 작업이 인계된 뒤 진행한다. 열린 직접 조치 3건과 기존 미확정 전송 2건을 확인했다.
 
 **MASTER-INSPECTION-20261125-0300 · 정기 점검.** 03:00:20 KST에 운영 원격 `d272ed2`와 Vercel 성공, Controller PID `80180`, 기존 Orca 수신을 대조했다. 점검 알림 `msg_57a9de6b78b6` 외 미처리 인계가 없는 상태였다. Front의 모델 목록·공식 문구와 Backend의 장면 결과·설치 호환이 각각 진행 중이다. 열린 관리자 조치 3건과 기존 전달 미확정 2건을 확인했다. 각 담당 후보를 기다리며 중복 배정을 만들지 않았다.
+
+**MASTER-INSPECTION-20261125-0341 · 정기 점검.** 03:41:24 KST에 통합 운영 `eb5475d`, Controller PID `80180`, Orca 인계 6건과 열린 관리자 조치 3건을 대조했다. 임시 원격 브랜치 정리를 확인했고, Codex(Shots)와 Codex(Tester)의 후속 기준을 `master`로 맞췄다. 문구 후보는 독립 증거와 함께 승인 대상으로 남았다.
 
 **CMD-20261125-005 · 순서대로 진행 및 첫 작품 목표 변경.** 주인님이 8번을 ‘주제별 일반 쇼츠’로 지정했다. 1차 첫 작품은 선택한 주제·대상·메시지를 중심으로 기획하고, 같은 프로젝트에서 9:16 내보내기·재생·승인된 게시와 철회, 복원, 시간·비용을 검수한다. 관리형 템플릿 설정·새 프로젝트·기획 경로에 현재 `shopping-shorts` 제한이 있다. 2번 통합 단계에서 주제별 일반 쇼츠의 새 프로젝트·기획·장면 연결 조건을 정리하며 기존 프로젝트의 읽기·쓰기 호환성을 보존한다.
 
@@ -750,7 +762,7 @@ Design 후속 `P1-00-ADMIN-RECENT-ANALYSIS-DESIGN-REVIEW`(`msg_7c8787c08a56`)는
 
 ### 남은 작업 우선순위
 
-**2026-11-25 03:34 KST 기준.** 이미지 모델 다섯 개 합본 `81943e2`의 운영과 FLUX.2 대상 분석을 확인했다. 공용 소스와 최신 이미지·쇼츠를 결합한 단일 합본에서 전체 회귀, 운영 빌드, 주제별 쇼츠와 기존 쇼핑의 PG17 검수가 통과했다.
+**2026-11-25 03:42 KST 기준.** 공용 소스와 최신 이미지·쇼츠를 결합한 `eb5475d`의 운영과 임시 브랜치 정리를 확인했다. 영상과 쇼츠의 다음 작업은 Codex(Shots)가 상세 보고서와 보관함부터 검증한다.
 
 | 우선순위 | 남은 작업 | 현재 상태와 다음 확인 | 담당 |
 | --- | --- | --- | --- |
@@ -761,7 +773,7 @@ Design 후속 `P1-00-ADMIN-RECENT-ANALYSIS-DESIGN-REVIEW`(`msg_7c8787c08a56`)는
 | 5 | 이미지·오디오 실제 사용 검증 | **공식 이미지 대상 5개 운영 반영.** 비교 지점 운영 검수에 이어 `81943e2`에서 FLUX.2용 프롬프트를 실제 분석 1회로 확인했다. 음원 검증이 남아 있다. | Master · Front · Backend · Tester |
 | 6 | 프로젝트·받은 업무·관리자 UI 통합 | **서버 후보 격리 검증 보존.** 최신 운영 기준으로 화면을 합치고 공통 프로젝트 결과 저장·재조회와 계정 격리, 받은 업무·관리자 메뉴 이동을 확인한다. 쇼츠 F7은 보호 후보에서 따로 추적한다. | Integrator · Front · Design · Tester |
 | 7 | 생성 API 및 플랫폼 연결 | **분석 설정·YouTube 검색 확인.** 이미지·음악·영상의 생성 공급자·모델 등록, 실제 호출·렌더·결과 수집·비용 검증을 진행한다. Threads·Instagram·YouTube 게시와 Google Drive 연결은 실제 OAuth·게시·저장 검증이 남았다. | Backend · Front · Tester |
-| 8 | 첫 주제별 일반 쇼츠 완성·내보내기·운영 검수 | **주제별 제작 경로의 장면 단계까지 격리 검수.** 실제 주제 한 편으로 제작·편집 승인, 9:16 내보내기·재생·선택 게시와 철회, 파일·버전 복원, 시간·비용 기록을 검수한다. | Master · Backend · Front · Tester |
+| 8 | 첫 주제별 일반 쇼츠 완성·내보내기·운영 검수 | **주제별 제작 경로의 장면 단계까지 격리 검수.** 실제 주제 한 편으로 제작·편집 승인, 9:16 내보내기·재생·선택 게시와 철회, 파일·버전 복원, 시간·비용 기록을 검수한다. | Codex(Shots) · Master · Backend · Front · Codex(Tester) |
 
 **관리자 조치·확인 대기 3건**
 
