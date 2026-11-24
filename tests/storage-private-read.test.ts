@@ -17,6 +17,7 @@ import { reverifyCommand, type ReverifyDecision } from "@/lib/storage/uploads/re
 import type { UploadCommand, UploadModel } from "@/lib/storage/uploads/schema";
 import { reserveUpload, transition } from "@/lib/storage/uploads/state";
 import { prepareReverifyRead } from "@/lib/storage/supabase/reverify-read";
+import { attemptReverify } from "@/lib/storage/supabase/reverify-attempt";
 vi.mock("server-only", () => ({}));
 const A = actorFromVerifiedUserId("00000000-0000-4000-8000-000000000001"), B = "00000000-0000-4000-8000-000000000002";
 const key = "unit-only-service-credential", sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
@@ -393,5 +394,20 @@ describe("registered-source observation and reverify read preparation over the s
     const before = new AbortController();before.abort();
     await expect(prepareReverifyRead(createPrivateObjectReader(options), A, registeredModel(asset()), op, before.signal)).rejects.toMatchObject({ code: "STORAGE_ABORTED" });
     expect(requests).toEqual([]);
+  });
+  it("runs one worker attempt over a real download: command, retry, exhaustion, no retry for auth, and IO-free expiry", async () => {
+    const item = asset(), s = registeredModel(item);
+    const run = (retry: { attempt: number; maxAttempts: number; retryUntil: number }, now = 3) => attemptReverify({ reader: createPrivateObjectReader(options), actor: A,
+      load: async () => s, now: () => now, request: { principalId: W, operationId: op, fingerprint: fpr, expectedFence: 1, receiptId: pid(13), notAfter: 190,
+        verifierVersion: "verifier-v1", toolVersion: "probe-v1", retry } });
+    expect(await run({ attempt: 1, maxAttempts: 2, retryUntil: 100 })).toMatchObject({ outcome: "command", decision: { action: "finalize", command: { source: sourceOf(item) } } });
+    await clean();mode = "404";
+    expect(await run({ attempt: 1, maxAttempts: 2, retryUntil: 100 })).toEqual({ outcome: "retry", transientCode: "STORAGE_NOT_FOUND", nextAttempt: 2, retryUntil: 100 });await clean();
+    expect(await run({ attempt: 2, maxAttempts: 2, retryUntil: 100 })).toEqual({ outcome: "exhausted", transientCode: "STORAGE_NOT_FOUND" });await clean();
+    mode = "401";
+    await expect(run({ attempt: 1, maxAttempts: 2, retryUntil: 100 })).rejects.toMatchObject({ code: "STORAGE_AUTH" });await clean();
+    mode = "ok";requests.length = 0;
+    await expect(run({ attempt: 1, maxAttempts: 2, retryUntil: 100 }, 150)).rejects.toMatchObject({ code: "EXPIRED" });
+    expect(requests).toEqual([]);await clean();
   });
 });

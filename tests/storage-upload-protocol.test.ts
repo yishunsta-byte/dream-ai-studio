@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { identitySchema, ProtocolError, type Observation, type UploadModel, type UploadCommand } from "@/lib/storage/uploads/schema";
 import { observationFailure } from "@/lib/storage/uploads/observation";
-import { admission, capabilityHorizon, checkedModel, cleanupInstruction, operationResult, publicationInstruction, reserveUpload, transition } from "@/lib/storage/uploads/state";
+import { admission, capabilityHorizon, checkedModel, cleanupInstruction, operationResult, publicationInstruction, reserveUpload, transition, verificationLease } from "@/lib/storage/uploads/state";
 import { canonicalJson, checkedReceipt, makeReceipt, protocolDigest } from "@/lib/storage/uploads/receipt";
 import { beginCreation, creationFingerprint, creationResult, reserveCreationLedger, retireCreation, settleCreation } from "@/lib/storage/uploads/operation";
 import { reverifyCommand, type ReverifyDecision } from "@/lib/storage/uploads/reverify";
@@ -9,6 +9,7 @@ import { actorFromVerifiedUserId } from "@/lib/db/postgres/types";
 import { StorageReadError } from "@/lib/storage/supabase/errors";
 import type { RegisteredSourceObserver } from "@/lib/storage/supabase/reader";
 import { prepareReverifyRead } from "@/lib/storage/supabase/reverify-read";
+import { attemptReverify, type ReverifyAttemptResult } from "@/lib/storage/supabase/reverify-attempt";
 
 vi.mock("server-only", () => ({}));
 
@@ -893,5 +894,110 @@ describe("P2 registered-object reverify read preparation (synthetic reader)", ()
     const r = reader(() => measured);
     await prepareReverifyRead(r.observer, actor, s, op2);
     expect((r.calls[0][1] as { source: unknown }).source).toEqual({ ...finalSource, providerVersion: "v1" });
+  });
+  describe("one synthetic worker attempt", () => {
+    type Retry = { attempt: number; maxAttempts: number; retryUntil: number };
+    const attempt = (states: UploadModel[], times: number[], observer: RegisteredSourceObserver, retry: Retry = { attempt: 1, maxAttempts: 3, retryUntil: 100 },
+      patch: Record<string, unknown> = {}) => {
+      const loads: number[] = [];
+      let i = 0, j = 0;
+      const promise = attemptReverify({ reader: observer, actor,
+        load: async () => { loads.push(i); return states[Math.min(i++, states.length - 1)]; },
+        now: () => times[Math.min(j++, times.length - 1)],
+        request: { principalId: worker, operationId: op2, fingerprint: fp, expectedFence: 1, receiptId: r2, notAfter: 190, verifierVersion: "verifier-v1",
+          toolVersion: "probe-v1", retry, ...patch } });
+      return { promise, loads };
+    };
+    const throwing = (code: ConstructorParameters<typeof StorageReadError>[0]) => reader(() => { throw new StorageReadError(code); });
+    const advance = (s: UploadModel, now: number) => apply(s, { type: "advancePolicy", epoch: 2, policyDigest: "e".repeat(64) }, policy, now);
+
+    it("verificationLease reports the held lease and changes nothing", () => {
+      const s = leased(), before = structuredClone(s), query = { operationId: op2, fingerprint: fp, expectedFence: 1 };
+      expect(verificationLease(s, query, ctx(s, worker, 3))).toEqual({ operationId: op2, kind: "reverify", fence: 1, leaseUntil: 150, authorizationUntil: 200, revision: s.revision });
+      expect(s).toEqual(before);
+      fails("CONFLICT", () => verificationLease(s, query, { ...ctx(s, worker, 3), expectedRevision: s.revision - 1 }));
+      fails("AUTHORITY", () => verificationLease(s, query, ctx(s, stranger, 3)));
+      fails("EXPIRED", () => verificationLease(s, query, ctx(s, worker, 150)));
+      fails("FENCE", () => verificationLease(s, { ...query, expectedFence: 2 }, ctx(s, worker, 3)));
+      fails("INPUT", () => verificationLease(s, { ...query, expectedFence: 0 }, ctx(s, worker, 3)));
+      fails("INPUT", () => verificationLease(s, { ...query, extra: 1 }, ctx(s, worker, 3)));
+    });
+    it("prepares the existing command from the state loaded after one read", async () => {
+      const s = leased(), r = reader(() => measured), run = attempt([s, s], [3, 4], r.observer);
+      expect(await run.promise).toEqual({ outcome: "command", expectedRevision: s.revision, decision: { action: "finalize", command: finalize(op2, r2, 190) } });
+      expect(r.calls).toHaveLength(1);expect(run.loads).toHaveLength(2);
+    });
+    it("carries a confirmed mismatch to the existing rejection", async () => {
+      const s = leased(), r = reader(() => ({ ...measured, format: null, media: null }));
+      expect(await attempt([s, s], [3, 3], r.observer).promise).toMatchObject({ outcome: "command", decision: { action: "rejectVerification", command: { failureCode: "INVALID_BYTES" } } });
+    });
+    it.each([
+      ["an expired lease", () => leased(), 150, {}, "EXPIRED"],
+      ["another fence", () => leased(), 3, { expectedFence: 2 }, "FENCE"],
+      ["a non-verifier", () => leased(), 3, { principalId: stranger }, "AUTHORITY"],
+      ["an unclaimed operation", () => apply(registered(), complete(op2, "reverify", 200), owner, 2), 3, {}, "FENCE"],
+      ["an advanced policy", () => advance(leased(), 3), 4, {}, "STATE"],
+      ["an unknown operation", () => leased(), 3, { operationId: uid(99) }, "STATE"],
+      ["another fingerprint", () => leased(), 3, { fingerprint: "b".repeat(64) }, "CONFLICT"],
+    ] as const)("stops before any read on %s", async (_label, make, now, patch, code) => {
+      const r = reader(() => measured), run = attempt([make()], [now], r.observer, undefined, patch);
+      await expect(run.promise).rejects.toMatchObject({ code });expect(r.calls).toEqual([]);expect(run.loads).toHaveLength(1);
+    });
+    it("answers an ended operation from its stored result without reading, even after the lease window", async () => {
+      const s = leased(), r = reader(() => measured), done = apply(s, finalize(op2, r2, 190), worker, 3);
+      expect(await attempt([done], [999], r.observer).promise).toMatchObject({ outcome: "terminal", result: { status: "succeeded", failureCode: null, receipt: { body: { id: r2 } } } });
+      const canceled = apply(s, complete(uid(15), "reverify", 200), owner, 3);
+      expect(await attempt([canceled], [4], r.observer).promise).toEqual({ outcome: "terminal", result: { status: "canceled", failureCode: null, receipt: null } });
+      expect(r.calls).toEqual([]);
+    });
+    it("ends with no command and no read when the budget is already spent", async () => {
+      const r = reader(() => measured);
+      expect(await attempt([leased()], [3], r.observer, { attempt: 4, maxAttempts: 3, retryUntil: 100 }).promise).toEqual({ outcome: "exhausted", transientCode: null });
+      expect(await attempt([leased()], [100], r.observer, { attempt: 1, maxAttempts: 3, retryUntil: 100 }).promise).toEqual({ outcome: "exhausted", transientCode: null });
+      expect(r.calls).toEqual([]);
+    });
+    it("recommends a retry for 404 or transient damage only within the budget and time, otherwise ends without a command", async () => {
+      const s = leased(), notFound = throwing("STORAGE_NOT_FOUND").observer, damaged = throwing("STORAGE_INTEGRITY").observer;
+      expect(await attempt([s, s], [3, 4], notFound).promise).toEqual({ outcome: "retry", transientCode: "STORAGE_NOT_FOUND", nextAttempt: 2, retryUntil: 100 });
+      // The recommendation is limited to the currently held lease.
+      expect(await attempt([s, s], [3, 4], damaged, { attempt: 2, maxAttempts: 3, retryUntil: 999 }).promise).toEqual({ outcome: "retry", transientCode: "STORAGE_INTEGRITY", nextAttempt: 3, retryUntil: 150 });
+      expect(await attempt([s, s], [3, 4], notFound, { attempt: 3, maxAttempts: 3, retryUntil: 100 }).promise).toEqual({ outcome: "exhausted", transientCode: "STORAGE_NOT_FOUND" });
+      expect(await attempt([s, s], [3, 100], damaged).promise).toEqual({ outcome: "exhausted", transientCode: "STORAGE_INTEGRITY" });
+    });
+    it("decides only on the state loaded after the read", async () => {
+      const s = leased(), r = reader(() => measured);
+      // Renewed by the same worker during the read: the command targets the newer revision and still applies.
+      const renewed = apply(s, { type: "renew", operationId: op2, fingerprint: fp, expectedFence: 1, leaseUntil: 180 }, worker, 3);
+      const later = await attempt([s, renewed], [3, 160], r.observer).promise;
+      expect(later).toMatchObject({ outcome: "command", expectedRevision: renewed.revision });
+      const { decision: { command }, expectedRevision } = later as Extract<ReverifyAttemptResult, { outcome: "command" }>;
+      const commandContext = { principalId: worker, now: 160, expectedRevision };
+      expect(transition(renewed, command, commandContext).currentReceiptId).toBe(r2);
+      const renewedAgain = apply(renewed, { type: "renew", operationId: op2, fingerprint: fp, expectedFence: 1, leaseUntil: 190 }, worker, 160);
+      fails("CONFLICT", () => transition(renewedAgain, command, commandContext));
+      // Ended during the read: the stored result, no command.
+      expect(await attempt([s, apply(s, complete(uid(15), "reverify", 200), owner, 3)], [3, 4], r.observer).promise).toMatchObject({ outcome: "terminal", result: { status: "canceled" } });
+      expect(await attempt([s, apply(s, finalize(op2, r2, 190), worker, 3)], [3, 4], r.observer).promise).toMatchObject({ outcome: "terminal", result: { status: "succeeded" } });
+      // Lease lost or policy moved during the read: the existing code and no command (a transient read is not retried either).
+      await expect(attempt([s, s], [3, 150], r.observer).promise).rejects.toMatchObject({ code: "EXPIRED" });
+      await expect(attempt([s, s], [3, 150], throwing("STORAGE_NOT_FOUND").observer).promise).rejects.toMatchObject({ code: "EXPIRED" });
+      await expect(attempt([s, advance(s, 3)], [3, 4], r.observer).promise).rejects.toMatchObject({ code: "STATE" });
+      // A clock that moves backwards is refused.
+      await expect(attempt([s, s], [4, 3], r.observer).promise).rejects.toMatchObject({ code: "INPUT" });
+    });
+    it.each(["STORAGE_AUTH", "STORAGE_CONFIG", "STORAGE_PRIVATE", "STORAGE_LIMIT", "STORAGE_ABORTED"] as const)("propagates %s from the read", async code => {
+      const s = leased(), run = attempt([s, s], [3, 4], throwing(code).observer);
+      await expect(run.promise).rejects.toMatchObject({ code });expect(run.loads).toHaveLength(1);
+    });
+    it("refuses a malformed request, retry budget or clock before or without reading", async () => {
+      const r = reader(() => measured);
+      for (const patch of [{ extra: 1 }, { expectedFence: 0 }, { retry: { attempt: 0, maxAttempts: 3, retryUntil: 100 } }, { retry: { attempt: 1, maxAttempts: 17, retryUntil: 100 } },
+        { retry: { attempt: 1, maxAttempts: 3 } }, { retry: { attempt: 1.5, maxAttempts: 3, retryUntil: 100 } }]) {
+        const run = attempt([leased()], [3], r.observer, undefined, patch);
+        await expect(run.promise).rejects.toMatchObject({ code: "INPUT" });expect(run.loads).toEqual([]);
+      }
+      for (const bad of [Number.NaN, -1, 1.5]) await expect(attempt([leased()], [bad], r.observer).promise).rejects.toMatchObject({ code: "INPUT" });
+      expect(r.calls).toEqual([]);
+    });
   });
 });
