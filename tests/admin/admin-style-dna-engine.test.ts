@@ -122,6 +122,15 @@ describe("P1-06 Style DNA 분석 대상 모델 선택지(서버 계약)", () => 
     expect(String(send.mock.calls[0][0])).toBe("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent");
     const request = String(send.mock.calls[0][1]?.body);
     expect(request).toContain(`${styleDnaPromptOnlyTargets[targetModel].label}(${targetModel})용 자연어 프롬프트입니다.`);
+    // 공식 안내 대조(2026-11-25)에서 고른 대상별 핵심 표현이 실제 지시에 들어간다.
+    const official: Record<typeof targetModel, string[]> = {
+      "gpt-image-2.6": ["장면, 피사체, 세부(재질·조명·색·표현 매체), 제약 순서", "위치와 글꼴"],
+      "flux-2": ["가장 중요한 요소를 앞에", "30~80단어", "부정 프롬프트는 쓰지 마세요"],
+      "mai-image-2.7": ["photorealistic"],
+      "seedream-5.5": ["낱말을 쉼표로 나열하지 말고", "큰따옴표", "바꿀 것과 유지할 것"],
+      "kling-image-4.0": ["카메라 위치·각도(샷 크기·시점·거리)", "위치·크기·글꼴", "영상 움직임 지시는 넣지 마세요"],
+    };
+    for (const phrase of official[targetModel]) expect(request).toContain(phrase);
     expect(request).toContain("다른 플랫폼 명령행 옵션을 붙이지 마세요.");
     expect(request).not.toContain("synthetic-key-only");
   });
