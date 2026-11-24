@@ -1,5 +1,28 @@
 import { z } from "zod";
 
+// P2-MANAGED-GENERAL-SHORTS-ENTRY(주인님 CMD-20261125-005): 관리형 작업실에서 만들 수 있는 분야. 설정에서 active인 것만 연다.
+export const managedMenuIds = ["shopping-shorts", "topic-shorts"] as const;
+const menuNames: Record<string, string> = { "shopping-shorts": "쇼핑숏츠", "topic-shorts": "주제별 쇼츠" };
+export const managedMenuName = (id: string) => menuNames[id] ?? id;
+/** 설정의 메뉴 가운데 관리형 작업실이 여는 active 메뉴(정한 순서대로). */
+export function activeManagedMenus<T extends { id: string; availability: string }>(menus: readonly T[]): T[] {
+  return managedMenuIds.flatMap(id => menus.filter(menu => menu.id === id && menu.availability === "active"));
+}
+/** 주제별 쇼츠 길이 선택지(주인님: 10~60초 10초 단위). 메뉴 설정에 lengthOptions가 오면 그것을 쓴다. */
+export const topicLengthChoices = [10, 20, 30, 40, 50, 60] as const;
+/** 핵심 메시지 글자 수 상한 판정(배정 2). options = 설정의 keyMessageLength 선택지. 글자는 코드포인트로 센다. 넘으면 저장을 막되 글은 자르지 않는다. */
+export function keyMessageCheck(options: readonly string[] | undefined, limit: unknown, message: unknown) {
+  const value = Number(limit);
+  const max = options?.includes(String(limit)) && Number.isSafeInteger(value) && value > 0 ? value : undefined;
+  const count = [...String(message ?? "")].length;
+  return { max, count, over: max !== undefined && count > max };
+}
+export function lengthChoices(menu: { id: string } & Record<string, unknown>): readonly number[] | undefined {
+  const own = menu.lengthOptions;
+  if (Array.isArray(own) && own.length && own.every(value => Number.isSafeInteger(value) && value > 0)) return own as number[];
+  return menu.id === "topic-shorts" ? topicLengthChoices : undefined;
+}
+
 // P1-02 관리형 프로젝트 생성·브리프 화면 규칙(Backend e91a89c 계약, Master msg_ff678d34d472, Tester UI-PREFLIGHT).
 // - POST /api/projects: 같은 출처 JSON {menuId, inputs} + UUIDv7 Idempotency-Key → 201 {id}.
 // - GET/POST /api/projects/:id/brief: 승인은 {acknowledged:true, revision} + UUIDv7 Idempotency-Key → 200 {stage:"plan", revision}.
@@ -52,6 +75,8 @@ export const briefSchema = z.object({
   title: z.string(), goal: z.string(), target: z.string(), aspect: z.string(), lengthSec: z.number().int().positive(),
   revision: z.number().int().positive(),
   facts: z.string().nullable(), product: z.string().nullable(), rights: z.string().nullable(), sources: z.string().nullable(),
+  // 주제별 쇼츠(Backend 추가 예정): 없으면 쇼핑숏츠 브리프로 본다.
+  menuId: z.string().optional(), topic: z.string().nullable().optional(), keyMessage: z.string().nullable().optional(),
   stages: z.object({ intake: stage, brief: stage, plan: stage }),
 });
 export type Brief = z.infer<typeof briefSchema>;
