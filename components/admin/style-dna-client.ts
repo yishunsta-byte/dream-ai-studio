@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  styleDnaPath, type StyleDnaComparison, type StyleDnaComparisonFrame, type StyleDnaOptions, type StyleDnaRecord, type StyleDnaSummary, type StyleDnaTestResult,
+  styleDnaPath, type StyleDnaComparison, type StyleDnaComparisonFrame, type StyleDnaOptions, type StyleDnaRecord, type StyleDnaRecordedEngine, type StyleDnaSummary, type StyleDnaTestResult,
 } from "@/lib/reference-analysis/style-dna-contract";
 import { readStyleDnaEngineSettings, type StyleDnaEngineSettings } from "./style-dna-engine-credentials-client";
 import {
-  type StyleDnaEngine, type StyleDnaEngineBasis, type StyleDnaEngineSelection,
+  type StyleDnaEngine, type StyleDnaEngineSelection,
 } from "@/lib/reference-analysis/style-dna-engine-credential-contract";
 
 // P1-06 Style DNA 작업실(Backend ab798b1 계약: /api/admin/style-dna 목록·분석, /{id} 기록, /{id}/refine, /{id}/test-image, /{id}/media/{media}).
@@ -47,7 +47,7 @@ export async function readEngineCredentials(signal?: AbortSignal): Promise<Engin
   return outcome.kind === "ok" ? outcome.value.providers : null;
 }
 /** 기록·리비전에 남은 실제 실행 엔진. 엔진 칸이 없는 이전 기록은 Gemini 경로(모델·버전 기록 없음). */
-export const engineBasisText = (basis: StyleDnaEngineBasis | undefined, provider?: EngineChoice) => basis
+export const engineBasisText = (basis: StyleDnaRecordedEngine | undefined, provider?: EngineChoice) => basis
   ? `${engineLabel(basis.provider)} · ${basis.modelId} · 등록 버전 ${basis.credentialVersion}`
   : `${engineLabel(provider ?? "gemini")} · 모델 기록 없음(이전 방식)`;
 export const recordPath = (id: string) => `${styleDnaPath}/${encodeURIComponent(id)}`;
