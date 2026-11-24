@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { createElement, isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ADMIN_HOME, ADMIN_LOGIN, adminLoginPath, adminNextPath, isAdminPath, isAnonymousPublicPath, isPublicPath, logoutLoginPath } from "@/lib/auth/config";
+import { ADMIN_HOME, ADMIN_LOGIN, adminLoginPath, adminNextPath, isAdminPath, isAnonymousPublicPath, isPublicPath } from "@/lib/auth/config";
 
 // T-243 관리자 로그인·관리 허브. mock Auth 시험이며 실제 Supabase 계정으로 실행한 것이 아니다.
 // 기대값 근거: 새 권한·계정 없이 기존 로그인 + 서버 getUser + 허용 이메일만 쓴다. /admin/login만 공개, /admin 아래는 보호.
@@ -50,21 +50,9 @@ describe("T-243 경로 판정", () => {
 
   it("로그인 뒤 돌아갈 곳은 같은 사이트 /admin 아래만, 나머지는 /admin", () => {
     expect(adminNextPath("/admin/x?tab=1")).toBe("/admin/x?tab=1");
-    expect(adminNextPath("/admin#admin-style-dna")).toBe("/admin#admin-style-dna");
-    expect(adminNextPath("/admin#admin-api-integrations")).toBe("/admin#admin-api-integrations");
     for (const bad of [undefined, "", "//evil.test", "https://evil.test/admin", "/\t/evil.test", "/\\evil.test", "/studio", "/adminx", "/admin/login", "/admin/login?next=/admin", "/login"]) expect(adminNextPath(bad), String(bad)).toBe(ADMIN_HOME);
     expect(adminLoginPath({ next: "//evil.test" })).toBe("/admin/login?next=%2Fadmin");
     expect(adminLoginPath({ error: "forbidden" })).toBe("/admin/login?error=forbidden");
-  });
-
-  it.each([
-    ["/admin", "/admin/login"],
-    ["/admin/shorts-analysis", "/admin/login"],
-    ["/studio", "/login"],
-    ["/adminx", "/login"],
-  ])("%s에서 로그아웃하면 해당 로그인 화면으로 돌아간다", (path, login) => {
-    expect(logoutLoginPath(path, "ended")).toBe(login);
-    expect(logoutLoginPath(path, "partial")).toBe(`${login}?notice=logout-partial`);
   });
 });
 
@@ -155,10 +143,6 @@ describe("T-243 관리자 로그인 화면", () => {
     expect(markup).toContain("관리자 로그인은 운영 사이트에서 써요");
     expect(markup).not.toContain('type="password"');
   });
-  it("관리자 로그인은 다른 기기의 로그아웃이 확인되지 않았음을 알린다", async () => {
-    ready();
-    expect(await loginPage({ notice: "logout-partial" })).toContain("다른 기기의 로그인까지 끝났는지는 확인하지 못했어요.");
-  });
   it("두 화면 모두 검색 노출 금지, 로그인 뒤 목적지는 adminNextPath로만 정한다", () => {
     for (const path of ["app/admin/page.tsx", "app/admin/login/page.tsx"]) expect(readFileSync(path, "utf8"), path).toMatch(/robots: \{ index: false, follow: false \}/);
     expect(readFileSync("app/admin/login/page.tsx", "utf8")).toContain("<LoginForm next={adminNextPath(params.next)}");
@@ -184,15 +168,12 @@ describe("T-243 공용 로그인 폼·공개 메인 진입", () => {
     expect(markup).toContain('role="tablist"');
     expect(markup).toContain("회원가입");
   });
-  it("공개 메인 상단의 로그인은 관리자 화면으로, 하단의 크리에이터 로그인은 작업실로 연결한다", async () => {
+  it("공개 메인에 크리에이터 로그인과 따로 관리자 로그인 링크(44px .link)가 있다", async () => {
     const { NeonShowcase } = await import("@/components/public-showcase/neon-showcase");
     const { SAMPLE_WORKS } = await import("@/lib/public-showcase/works");
     const markup = renderToStaticMarkup(createElement(NeonShowcase, { works: SAMPLE_WORKS, loginHref: "/login?next=%2Fstudio" }));
-    const header = markup.match(/<header\b[^>]*>[\s\S]*?<\/header>/)?.[0];
-    const footer = markup.match(/<footer\b[^>]*>[\s\S]*?<\/footer>/)?.[0];
-    expect(header).toMatch(/href="\/admin\/login"[^>]*>관리자 로그인</);
-    expect(header).not.toContain('href="/login?next=%2Fstudio"');
-    expect(footer).toContain('href="/login?next=%2Fstudio"');
+    expect(markup).toMatch(/href="\/admin\/login"[^>]*>관리자 로그인</);
+    expect(markup).toContain('href="/login?next=%2Fstudio"');
     expect(readFileSync("components/public-showcase/neon-showcase.module.css", "utf8")).toMatch(/\.link \{[^}]*min-height: 44px/);
   });
 });

@@ -1,0 +1,20 @@
+// [T315 격리 사본 전용 시험 파일] 루프백 합성 허가 조작 창구. 설치 위치: app/api/t315-control/route.ts
+import { issue, mark, now, tickets, view, type Hold } from "@/lib/t315/gate";
+export const dynamic = "force-dynamic";
+export async function GET(request: Request) {
+  const id = new URL(request.url).searchParams.get("id") ?? "";
+  const t = tickets.get(id);
+  return Response.json(t ? view(t) : null, { headers: { "cache-control": "no-store" } });
+}
+export async function POST(request: Request) {
+  const body = await request.json() as { op: string; id?: string; kind?: string; hold?: Hold; chunks?: number; chunkBytes?: number };
+  if (body.op === "issue") return Response.json({ ...view(issue(body.kind ?? "html", body.hold ?? "none", body.chunks ?? 1, body.chunkBytes ?? 0)), confirmedAt: now() });
+  const t = body.id ? tickets.get(body.id) : undefined;
+  if (!t) return Response.json(null, { status: 404 });
+  if (body.op === "revoke" || body.op === "expire") {
+    if (t.state === "issued" || t.state === "consumed") t.state = body.op === "revoke" ? "revoked" : "expired";
+    mark(t, `control:${body.op}`);
+  }
+  if (body.op === "release") { mark(t, "control:release"); t.released.resolve(); }
+  return Response.json({ ...view(t), confirmedAt: now() });
+}

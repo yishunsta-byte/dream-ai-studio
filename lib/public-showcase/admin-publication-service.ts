@@ -6,6 +6,8 @@ import type { resolveServerAuth } from "../auth/resolve";
 import { actorFromVerifiedUserId, type VerifiedActor } from "../db/postgres/types";
 import { isCoverGeneration, isCoverSlug, type CoverAddress } from "./cover-path";
 import { COVER_MAX_BYTES, COVER_MAX_DIMENSION, verifyCoverBytes, type CoverRow } from "./cover-source";
+import { playbackFormats } from "./playback-path";
+import type { PlaybackRow } from "./playback-source";
 import { readApprovedSnapshot, SHOWCASE_FETCH_LIMIT } from "./showcase-source";
 import { toPublishedWorks } from "./published-works";
 
@@ -28,7 +30,26 @@ const displaySchema = z.strictObject({
   width: dimension, height: dimension,
 });
 const target = { ownerId: id, workId: id, artifactId: id, artifactRevision: generation, sourceSha: sha };
+// Render evidence is issued with the artifact. The immutable storage version is checked
+// again against the complete byte stream before publication.
+const mediaEvidence = z.strictObject({ ...target, status: z.literal("verified"), kind: z.enum(["audio", "video"]),
+  mime: z.string(), ext: z.enum(["mp4","webm","mp3","m4a"]), sha, sizeBytes: z.number().int().positive(),
+  version: z.string().regex(/^"[\x21\x23-\x7e]{1,128}"$/), videoCodec: z.enum(["h264","av1","vp9"]).nullable(),
+  audioCodec: z.enum(["aac","mp3","opus"]).nullable(), fastStart: z.boolean(), objectKey: z.string().max(180).nullable(),
+}).refine(m => {
+  const format = playbackFormats[m.ext];
+  if (m.mime !== format.mime || m.kind !== format.kind || m.sha !== m.sourceSha ||
+      m.sizeBytes > (format.kind === "video" ? 500 : 50) * 1024 ** 2) return false;
+  switch (m.ext) {
+    case "mp4": return m.fastStart && m.videoCodec === "h264" && (m.audioCodec === null || m.audioCodec === "aac");
+    case "webm": return (m.videoCodec === "vp9" || m.videoCodec === "av1") && (m.audioCodec === null || m.audioCodec === "opus");
+    case "mp3": return m.videoCodec === null && m.audioCodec === "mp3";
+    case "m4a": return m.videoCodec === null && m.audioCodec === "aac";
+  }
+});
+export type PublicationMediaEvidence = z.infer<typeof mediaEvidence>;
 const evidenceSchema = z.strictObject({
+  media: mediaEvidence.optional(),
   source: z.strictObject({ ...target, status: z.literal("complete") }),
   rights: z.strictObject({ ...target, status: z.literal("confirmed"), scope: z.literal("public_showcase"),
     reference: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/), expiresAtMs: epoch.nullable() }),
@@ -40,7 +61,7 @@ const evidenceSchema = z.strictObject({
 type Display = z.infer<typeof displaySchema>;
 type Command = z.infer<typeof commandSchema>;
 type Review = Readonly<{ generation: string; artifactId: string; artifactRevision: string; rightsReference: string; binding: string }>;
-type Active = Review & Readonly<{ approvedMs: number; rightsUntilMs: number | null; display: Display; cover: CoverRow }>;
+type Active = Review & Readonly<{ approvedMs: number; rightsUntilMs: number | null; display: Display; cover: CoverRow; media?: PlaybackRow & {kind: "audio" | "video"} }>;
 export type AdminPublicationWork = Readonly<{
   id: string; ownerId: string; slug: string; revision: string; media: "image" | "music" | "video";
   artifact: Readonly<{ id: string; revision: string; sha: string; status: "complete" | "incomplete" }>;
@@ -73,6 +94,7 @@ export type AdminPublicationTransaction = Readonly<{
   readEvidence(actor: VerifiedActor, work: AdminPublicationWork): Promise<unknown>;
   /** Null confirms an absent immutable object. Throw for timeouts, transport errors and uncertain absence. */
   readCover(actor: VerifiedActor, objectKey: string, maxBytes: number): Promise<Uint8Array | null>;
+  verifyMedia?(actor: VerifiedActor, row: PlaybackRow): Promise<boolean>;
   saveFailure(actor: VerifiedActor, requestId: string, entry: Entry<SettledFailure>): Promise<void>;
   save(change: Change): Promise<void>;
 }>;
@@ -100,7 +122,8 @@ function activeAt(work: AdminPublicationWork, nowMs: number) {
 export function projectApprovedPublications(works: readonly AdminPublicationWork[], nowMs: number) {
   const rows = works.flatMap(work => {
     const active = activeAt(work, nowMs);
-    return active ? [{ slug: work.slug, generation: active.generation, approvedMs: String(active.approvedMs), display: { ...active.display } }] : [];
+    return active ? [{ slug: work.slug, generation: active.generation, approvedMs: String(active.approvedMs), display: { ...active.display },
+      ...(active.media ? { media: { kind: active.media.kind, ext: active.media.ext } } : {}) }] : [];
   });
   rows.sort((a, b) => Number(b.approvedMs) - Number(a.approvedMs) || (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0));
   return { nowMs: String(epoch.parse(nowMs)), rows: rows.slice(0, SHOWCASE_FETCH_LIMIT) };
@@ -113,12 +136,14 @@ export function findActivePublicationCover(work: AdminPublicationWork, address: 
 }
 
 async function bindEvidence(tx: AdminPublicationTransaction, actor: VerifiedActor, work: AdminPublicationWork, nowMs: number) {
-  if (work.media !== "image" || work.artifact.status !== "complete") return;
+  if (work.artifact.status !== "complete" || !["image", "music", "video"].includes(work.media)) return;
   const evidence = evidenceSchema.safeParse(await tx.readEvidence(actor, work));
   const display = displaySchema.safeParse(work.display);
   if (!evidence.success || !display.success) return;
-  const { source, rights, cover } = evidence.data;
-  for (const proof of [source, rights, cover]) {
+  const { source, rights, cover, media } = evidence.data;
+  if (work.media === "image" ? media !== undefined :
+    (!tx.verifyMedia || !media || media.kind !== (work.media === "music" ? "audio" : "video"))) return;
+  for (const proof of media ? [source, rights, cover, media] : [source, rights, cover]) {
     if (proof.ownerId !== actor.id || proof.workId !== work.id || proof.artifactId !== work.artifact.id ||
       proof.artifactRevision !== work.artifact.revision || proof.sourceSha !== work.artifact.sha) return;
   }
@@ -129,9 +154,11 @@ async function bindEvidence(tx: AdminPublicationTransaction, actor: VerifiedActo
   ] });
   if (toPublishedWorks(candidate.records, { now: new Date(nowMs) }).works.length !== 1) return;
   const { objectKey, ...reviewedCover } = cover;
-  const binding = digest({ source, rights, cover: reviewedCover, display: display.data, slug: work.slug });
+  const { objectKey: mediaObjectKey, ...reviewedMedia } = media ?? {};
+  const binding = digest({ source, rights, cover: reviewedCover, ...(media ? { media: reviewedMedia } : {}),
+    display: display.data, slug: work.slug });
   return { binding, rightsReference: rights.reference, rightsUntilMs: rights.expiresAtMs,
-    cover: reviewedCover, objectKey, display: display.data };
+    cover: reviewedCover, objectKey, media, mediaObjectKey, display: display.data };
 }
 
 /** Internal service. A trusted auth resolver and atomic store are required; it has no route or global state. */
@@ -238,12 +265,20 @@ export function createAdminPublicationService(store: AdminPublicationStore, reso
               if (isDefinitiveCoverFailure(error)) return recordFailure("source-unavailable");
               throw error;
             }
+            let media: Active["media"];
+            if (evidence.media) {
+              const m = evidence.media;
+              const key = `${work.slug}/${command.generation}/${m.sha}.${m.ext}`;
+              if (evidence.mediaObjectKey !== key || !tx.verifyMedia) return recordFailure("source-unavailable");
+              media = { kind: m.kind, objectKey: key, ext: m.ext, mime: m.mime, sha: m.sha, sizeBytes: m.sizeBytes, version: m.version };
+              if (!await tx.verifyMedia(actor, media)) return recordFailure("source-unavailable");
+            }
             const approvedMs = epoch.parse(now());
             if (approvedMs < atMs) return { status: "unavailable" };
             if (evidence.rightsUntilMs !== null && approvedMs >= evidence.rightsUntilMs) return recordFailure("source-unavailable");
             atMs = approvedMs;
             active = { ...decision, approvedMs, rightsUntilMs: evidence.rightsUntilMs,
-              display: evidence.display, cover };
+              display: evidence.display, cover, ...(media ? { media } : {}) };
             review = null;
             outcome = { status: "published", version: revision, generation: command.generation };
           }

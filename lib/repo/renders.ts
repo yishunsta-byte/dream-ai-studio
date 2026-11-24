@@ -15,6 +15,11 @@ export function rendersRepository(handle:DatabaseHandle){const {db}=handle;
   row:(id:string)=>db.select().from(renders).where(eq(renders.id,id)).get(),
   byJob:(jobId:string)=>db.select().from(renders).where(eq(renders.jobId,jobId)).get(),
   list:(projectId:string,limit=50)=>db.select().from(renders).where(eq(renders.projectId,projectId)).orderBy(desc(renders.createdAt),desc(renders.id)).limit(limit).all(),
+  completedFiles:(projectId:string,timelineId:string,contentRevision:number)=>db.select({
+    id:renders.id,filePath:renders.filePath,sizeBytes:renders.sizeBytes,
+  }).from(renders).where(and(eq(renders.projectId,projectId),eq(renders.timelineRevId,timelineId),
+    eq(renders.contentRevision,contentRevision),eq(renders.status,"succeeded"),eq(renders.canceledLate,false)))
+    .orderBy(desc(renders.createdAt),desc(renders.id)).all(),
   active:(projectId:string)=>db.select().from(renders).where(and(eq(renders.projectId,projectId),inArray(renders.status,["queued","running"]))).get(),
   // Next "-N" number for the same saved timeline revision (1 for the first render of it).
   nextNameSeq:(projectId:string,timelineRevId:string)=>(db.select({n:sql<number>`coalesce(max(${renders.nameSeq}),0)`}).from(renders).where(and(eq(renders.projectId,projectId),eq(renders.timelineRevId,timelineRevId))).get()?.n??0)+1,

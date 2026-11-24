@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEON SCREEN · 관리자 로그인 디자인 3안</title>
+<style>
+@font-face{font-family:Pretendard;src:url('../t232-public-showcase/assets/PretendardVariable.woff2') format('woff2');font-weight:45 920;font-display:swap}
+:root{color-scheme:dark;--bg:#0a0911;--surface:#171420;--ink:#faf5ff;--muted:#cec2d5;--accent:#ff98e1;--button:#ad167e;--line:#51415b;--image:url('../../../public/showcase/t240/neon-rooftop.png');font:16px/1.5 Pretendard,system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}h1,h2,p{margin:0}a{color:inherit;text-decoration:none}button,input{font:inherit;color:inherit}button{cursor:pointer}button,a,input{scroll-margin:15px}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #ffc2eb;outline-offset:3px}
+.brand{display:inline-flex;align-items:center;gap:11px;min-height:44px;font-weight:850;letter-spacing:-.03em}.brand em{color:var(--accent);font-weight:500;font-style:normal}.mark{width:34px;height:34px;display:grid;place-items:center;background:linear-gradient(135deg,#dd3db1,#6236d4);border-radius:10px;color:white}.back{display:inline-flex;align-items:center;min-height:44px;color:var(--accent);font-weight:650;font-size:14px}.kicker{color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.14em}.muted{color:var(--muted)}.login h1{font-size:clamp(31px,4vw,48px);line-height:1.15;letter-spacing:-.055em}.intro{display:grid;gap:12px}.intro p{color:var(--muted);font-size:15px;line-height:1.65}.login-shell{max-width:1340px;min-height:100svh;margin:auto;padding:22px 35px 35px;display:grid;grid-template-rows:auto 1fr auto;gap:24px}.topbar,.foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:9px 18px}.foot{font-size:12px;color:var(--muted)}.form{display:grid;gap:14px;margin-top:24px}.field label,.fieldhead label{display:block;font-size:14px;font-weight:750}.fieldhead{display:flex;justify-content:space-between;align-items:center;gap:8px}.field label{margin-bottom:7px}.fieldhead label{margin:0}.field input{width:100%;height:50px;padding:12px;border:1px solid var(--line);border-radius:9px;background:#100d17;color:var(--ink)}.field input::placeholder{color:#b3a6bb}.password{position:relative}.password input{padding-right:66px}.toggle,.forgot{min-height:44px;border:0;background:transparent;color:var(--accent);padding:0 9px;font-size:14px}.toggle{position:absolute;right:4px;top:3px}.forgot{padding:0}.submit,.open{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border:1px solid transparent;border-radius:9px;padding:10px 17px;background:var(--button);color:white;font-weight:800}.status{color:#ffd0ef;font-size:14px}.status:empty{display:none}.form .submit{margin-top:4px}.main-login{min-width:0}.split{display:grid;grid-template-columns:1.2fr 1fr;min-height:620px;border:1px solid var(--line);border-radius:20px;overflow:hidden}.split .poster{position:relative;background:linear-gradient(0deg,#0a0814ef,transparent 62%),var(--image) 62% center/cover;display:flex;align-items:end;padding:35px}.poster strong{font-size:clamp(48px,6vw,84px);display:block;line-height:.92;letter-spacing:-.07em}.poster strong span{color:#ffa8eb}.credit{display:block;color:#ead9ea;font-size:13px;margin-top:18px}.split .login{padding:45px clamp(24px,5vw,69px);display:flex;flex-direction:column;justify-content:center;background:linear-gradient(150deg,#22152b,#14111e 60%)}
+body[data-mode=immersive]{background:linear-gradient(90deg,#0b0715b5,#0b071551 65%,#0b071577),linear-gradient(0deg,#0b0715ee,transparent 75%),var(--image) 62% 40%/cover fixed}.immersive{display:grid;grid-template-columns:1fr minmax(0,460px);gap:35px;align-items:center;min-height:640px}.immersive .poster{padding:22px}.immersive .login{padding:36px;background:#161020f2;border:1px solid #9f6193;border-radius:20px;box-shadow:0 23px 70px #06030aa0}
+body[data-mode=focus]{background:radial-gradient(ellipse at 50% 4%,#311b3b,transparent 52%),#0b0912}.focus{display:grid;place-items:center;min-height:650px}.focus .login{width:min(100%,475px);border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--surface)}.strip{height:108px;background:linear-gradient(0deg,#171420,transparent 90%),var(--image) 62% 43%/cover}.focus .content{padding:9px 33px 30px}.focus .login h1{font-size:39px}.focus .login .intro{gap:7px}
+.compare{max-width:1360px;margin:auto;padding:38px 32px}.compare header{display:grid;gap:12px;margin-bottom:28px}.compare h1{font-size:clamp(34px,5vw,61px);letter-spacing:-.065em;line-height:1.15}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:19px}.option{background:var(--surface);border:1px solid var(--line);border-radius:14px;min-width:0;overflow:hidden}.preview{display:block;background:#1e1429}.preview img{display:block;width:100%;aspect-ratio:1280/850;object-fit:cover}.info{padding:18px;display:grid;gap:9px}.info p{font-size:14px;color:var(--muted);min-height:44px}.info .open{justify-self:start}.info .back{margin-left:8px}.compare .hint{margin-top:20px;color:var(--muted);font-size:14px}
+@media(max-width:760px){.login-shell{padding:14px 17px 21px;gap:17px}.split{display:block;min-height:0}.split .poster{min-height:218px;padding:21px;background-position:63% center}.poster strong{font-size:45px}.credit{margin-top:11px}.split .login,.immersive .login{padding:23px}.immersive{min-height:0;display:flex;flex-direction:column;align-items:stretch;gap:16px}.immersive .poster{min-height:154px;padding:16px 0;display:flex;align-items:end}.focus{min-height:0}.focus .content{padding:5px 22px 24px}.focus .login h1{font-size:34px}.strip{height:92px}.compare{padding:24px 17px}.grid{grid-template-columns:1fr}.info p{min-height:0}.form{margin-top:18px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body><main id="app"></main>
+<script>
+const options = [
+  {id:"split", title:"시네마 분할형", body:"대형 공연 이미지와 로그인 폼을 나란히 배치했습니다."},
+  {id:"immersive", title:"풀스크린 몰입형", body:"공연 이미지가 화면을 채우고, 어두운 로그인 카드가 오른쪽에 놓입니다."},
+  {id:"focus", title:"집중형 로그인", body:"카드 상단에만 이미지를 넣어 로그인과 비밀번호 찾기가 바로 보입니다."}
+];
+const selected = options.find(option => option.id === new URLSearchParams(location.search).get("view"));
+const app = document.querySelector("#app");
+const brand = '<span class="brand"><span class="mark" aria-hidden="true">✦</span>DREAM <em>SCREEN</em></span>';
+if (!selected) {
+  app.innerHTML = `<div class="compare"><header>${brand}<h1>관리자 로그인 · 디자인 3안</h1><p class="muted">NEON SCREEN의 색과 공연 이미지를 사용한 세 가지 로그인 화면입니다.</p></header>
+  <div class="grid">${options.map(option => `<article class="option"><a class="preview" href="?view=${option.id}"><img src="${option.id}-desktop.png" alt="${option.title} 데스크톱 화면"></a><div class="info"><h2>${option.title}</h2><p>${option.body}</p><div><a class="open" href="?view=${option.id}">시안 체험</a><a class="back" href="${option.id}-mobile.png">모바일 캡처</a></div></div></article>`).join("")}</div>
+  <p class="hint">로그인과 비밀번호 찾기는 동작 확인용 시안입니다. 실제 계정 정보를 입력하지 마세요.</p></div>`;
+} else {
+  document.body.dataset.mode = selected.id;
+  const poster = '<div class="poster" aria-hidden="true"><div><strong>NEON<br><span>AFTER HOURS</span></strong><span class="credit">DREAM ORIGINALS / MUSIC FILM</span></div></div>';
+  app.innerHTML = `<div class="login-shell"><header class="topbar">${brand}<a class="back" href="./index.html">← 디자인 3안 비교</a></header>
+  <div class="main-login ${selected.id}">${selected.id === "focus" ? "" : poster}<section class="login" aria-labelledby="title">${selected.id === "focus" ? '<div class="strip" aria-hidden="true"></div>' : ""}<div class="content">
+  <div class="intro"><span class="kicker">DREAM AI STUDIO · 관리자</span><h1 id="title">관리자 로그인</h1><p>운영자 계정으로 로그인해 관리 화면을 열어 주세요.</p></div>
+  <form class="form">
+  <div class="field"><label for="email">이메일 주소</label><input id="email" type="email" autocomplete="off" placeholder="name@example.com" required></div>
+  <div class="field"><div class="fieldhead"><label for="password">비밀번호</label><button type="button" class="forgot">비밀번호 찾기</button></div><div class="password"><input id="password" type="password" autocomplete="off" required><button type="button" class="toggle" aria-controls="password" aria-pressed="false">보기</button></div></div>
+  <button class="submit" type="submit">로그인 <span aria-hidden="true">&nbsp;→</span></button><p class="status" role="status"></p>
+  </form><button type="button" class="forgot home">← 공개 메인으로</button></div></section></div>
+  <footer class="foot"><span>관리자 로그인 · 디자인 시안</span><span>NEON SCREEN</span></footer></div>`;
+  const status = document.querySelector(".status");
+  const password = document.querySelector("#password");
+  document.querySelector(".toggle").addEventListener("click", event => {
+    const shown = password.type === "password";
+    password.type = shown ? "text" : "password";
+    event.currentTarget.setAttribute("aria-pressed", String(shown));
+    event.currentTarget.textContent = shown ? "숨기기" : "보기";
+  });
+  document.querySelector(".form").addEventListener("submit", event => {
+    event.preventDefault();
+    status.textContent = "디자인 시안에서는 계정 정보를 전송하지 않습니다.";
+  });
+  document.querySelector(".forgot:not(.home)").addEventListener("click", () => {
+    status.textContent = "운영 화면에서는 비밀번호 찾기 화면이 열립니다. 이 시안에서는 메일을 발송하지 않습니다.";
+  });
+  document.querySelector(".home").addEventListener("click", () => {
+    status.textContent = "운영 화면에서는 공개 메인으로 이동합니다.";
+  });
+}
+</script>
+</body>
+</html>

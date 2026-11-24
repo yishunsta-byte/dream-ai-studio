@@ -8,7 +8,7 @@ Built-in `image_gen.imagegen`, new generation, reference images 없음, transpar
 
 ### assets/orchid.png
 
-Original: `C:/Users/Administrator/.codex/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-5177d9af-6365-42c5-91df-3e3b11e7ae15.png`.
+Original: `<로컬 생성 보관 폴더>/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-5177d9af-6365-42c5-91df-3e3b11e7ae15.png`.
 
 Exact prompt:
 
@@ -16,7 +16,7 @@ Exact prompt:
 
 ### assets/celestial.png
 
-Original: `C:/Users/Administrator/.codex/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-5e9a5181-4aeb-480a-9b3d-bddb35f0c704.png`.
+Original: `<로컬 생성 보관 폴더>/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-5e9a5181-4aeb-480a-9b3d-bddb35f0c704.png`.
 
 Exact prompt:
 
@@ -24,7 +24,7 @@ Exact prompt:
 
 ### assets/sunflower.png
 
-Original: `C:/Users/Administrator/.codex/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-b8909e4b-2af1-4cf1-92db-26b04e03c09c.png`.
+Original: `<로컬 생성 보관 폴더>/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-b8909e4b-2af1-4cf1-92db-26b04e03c09c.png`.
 
 Exact prompt:
 

@@ -36,6 +36,7 @@ function dataObject(value: unknown, keys: readonly string[]): Record<string, unk
   return snapshot;
 }
 const journalSql = "CREATE SCHEMA dream_migrations; REVOKE ALL ON SCHEMA dream_migrations FROM PUBLIC; CREATE TABLE dream_migrations.history(ordinal integer PRIMARY KEY CHECK(ordinal>0),id text NOT NULL UNIQUE,checksum text NOT NULL CHECK(checksum ~ '^[a-f0-9]{64}$'),applied_at timestamptz NOT NULL DEFAULT transaction_timestamp()); REVOKE ALL ON TABLE dream_migrations.history FROM PUBLIC";
+export { journalSql as postgresMigrationJournalSqlV2 };
 
 export async function runPostgresMigrationsV2(input: PostgresMigrationOptionsV2) {
   // Snapshot before the first await. No caller pool, factory, client or hooks.
@@ -77,7 +78,7 @@ export async function runPostgresMigrationsV2(input: PostgresMigrationOptionsV2)
     await client.query("SET LOCAL search_path=pg_catalog");
     if (mode === "apply") await client.query("SELECT pg_advisory_xact_lock($1,$2)", [...migrationLock]);
     const inspect = (selected: PostgresSchemaVersionV2) => inspectPostgresMigrationStateV2(client!, {
-      version: selected, database: target.database, username: target.username, port: target.port,
+      version: selected, targetVersion: version, database: target.database, username: target.username, port: target.port,
     });
     // No pre-lock apply plan is used. READ COMMITTED sees a prior winner's commit.
     const before = await inspect(version);

@@ -104,7 +104,7 @@ describe("T-245 화면 연결", () => {
     ready();
     const { default: PasswordPage } = await import("@/app/account/password/page");
     const admin = renderToStaticMarkup(await PasswordPage({ searchParams: Promise.resolve({ context: "admin" }) }));
-    expect(admin).toContain("Dream AI Studio · 관리자");
+    expect(admin).toContain("DREAM AI STUDIO · 관리자");
     const plain = renderToStaticMarkup(await PasswordPage({ searchParams: Promise.resolve({ context: "https://evil.test" }) }));
     expect(plain).not.toContain("관리자");
   });

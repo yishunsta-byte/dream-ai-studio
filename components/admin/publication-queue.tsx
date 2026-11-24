@@ -1,9 +1,9 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { Button, Callout, Card, StatusPill } from "@/components/ui/primitives";
 import {
-  STAGE_LABEL, allowedCommands, applyOutcome, buildAction, isPublicationItem, isPublicationOutcome, outcomeNotice, revokeTarget, stageOf,
+  STAGE_LABEL, allowedCommands, applyOutcome, buildAction, describeRevocation, isPublicationItem, isPublicationOutcome, outcomeNotice, stageOf,
   type Notice, type PublicationAction, type PublicationCommand, type PublicationItem, type PublicationList, type PublicationOutcome, type PublicationStage,
 } from "./publication-model";
 import styles from "./publication-queue.module.css";
@@ -109,6 +109,17 @@ const SUPERSEDED: Notice = { tone: "warning", text: "이전 요청의 결과를 
 export function PublicationQueue({ source, initial, load, apply, newRequestId = fallbackId, now = Date.now }: PublicationQueueProps) {
   const [view, setView] = useState<View>(() => toView(initial));
   const [rows, setRows] = useState<Record<string, Row>>({});
+  const focusPrefix = useId();
+  const nextFocus = useRef<string>(null);
+  const controlId = (slug: string, control: string) => `${focusPrefix}-${slug}-${control}`;
+  useLayoutEffect(() => {
+    const pendingId = nextFocus.current;
+    nextFocus.current = null;
+    const target = pendingId && document.getElementById(pendingId);
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: "center", inline: "nearest" });
+  }, [rows]);
   const [loading, setLoading] = useState(false);
   const [staleLoad, setStaleLoad] = useState(false);
   const [gate] = useState(createSyncGate);
@@ -136,6 +147,11 @@ export function PublicationQueue({ source, initial, load, apply, newRequestId = 
   const row = (slug: string) => ownEntry(rows, slug) ?? EMPTY_ROW;
   const patch = (slug: string, next: Partial<Row>) => setRows((all) => ({ ...all, [slug]: { ...(ownEntry(all, slug) ?? EMPTY_ROW), ...next } }));
 
+  function setRevocationConfirmation(slug: string, open: boolean) {
+    nextFocus.current = controlId(slug, open ? "confirm" : "trigger");
+    patch(slug, open ? { confirmRevoke: true, notice: null } : { confirmRevoke: false });
+  }
+
   async function reload() {
     if (inflight.current.size > 0 || anyBusy || loading) return;
     const ticket = gate.beginLoad();
@@ -151,6 +167,9 @@ export function PublicationQueue({ source, initial, load, apply, newRequestId = 
 
   async function send(item: PublicationItem, action: PublicationAction) {
     if (loading || inflight.current.has(item.slug)) return; // 같은 줄 진행 중이면 전송 0(중복 클릭 포함)
+    const statusId = controlId(item.slug, "status");
+    const trigger = action.command === "revoke" ? document.activeElement : null;
+    if (trigger) nextFocus.current = statusId;
     const ticket = gate.beginWrite();
     inflight.current.set(item.slug, ticket);
     setWrites((all) => ({ ...all, [item.slug]: action.command }));
@@ -165,10 +184,15 @@ export function PublicationQueue({ source, initial, load, apply, newRequestId = 
     setWrites((all) => { const next = { ...all }; delete next[item.slug]; return next; });
     const decision = retryDecision(viewRef.current, item.slug, item.version);
     if (decision === "drop") return; // 그 줄이 최신 목록에서 빠짐: 되살리지 않음
+    const active = document.activeElement;
+    // 처리 중 다른 조작에 초점을 옮겼다면 결과가 도착해도 그대로 둔다.
+    const restoreFocus = trigger && (active === trigger || active?.id === statusId || active === document.body);
+    if (restoreFocus) nextFocus.current = statusId;
     if (decision === "notice") { patch(item.slug, { notice: SUPERSEDED, retry: null, retryBase: null }); return; }
-    const notice = outcomeNotice(action.command, outcome);
+    const notice = outcomeNotice(item, action.command, outcome);
     const updated = applyOutcome(item, action, outcome, now());
     if (updated) {
+      if (restoreFocus) nextFocus.current = controlId(item.slug, "title");
       setView((current) => current.kind === "ok" ? { kind: "ok", items: current.items.map((it) => it.slug === item.slug && it.version === item.version ? updated : it) } : current);
       patch(item.slug, { notice, retry: null, retryBase: null, rights: false, stale: false });
       return;
@@ -193,7 +217,7 @@ export function PublicationQueue({ source, initial, load, apply, newRequestId = 
       {view.kind !== "closed" && <Button variant="secondary" className={styles.reload} onClick={reload} loading={loading} loadingLabel="불러오는 중" disabled={anyBusy}>목록 다시 불러오기</Button>}
     </div>
     {staleLoad && <p role="status" className={styles.warning}>불러오는 사이 다른 작업이 끝나서 이번 목록은 반영하지 않았어요. 필요하면 다시 불러와 주세요.</p>}
-    <p className={styles.note}>내 계정이 소유한 완성본만 보여요. 게시하면 공개 메인 목록에 올라가고, 철회하면 공개 목록과 표지 주소에서 내려가요.</p>
+    <p className={styles.note}>내 계정이 소유한 완성본만 보여요. 게시 준비 취소는 준비된 세대를 거둬요. 공개 철회는 게시 중인 세대를 공개 목록과 해당 표지 주소에서 내려요.</p>
     {synthetic && <Callout tone="info" title="합성 시험 데이터예요">운영 작품이 아니에요. 게시·철회도 이 화면 안의 시험 공급자에만 반영돼요.</Callout>}
     {view.kind === "closed" && <Card>
       <h3 className={styles.title}>게시 서버 <StatusPill status="locked">미연결</StatusPill></h3>
@@ -209,10 +233,12 @@ export function PublicationQueue({ source, initial, load, apply, newRequestId = 
         const commands = loading || r.stale || r.retry || busy ? [] : allowedCommands(item, r.rights);
         const rightsId = `rights-${item.slug}`;
         const blocked = item.rights !== "confirmed" ? "권리 증빙이 확인되지 않아 게시할 수 없어요." : !item.source.finished ? "원본이 완성본이 아니라 게시할 수 없어요." : null;
-        const revokeGen = revokeTarget(item);
+        const revocation = describeRevocation(item);
+        const revokeLabel = revocation?.label ?? COMMAND.revoke;
+        const canRevoke = commands.includes("revoke") && revocation;
         return <li key={item.slug}><Card>
           <div className="stack">
-            <h3 className={styles.title}>{item.title} {synthetic && <StatusPill status="sample">합성</StatusPill>}</h3>
+            <h3 className={styles.title} id={controlId(item.slug, "title")} tabIndex={-1}>{item.title} {synthetic && <StatusPill status="sample">합성</StatusPill>}</h3>
             <p className={styles.meta}><StatusPill status={PILL[stage]}>{STAGE_LABEL[stage]}</StatusPill><span>{KIND[item.kind]}</span><span>주소 이름 {item.slug}</span></p>
             <dl className={styles.facts}>
               <div><dt>대상 리비전</dt><dd>v{item.version}</dd></div>
@@ -226,23 +252,35 @@ export function PublicationQueue({ source, initial, load, apply, newRequestId = 
               <input id={rightsId} type="checkbox" checked={r.rights} disabled={!!busy || loading} onChange={(event) => patch(item.slug, { rights: event.target.checked })} />
               권리 증빙과 표시 문구를 확인했어요(게시 준비·게시에 필요)
             </label>}
+            <p id={controlId(item.slug, "status")} tabIndex={-1} role="status" className={r.notice ? styles[r.notice.tone] : styles.note}>
+              {r.notice?.text ?? (busy === "revoke" ? `${revokeLabel} 요청 중이에요.` : "")}
+            </p>
             <div className={styles.actions}>
               {commands.filter((c) => c !== "revoke").map((command) => <Button key={command} onClick={() => start(item, command)}>
                 {command === "prepare" ? `v${item.version} 게시 준비` : `세대 ${item.pendingGeneration} 게시`}
               </Button>)}
-              {commands.includes("revoke") && !r.confirmRevoke && <Button variant="danger" onClick={() => patch(item.slug, { confirmRevoke: true, notice: null })}>철회…</Button>}
-              {commands.includes("revoke") && r.confirmRevoke && <>
-                <Button variant="danger" onClick={() => start(item, "revoke")}>세대 {revokeGen} 철회 확정</Button>
-                <Button variant="secondary" onClick={() => patch(item.slug, { confirmRevoke: false })}>취소</Button>
-              </>}
-              {busy && <Button loading loadingLabel={`${COMMAND[busy]} 요청 중`}>{COMMAND[busy]}</Button>}
-              {r.retry && <Button variant="secondary" disabled={loading || !!busy} onClick={() => void send(item, r.retry!)}>같은 {COMMAND[r.retry.command]} 요청 다시 시도</Button>}
+              {canRevoke && !r.confirmRevoke && <Button id={controlId(item.slug, "trigger")} variant="danger" onClick={() => setRevocationConfirmation(item.slug, true)}>{revokeLabel}…</Button>}
+              {busy && <Button loading loadingLabel={`${busy === "revoke" ? revokeLabel : COMMAND[busy]} 요청 중`}>{busy === "revoke" ? revokeLabel : COMMAND[busy]}</Button>}
+              {r.retry && <Button variant="secondary" disabled={loading || !!busy} onClick={() => void send(item, r.retry!)}>같은 {r.retry.command === "revoke" ? revokeLabel : COMMAND[r.retry.command]} 요청 다시 시도</Button>}
               {(r.stale || r.retry) && <Button variant="secondary" onClick={reload} disabled={loading || anyBusy}>목록 다시 불러오기</Button>}
             </div>
+            {canRevoke && r.confirmRevoke && <section aria-labelledby={controlId(item.slug, "confirm")} onKeyDown={(event) => {
+              if (event.key !== "Escape") return;
+              event.preventDefault();
+              setRevocationConfirmation(item.slug, false);
+            }}>
+              <h4 id={controlId(item.slug, "confirm")} tabIndex={-1} aria-describedby={controlId(item.slug, "impact")}>
+                {item.title} · {revokeLabel} 확인
+              </h4>
+              <p id={controlId(item.slug, "impact")} className={styles.note}>{canRevoke.target} {canRevoke.generation}. {canRevoke.impact}</p>
+              <div className={styles.actions}>
+                <Button variant="secondary" onClick={() => setRevocationConfirmation(item.slug, false)}>돌아가기</Button>
+                <Button variant="danger" onClick={() => start(item, "revoke")}>세대 {canRevoke.generation} {revokeLabel} 확정</Button>
+              </div>
+            </section>}
             {!blocked && !r.rights && !r.stale && !r.retry && !busy && <p className={styles.note}>{item.pendingGeneration
               ? `권리를 다시 확인하면 세대 ${item.pendingGeneration}을 게시할 수 있어요.`
               : item.activeGeneration ? "권리를 확인하면 새 세대를 게시 준비할 수 있어요." : "권리를 확인하면 게시 준비를 할 수 있어요."}</p>}
-            <p role="status" className={r.notice ? styles[r.notice.tone] : styles.note}>{r.notice?.text ?? ""}</p>
           </div>
         </Card></li>;
       })}

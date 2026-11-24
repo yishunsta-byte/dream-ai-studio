@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { appConfig } from "@/lib/config/app";
 import { PublishedAnalysisResults } from "@/components/reference-analysis/published-analysis-results";
 import { listPublishedReferenceAnalyses } from "@/lib/reference-analysis/admin-reference-publications";
 
@@ -8,7 +7,7 @@ import { listPublishedReferenceAnalyses } from "@/lib/reference-analysis/admin-r
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const metadata: Metadata = {
-  title: `콘텐츠 분석 결과 · ${appConfig.name}`,
+  title: "콘텐츠 분석 결과 · DREAM SCREEN",
   description: "이미지·음악·영상 소스를 분석해 공개 승인한 결과와 생성 프롬프트예요.",
 };
 

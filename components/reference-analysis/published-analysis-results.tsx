@@ -1,5 +1,4 @@
 import { MEDIA_LABEL, formatPublishedAt, type AnalysisMedia } from "@/components/admin/admin-reference-analysis-model";
-import { BrandLogo } from "@/components/ui/brand-logo";
 import styles from "./published-analysis-results.module.css";
 
 // 공개 분석 결과(/analysis-results). 관리자가 공개 승인한 필드(제목·요약·생성 프롬프트·매체·공개 시각)만 평문으로 그린다.
@@ -12,7 +11,7 @@ export function PublishedAnalysisResults({ feed }: { feed: PublishedAnalysisFeed
     <header className={styles.header}>
       {/* 공개 홈은 항상 새 문서로 연다(T-255-F1, 철회 가드). */}
       {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- 의도한 전체 문서 이동 */}
-      <a className={styles.brand} href="/"><BrandLogo /></a>
+      <a className={styles.brand} href="/">DREAM <em>SCREEN</em></a>
       <h1>콘텐츠 분석 결과</h1>
       <p className={styles.lead}>이미지·음악·영상 소스를 분석해 공개 승인한 결과와 생성 프롬프트예요.</p>
     </header>

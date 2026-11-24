@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>관리자 프로젝트 조회 상태 비교 · Dream Screen</title>
+  <style>
+    @font-face{font-family:Pretendard;src:url('../../../../public/fonts/PretendardVariable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    :root{color-scheme:dark;--base:#101019;--card:#191924;--line:#3d394c;--text:#faf6ff;--muted:#c6bed2;--accent:#ecd1ff;--warm:#ffd7a6;--green:#a7edd1;font:16px/1.55 Pretendard,system-ui,sans-serif;color:var(--text);background:var(--base)}
+    *,*::before,*::after{box-sizing:border-box}body{margin:0;word-break:keep-all;overflow-wrap:anywhere}h1,h2,h3,p{margin:0}button,input,select,summary{font:inherit;color:inherit}button,summary{cursor:pointer}a{color:var(--accent)}:where(button,a,input,select,summary):focus-visible,:where(h2):focus{outline:2px solid #ffcf92;outline-offset:4px}h2:focus{width:fit-content;border-radius:3px}
+    .wrap{width:min(1152px,calc(100% - 56px));margin-inline:auto}.masthead{background:#171621;border-bottom:1px solid var(--line)}.masthead .wrap{display:flex;align-items:center;gap:10px;min-height:58px}.mark{display:grid;place-items:center;width:33px;height:33px;border-radius:9px;background:linear-gradient(135deg,#c739aa,#7540c6);color:white}.brand{font-weight:850;line-height:1.1}.brand em{color:#f3abea;font-style:normal}.masthead small{margin-left:auto;color:var(--muted)}
+    main{padding:28px 0 45px}.intro{border:1px solid #4b3d59;border-radius:13px;background:linear-gradient(120deg,#271d37,#1b1927 75%);padding:24px;margin-bottom:14px}.intro h1{font-size:clamp(34px,5vw,56px);letter-spacing:-.06em;line-height:1.12}.intro p{color:var(--muted);margin-top:8px}.cases{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:12px 0 20px}.case{min-width:0;min-height:53px;background:#1b1a28;border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-align:left;font-weight:720}.case:hover{background:#302540}.case[aria-pressed=true]{border-color:#cda4f5;background:#3d2b55;color:#f6e8ff}
+    .workspace{border:1px solid var(--line);border-radius:13px;background:var(--card);min-width:0}.nav{display:flex;flex-wrap:wrap;gap:4px;padding:7px 14px;border-bottom:1px solid var(--line)}.nav a{display:inline-flex;align-items:center;min-height:44px;padding:6px 12px;text-decoration:none;border-radius:7px;font-weight:730}.nav a[aria-current]{color:#f7dbff;background:#3a274c}.view{padding:17px 19px 19px}.view h2{font-size:27px;letter-spacing:-.04em;line-height:1.25;margin:2px 0 6px}.route{font-size:13px;color:#d6bff1}.explain{color:var(--muted);font-size:15px;margin:4px 0 13px}.state-card{padding:14px 15px;border-radius:9px;background:#151521;border:1px solid #393549}.state-card.warn{border-color:#735642;background:#272026}.state-card h3{font-size:21px;letter-spacing:-.035em}.state-card p+p{margin-top:5px}.state-card .muted{font-size:14px;color:var(--muted)}.tag{color:var(--warm);margin-left:4px;font-size:14px}
+    .filters{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.8fr) auto;gap:9px;align-items:end;margin:12px 0}.filters label{display:grid;gap:4px;font-size:14px;color:var(--muted)}input,select{width:100%;min-width:0;min-height:44px;padding:7px 9px;border:1px solid #665875;border-radius:7px;background:#201c2b;color:var(--text)}.visible-count{min-height:44px;display:flex;align-items:center;font-size:14px;color:var(--green);margin:0!important}
+    .rows{list-style:none;margin:0;padding:0}.row{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,.65fr) minmax(0,1fr);gap:6px 10px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0}.row a{min-height:44px;display:inline-flex;align-items:center;font-weight:750}.row span{font-size:14px;color:var(--muted)}.row .project-status{color:var(--green)}.empty-filter{background:#1e1a2c;border:1px dashed #5d4675;border-radius:8px;padding:12px;margin-top:8px}.empty-filter p{margin-bottom:8px}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.action{display:inline-flex;min-height:44px;align-items:center;padding:6px 12px;border:1px solid #675588;border-radius:7px;background:#37294d;color:#faf0ff;font-weight:750;text-decoration:none}.action:hover{background:#493663}.secondary{background:#282337;border-color:#575067}.help{margin-top:10px}.help summary{display:flex;align-items:center;min-height:44px;color:var(--accent);width:fit-content;font-weight:730}.help summary::before{content:'＋';margin-right:4px}.help[open] summary::before{content:'−'}.help p{padding:8px 10px;border-radius:6px;background:#332b40}.live{color:var(--green);font-size:14px;margin-top:9px}.live:empty{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}[hidden]{display:none!important}
+    @media(max-width:920px){.cases{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:680px){.wrap{width:calc(100% - 28px)}.intro{padding:16px}main{padding:17px 0 28px}.cases{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:14px}.view{padding:15px}.filters,.row{grid-template-columns:minmax(0,1fr)}.visible-count{min-height:26px}.row span:last-child{margin-bottom:5px}.nav{padding-inline:9px}}
+  </style>
+</head>
+<body>
+  <header class="masthead"><div class="wrap"><span class="mark" aria-hidden="true">✦</span><span class="brand">DREAM <em>SCREEN</em></span><small>관리자 작업 콘솔</small></div></header>
+  <main class="wrap">
+    <header class="intro"><h1>프로젝트 조회 상태 비교</h1><p>상태를 골라 안내와 다음 조작을 확인하세요. 목록과 화면 이동은 시험 데이터로 재현합니다.</p></header>
+    <div class="cases" role="group" aria-label="프로젝트 조회 시안 상태">
+      <button class="case" type="button" data-case="list" aria-pressed="true">정상 목록</button>
+      <button class="case" type="button" data-case="empty" aria-pressed="false">정상 조회 0건</button>
+      <button class="case" type="button" data-case="filtered" aria-pressed="false">검색 결과 0건</button>
+      <button class="case" type="button" data-case="offline" aria-pressed="false">목록 미연결</button>
+      <button class="case" type="button" data-case="failed" aria-pressed="false">조회 오류</button>
+      <button class="case" type="button" data-case="denied" aria-pressed="false">접근 거절</button>
+    </div>
+    <div class="workspace">
+      <nav class="nav" aria-label="관리 메뉴 예시" id="admin-nav" hidden>
+        <a href="#admin-overview">개요</a><a href="#admin-project-list" aria-current="location">내 프로젝트</a>
+      </nav>
+      <section class="view" id="admin-project-list" data-view aria-labelledby="projects-heading" hidden>
+        <p class="route"><code>/admin#admin-project-list</code></p><h2 id="projects-heading" tabindex="-1">프로젝트 콘솔</h2>
+        <p class="explain">지금 로그인한 계정으로 접근할 수 있는 클라우드 프로젝트를 보여줘요.</p>
+        <div class="state-card" id="state-card">
+          <h3 id="state-title" aria-live="polite" aria-atomic="true"><span id="state-heading"></span><span class="tag" id="state-tag"></span></h3>
+          <p class="muted" id="state-copy"></p>
+          <p class="muted" id="read-time" hidden>조회 시각 <time datetime="2026-11-20T04:30:00+09:00">2026. 11. 20. 오전 4:30 (한국시간)</time> · 시험 조회</p>
+          <div id="list-controls" hidden>
+            <div class="filters">
+              <label for="query">프로젝트 이름 검색<input type="search" id="query" autocomplete="off"></label>
+              <label for="project-status">작업 상태<select id="project-status"><option value="">전체 상태</option><option value="approval">승인 대기</option><option value="done">완료</option></select></label>
+              <p class="visible-count" id="visible-count" role="status"></p>
+            </div>
+            <ul class="rows" id="rows" aria-label="검색 조건에 맞는 프로젝트"></ul>
+            <div class="empty-filter" id="filter-zero" hidden><p>검색 조건에 맞는 프로젝트가 없어요.</p><button class="action secondary" id="reset-filters" type="button">검색 조건 지우기</button></div>
+          </div>
+          <div class="actions" id="list-actions" hidden>
+            <button class="action" id="retry" type="button">다시 불러오기</button>
+            <a class="action secondary" id="personal-list-link" href="#personal-projects">내 프로젝트 전체 화면 →</a>
+          </div>
+          <details class="help" id="connection-help" hidden><summary>연결 상태 도움말</summary><p class="muted" id="help-copy"></p></details>
+          <p class="live" id="retry-status" role="status"></p>
+        </div>
+      </section>
+      <section class="view" id="admin-overview" data-view aria-labelledby="overview-heading" hidden>
+        <p class="route"><code>/admin#admin-overview</code></p><h2 id="overview-heading" tabindex="-1">개요</h2><p class="explain">개인 작업실에서 현재 계정으로 접근할 수 있는 프로젝트를 확인할 수 있어요.</p>
+        <div class="actions"><a class="action" href="#personal-manage">클라우드 개인 관리 →</a><a class="action secondary" id="overview-list-link" href="#personal-projects">내 프로젝트 전체 화면 →</a></div>
+      </section>
+      <section class="view" id="personal-projects" data-view aria-labelledby="personal-heading" hidden>
+        <p class="route"><code>/cloud/projects</code></p><h2 id="personal-heading" tabindex="-1">내 프로젝트</h2><p class="explain">개인 작업실의 프로젝트 목록 화면이에요. 이 화면에서 현재 계정으로 조회한 결과를 확인할 수 있어요.</p>
+        <div class="actions"><a class="action" href="#personal-manage">개인 관리 보기 →</a><a class="action secondary" href="#admin-project-list">관리자 목록 예시로 돌아가기</a></div>
+      </section>
+      <section class="view" id="personal-manage" data-view aria-labelledby="manage-heading" hidden>
+        <p class="route"><code>/cloud/manage</code></p><h2 id="manage-heading" tabindex="-1">개인 관리</h2><p class="explain">조회에 성공하면 이번 목록의 건수와 기록된 프로젝트 상태를 확인할 수 있어요.</p>
+        <div class="actions"><a class="action" href="#personal-projects">내 프로젝트 보기 →</a><a class="action secondary" href="#admin-overview">관리자 개요 예시로 돌아가기</a></div>
+      </section>
+      <section class="view" id="personal-detail" data-view aria-labelledby="detail-heading" hidden>
+        <p class="route"><code>/cloud/projects/{id}#admin-project-heading</code></p><h2 id="detail-heading" tabindex="-1">프로젝트 상세</h2><p class="explain">개인 작업실에서 읽기 전용으로 보는 시험 프로젝트예요.</p>
+        <div class="actions"><a class="action" href="#personal-projects">← 내 프로젝트</a></div>
+      </section>
+      <section class="view" id="admin-login" data-view aria-labelledby="login-heading" hidden>
+        <p class="route"><code>/admin/login?error=forbidden</code></p><h2 id="login-heading" tabindex="-1">관리자 화면에 접근할 수 없어요</h2><p class="explain">사용할 수 있는 관리자 계정인지 확인해 주세요. 접근이 계속 제한되면 운영 담당자에게 문의해 주세요.</p>
+        <button class="action" id="login-action" type="button">관리자 로그인 안내 확인</button><p class="live" role="status" id="login-status"></p>
+      </section>
+    </div>
+  </main>
+  <script>
+    const get = id => document.getElementById(id);
+    const projects = [
+      { title: "밤의 온도", status: "approval", statusLabel: "승인 대기", next: "검수" },
+      { title: "창가의 아침", status: "done", statusLabel: "완료", next: "내보내기" },
+    ];
+    const states = {
+      empty: { title: "내 프로젝트가 0개예요", copy: "현재 계정으로 조회할 수 있는 프로젝트가 없어요." },
+      offline: { title: "프로젝트 목록", tag: "미연결", copy: "이 환경에서 목록을 조회하려면 연결 확인이 필요해요.", help: "운영 담당자에게 관리자 화면의 내 프로젝트 목록 연결을 확인해 달라고 알려 주세요." },
+      failed: { title: "프로젝트 목록을 불러오지 못했어요", copy: "잠시 뒤 다시 불러와 주세요.", help: "계속 실패하면 내 프로젝트 화면의 오류 문구와 발생 시각을 운영 담당자에게 알려 주세요." },
+    };
+    const cases = [...document.querySelectorAll("[data-case]")];
+    const views = [...document.querySelectorAll("[data-view]")];
+    const routeLinks = [...get("admin-nav").querySelectorAll("a")];
+    const query = get("query"), statusFilter = get("project-status"), rows = get("rows");
+    let selectedCase = "list", lastReadableCase = "list";
+
+    function markCase(id) {
+      for (const button of cases) button.setAttribute("aria-pressed", String(button.dataset.case === id));
+    }
+
+    function createRow(project) {
+      const row = document.createElement("li");
+      row.className = "row";
+      const detail = document.createElement("a");
+      detail.href = "#personal-detail";
+      detail.textContent = project.title;
+      detail.addEventListener("click", () => { get("detail-heading").textContent = project.title; });
+      const status = document.createElement("span");
+      status.className = "project-status";
+      status.textContent = project.statusLabel;
+      const next = document.createElement("span");
+      next.textContent = `다음 단계 · ${project.next}`;
+      row.append(detail, status, next);
+      return row;
+    }
+
+    function filterProjects() {
+      const text = query.value.trim().toLocaleLowerCase("ko-KR");
+      const visible = projects.filter(project => project.title.toLocaleLowerCase("ko-KR").includes(text) && (!statusFilter.value || project.status === statusFilter.value));
+      rows.replaceChildren(...visible.map(createRow));
+      get("visible-count").textContent = `${visible.length}개 표시`;
+      get("filter-zero").hidden = visible.length > 0;
+      rows.hidden = visible.length === 0;
+      markCase(visible.length ? "list" : "filtered");
+    }
+
+    function renderScenario(id) {
+      selectedCase = id;
+      if (id !== "denied") lastReadableCase = id;
+      const hasProjects = id === "list" || id === "filtered";
+      const readSucceeded = hasProjects || id === "empty";
+      const state = states[id];
+      query.value = id === "filtered" ? "여름" : "";
+      statusFilter.value = "";
+      get("state-heading").textContent = hasProjects ? `내 프로젝트 ${projects.length}개` : state?.title ?? "";
+      get("state-tag").textContent = state?.tag ?? "";
+      get("state-copy").textContent = hasProjects ? "기록된 작업 상태와 다음 단계를 보여줘요. 내용 버전과 출력 파일은 이 목록에서 확인할 수 없어요." : state?.copy ?? "";
+      get("state-card").classList.toggle("warn", id === "offline" || id === "failed");
+      get("read-time").hidden = !readSucceeded;
+      get("list-controls").hidden = !hasProjects;
+      get("list-actions").hidden = !readSucceeded && id !== "failed";
+      get("personal-list-link").hidden = !readSucceeded;
+      get("overview-list-link").hidden = id !== "offline" && id !== "failed";
+      get("retry-status").textContent = "";
+      get("login-status").textContent = "";
+      get("connection-help").hidden = !state?.help;
+      get("connection-help").open = false;
+      get("help-copy").textContent = state?.help ?? "";
+      get("detail-heading").textContent = "프로젝트 상세";
+      rows.replaceChildren();
+      markCase(id);
+      if (hasProjects) filterProjects();
+      else get("visible-count").textContent = "";
+    }
+
+    function renderRoute(moveFocus = false) {
+      const requested = location.hash.slice(1);
+      const denied = requested === "admin-login";
+      if (denied && selectedCase !== "denied") renderScenario("denied");
+      else if (!denied && selectedCase === "denied") renderScenario(lastReadableCase);
+      const known = views.some(view => view.id === requested && view.id !== "admin-login");
+      const id = denied ? "admin-login" : known ? requested : "admin-project-list";
+      get("admin-nav").hidden = denied || !id.startsWith("admin-");
+      for (const view of views) view.hidden = view.id !== id;
+      for (const link of routeLinks) {
+        if (link.hash === `#${id}`) link.setAttribute("aria-current", "location");
+        else link.removeAttribute("aria-current");
+      }
+      if (moveFocus) get(id).querySelector("h2").focus();
+    }
+
+    for (const button of cases) button.addEventListener("click", () => {
+      const id = button.dataset.case;
+      const denied = id === "denied";
+      const route = denied ? "#admin-login" : "#admin-project-list";
+      if (denied !== (location.hash === "#admin-login")) history.pushState(null, "", route);
+      else history.replaceState(null, "", route);
+      renderScenario(id);
+      renderRoute();
+    });
+    query.addEventListener("input", filterProjects);
+    statusFilter.addEventListener("change", filterProjects);
+    get("reset-filters").addEventListener("click", () => {
+      query.value = "";
+      statusFilter.value = "";
+      filterProjects();
+      query.focus();
+    });
+    get("retry").addEventListener("click", () => {
+      get("projects-heading").focus();
+      get("retry-status").textContent = selectedCase === "failed"
+        ? "시험 재조회 결과 · 목록을 불러오지 못했어요."
+        : "시험 재조회 결과 · 같은 목록과 조회 시각을 표시해요.";
+    });
+    get("login-action").addEventListener("click", () => {
+      get("login-status").textContent = "시험 화면 · 허용된 관리자 계정으로 로그인하는 경로예요.";
+    });
+    for (const link of routeLinks) link.addEventListener("click", event => {
+      if (link.hash !== location.hash) return;
+      event.preventDefault();
+      renderRoute(true);
+    });
+    window.addEventListener("hashchange", () => renderRoute(true));
+    const opensAtLogin = location.hash === "#admin-login";
+    renderScenario(opensAtLogin ? "denied" : "list");
+    renderRoute();
+    if (opensAtLogin) window.addEventListener("load", () => {
+      requestAnimationFrame(() => {
+        if (location.hash === "#admin-login" && document.activeElement === document.body) get("login-heading").focus();
+      });
+    }, { once: true });
+  </script>
+</body>
+</html>

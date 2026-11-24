@@ -63,6 +63,17 @@ function textOnly(input:RenderInput|null,previous:RenderInput|null){
   return scenes(input)===scenes(previous)&&JSON.stringify(input.timeline.text)!==JSON.stringify(previous.timeline.text);
 }
 
+function renderFileExists(row:Pick<RenderRow,"filePath"|"sizeBytes">){
+  if(!row.filePath)return false;
+  const file=resolveStoredFile(row.filePath);
+  try{return !!file&&statSync(/*turbopackIgnore: true*/file).size===row.sizeBytes;}catch{return false;}
+}
+export function currentPlayableRenderId(handle:DatabaseHandle,projectId:string,timelineId:string,contentRevision:number){
+  for(const candidate of rendersRepository(handle).completedFiles(projectId,timelineId,contentRevision)){
+    if(renderFileExists(candidate))return candidate.id;
+  }
+  return null;
+}
 export function rendersService(handle:DatabaseHandle,now:()=>number=Date.now){
   const renders=rendersRepository(handle),jobs=jobsRepository(handle),service=jobsService(handle,now),stamp=()=>new Date(now()).toISOString();
   const project=(id:string)=>{const value=jobs.project(id);if(!value)throw new RenderRequestError("NOT_FOUND","프로젝트를 찾을 수 없어요.",404);return value;};
@@ -80,7 +91,7 @@ export function rendersService(handle:DatabaseHandle,now:()=>number=Date.now){
       target:{integrated:LOUDNESS.integrated,tolerance:ACCEPT.integratedTolerance,truePeakMax:ACCEPT.truePeakMax},profile:PROFILE_ID,ffmpeg:plan.tools.ffmpeg,
       clips:input.timeline.audio.length,hasMusic:input.timeline.audio.some(clip=>clip.role==="music")};
     const audioMode=input?audioModeOf(input):"none";
-    let fileExists=false;if(row.filePath){const file=resolveStoredFile(row.filePath);try{fileExists=!!file&&statSync(/*turbopackIgnore: true*/file).size===row.sizeBytes;}catch{fileExists=false;}}
+    const fileExists=renderFileExists(row);
     const running=row.status==="running",queued=row.status==="queued",other=queued?jobs.running().find(item=>item.id!==row.jobId):undefined;
     const waiting:RenderView["waiting"]=!queued?null:!context.online?{reason:"worker_off"}:other?{reason:"behind_job",kind:other.kind}:job?.nextRunAt&&Date.parse(job.nextRunAt)>now()?{reason:"retry_scheduled",at:job.nextRunAt}:null;
     const code=row.errorCode??(row.status==="failed"?job?.errorCode??null:null);
@@ -98,13 +109,18 @@ export function rendersService(handle:DatabaseHandle,now:()=>number=Date.now){
   return {
     check,
     async list(projectId:string,options:{check?:boolean;deps?:PrepareDeps}={}){
-      const value=project(projectId),rows=renders.list(projectId),online=workerOnline();
+      const limit=50,value=project(projectId),rows=renders.list(projectId,limit),online=workerOnline();
       // Rate from earlier successes on this PC (T-102 ⑨): none → no estimate.
       const done=rows.filter(row=>row.status==="succeeded"&&row.startedAt&&row.finishedAt).slice(0,5);
       const secondsPerFrame=done.length?done.reduce((sum,row)=>sum+seconds(row.startedAt,row.finishedAt)!/row.framesTotal,0)/done.length:null;
       const items=rows.map((row,index)=>{const previousRow=rows.slice(index+1).find(other=>other.status==="succeeded");let previous:RenderInput|null=null;
         if(previousRow){try{previous=renderInputSchema.parse(JSON.parse(previousRow.inputJson));}catch{previous=null;}}
         return view(row,{contentRevision:value.contentRevision,currentTimelineRevId:value.currentTimelineRevId??null,online,previous,secondsPerFrame});});
+      if(value.currentTimelineRevId&&rows.length===limit&&!items.some(item=>!item.stale&&item.status==="succeeded"&&!item.canceledLate&&item.fileExists)){
+        const id=currentPlayableRenderId(handle,projectId,value.currentTimelineRevId,value.contentRevision);
+        const current=id?renders.row(id):null;
+        if(current)items.push(view(current,{contentRevision:value.contentRevision,currentTimelineRevId:value.currentTimelineRevId,online,previous:null,secondsPerFrame}));
+      }
       let checked:{ready:boolean;blockers:RenderBlocker[]}|null=null;
       if(options.check!==false){try{const result=await check(projectId,options.deps);checked={ready:!result.blockers.length&&!!result.input,blockers:result.blockers};}
         catch(error){if(error instanceof WorkflowError&&error.code==="STAGE_LOCKED")checked={ready:false,blockers:[]};else throw error;}}

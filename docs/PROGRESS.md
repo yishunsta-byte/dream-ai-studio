@@ -1,5 +1,9 @@
 # 진행 기록
 
+## 관리자 내 프로젝트 HTTPS 조회 구현 (2026-11-20)
+
+`29860f3`에서 확인된 관리자 계정과 HTTPS 조회 계정을 묶고 기존 PostgreSQL 선택을 보존했다. 관련 133건 및 작성자 Next/PostgREST/PG17 통합, 별도 고정 코드·단위 독립 92건이 통과했다. 브라우저 초점과 운영 조회 확인은 남았다. [구현 인계](handoffs/ADMIN-PROJECT-HTTPS-IMPLEMENTATION.md)
+
 ## T059 제한된 동기 코드 이관 계약 독립 PASS (2026-11-16)
 
 원CRLF독립379통과/생성1skip·lint/typecheck/build와실제T054재현·추가25mode/원SQL·s4보존을Master가원문검토해수용했다. T048~T058반환경계·동기제한수정통합완료, 현재SQL K6(T047)와코드계약준비게이트충족. P1사용자두승인도완료다. hostDBnativeasync금지의검토전제/단계별다른clock동등시험한계유지. 실제제품0005source등록/동봉·cwd·CLI/productionNext·오류UI·고정s5는이후P2-1제품통합검증조건이며이번에제품코드를구현했다고주장하지않는다. T060설계검토후구현배정. 상세 handoffs/T-059-SYNC-CODE-MIGRATION-REVIEW.md.
@@ -199,10 +203,54 @@ T035 K6/s4 구현을 데이터 담당에게 임시 코딩 위임했고 실제 �
 - `git commit -m 'P0-2: 프로젝트 기본 설정'` 시 Git 작성자 정보 미설정으로 실패. 사용자에게 이 저장소에 사용할 이름·이메일을 요청한 상태. 전역 설정은 변경하지 않았다. 첫 커밋 전이므로 P0-3은 아직 시작하지 않음.
 - (플래너 대행, 2026-11-15) 은영님이 작성자 정보를 주어 **이 저장소에만**(`git config --local`) 설정하고 첫 커밋 `220bb3d P0-2: 프로젝트 기본 설정` 생성. 전역 설정 변경 없음, 원격 없음·푸시 안 함. 커밋 전 확인: 47개 파일, `.env`·data·tmp·tsbuildinfo·키 형태 문자열 없음. P0-1 디자인 문서와 PLAN v2.3도 함께 포함. **F-001 처리됨 → 구현 담당은 P0-3 진행 가능.** 확인 판정은 검수 담당(Codex).
 
-- 2026-11-20 Spectrum Lab 쇼츠 분석. 기존 관리자에 공개 YouTube 주소의 Gemini 분석 후보를 연결했다. 관련 38건, Next Windows Webpack 빌드·추적, 390·1440px에서 합성 응답 검증을 통과했다. [인수인계](handoffs/ADMIN-SPECTRUM-SHORTS-ANALYSIS.md)
+- 2026-11-19 P2 자막 측정에 WebVTT 경계를 연결했다. 로컬 세 비율 합성 렌더 자체 검증과 관련 시험 19개 통과. [측정 기록](handoffs/P2-WEBVTT-BOUNDARY-MEASUREMENT.md)
 
-- 2026-11-20 Spectrum Lab 이미지·음악·쇼츠 통합. 운영 계보 기준 세 후보를 기존 관리자에 연결했다. 관련 298건, 운영 빌드·추적, 390·1440px 합성 브라우저 조작을 검증했다. [인수인계](handoffs/ADMIN-SPECTRUM-THREE-MEDIA.md)
+- 2026-11-19 로컬 작업실에서 직접 HTTPS 이미지·피아노·영상 URL 3종을 실행해 관찰과 프롬프트 17·1·1개를 확인했다. 관련 시험 38건 통과. 운영 분석 연결·배포와 별도. [REA URL 검증](handoffs/REA-PUBLIC-URL-LOCAL-STUDIO.md)
 
-- 2026-11-21 관리자 분석 메뉴를 제목 아래로 이동하고 이미지 분석 명칭을 통일했다. 계정설정 및 API 연동, 운영 연결 범위, 사용매뉴얼을 상단 메뉴로 구성했다. [인수인계](handoffs/ADMIN-MENU-AND-MANUAL.md)
+- 2026-11-19 P2 G4 데스크톱 Chrome에서 탭 전환 시 미리보기·원본 오디오 정지와 복귀 후 위치 유지 2회 검증. [검증 기록](handoffs/P2-NATIVE-TAB-PAUSE.md)
 
-- 2026-11-21 관리자 Gemini 자격 증명 저장과 세 분석 연결 후보를 구현했다. 인증 계정별 암호화·키 교체·모델 확인 계약을 정리했다. [인수인계](handoffs/ADMIN-GEMINI-CREDENTIALS.md)
+- 2026-11-19 P2 일반 문구 초안의 Chrome 기본 이탈 경고 검증. 새로고침·탭 닫기 취소와 승인 3회씩, 원래 문구 복원 뒤 경고 해제 2회 확인. [검증 기록](handoffs/P2-NATIVE-UNLOAD-DRAFT.md)
+
+- P2 복구 상자만 열린 상태의 데스크톱 Chrome 이탈 검증 완료. 두 탭 실제 저장 후 새로고침·탭 닫기 취소, 승인, 명시적 닫기 뒤 경고 해제를 확인했다. [검증 기록](handoffs/P2-RECOVERY-NATIVE-UNLOAD.md)
+
+- P2 데스크톱 Chrome 200% 확대 실측. [편집기 문구 저장·원본 듣기](handoffs/P2-EDITOR-NATIVE-ZOOM.md) 및 [렌더 결과 재생·음소거 전환](handoffs/P2-RENDER-RESULT-NATIVE-ZOOM.md) 확인.
+
+- P2 보관 영상 재생 버튼의 초기 클릭 소실 보완. [재현 및 수정 검증](handoffs/P2-RENDER-FIRST-CLICK.md)
+
+- P2 소리 파일 업로드 첫 진행률 전 취소·같은 파일 재시도 보완 및 실제 전송 취소 검증. [결과](handoffs/P2-AUDIO-UPLOAD-CANCEL.md)
+
+- P2 정상 GSM WAV의 Chrome 재생 오류·재시도·정상 자료 전환 검증. [결과](handoffs/P2-AUDITION-UNSUPPORTED-CODEC.md)
+
+- 오디오 포함 출력의 10분 경계 API·화면 확인 및 1프레임 초과 안내 수정. [검수 기록](handoffs/P2-RENDER-AUDIO-DURATION-LIMIT.md)
+
+- P2 글자·소리의 미완성 시간 값에 검수 완료·새로고침 보호와 변경 취소 적용. [검증 기록](handoffs/P2-INVALID-TIME-INPUT-GUARD.md)
+
+- P2 V5 페이드 길이 합과 원본 사용 구간의 1프레임 경계 화면 검증 6건 통과. [기록](handoffs/P2-AUDIO-RANGE-UI.md)
+
+- P2 V5 두 곡·세 곡 겹침 및 역할 변경 후 덕킹 해제 화면 검증. [기록](handoffs/P2-AUDIO-OVERLAP-ROLE-UI.md)
+
+- P2 V5 음원 권리 기록 주소·요금제 길이 오류 화면 검증. [기록](handoffs/P2-AUDIO-RIGHTS-UI.md)
+
+- P2 V7 오디오 복구 클립보드 복사와 권한 거부 시 수동 복사 대조 완료. [기록](handoffs/P2-AUDIO-RECOVERY-CLIPBOARD.md)
+
+- 자막 선택 목록에 실제 장면과 시간 구간을 표시했다. 390px·1280px Chrome 선택과 390px 저장 후 이전 버전 보존을 검증했다. [검증 기록](handoffs/P2-SUBTITLE-SCENE-SELECTION.md)
+- 선택한 자막의 이전 저장 문구와 수정 중 문구를 함께 표시했다. 390·1280px 장면 전환과 취소를 검증했다. [검증 기록](handoffs/P2-SUBTITLE-DRAFT-COMPARISON.md)
+- 저장 직후 선택 자막의 변경 전후와 리비전을 표시했다. 390·1280px 실패·재시도 및 390px 동시 저장 검증. [검증 기록](handoffs/P2-SUBTITLE-SAVE-RESULT.md)
+- 자막 수정 전후 r38·r39 MP4의 실제 재생과 프레임 확인. 출력 카드에 현재 저장본·보관본 번호와 다운로드 대상을 표시했다. [검증 기록](handoffs/P2-SUBTITLE-CURRENT-MP4.md)
+- 검수에서 현재 타임라인의 MP4 카드로 바로 이동하고, 출력 전에는 영상 만들기로 안내한다. [r39·r40 Chrome 검증](handoffs/P2-REVIEW-CURRENT-MP4.md)
+- 최근 출력 50건이 취소돼도 현재 재생 가능한 MP4가 검수 링크와 결과 카드에 유지된다. [회귀 시험](handoffs/P2-REVIEW-MP4-HISTORY.md)
+- 타임라인 저장 경합의 성공 표시 미노출 단언을 현재 구조에 맞추고 Chrome에서 다시 확인했다. [검증 기록](handoffs/P2-TIMELINE-RECEIPT-REGRESSION.md)
+- 검수 링크로 출력 화면에 진입하면 해당 MP4 카드나 영상 만들기 제목에 키보드 초점이 잡힌다. [390·1280px 검증](handoffs/P2-REVIEW-RENDER-FOCUS.md)
+- 자막 목록에서 현재 재생 시각과 장면을 표시한다. [장면 경계 검증](handoffs/P2-SUBTITLE-PLAYHEAD.md)
+- 키보드로 영상 만들기 차단 사유를 확인할 수 있다. 차단 버튼의 Enter·Space는 렌더 요청을 만들지 않는다. [검증 기록](handoffs/P2-RENDER-BLOCKED-KEYBOARD.md)
+- T177 렌더 버튼 회귀 시험에서 Tab 가능한 차단 상태와 차단 사유 연결을 함께 검증한다. [고정 사본 결과](handoffs/P2-RENDER-BUTTON-REASON-REGRESSION.md)
+- DSP 고정 도구 시험의 Windows 일시 잠금 재시도를 읽기와 속성 처리에 적용했다. [검증 기록](handoffs/P2-DSP-WINDOWS-FILE-LOCK.md)
+- 제품 백업·복원으로 자막 수정 전후 MP4, 타임라인 및 원본 PNG·WAV 보존을 확인했다. [검증 기록](handoffs/P2-SUBTITLE-MP4-BACKUP-RESTORE.md)
+- 제품 ZIP의 VTT를 Firefox 159의 네이티브 자막으로 재생해 경계·겹침·원문을 검증했다. [검증 기록](handoffs/P2-FIREFOX-WEBVTT.md)
+- D: 격리 사본에서 프로덕션 빌드와 추적 검증을 통과하고 편집·타임라인 HTTP 200을 확인했다. [검증 기록](handoffs/P2-D-DRIVE-BUILD-VERIFICATION.md)
+- 로컬 PG 쇼핑 숏폼에 편집 완료·검수 승인 화면을 연결했다. 390·1280px Chrome에서 버전 충돌과 승인 응답 유실 복구, 승인 기록 1건 및 렌더 제목 초점을 확인했다. [검증 기록](handoffs/LOCAL-PG-REVIEW-APPROVAL-UI.md)
+- 새 로컬 PG 프로젝트에서 서로 다른 PNG 두 장과 WAV로 브리프부터 90프레임 MP4 다운로드까지 이어갔다. Chrome 다운로드 SHA, 29→30프레임 장면 전환, 600Hz 음원 및 타 계정 거절을 확인했다. [종단 검증](handoffs/LOCAL-PG-FIRST-WORK-END-TO-END.md)
+- 승인된 PG 타임라인의 한글 두 줄과 잠긴 광고 표기를 MP4에 연결했다. 실제 다운로드의 장면·글자 프레임과 AAC·SHA, 표기 누락 차단, 취소 후 같은 작업 재실행을 확인했다. [검증 기록](handoffs/LOCAL-PG-MP4-TEXT-RENDER.md)
+- PG 글자 렌더 자식이 Next 운영 추적에 들어가는 문제를 수정했다. 운영 빌드·실행 차단 및 개발 Turbopack·PG17 MP4 렌더와 취소 재시도를 확인했다. [검증 기록](handoffs/LOCAL-PG-RENDER-PRODUCTION-BUILD.md)
+- 승인된 로컬 PG 타임라인에서 재편집 ZIP v1·v2를 생성하고 다시 열어 원본 순서·SHA·한글 자막·권리 메모를 확인했다. 타 계정·구버전·누락·변조를 거절했다. [검증 기록](handoffs/LOCAL-PG-EDITING-ZIP-ARTIFACT.md)
+- 로컬 PG 재편집 ZIP 영구 보관과 소유자 다운로드 API를 연결했다. 실패 롤백, 동시 요청, 재시작 후 동일 바이트 및 타 계정·이전 버전 차단을 확인했다. [검증 기록](handoffs/LOCAL-PG-EDITING-ZIP-STORAGE.md)

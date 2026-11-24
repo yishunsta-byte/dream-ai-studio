@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>레퍼런스 분석 · Dream AI Studio</title>
+<style>
+:root{color-scheme:dark;--bg:#10111a;--panel:#191b28;--line:#373a50;--ink:#f2f3fd;--muted:#b8bdd3;--accent:#bdadff;--action:#d4c9ff;--dark:#211747;--focus:#e0d6ff;font:16px/1.55 "Pretendard","Malgun Gothic",system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:radial-gradient(ellipse at 90% 0%,#2b2244 0%,transparent 40%),var(--bg);overflow-wrap:anywhere}button,input,select,textarea{font:inherit;color:inherit}button,a,input,select,textarea{scroll-margin:16px}button{cursor:pointer;min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:9px;background:#24263a}button:disabled{cursor:default;color:var(--muted)}button.primary{background:var(--action);color:var(--dark);border-color:var(--action);font-weight:750;min-height:48px}button[aria-pressed=true],button[aria-selected=true]{background:#362a58;border-color:var(--accent);color:#f0eaff}a{color:var(--accent)}:focus-visible{outline:3px solid var(--focus);outline-offset:3px}h1,h2,h3,p{margin:0}h1{font-size:clamp(34px,5vw,62px);line-height:1.12;letter-spacing:-.06em}h2{font-size:24px;letter-spacing:-.035em}h3{font-size:17px}.muted,p small{color:var(--muted)}.hint{font-size:14px;color:var(--muted)}.stack{display:grid;gap:15px;min-width:0}.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.shell{width:min(1230px,100%);padding:0 32px 46px;margin:auto}.mast{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:21px 0;border-bottom:1px solid var(--line)}.brand{font-weight:800;letter-spacing:-.02em}.badge{font-size:13px;color:#e0d6ff;border:1px solid #6b5b92;border-radius:20px;padding:4px 10px}.intro{padding:34px 0;display:grid;gap:11px}.intro p{color:var(--muted)}.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2.05fr);gap:22px;align-items:start}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:23px;min-width:0}.panelHead{display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px}.label{display:block;font-size:14px;font-weight:720;margin-bottom:6px}.field{display:block;width:100%;min-height:46px;border:1px solid var(--line);border-radius:8px;background:#11131e;padding:10px 12px}.field::placeholder{color:var(--muted)}textarea.field{min-height:104px;resize:vertical}pre.field{white-space:pre-wrap;margin:0}.sectionNote,.job,.callout{padding:14px;border:1px solid var(--line);background:#222437;border-radius:10px}.callout.error{border-color:#ab777f;background:#34212d}.job{display:grid;gap:9px}.jobLine{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.jobState{font-size:14px;color:#e0d6ff;font-weight:760}.tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:12px}.visual{position:relative;background:#121421;border:1px solid var(--line);border-radius:12px;overflow:hidden}.visual canvas{width:100%;display:block;aspect-ratio:16/7}.visualNote{display:flex;justify-content:space-between;flex-wrap:wrap;gap:5px 12px;padding:10px 13px;color:var(--muted);font-size:13px}.position{background:#222437;padding:11px 13px;border-radius:8px}.findings{display:grid;gap:10px}.finding{border:1px solid var(--line);border-radius:10px;padding:13px;background:#1e2030;display:grid;gap:7px}.finding.selected{border-color:#ae99f5}.kind{color:#e0d6ff;font-weight:750;font-size:13px}.finding button{justify-self:start}.empty{border:1px dashed #5b5e78;text-align:center;min-height:265px;display:grid;place-content:center;gap:9px;padding:26px;border-radius:12px}.privacy{border-top:1px solid var(--line);padding-top:13px}.skip{position:absolute;left:12px;top:-90px;background:var(--panel);padding:12px;z-index:3}.skip:focus{top:10px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}[hidden]{display:none!important}
+@media(max-width:760px){.shell{padding:0 16px 30px}.layout{grid-template-columns:1fr;gap:16px}.intro{padding:23px 0}.panel{padding:16px}.visual canvas{aspect-ratio:16/9}.mast{padding:14px 0}.sourceButtons button{flex:1}.mast .badge{white-space:nowrap}}
+#input-notice:empty,#job-actions:empty{display:none}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<div class="shell"><header class="mast"><span class="brand">✦ DREAM AI STUDIO</span><span class="badge">합성 표본 · 로컬 시안</span></header>
+<main id="main" tabindex="-1">
+<header class="intro"><h1>레퍼런스 분석</h1><p>자료에서 확인한 근거를 살피고, 다음 작업에 쓸 프롬프트를 다듬으세요.</p></header>
+<div class="layout">
+<section class="panel stack" aria-labelledby="input-title">
+<h2 id="input-title">분석 자료</h2>
+<div class="row sourceButtons" role="group" aria-label="입력 방식">
+<button type="button" data-source="sample" aria-pressed="true">합성 표본</button>
+<button type="button" data-source="url" aria-pressed="false">URL</button>
+<button type="button" data-source="file" aria-pressed="false">파일</button>
+<button type="button" data-source="body" aria-pressed="false">본문</button>
+</div>
+<div id="source-fields"></div>
+<div id="input-notice" aria-live="polite"></div>
+<button class="primary" id="submit" type="button">표본 분석 시작</button>
+<div class="job" id="job" aria-labelledby="job-title">
+<div class="jobLine"><h3 id="job-title">작업 상태</h3><span class="jobState" role="status" id="job-state">시작 전</span></div>
+<p class="hint" id="job-help">합성 표본을 고르고 시작하세요.</p>
+<div class="row" id="job-actions"></div>
+</div>
+</section>
+<section class="panel stack" aria-labelledby="result-title">
+<div class="panelHead"><h2 id="result-title">분석 결과</h2><span id="result-media" class="badge" hidden></span></div>
+<div id="result-empty" class="empty"><h3 id="empty-title">아직 결과가 없어요</h3><p class="hint" id="empty-detail">합성 표본의 작업이 종료되면 결과를 확인할 수 있어요.</p></div>
+<div id="result-content" class="stack" hidden>
+<div role="tablist" aria-label="결과 보기" class="tabs">
+<button type="button" role="tab" id="tab-evidence" aria-controls="evidence" aria-selected="true">근거</button>
+<button type="button" role="tab" id="tab-prompt" aria-controls="prompt" aria-selected="false" tabindex="-1">편집용 프롬프트</button>
+</div>
+<section id="evidence" role="tabpanel" aria-labelledby="tab-evidence" tabindex="0" class="stack">
+<div class="visual"><canvas id="preview" width="800" height="370" aria-hidden="true"></canvas><div class="visualNote"><span id="visual-label"></span><span>합성 근거 위치 예시</span></div></div>
+<p class="position" id="position" aria-live="polite"></p>
+<div class="findings" id="findings"></div>
+<aside class="sectionNote stack" aria-labelledby="quote-example-title">
+<h3 id="quote-example-title">공개 문구 근거 · 별도 본문 예시</h3>
+<p>“색과 리듬으로 감각을 전합니다.”</p>
+<p class="hint">제출자가 공개 문구로 표시한 합성 본문입니다. 위 매체 결과의 출처나 제작자 확인에 쓰지 않습니다.</p>
+<button type="button" id="quote-position" aria-expanded="false" aria-controls="quote-range">합성 인용 위치 보기</button>
+<p class="position" id="quote-range" hidden></p>
+</aside>
+</section>
+<section id="prompt" role="tabpanel" aria-labelledby="tab-prompt" tabindex="0" class="stack" hidden>
+<p class="hint">근거에서 착안한 편집 초안입니다. 원본의 제작 설정을 복원한 결과가 아닙니다.</p>
+<div><label class="label" for="tone">표현 방향</label><select class="field" id="tone"><option value="clear">간결하고 선명하게</option><option value="soft">차분하고 부드럽게</option><option value="active">리듬감 있게</option></select></div>
+<div><label class="label" for="notes">내 편집 메모 · 복사 제외</label><textarea class="field" id="notes" placeholder="개인 메모를 입력할 수 있어요. 페이지를 닫으면 사라집니다."></textarea></div>
+<div class="privacy stack"><h3>복사할 프롬프트</h3><pre class="field" id="export" tabindex="0"></pre><p class="hint">지금 보이는 문구만 복사합니다. 입력 본문·URL·파일명과 편집 메모는 포함하지 않습니다.</p><div class="row"><button class="primary" id="copy" type="button">프롬프트 복사</button><span class="hint" role="status" id="copy-status"></span></div></div>
+</section>
+</div>
+</section>
+</div>
+</main></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const samples={
+  video:{label:"영상",visual:"영상 위치표",meta:"MP4 · 32 × 24 · 500 ms",note:"색 면 사이에 짧은 전환을 배치하세요.",time:"00:00.120–00:00.340",observation:"왼쪽 색 면에서 오른쪽 색 면으로 강조점이 옮겨갑니다.",guess:"두 장면 사이 전환일 수 있어요. 단일 장면의 색 변화일 가능성도 있어요.",unknown:"제작 도구와 원래 프롬프트는 확인할 수 없어요."},
+  audio:{label:"음악",visual:"시간 위치를 보여 주는 파형 도식",meta:"WAV · 500 ms",note:"짧은 소리를 시작점으로 삼고 뒤를 부드럽게 정리하세요.",time:"00:00.080–00:00.420",observation:"합성 표본의 가운데 구간에 일정한 신호가 배치돼 있습니다.",guess:"지속음으로 들릴 수 있지만 이 표본 길이로 곡의 박자를 판단하기 어려워요.",unknown:"BPM과 사용 악기는 확인할 수 없어요."},
+  image:{label:"이미지",visual:"이미지 영역 도식",meta:"PNG · 12 × 8",note:"밝은 색 면을 중심에 두고 주변에 충분한 여백을 남기세요.",time:"왼쪽 25% · 위 20% · 너비 50% · 높이 55%",observation:"중앙 색 면과 주변 배경의 밝기가 다릅니다.",guess:"중앙으로 시선을 모으려는 배치일 수 있어요.",unknown:"시드와 생성 모델은 확인할 수 없어요."}
+};
+const states={
+  idle:["시작 전","합성 표본을 고르고 시작하세요."],
+  queued:["대기 중","작업이 시작되기 전입니다."],
+  running:["분석 중","파일 정보와 근거 위치를 읽는 단계입니다."],
+  failed:["실패","합성 표본을 검사하는 중 오류가 발생했어요."],
+  cancelRequested:["취소 요청됨","작업 종료 확인을 기다리는 중입니다."],
+  canceled:["취소 완료","작업 종료가 확인됐어요."],
+  complete:["완료","검토할 근거와 편집 초안이 준비됐어요."],
+  empty:["완료 · 근거 없음","보고할 수 있는 근거가 없었어요."]
+};
+let source="sample", state="idle", selected="video", result=null, activeEvidence="", draftTone="clear";
+const busy=()=>["queued","running","cancelRequested"].includes(state);
+function renderSource(){
+  document.querySelectorAll("[data-source]").forEach(b=>{b.setAttribute("aria-pressed",String(b.dataset.source===source));b.disabled=busy();});
+  const groups={
+    sample:'<label class="label" for="sample">합성 자료 선택</label><select class="field" id="sample"><option value="video">영상 · 색 면 전환</option><option value="audio">음악 · 짧은 지속음</option><option value="image">이미지 · 중앙 색 면</option></select><p class="hint">미리 만든 근거와 작업 상태를 체험합니다.</p>',
+    url:'<label class="label" for="source-value">참고 URL</label><input class="field" id="source-value" type="url" placeholder="https://example.invalid/…">',
+    file:'<label class="label" for="source-value">파일 선택</label><input class="field" id="source-value" type="file" accept="video/*,audio/*,image/*"><p class="hint">시안에서는 파일 내용을 읽거나 전송하지 않습니다.</p>',
+    body:'<label class="label" for="source-value">참고 본문</label><textarea class="field" id="source-value" maxlength="100000" placeholder="합성 문구만 입력하세요."></textarea>'
+  };
+  $("source-fields").innerHTML=groups[source];
+  if(source==="sample"){$("sample").value=selected;$("sample").disabled=busy();$("sample").onchange=e=>{selected=e.target.value;};}
+  $("submit").textContent=source==="sample"?"표본 분석 시작":"입력 방식 확인";
+}
+function renderJob(){
+  const [label,help]=states[state];
+  $("job-state").textContent=label;$("job-help").textContent=help;
+  $("submit").disabled=busy();
+  document.querySelectorAll("[data-source]").forEach(b=>b.disabled=busy());
+  if($("sample"))$("sample").disabled=busy();
+  const actions={
+    queued:[["running","분석 중 상태 보기"],["cancelRequested","취소 요청"]],
+    running:[["complete","합성 결과 보기"],["empty","빈 결과 보기"],["failed","실패 상태 보기"],["cancelRequested","취소 요청"]],
+    cancelRequested:[["canceled","종료 확인 받기"]],
+    failed:[["queued","같은 표본 다시 시도"]],
+    canceled:[["queued","표본 다시 시작"]]
+  }[state]||[];
+  $("job-actions").replaceChildren(...actions.map(([next,label])=>{
+    const b=document.createElement("button");
+    b.type="button";b.textContent=label;b.dataset.next=next;
+    return b;
+  }));
+}
+function setState(next){
+  state=next;
+  renderJob();
+  renderResult();
+  if(next==="complete")$("tab-evidence").focus();
+  else if($("job-actions").firstElementChild)$("job-actions").firstElementChild.focus();
+  else $("submit").focus();
+}
+function setSource(next){
+  source=next;
+  $("input-notice").replaceChildren();
+  renderSource();
+  ($("source-value")||$("sample")).focus();
+}
+document.querySelectorAll("[data-source]").forEach(b=>b.onclick=()=>setSource(b.dataset.source));
+$("submit").onclick=()=>{
+  $("input-notice").replaceChildren();
+  if(source==="sample"){
+    result=selected;draftTone="clear";$("tone").value="clear";$("notes").value="";
+    setState("queued");return;
+  }
+  const value=$("source-value");
+  if(!value.value.trim()||(source==="url"&&(!value.checkValidity()||!/^https?:\/\//i.test(value.value.trim())))){
+    showInputNotice(source==="url"?"http 또는 https로 시작하는 주소를 입력해 주세요.":"확인할 자료를 입력하거나 선택해 주세요.");
+    value.focus();return;
+  }
+  if(source==="url"){
+    showInputNotice("이 시안에서는 URL을 열 수 없어요. 본문이나 캡처 이미지 파일을 사용해 주세요.",true);
+  }else{
+    showInputNotice("이 입력 방식은 실제 분석과 연결되지 않았어요. 결과는 합성 표본에서 확인할 수 있어요.");
+    addSourceButton("sample","합성 표본 사용");
+  }
+};
+function showInputNotice(text,replacements=false){
+  const box=$("input-notice");box.className="callout";
+  const p=document.createElement("p");p.textContent=text;box.append(p);
+  if(replacements){addSourceButton("body","본문 입력");addSourceButton("file","파일 선택");}
+}
+function addSourceButton(mode,label){
+  const control=document.createElement("button");control.type="button";control.textContent=label;
+  control.onclick=()=>setSource(mode);$("input-notice").append(control);
+}
+$("job-actions").addEventListener("click",e=>{const next=e.target.dataset.next;if(next)setState(next);});
+function renderResult(){
+  const ready=state==="complete"&&result;
+  $("result-media").hidden=!ready;
+  $("result-content").hidden=!ready;
+  $("result-empty").hidden=!!ready;
+  if(!ready){
+    $("empty-title").textContent=state==="empty"?"확인된 근거가 없어요":state==="failed"?"결과를 만들지 못했어요":state==="canceled"?"작업이 취소됐어요":"아직 결과가 없어요";
+    $("empty-detail").textContent=state==="empty"?"근거가 없는 상태에서는 편집용 프롬프트를 제공하지 않습니다.":state==="failed"?"작업 상태에서 같은 합성 표본을 다시 시도할 수 있어요.":state==="cancelRequested"?"종료가 확인될 때까지 기다립니다.":state==="canceled"?"작업 상태에서 표본 분석을 다시 시작할 수 있어요.":"합성 표본의 작업이 종료되면 결과를 확인할 수 있어요.";
+    return;
+  }
+  const s=samples[result];
+  $("result-media").textContent=s.label+" · 합성";
+  $("visual-label").textContent=s.visual;
+  activeEvidence="";
+  $("position").textContent="관찰 근거에서 위치를 선택할 수 있어요.";
+  const findings=[
+    ["관찰",s.observation,s.time,"observation"],
+    ["파일 메타데이터",s.meta,"","metadata"],
+    ["추정",s.guess,"","inference"],
+    ["확인 불가",s.unknown,"","unknown"]
+  ];
+  $("findings").replaceChildren(...findings.map(([kind,text,place,id])=>{
+    const row=document.createElement("article");row.className="finding";row.id="finding-"+id;
+    const badge=document.createElement("h3");badge.className="kind";badge.textContent=kind;
+    const body=document.createElement("p");body.textContent=text;row.append(badge,body);
+    if(place){const b=document.createElement("button");b.type="button";b.textContent="관찰 위치 보기";b.setAttribute("aria-pressed","false");b.onclick=()=>activateEvidence(id,place);row.append(b);}
+    if(id==="inference"){const b=document.createElement("button");b.type="button";b.textContent="연결된 관찰 근거 보기";b.onclick=()=>{const target=$("finding-observation").querySelector("button");target.focus();target.click();};row.append(b);}
+    return row;
+  }));
+  $("quote-range").hidden=true;$("quote-position").setAttribute("aria-expanded","false");
+  draw();activateTab("evidence",false);updatePrompt();
+}
+$("quote-position").onclick=()=>{
+  const quote="색과 리듬으로 감각을 전합니다.";
+  const range=$("quote-range");
+  range.hidden=!range.hidden;
+  range.textContent="합성 본문 1–"+quote.length+"번째 글자";
+  $("quote-position").setAttribute("aria-expanded",String(!range.hidden));
+};
+function activateEvidence(id,place){
+  activeEvidence=id;
+  document.querySelectorAll(".finding").forEach(row=>{const on=row.id==="finding-"+id;row.classList.toggle("selected",on);row.querySelector("button[aria-pressed]")?.setAttribute("aria-pressed",String(on));});
+  $("position").textContent=place+" · 위치 표식이 바뀌었어요.";
+  draw();
+}
+function draw(){
+  const c=$("preview"),ctx=c.getContext("2d"),w=c.width,h=c.height;
+  ctx.fillStyle="#121423";ctx.fillRect(0,0,w,h);
+  if(result==="audio"){
+    ctx.strokeStyle="#a997ff";ctx.lineWidth=3;ctx.beginPath();
+    for(let x=0;x<w;x++){const y=h/2+Math.sin(x*.22)*Math.sin(x*.004)*87;x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
+  }else{
+    const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,"#3a56c1");g.addColorStop(1,"#bb65b3");ctx.fillStyle=g;ctx.fillRect(20,20,w-40,h-40);
+    ctx.fillStyle=result==="image"?"#ffe098":"#72ebcc";ctx.fillRect(result==="image"?222:56,70,result==="image"?356:310,210);
+    if(result==="video"){ctx.fillStyle="#c9a7ff";ctx.fillRect(382,70,365,210);}
+  }
+  if(activeEvidence==="observation"){
+    ctx.strokeStyle="#fff1b4";ctx.lineWidth=4;ctx.setLineDash([11,7]);
+    if(result==="image")ctx.strokeRect(20+(w-40)*.25,20+(h-40)*.20,(w-40)*.50,(h-40)*.55);
+    else {const s=samples[result].time;const [a,b]=s.match(/\.\d+/g).map(Number);ctx.strokeRect(w*a*2,26,w*(b-a)*2,h-52);}
+    ctx.setLineDash([]);
+  }
+}
+const tabs=["evidence","prompt"];
+function activateTab(name,focus){
+  tabs.forEach(key=>{const active=key===name,b=$("tab-"+key);b.setAttribute("aria-selected",String(active));b.tabIndex=active?0:-1;$(key).hidden=!active;});
+  if(focus)$("tab-"+name).focus();
+}
+tabs.forEach((name,index)=>{
+  const button=$("tab-"+name);
+  button.onclick=()=>activateTab(name,false);
+  button.onkeydown=e=>{
+    const target={ArrowLeft:tabs[1-index],ArrowRight:tabs[1-index],Home:tabs[0],End:tabs[1]}[e.key];
+    if(target){e.preventDefault();activateTab(target,true);}
+  };
+});
+function updatePrompt(){
+  if(!result)return;
+  const tones={clear:"요소를 간결하고 선명하게 정리하세요.",soft:"변화를 차분하고 부드럽게 다듬으세요.",active:"강약과 전환에 리듬을 더하세요."};
+  $("export").textContent=samples[result].note+" "+tones[draftTone];
+  $("copy-status").textContent="";
+}
+$("tone").onchange=e=>{draftTone=e.target.value;updatePrompt();};
+$("copy").onclick=async()=>{
+  const text=$("export").textContent;
+  try{await navigator.clipboard.writeText(text);$("copy-status").textContent="표시된 프롬프트를 복사했어요.";}
+  catch{$("export").focus();const range=document.createRange();range.selectNodeContents($("export"));const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);$("copy-status").textContent="선택된 문구를 직접 복사해 주세요.";}
+};
+renderSource();renderJob();renderResult();
+</script>
+</body>
+</html>

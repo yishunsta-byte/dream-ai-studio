@@ -1,0 +1,40 @@
+// [T315 격리 사본 전용 시험 파일] 합성 보호 응답 허가와 서버 사건 기록. 제품 코드가 아니다.
+// 설치: tests/reference-analysis/t315-next-response-egress/install-fixture.mjs 가 격리 사본의 lib/t315/gate.ts 로 복사한다.
+// 페이지·API 번들이 따로 로드되므로 상태는 globalThis에 둔다. 시각은 시스템 시계 기준 epoch ms(performance.timeOrigin + now).
+type Deferred = { promise: Promise<void>; resolve: () => void };
+const deferred = (): Deferred => { let resolve!: () => void; const promise = new Promise<void>((r) => { resolve = r; }); return { promise, resolve }; };
+export type Hold = "none" | "handler" | "stream" | "render";
+export type Ticket = {
+  id: string; kind: string; hold: Hold; chunks: number; chunkBytes: number;
+  state: "issued" | "consumed" | "revoked" | "expired"; released: Deferred;
+  events: Array<{ name: string; at: number; request?: string; detail?: Record<string, number | string> }>;
+  enqueued: number; pulls: number;
+};
+const g = globalThis as unknown as { __t315?: Map<string, Ticket>; __t315seq?: number };
+export const tickets: Map<string, Ticket> = (g.__t315 ??= new Map());
+export const now = () => Math.round((performance.timeOrigin + performance.now()) * 100) / 100;
+export const marker = (id: string) => `T315-PROTECTED-${id}`;
+export function issue(kind: string, hold: Hold, chunks = 1, chunkBytes = 0) {
+  const id = `p${(g.__t315seq = (g.__t315seq ?? 0) + 1)}`;
+  const ticket: Ticket = { id, kind, hold, chunks, chunkBytes, state: "issued", released: deferred(), events: [], enqueued: 0, pulls: 0 };
+  tickets.set(id, ticket);
+  mark(ticket, "control:issue");
+  return ticket;
+}
+export function mark(t: Ticket, name: string, request?: string, detail?: Record<string, number | string>) {
+  t.events.push({ name, at: now(), ...(request ? { request } : {}), ...(detail ? { detail } : {}) });
+}
+export const statusFor = (t: Ticket | undefined) => !t ? 404 : t.state === "consumed" ? 409 : t.state === "revoked" ? 403 : t.state === "expired" ? 410 : 200;
+export function view(t: Ticket) { return { id: t.id, kind: t.kind, state: t.state, hold: t.hold, enqueued: t.enqueued, pulls: t.pulls, events: t.events }; }
+/** 페이지 렌더용: 허가 확인(필요하면 대기) → 소비. 거절이면 false. */
+export async function renderGate(id: string | undefined, request?: string) {
+  const t = id ? tickets.get(id) : undefined;
+  if (!t) return false;
+  mark(t, "render:enter", request);
+  if (statusFor(t) !== 200) { mark(t, `render:reject:${t.state}`, request); return false; }
+  if (t.hold === "render") { mark(t, "render:hold", request); await t.released.promise; mark(t, "render:released", request); }
+  if (statusFor(t) !== 200) { mark(t, `render:reject:${t.state}`, request); return false; }
+  t.state = "consumed";
+  mark(t, "render:consumed", request);
+  return true;
+}

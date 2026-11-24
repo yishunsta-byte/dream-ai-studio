@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_MESSAGES, adminLoginPath, authMode, authReady, isAdminPath, isAllowedEmail, isAnonymousPublicPath, isPublicPath, loginPath, supabasePublicConfig } from "@/lib/auth/config";
+import { COVER_ALLOW, isCoverReadMethod, parseCoverPath } from "@/lib/public-showcase/cover-path";
+
+import { parsePlaybackPath } from "@/lib/public-showcase/playback-path";
 
 function deny(request: NextRequest, status: 401 | 403 | 503, code: string, message: string, carry?: NextResponse) {
   const { pathname, search } = request.nextUrl;
@@ -32,6 +35,24 @@ export async function proxy(request: NextRequest) {
   // 다른 모든 경로는 아래 기존 순서(설정 확인 → 세션 갱신 → 공개 인증 경로 → 로그인·허용 확인)를 그대로 거친다.
   if (isAnonymousPublicPath(request.nextUrl.pathname)) {
     return NextResponse.next();
+  }
+  // T-254 공개 커버 이미지: 정규형(쿼리 없음)만 인증 전에 처리한다. GET·HEAD는 이미지 route로, 나머지 메서드는 405.
+  // 비슷한 경로(쿼리·대문자·후행 슬래시·다른 파일명 등)는 아래 기존 인증을 그대로 거친다.
+  if (request.headers.has("x-dream-playback-path") || request.nextUrl.pathname.toLowerCase().replace(/\/$/, "") === "/api/publication-playback") {
+    return new NextResponse(null, { status: 404, headers: { "cache-control": "no-store", "content-type": "text/plain; charset=utf-8" } });
+  }
+  const playback = parsePlaybackPath(request.nextUrl.pathname);
+  if (playback && request.url.includes("?")) {
+    return new NextResponse(null, { status: 404, headers: { "cache-control": "no-store", "content-type": "text/plain; charset=utf-8" } });
+  }
+  if (request.nextUrl.search === "" && (playback || parseCoverPath(request.nextUrl.pathname))) {
+    if (playback && isCoverReadMethod(request.method)) {
+      const headers = new Headers(request.headers);
+      headers.set("x-dream-playback-path", request.nextUrl.pathname);
+      return NextResponse.next({ request: { headers } });
+    }
+    if (isCoverReadMethod(request.method)) return NextResponse.next();
+    return new NextResponse(null, { status: 405, headers: { allow: COVER_ALLOW, "cache-control": "no-store", "x-content-type-options": "nosniff" } });
   }
   if (authMode() === "off") return NextResponse.next();
   const config = supabasePublicConfig();

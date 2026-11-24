@@ -52,15 +52,28 @@ function request(frames:number,sources:Record<string,{path:string;sha256:string;
 const left=()=>readdirSync(root).filter(name=>name.startsWith("dream-audio-")||name.endsWith(".part"));
 // a writable copy of an installed tool (the installed files are never touched)
 function toolCopy(name:"ffmpeg"|"ffprobe"){const path=join(root,`${name}-copy.exe`);copyFileSync(name==="ffmpeg"?ffmpeg:ffprobe,path);const at=new Date("2026-01-01T00:00:00Z");utimesSync(path,at,at);return path;}
-// one byte of the DOS stub changed (the program still runs), size and modification time kept
+// Windows can hold a just-executed temporary file after the child closes.
+function retryBusyFile<T>(operation:()=>T):T{
+  const wait=new Int32Array(new SharedArrayBuffer(4));
+  for(let attempt=0;;attempt++){
+    try{return operation();}catch(error){
+      const code=(error as NodeJS.ErrnoException).code;
+      if(attempt>=40||!["EBUSY","EPERM","EACCES"].includes(code??""))throw error;
+      Atomics.wait(wait,0,0,100);
+    }
+  }
+}
+// Change one byte while preserving the executable's size and modification time.
 function flipStub(path:string){
-  // fail closed: only a copy inside this test's temp folder is ever changed (never an installed or shared binary)
-  const real=realpathSync(path);if(!real.startsWith(root+sep))throw new Error("refusing to change a binary outside the test folder");
-  const stat=statSync(path);chmodSync(path,0o666);const bytes=readFileSync(path);bytes[0x50]^=0xff;
-  // a freshly copied exe can be held briefly by the system's file scanner right after it ran: retry the write only
-  for(let attempt=0;;attempt++){try{writeFileSync(path,bytes);break;}catch(error){const code=(error as NodeJS.ErrnoException).code;
-    if(attempt>=40||!["EBUSY","EPERM","EACCES"].includes(code??""))throw error;Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,100);}}
-  utimesSync(path,stat.atime,stat.mtime);}
+  const real=realpathSync(path);
+  if(!real.startsWith(root+sep))throw new Error("refusing to change a binary outside the test folder");
+  const stat=retryBusyFile(()=>statSync(real));
+  retryBusyFile(()=>chmodSync(real,0o666));
+  const bytes=retryBusyFile(()=>readFileSync(real));
+  bytes[0x50]^=0xff;
+  retryBusyFile(()=>writeFileSync(real,bytes));
+  retryBusyFile(()=>utimesSync(real,stat.atime,stat.mtime));
+}
 const isLoudnormFirst=(args:readonly string[])=>args.some(arg=>arg.includes("loudnorm=")&&arg.includes("print_format=json")&&!arg.includes("measured_I"));
 const isFinalMeasure=(args:readonly string[])=>args.some(arg=>arg.startsWith("ebur128="));
 

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>등록 PCM WAV 음악 결과 비교</title>
+  <link rel="icon" href="data:,">
+  <style>
+    @font-face {
+      font-family: Pretendard;
+      src: url('../../../../public/fonts/PretendardVariable.woff2') format('woff2');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+    :root {
+      color-scheme: light;
+      --bg: #eef3ef;
+      --panel: #fff;
+      --ink: #172f2e;
+      --muted: #465d58;
+      --accent: #085d50;
+      --line: #bfd1c7;
+      --soft: #e9f4ed;
+      font: 16px/1.5 Pretendard, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; word-break: keep-all; overflow-wrap: anywhere; }
+    h1, h2, h3, p, dl, dd { margin: 0; }
+    h2 { font-size: 1.35rem; line-height: 1.2; letter-spacing: -.03em; }
+    h3 { font-size: 1.05rem; line-height: 1.3; }
+    button, select, textarea { font: inherit; color: inherit; }
+    :focus-visible, .notice-title:focus { outline: 2px solid #96621e; outline-offset: 4px; }
+    [hidden] { display: none !important; }
+    .wrap { width: min(1100px, calc(100% - 40px)); margin-inline: auto; }
+    .brand { color: #f5fffa; background: #173d37; }
+    .brand .wrap { min-height: 60px; display: flex; gap: 10px; align-items: center; }
+    .brand-mark {
+      background: #a3dfc8; color: #174437; border-radius: 9px; display: grid; place-items: center;
+      width: 34px; height: 34px; flex: none; font-size: 1.05rem;
+    }
+    .brand small { color: #d0e9df; margin-inline-start: auto; }
+    main { padding-block: 22px 42px; }
+    .intro {
+      background: linear-gradient(120deg, #dceddf, #f9f5e6 95%);
+      border: 1px solid var(--line);
+      border-radius: 15px; padding: 22px 24px; margin-block-end: 14px;
+    }
+    .intro h1 { font-size: clamp(1.9rem, 4.45vw, 3.3rem); line-height: 1.12; letter-spacing: -.065em; }
+    .intro p { margin-block-start: 8px; color: #2e5147; }
+    .modes { display: flex; gap: 6px; flex-wrap: wrap; margin-block-end: 14px; }
+    .button {
+      border: 1px solid #9abdaf; background: #fff; color: #194e43; border-radius: 8px;
+      min-height: 44px; padding: 8px 12px; font-weight: 675; cursor: pointer;
+    }
+    .button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .button:disabled, .field:disabled { background: #edf1ef; border-color: #c2d0c9; color: #4d655e; cursor: default; }
+    .grid { display: grid; grid-template-columns: minmax(0, .78fr) minmax(0, 1.3fr); gap: 14px; align-items: start; }
+    .card { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 17px 19px; }
+    .small { font-size: .875rem; color: var(--muted); }
+    .field-label { display: block; font-weight: 690; margin-block: 12px 5px; }
+    .field { width: 100%; min-height: 44px; border: 1px solid #94b4a7; border-radius: 8px; background: #fff; padding: 8px 10px; }
+    .field[rows] { display: block; resize: vertical; }
+    .selection-hint { margin-block: 8px 12px; }
+    .revoke { color: #6c382d; border-color: #ccada5; }
+    .result-tag { font-weight: 650; color: var(--accent); margin-block: 3px 12px; }
+    .metrics {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 90px), 1fr));
+      gap: 8px; margin-block: 7px 4px;
+    }
+    .metrics div {
+      display: flex; flex-direction: column; justify-content: space-between; gap: 3px; min-width: 0;
+      background: var(--soft); border: 1px solid #c6dace; border-radius: 8px; padding: 7px 8px;
+    }
+    dt { color: #32554c; font-size: .815rem; }
+    dd { color: #134a3b; font-size: 1.14rem; font-variant-numeric: tabular-nums; font-weight: 780; }
+    .inference, .notice { background: #f0f5f2; border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; }
+    .inference { margin-block: 13px 14px; }
+    .inference p, .notice p { margin-block-start: 4px; }
+    .draft { border-block-start: 1px solid var(--line); padding-block-start: 12px; }
+    .original { background: #edf5ee; border-radius: 8px; padding: 8px 10px; margin-block: 5px; }
+    .notice { margin-block-start: 12px; }
+    .notice .button, #restart { margin-block-start: 10px; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    @media (max-width: 720px) {
+      .wrap { width: calc(100% - 28px); }
+      main { padding-block-start: 15px; }
+      .grid { grid-template-columns: minmax(0, 1fr); }
+      .intro, .card { padding: 14px; }
+      .metrics dd { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="brand"><div class="wrap"><span class="brand-mark" aria-hidden="true">✦</span><strong>Dream AI Studio</strong><small>클라우드 작업실</small></div></header>
+  <main class="wrap">
+    <header class="intro">
+      <h1>등록 PCM WAV 음악 결과</h1>
+      <p>격리 환경에서 분석한 두 WAV의 관찰값과 창작 초안을 비교합니다.</p>
+    </header>
+    <div class="modes" role="group" aria-label="시험 화면 선택">
+      <button class="button" type="button" id="fixture-view" aria-pressed="true">격리 시험 결과</button>
+      <button class="button" type="button" id="disconnected-view" aria-pressed="false">공급원 미연결</button>
+    </div>
+    <div class="grid">
+      <section class="card" aria-labelledby="input-heading">
+        <h2 id="input-heading">분석 자료</h2>
+        <label class="field-label" id="material-label" for="material">시험 자료 선택</label>
+        <select class="field" id="material" aria-describedby="selection-hint">
+          <option value="" disabled>시험 자료를 선택하세요</option>
+        </select>
+        <p class="small selection-hint" id="selection-hint"></p>
+        <button class="button revoke" id="revoke" type="button">선택 자료 접근 철회</button>
+      </section>
+      <section class="card" aria-labelledby="result-heading">
+        <h2 id="result-heading">분석 결과</h2>
+        <div id="ready" hidden>
+          <p class="small result-tag" id="result-tag"></p>
+          <section aria-labelledby="observed-heading">
+            <h3 id="observed-heading">관찰 근거</h3>
+            <dl class="metrics">
+              <div><dt>관찰 구간</dt><dd id="range"></dd></div>
+              <div><dt>오디오 채널</dt><dd id="channels"></dd></div>
+              <div><dt>최대 정규화 RMS</dt><dd id="rms"></dd></div>
+            </dl>
+          </section>
+          <section class="inference" aria-labelledby="inference-heading">
+            <h3 id="inference-heading">분석 추정</h3>
+            <p class="small">이 결과에 포함된 추정이 없어요.</p>
+          </section>
+          <section class="draft" aria-labelledby="draft-heading">
+            <h3 id="draft-heading">분석으로 생성한 초안</h3>
+            <p class="original" id="original"></p>
+            <p class="small">제작자가 공개한 프롬프트는 확인되지 않았어요.</p>
+            <label class="field-label" for="revision">내 수정본</label>
+            <textarea class="field" id="revision" rows="3"></textarea>
+          </section>
+        </div>
+        <div class="notice" id="notice" hidden>
+          <h3 class="notice-title" id="notice-heading" tabindex="-1"></h3>
+          <p class="small" id="notice-detail"></p>
+          <button class="button" id="disabled-run" type="button" disabled hidden>분석 실행</button>
+        </div>
+        <button class="button" id="restart" type="button" hidden>격리 시험 다시 시작</button>
+      </section>
+    </div>
+    <p class="visually-hidden" id="announcement" role="status" aria-atomic="true"></p>
+  </main>
+  <script>
+    const get = id => document.getElementById(id);
+    const material = get("material"), revision = get("revision");
+    const draft = "사용자 장면의 강조 지점에 맞춰 배경 음악의 셈여림을 구성하세요.";
+    const fixtures = new Map([
+      ["a", { label: "시험 WAV A", startMs: 0, endMs: 125, channels: 1, rms: "25%" }],
+      ["b", { label: "시험 WAV B", startMs: 0, endMs: 125, channels: 1, rms: "12.5%" }],
+    ]);
+    const revoked = new Set();
+    const edits = new Map();
+    let mode = "fixture";
+    let selected = "a";
+
+    function render() {
+      const connected = mode === "fixture";
+      const available = connected ? [...fixtures].filter(([key]) => !revoked.has(key)) : [];
+      const result = connected ? fixtures.get(selected) : undefined;
+      get("fixture-view").setAttribute("aria-pressed", connected);
+      get("disconnected-view").setAttribute("aria-pressed", !connected);
+      get("material-label").textContent = connected ? "시험 자료 선택" : "등록 자료 선택";
+      const placeholder = connected ? "시험 자료를 선택하세요" : "등록 자료를 선택하세요";
+      material.replaceChildren(new Option(placeholder, ""), ...available.map(([key, item]) => new Option(item.label, key)));
+      material.options[0].disabled = true;
+      material.value = connected ? selected : "";
+      material.disabled = available.length === 0;
+      get("revoke").hidden = !connected;
+      get("revoke").disabled = !result;
+      get("restart").hidden = !connected || revoked.size === 0;
+      get("ready").hidden = !result;
+      get("notice").hidden = Boolean(result);
+      get("disabled-run").hidden = connected;
+
+      if (result) {
+        get("selection-hint").textContent = available.length === 1
+          ? "현재 선택할 수 있는 시험 WAV가 한 건 있어요."
+          : "다른 시험 WAV를 골라 같은 관찰 항목을 비교할 수 있어요.";
+        get("result-tag").textContent = `음악 분석 · ${result.label}`;
+        get("range").textContent = `${result.startMs}–${result.endMs} ms`;
+        get("channels").textContent = `${result.channels}채널`;
+        get("rms").textContent = result.rms;
+        get("original").textContent = draft;
+        revision.value = edits.get(selected) ?? draft;
+        return;
+      }
+
+      for (const id of ["result-tag", "range", "channels", "rms", "original"]) get(id).textContent = "";
+      revision.value = "";
+      if (!connected) {
+        showNotice("등록 자료 분석을 준비 중이에요.", "등록 자료 분석 공급자가 아직 연결되지 않았어요.", "연결되면 사용 권한을 확인한 등록 자료를 선택할 수 있어요.");
+      } else if (!available.length) {
+        showNotice("분석할 수 있는 등록 자료가 없어요.", "이전 선택과 결과를 지웠어요. 시험을 다시 시작하면 두 WAV를 볼 수 있어요.", "접근 권한이 남아 있는 시험 자료가 없어요.");
+      } else {
+        showNotice("선택한 자료에 접근할 수 없어요.", "이전 선택과 결과를 지웠어요. 남은 자료를 새로 선택해 주세요.", "결과를 보려면 남은 시험 WAV를 선택해 주세요.");
+      }
+    }
+
+    function showNotice(title, detail, hint) {
+      get("notice-heading").textContent = title;
+      get("notice-detail").textContent = detail;
+      get("selection-hint").textContent = hint;
+    }
+
+    function announce(message) { get("announcement").textContent = message; }
+
+    function openView(view) {
+      if (view === mode) return;
+      mode = view;
+      if (mode === "disconnected") edits.clear();
+      render();
+      announce(mode === "disconnected" ? get("notice-heading").textContent : "격리 시험 결과 화면을 열었어요.");
+    }
+
+    get("fixture-view").addEventListener("click", () => openView("fixture"));
+    get("disconnected-view").addEventListener("click", () => openView("disconnected"));
+    material.addEventListener("change", () => {
+      selected = material.value;
+      render();
+      announce(`${fixtures.get(selected).label}의 음악 분석 결과를 표시했어요.`);
+    });
+    revision.addEventListener("input", () => edits.set(selected, revision.value));
+    get("revoke").addEventListener("click", () => {
+      revoked.add(selected);
+      edits.clear();
+      selected = "";
+      render();
+      if (material.disabled) {
+        announce("");
+        get("notice-heading").focus();
+      } else {
+        announce(get("notice-heading").textContent);
+        material.focus();
+      }
+    });
+    get("restart").addEventListener("click", () => {
+      revoked.clear();
+      edits.clear();
+      selected = "a";
+      render();
+      announce("격리 시험을 다시 시작했어요.");
+      material.focus();
+    });
+    render();
+  </script>
+</body>
+</html>

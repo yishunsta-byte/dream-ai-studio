@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>로컬 분석 URL 오류와 복구 · Dream AI Studio</title>
+  <style>
+    @font-face{font-family:Pretendard;src:url('../../../../public/fonts/PretendardVariable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    :root{color-scheme:light;--bg:#f2f7f4;--ink:#182f39;--muted:#405b60;--line:#c1d5cd;--paper:#fff;--brand:#086f62;--soft:#e8f4ed;font:16px/1.55 Pretendard,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+    *,*::before,*::after{box-sizing:border-box}body{margin:0;word-break:keep-all;overflow-wrap:anywhere}h1,h2,h3,p{margin:0}button,input,textarea{font:inherit;color:inherit}button,summary{cursor:pointer}:where(button,input,textarea,summary):focus-visible,:where(h2,h3):focus{outline:2px solid #935508;outline-offset:4px}h2:focus,h3:focus{width:fit-content;border-radius:2px}
+    .wrap{width:min(1120px,calc(100% - 56px));margin-inline:auto}.brand{background:#193e3c;color:#f1fffa;border-bottom:1px solid #27524c}.brand .wrap{display:flex;gap:10px;align-items:center;min-height:57px}.brand small{margin-left:auto;color:#caeadf}.mark{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:#a4ead5;color:#193c32}
+    main{padding:23px 0 34px}.intro{padding:22px 23px;border-radius:12px;border:1px solid var(--line);background:linear-gradient(110deg,#e0f1e8,#f9f5e9)}h1{font-size:clamp(33px,4.8vw,54px);line-height:1.1;letter-spacing:-.06em}.intro p{margin-top:8px;color:#315951}.cases{display:flex;flex-wrap:wrap;gap:8px;margin:13px 0 15px}.case,.run{min-height:44px;border-radius:7px;font-weight:740;padding:6px 12px}.case{border:1px solid #a9c7bb;background:#e6f1eb;color:#185c51}.case:hover{background:#d8ebe2}.case[aria-pressed=true]{background:#cce9db;border-color:#6aa18d}
+    .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}.card{min-width:0;padding:16px 18px;border-radius:11px;border:1px solid var(--line);background:var(--paper)}h2{font-size:24px;letter-spacing:-.035em;line-height:1.22;margin-bottom:7px}h3{font-size:17px;line-height:1.3}.small{color:var(--muted);font-size:14px}.field-label{display:block;font-weight:750;margin:11px 0 4px}.field{width:100%;min-height:44px;border:1px solid #9dbfb3;border-radius:7px;background:#fff;padding:8px 9px}.field[aria-invalid=true]{border-color:#a05f34;background:#fff8f1}.field:disabled{background:#edf2ee}textarea.field{min-height:84px;resize:vertical}.rights{display:flex;align-items:center;gap:8px;min-height:44px;margin:6px 0}.rights input{width:18px;height:18px;accent-color:var(--brand)}.run{border:1px solid var(--brand);background:var(--brand);color:white}.run:disabled{color:#49615c;background:#e4eeea;border-color:#b9cfc4;cursor:default}.run:hover:not(:disabled){background:#075a50}.live{color:#315c52;font-size:14px;margin-top:8px}.live:empty{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.error{margin:10px 0 7px;padding:10px 11px;background:#fbede1;border:1px solid #d8b699;border-radius:8px;color:#643d25}.error p{margin-top:4px;font-size:14px}.source{font-size:14px;color:#315e56;margin:4px 0 8px}.proof{background:#edf6f0;padding:9px 10px;border-radius:7px;margin-top:8px}.proof p{margin-top:3px}.comparison{margin-top:12px}.comparison summary{min-height:44px;display:flex;align-items:center;font-weight:730;color:#15594f}.comparison p{font-size:14px;color:var(--muted);margin-bottom:7px}[hidden]{display:none!important}
+    .comparison summary::before{content:'＋';margin-right:5px}.comparison[open] summary::before{content:'−'}
+    @media(max-width:700px){.wrap{width:calc(100% - 28px)}main{padding-top:15px}.intro{padding:14px}.card{padding:14px}.grid{grid-template-columns:minmax(0,1fr)}.cases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+  </style>
+</head>
+<body>
+  <header class="brand"><div class="wrap"><span class="mark" aria-hidden="true">✦</span><strong>Dream AI Studio</strong><small>로컬 작업실</small></div></header>
+  <main class="wrap">
+    <header class="intro"><h1>분석 주소 오류와 복구</h1><p>제안 시안입니다. 시험 주소를 고르고 권리를 확인한 뒤 실행해 보세요. 파일을 실제로 요청하지 않아요.</p></header>
+    <div class="cases" role="group" aria-label="시험 주소 선택">
+      <button class="case" type="button" data-case="success" aria-pressed="false">정상 직접 파일</button>
+      <button class="case" type="button" data-case="format" aria-pressed="false">잘못된 형식</button>
+      <button class="case" type="button" data-case="social" aria-pressed="false">미지원 게시물</button>
+      <button class="case" type="button" data-case="failed" aria-pressed="false">파일 응답 실패</button>
+    </div>
+    <div class="grid">
+      <section class="card" aria-labelledby="input-heading">
+        <h2 id="input-heading">공개 URL 분석</h2>
+        <p class="small" id="url-help">허용된 공개 미디어의 직접 파일 주소를 입력하세요.</p>
+        <div class="error" id="error" role="alert" aria-atomic="true" hidden><h3 id="error-title" tabindex="-1"></h3><p id="error-copy"></p></div>
+        <form id="analysis-form" novalidate>
+          <label class="field-label" for="address">미디어 파일 URL</label>
+          <input class="field" id="address" type="url" autocapitalize="off" autocomplete="off" spellcheck="false" aria-describedby="url-help" required>
+          <label class="rights"><input id="rights" type="checkbox" disabled><span>이 자료를 분석할 권리가 있어요.</span></label>
+          <button type="submit" class="run" id="run" disabled>URL 분석 실행</button>
+        </form>
+        <p class="live" id="input-status" role="status"></p>
+      </section>
+      <section class="card" aria-labelledby="result-title">
+        <h2 id="result-title" tabindex="-1">분석 결과</h2>
+        <p class="small" id="empty-result">URL 분석이 완료되면 관찰 근거와 초안이 표시돼요.</p>
+        <div id="result" hidden>
+          <p class="source" id="result-source"></p>
+          <div class="proof"><h3>관찰 근거</h3><p id="finding" class="small"></p></div>
+          <p class="small" id="draft-origin" hidden>분석으로 생성한 시험 초안이에요.</p>
+          <label class="field-label" for="draft">내 수정본</label><textarea class="field" rows="3" id="draft"></textarea>
+        </div>
+      </section>
+    </div>
+    <details class="card comparison">
+      <summary>기존 화면과 제안의 차이 보기</summary>
+      <p><strong>기존 화면</strong> · 주소 형식은 브라우저 입력 검증이 안내해요. 미지원 게시물과 파일 응답 실패에서는 ‘분석하지 못했어요. 지원하는 공개 파일 주소와 파일 형식·길이를 확인해 주세요’가 표시돼요.</p>
+      <p><strong>제안 시안</strong> · 시험 상황별로 다음 행동과 돌아갈 위치를 보여줘요. 성공 시 분석 결과 제목으로 초점을 옮겨요.</p>
+    </details>
+  </main>
+  <script>
+    const get = id => document.getElementById(id);
+    const form = get("analysis-form"), address = get("address"), rights = get("rights"), run = get("run");
+    const cases = {
+      success: "https://interactive-examples.mdn.mozilla.net/media/cc0-images/painted-hand-298-332.jpg",
+      format: "이미지 주소",
+      social: "https://www.youtube.com/watch?v=fixture",
+      failed: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/fixture-unavailable.mp4",
+    };
+    const socialHosts = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "instagram.com", "www.instagram.com", "threads.com", "www.threads.com", "threads.net", "www.threads.net", "tiktok.com", "www.tiktok.com"]);
+    const alerts = {
+      format: ["HTTPS 주소를 확인해 주세요", "미디어 파일의 전체 HTTPS 주소를 입력해 주세요."],
+      social: ["게시물 주소는 지원하지 않아요", "YouTube·Instagram·Threads 등의 게시물 주소 대신 사용 권리가 있는 직접 파일 주소를 입력해 주세요."],
+      failed: ["파일을 가져오지 못했어요", "공개 파일 주소, 형식과 길이를 확인해 주세요. 같은 주소라면 권리 확인 상태를 유지한 채 다시 실행할 수 있어요."],
+      fixture: ["시안에서 실행할 주소를 골라 주세요", "시험 주소로만 응답을 재현해요. 위의 정상 직접 파일을 고르면 결과 예시를 볼 수 있어요."],
+    };
+    let generation = 0, busy = false;
+
+    function sync() {
+      const hasAddress = Boolean(address.value.trim());
+      address.disabled = busy;
+      rights.disabled = busy || !hasAddress;
+      run.disabled = busy || !hasAddress || !rights.checked;
+      run.textContent = busy ? "분석 중…" : "URL 분석 실행";
+    }
+
+    function clear() {
+      generation += 1;
+      busy = false;
+      get("error").hidden = true;
+      get("error-title").textContent = "";
+      get("error-copy").textContent = "";
+      address.removeAttribute("aria-invalid");
+      address.setAttribute("aria-describedby", "url-help");
+      get("result").hidden = true;
+      get("empty-result").hidden = false;
+      get("draft-origin").hidden = true;
+      get("result-source").textContent = "";
+      get("finding").textContent = "";
+      get("draft").value = "";
+      get("input-status").textContent = "";
+    }
+
+    function changedAddress() {
+      const hadResult = !get("result").hidden;
+      clear();
+      rights.checked = false;
+      for (const button of document.querySelectorAll("[data-case]")) {
+        button.setAttribute("aria-pressed", String(address.value === cases[button.dataset.case]));
+      }
+      if (hadResult) get("input-status").textContent = "주소가 바뀌어 이전 결과를 지웠어요. 새 자료의 사용 권리를 확인해 주세요.";
+      sync();
+    }
+
+    function classify(value) {
+      let parsed;
+      try { parsed = new URL(value); } catch { return "format"; }
+      if (parsed.protocol !== "https:") return "format";
+      if (socialHosts.has(parsed.hostname)) return "social";
+      if (value === cases.success) return "success";
+      if (value === cases.failed) return "failed";
+      return "fixture";
+    }
+
+    function showError(kind, canMoveFocus) {
+      const [title, message] = alerts[kind];
+      get("error-title").textContent = title;
+      get("error-copy").textContent = message;
+      get("error").hidden = false;
+      address.setAttribute("aria-describedby", "url-help error-copy");
+      if (kind !== "failed") address.setAttribute("aria-invalid", "true");
+      if (canMoveFocus) (kind === "failed" ? get("error-title") : address).focus();
+    }
+
+    address.addEventListener("input", changedAddress);
+    rights.addEventListener("change", () => {
+      const hadResult = !get("result").hidden;
+      clear();
+      if (hadResult && !rights.checked) get("input-status").textContent = "권리 확인을 해제해 이전 결과를 지웠어요.";
+      sync();
+    });
+    for (const button of document.querySelectorAll("[data-case]")) button.addEventListener("click", () => {
+      address.value = cases[button.dataset.case];
+      changedAddress();
+      address.focus();
+    });
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      if (busy || !rights.checked || !address.value.trim()) return;
+      clear();
+      const value = address.value.trim();
+      const mode = classify(value);
+      if (mode !== "success" && mode !== "failed") {
+        showError(mode, true);
+        return;
+      }
+      const current = generation;
+      busy = true;
+      sync();
+      get("input-status").textContent = "시험 응답을 준비하고 있어요.";
+      setTimeout(() => {
+        if (current !== generation) return;
+        const canMoveFocus = document.activeElement === document.body || form.contains(document.activeElement);
+        busy = false;
+        sync();
+        get("input-status").textContent = "";
+        if (mode === "failed") {
+          showError(mode, canMoveFocus);
+          return;
+        }
+        get("result-source").textContent = `공개 원본 주소 예시 · ${value}`;
+        get("finding").textContent = "이미지 전체 영역에서 주요 색 #e0e060의 비중을 65.95%로 관찰했어요.";
+        get("draft").value = "밝은 색이 돋보이도록 제목의 대비와 여백을 조정한다.";
+        get("draft-origin").hidden = false;
+        get("empty-result").hidden = true;
+        get("result").hidden = false;
+        if (canMoveFocus) get("result-title").focus();
+      }, 450);
+    });
+  </script>
+</body>
+</html>

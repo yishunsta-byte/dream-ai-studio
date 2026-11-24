@@ -11,7 +11,7 @@ No claim of exclusive, unlimited, or independently cleared commercial rights is 
 ### neon-rooftop.png
 
 Project file: `assets/neon-rooftop.png`.
-Original output: `C:/Users/Administrator/.codex/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-148728b7-524f-4d9e-8762-51b787e8dbc4.png`.
+Original output: `<로컬 생성 보관 폴더>/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-148728b7-524f-4d9e-8762-51b787e8dbc4.png`.
 
 Exact prompt:
 
@@ -20,7 +20,7 @@ Exact prompt:
 ### desert-motion.png
 
 Project file: `assets/desert-motion.png`.
-Original output: `C:/Users/Administrator/.codex/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-34a5bcdf-4cf2-43f1-98cf-c937e905af36.png`.
+Original output: `<로컬 생성 보관 폴더>/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-34a5bcdf-4cf2-43f1-98cf-c937e905af36.png`.
 
 Exact prompt:
 
@@ -29,7 +29,7 @@ Exact prompt:
 ### wild-coast.png
 
 Project file: `assets/wild-coast.png`.
-Original output: `C:/Users/Administrator/.codex/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-04f46454-3243-4a93-b5f7-37c5d373a432.png`.
+Original output: `<로컬 생성 보관 폴더>/generated_images/01a1e558-1cad-7992-ad35-00b42907f007/exec-04f46454-3243-4a93-b5f7-37c5d373a432.png`.
 
 Exact prompt:
 

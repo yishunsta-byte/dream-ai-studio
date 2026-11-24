@@ -3,7 +3,8 @@ import { createSupabaseServer } from "@/lib/auth/server";
 
 const bad = (error: string, code: string, status = 400) => Response.json({ error, code }, { status });
 // 이미 가입한 주소·허용 밖 주소도 같은 안내를 줘서 어떤 주소가 쓰이는지 드러내지 않는다.
-const SENT = "가입 확인 메일을 보냈어요. 메일의 링크를 누르면 가입이 끝나요. 이미 가입한 주소라면 로그인하거나 비밀번호 찾기를 써 주세요.";
+// 이 경우들은 메일이 실제로 나가지 않으므로 "보냈어요"로 단정하지 않고 조건부로 안내한다(T247).
+const SENT = "가입 요청을 받았어요. 가입할 수 있는 주소라면 확인 메일이 가요. 메일의 링크를 누르면 가입이 끝나요. 메일이 오지 않으면 이미 가입한 주소일 수 있으니 로그인하거나 비밀번호 찾기를 써 주세요.";
 
 // 회원가입(T-184). 메일 인증을 마쳐야 계정이 쓸 수 있게 되고, 앱 입장은 허용 이메일만 된다.
 export async function POST(request: Request) {

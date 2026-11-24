@@ -122,22 +122,15 @@ const routeModules = import.meta.glob<Record<string, unknown>>("../app/api/**/ro
 // inheriting a public exemption or disappearing from the authentication tests.
 const publicAuthRoutes = ["auth/login", "auth/signup", "auth/reset"];
 const selfAuthenticatedRoutes = ["auth/password"];
-const referenceRoutes = ["admin/reference-analysis", "admin/reference-publications", "admin/music-semantic", "admin/shorts-analysis",
-  // P1-07 운영 이식: 오디오 분석·보호 업로드 경로.
-  "admin/audio-analysis", "admin/audio-uploads", "admin/audio-uploads/[id]", "admin/audio-uploads/[id]/chunks"];
 const guardedRoutes = [
-  "admin/analysis-credentials", "admin/analysis-credentials/test", "admin/publications", "admin/render-queue", ...referenceRoutes,
-  "admin/shorts-search", "admin/youtube-credentials",
-  "admin/shorts-metadata-analysis", "admin/shorts-ideas", "admin/shorts-script", "admin/shorts-scene-prompt", "admin/shorts-bgm-prompt",
-  "admin/shorts-vault/prompts", "admin/shorts-vault/prompts/[id]", "admin/shorts-vault/prompts/search",
-  "admin/shorts-vault/projects", "admin/shorts-vault/projects/[id]",
-  "admin/style-dna", "admin/style-dna/[id]", "admin/style-dna/[id]/media/[media]", "admin/style-dna/[id]/refine",
-  "admin/style-dna/[id]/test-image", "admin/style-dna/engine-credentials",
+  "admin/publications", "admin/render-queue", "projects/[id]/brief", "projects/[id]/plan",
   "assets/[id]", "assets/link", "assets/upload", "auth/logout", "auth/session",
   "backups/configuration", "backups", "characters", "exports/[id]", "jobs",
-  "library/archive", "projects/[id]/finishing", "projects/[id]/production",
-  "projects/[id]/renders", "projects/[id]/timeline", "projects/[id]/workflow",
+  "library/archive", "projects/[id]/exports", "projects/[id]/exports/[exportId]", "projects/[id]/finishing", "projects/[id]/production",
+  "projects/[id]/renders", "projects/[id]/review", "projects/[id]/renders/[jobId]/execute", "projects/[id]/timeline", "projects/[id]/workflow",
+  "projects/[id]/audio-assets", "projects/[id]/audio-assets/[assetId]", "projects/[id]/timeline/audio-clips", "projects/[id]/timeline/initial", "projects/[id]/timeline/subtitles", "projects/[id]/timeline/subtitles/download",
   "projects", "projects/[id]", "renders/[id]/cancel", "renders/[id]/file", "restore/finish", "restore/inspect",
+  "studio/reference-analysis",
 ];
 const modulePath = (route: string) => `../app/api/${route}/route.ts`;
 const protectedRoutes = Object.entries(routeModules).filter(([path]) =>
@@ -170,22 +163,53 @@ describe("direct route calls without proxy", () => {
       for (const method of handlers) {
         const request = new Request("https://example.invalid/api/direct", { method: method === "GET" || method === "HEAD" ? method : "POST" });
         const readBody = vi.spyOn(request, "json").mockRejectedValue(new Error("must not parse body"));
-        const readStream = vi.spyOn(request, "body", "get").mockImplementation(() => { throw new Error("must not read the body stream"); });
         const readParams = vi.fn(() => { throw new Error("must not read params"); });
         const params = { then: readParams } as unknown as Promise<{ id: string }>;
         const response = await (loadedRoute[method] as Handler)(request, { params });
         expect(response.status, method).toBe(status);
-        const referenceRoute = referenceRoutes.some(route => modulePath(route) === path);
-        expect(await response.json(), method).toMatchObject(referenceRoute ? { error: code } : { code });
+        expect(await response.json(), method).toMatchObject({ code });
         expect(response.headers.get("cache-control"), method).toBe("no-store");
         expect(response.headers.get("location"), method).toBeNull();
         expect(readBody, method).not.toHaveBeenCalled();
-        expect(readStream, method).not.toHaveBeenCalled();
         expect(readParams, method).not.toHaveBeenCalled();
         expect(state.listJobs, method).not.toHaveBeenCalled();
       }
     });
   }
+});
+
+describe("owned PG WAV routes without a proxy", () => {
+  it.each([
+    ["projects/[id]/audio-assets", "GET", "owned-pg17"],
+    ["projects/[id]/audio-assets/[assetId]", "PUT", "owned-pg17"],
+    ["projects/[id]/audio-assets", "GET", undefined],
+    ["projects/[id]/audio-assets/[assetId]", "PUT", undefined],
+    ["projects/[id]/renders", "GET", "owned-pg17"],
+    ["projects/[id]/renders", "POST", "owned-pg17"],
+    ["projects/[id]/renders", "GET", undefined],
+    ["projects/[id]/renders", "POST", undefined],
+    ["projects/[id]/renders/[jobId]/execute", "GET", "owned-pg17"],
+    ["projects/[id]/renders/[jobId]/execute", "POST", "owned-pg17"],
+  ] as const)("%s %s backend=%s rejects a missing session before identifiers or database access", async (path, method, backend) => {
+    const { Client } = await import("pg");
+    const connect = vi.spyOn(Client.prototype, "connect").mockImplementation(() => { throw new Error("unexpected database access"); });
+    try {
+      for (const key of ["DREAM_PROJECT_CREATE_BACKEND", "DREAM_PRIVATE_UPLOAD_BACKEND"]) vi.stubEnv(key, backend);
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:10001");
+      vi.stubEnv("DREAM_OWNED_CREATE_PG_PORT", "10002");
+      vi.stubEnv("DREAM_OWNED_CREATE_PG_PASSWORD", "fixture");
+      const request = new Request("http://127.0.0.1/api/direct", { method });
+      const readParams = vi.fn(() => { throw new Error("unexpected params access"); });
+      const route = await routeModules[modulePath(path)]();
+      const response = await (route[method] as Handler)(request, { params: { then: readParams } as unknown as Promise<{id:string}> });
+      expect(response.status).toBe(401);
+      expect(await response.json()).toMatchObject({ code: "AUTH_REQUIRED" });
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(state.getUser).toHaveBeenCalledOnce();
+      expect(readParams).not.toHaveBeenCalled();
+      expect(connect).not.toHaveBeenCalled();
+    } finally { connect.mockRestore(); vi.unstubAllEnvs(); }
+  });
 });
 
 describe("public authentication routes called without proxy or session", () => {

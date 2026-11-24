@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>게시 준비 취소와 공개 철회 비교 · Dream Screen</title>
+  <style>
+    @font-face{font-family:Pretendard;src:url('../../../../public/fonts/PretendardVariable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    :root{color-scheme:dark;--page:#101019;--surface:#191924;--edge:#383545;--text:#f7f4ff;--muted:#c5bfd1;--purple:#e1cbff;--mint:#a9edcf;--red:#ffcad5;font:16px/1.55 Pretendard,system-ui,sans-serif;background:var(--page);color:var(--text)}
+    *,*::before,*::after{box-sizing:border-box}body{margin:0;word-break:keep-all;overflow-wrap:anywhere}h1,h2,h3,p,dl,dd{margin:0}button{font:inherit;color:inherit}button:focus-visible,h2:focus,h3:focus{outline:2px solid #ffd39a;outline-offset:4px;border-radius:3px}
+    .wrap{width:min(1160px,calc(100% - 56px));margin-inline:auto}.masthead{border-bottom:1px solid var(--edge);background:#161520}.masthead .wrap{min-height:62px;display:flex;align-items:center;gap:10px}.mark{display:grid;place-items:center;width:33px;height:33px;border-radius:9px;background:linear-gradient(135deg,#c037ab,#713ecb);color:#fff}.brand{font-weight:850;line-height:1.1}.brand em{color:#f4a7ec;font-style:normal}.masthead small{margin-left:auto;color:var(--muted)}
+    main{padding:38px 0 46px}.intro{padding:24px 26px;background:linear-gradient(115deg,#231b35,#1b1927 72%);border:1px solid #443753;border-radius:13px;margin-bottom:18px}.intro h1{font-size:clamp(34px,5vw,58px);line-height:1.12;letter-spacing:-.065em}.intro p{color:var(--muted);margin-top:9px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+    .card{min-width:0;background:var(--surface);border:1px solid var(--edge);border-radius:13px}.card-header{padding:18px 19px 13px;border-bottom:1px solid var(--edge)}h2{font-size:25px;line-height:1.22;letter-spacing:-.04em;width:fit-content}.card-header p{margin-top:5px;color:var(--muted);font-size:14px}.scenario-content{display:grid;gap:14px;padding:17px 19px}.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.facts div{padding:8px 10px;background:#14141e;border:1px solid #353242;border-radius:8px}.facts dt{font-size:13px;color:var(--muted)}.facts dd{font-weight:750}.facts [data-public]{color:var(--mint)}.facts [data-public][data-removed]{color:var(--muted)}.description{color:var(--muted);font-size:15px}
+    .actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.button{min-height:44px;padding:8px 13px;border-radius:8px;border:1px solid #695489;background:#392b52;font-weight:750;text-align:left;cursor:pointer}.button:hover{background:#493765}.secondary{border-color:#514b61;background:#252330}.secondary:hover{background:#332e42}.danger{border-color:#a6556e;background:#57273c;color:#fff2f6}.danger:hover{background:#74314b}.panel{padding:13px 14px;background:#231c33;border:1px solid #5a496d;border-radius:9px}.panel.public-panel{background:#30202b;border-color:#754454}.panel h3{font-size:17px;width:fit-content;margin-bottom:4px}.panel p{color:#ded5e8;margin-bottom:12px;font-size:15px}.status{color:var(--muted);font-size:15px}.status[data-completed]{padding:10px 12px;border-left:3px solid #78c8a4;border-radius:6px;background:#1b2d2b;color:#c2f2da}.status:empty{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}[hidden]{display:none!important}
+    @media(max-width:700px){.wrap{width:calc(100% - 28px)}.masthead .wrap{min-height:54px}main{padding:18px 0 28px}.intro{padding:18px 15px}.grid{grid-template-columns:minmax(0,1fr)}.card-header,.scenario-content{padding-inline:15px}}
+  </style>
+</head>
+<body>
+  <header class="masthead"><div class="wrap"><span class="mark" aria-hidden="true">✦</span><span class="brand">DREAM <em>SCREEN</em></span><small>완성본 검수·게시</small></div></header>
+  <main class="wrap">
+    <header class="intro"><h1>게시 준비 취소와 공개 철회</h1><p>같은 작품의 두 상태를 비교할 수 있어요. 모든 조작은 시험 데이터에만 반영돼요.</p></header>
+    <div class="grid">
+      <article class="card" aria-labelledby="prepared-title" data-case data-completion="세대 3의 게시 준비를 취소했어요. 게시 중인 세대 2는 계속 공개돼요.">
+        <header class="card-header"><h2 id="prepared-title" tabindex="-1">준비 세대만 취소</h2><p>시험 작품 · 밤의 온도</p></header>
+        <div class="scenario-content">
+          <dl class="facts">
+            <div><dt>게시 중</dt><dd data-public>세대 2</dd></div>
+            <div><dt>게시 준비됨</dt><dd data-target>세대 3</dd></div>
+          </dl>
+          <p class="description">새로 준비한 세대를 취소해도 기존 게시물은 계속 공개돼요.</p>
+          <div class="actions" data-primary><button class="button" id="prepared-open" type="button" aria-controls="prepared-confirm" aria-expanded="false">게시 준비 취소…</button></div>
+          <section class="panel" id="prepared-confirm" aria-labelledby="prepared-question" hidden>
+            <h3 id="prepared-question" tabindex="-1">세대 3의 게시 준비를 취소할까요?</h3>
+            <p>‘밤의 온도’의 준비 세대 3이 취소돼요. 게시 중인 세대 2와 공개 표지는 그대로 표시돼요.</p>
+            <div class="actions"><button class="button secondary" type="button" data-dismiss>돌아가기</button><button class="button" type="button" data-confirm>세대 3 준비 취소 확정</button></div>
+          </section>
+          <p class="status" role="status" aria-atomic="true" data-status></p>
+          <div class="actions" data-after hidden><button class="button secondary" type="button" data-reset>준비 취소 예시 다시 보기</button></div>
+        </div>
+      </article>
+      <article class="card" aria-labelledby="public-title" data-case data-completion="세대 2의 공개를 철회했어요. 공개 목록과 해당 세대의 표지 주소에서 내려갔어요.">
+        <header class="card-header"><h2 id="public-title" tabindex="-1">공개 세대 철회</h2><p>시험 작품 · 밤의 온도</p></header>
+        <div class="scenario-content">
+          <dl class="facts">
+            <div><dt>게시 중</dt><dd data-public data-target>세대 2</dd></div>
+            <div><dt>게시 준비됨</dt><dd>없음</dd></div>
+          </dl>
+          <p class="description">게시 중인 세대를 철회하면 공개 목록과 해당 세대의 표지가 내려가요.</p>
+          <div class="actions" data-primary><button class="button danger" id="public-open" type="button" aria-controls="public-confirm" aria-expanded="false">공개 철회…</button></div>
+          <section class="panel public-panel" id="public-confirm" aria-labelledby="public-question" hidden>
+            <h3 id="public-question" tabindex="-1">세대 2의 공개를 철회할까요?</h3>
+            <p>‘밤의 온도’가 공개 목록에서 내려가고 세대 2의 표지 주소에 접근할 수 없게 돼요.</p>
+            <div class="actions"><button class="button secondary" type="button" data-dismiss>돌아가기</button><button class="button danger" type="button" data-confirm>세대 2 공개 철회 확정</button></div>
+          </section>
+          <p class="status" role="status" aria-atomic="true" data-status></p>
+          <div class="actions" data-after hidden><button class="button secondary" type="button" data-reset>공개 철회 예시 다시 보기</button></div>
+        </div>
+      </article>
+    </div>
+  </main>
+  <script>
+    for (const card of document.querySelectorAll("[data-case]")) {
+      const primary = card.querySelector("[data-primary]");
+      const trigger = primary.querySelector("button");
+      const panel = document.getElementById(trigger.getAttribute("aria-controls"));
+      const status = card.querySelector("[data-status]");
+      const after = card.querySelector("[data-after]");
+      const target = card.querySelector("[data-target]");
+      const initialGeneration = target.textContent;
+
+      function hideConfirmation() {
+        panel.hidden = true;
+        trigger.setAttribute("aria-expanded", "false");
+      }
+
+      function dismissConfirmation() {
+        hideConfirmation();
+        trigger.focus();
+        status.textContent = "확인을 닫았어요. 게시 상태는 그대로예요.";
+      }
+
+      trigger.addEventListener("click", () => {
+        if (!panel.hidden) {
+          dismissConfirmation();
+          return;
+        }
+        status.textContent = "";
+        panel.hidden = false;
+        trigger.setAttribute("aria-expanded", "true");
+        panel.querySelector("h3").focus();
+      });
+      panel.querySelector("[data-dismiss]").addEventListener("click", dismissConfirmation);
+      panel.addEventListener("keydown", event => {
+        if (event.key === "Escape") dismissConfirmation();
+      });
+      panel.querySelector("[data-confirm]").addEventListener("click", () => {
+        hideConfirmation();
+        target.textContent = "없음";
+        target.setAttribute("data-removed", "");
+        primary.hidden = true;
+        after.hidden = false;
+        card.querySelector("h2").focus();
+        status.dataset.completed = "";
+        status.textContent = card.dataset.completion;
+      });
+      after.querySelector("button").addEventListener("click", () => {
+        target.textContent = initialGeneration;
+        target.removeAttribute("data-removed");
+        status.textContent = "";
+        delete status.dataset.completed;
+        after.hidden = true;
+        primary.hidden = false;
+        trigger.focus();
+      });
+    }
+  </script>
+</body>
+</html>

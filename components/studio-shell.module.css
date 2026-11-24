@@ -3,6 +3,7 @@
 .brand { display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-2); margin-bottom:var(--sp-4); text-decoration:none; color:var(--fg-on-sidebar); }
 .brand strong { display:block; font-size:var(--text-md); }
 .brand small { display:block; font-size:var(--text-xs); color:var(--fg-on-sidebar-muted); }
+.mark { display:grid; place-items:center; width:var(--sp-8); height:var(--sp-8); background:var(--accent); border-radius:var(--radius-sm); font-weight:var(--weight-bold); flex-shrink:0; }
 .nav { display:flex; flex-direction:column; gap:var(--sp-1); }
 .navLink { display:flex; align-items:center; min-height:var(--touch-min); gap:var(--sp-2); padding:var(--sp-2); border-radius:var(--radius-sm); color:var(--fg-on-sidebar); text-decoration:none; font-size:var(--text-sm); }
 .navLink > span:first-of-type { flex:1; min-width:0; }

@@ -1,0 +1,8 @@
+30c21742614bf16f9c956f9997a0a2c4d15d5d4edec390f9cbfe6290ef2407ea  fixture/lib/t315/gate.ts.fixture
+1275bc7132b12f32ac017ca0d1d74bc2ce4f9421b5a284b4c0dbf8ccc56e1a73  fixture/app/api/t315-control/route.ts.fixture
+edf7aa8e9e8977a60a4dd1023b5f3866be6a43f8bb9d4b0804aa9c8bf86bd3ac  fixture/app/api/t315/[kind]/route.ts.fixture
+fa8ffaba703545d59f443487c9cb6ffaafde98bd5a07195dacae6fbc71140437  fixture/app/t315/page/page.tsx.fixture
+fe78cd121001114d8bb3d14d0ccec5c5f2f7eb536e10f1cd51d64c0106a3eaf0  fixture/app/t315/suspense/page.tsx.fixture
+da27b04e0c096b3f4c1e8d0fca394bccfc11c03bb72ef312a21de8e3e26965a5  client.mjs
+1912028c0cfc64d1c53ff31624ef6eb5c66e4f99516bf6e0ca5f3b5e76bf69ea  install-fixture.mjs
+2360a7de372ef930b2780839a45931250306cbb2b507a297d4848e252db36133  install-fixture.check.mjs

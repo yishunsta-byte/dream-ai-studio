@@ -66,10 +66,10 @@ describe("T283 관리자 인증이 프로젝트 읽기보다 먼저", () => {
   });
   it("소스 순서: 페이지는 인증 판정 뒤 loadAdminProjects를 부르고, 읽기는 기존 readCloudProjects 하나뿐이다", () => {
     const pageSource = readFileSync("app/admin/page.tsx", "utf8");
-    expect(pageSource.indexOf("await getRenderAuth()")).toBeLessThan(pageSource.indexOf("await loadAdminProjects()"));
-    expect(pageSource.indexOf('auth.kind === "denied"')).toBeLessThan(pageSource.indexOf("await loadAdminProjects()"));
+    expect(pageSource.indexOf("await getRenderAuth()")).toBeLessThan(pageSource.indexOf("await loadAdminProjects(auth.userId)"));
+    expect(pageSource.indexOf('auth.kind === "denied"')).toBeLessThan(pageSource.indexOf("await loadAdminProjects(auth.userId)"));
     const source = readFileSync("components/admin/admin-projects.tsx", "utf8");
-    expect(source.match(/await readCloudProjects\(\)/g)).toHaveLength(1);
+    expect(source.match(/await readCloudProjects\(\{ adminUserId: userId \}\)/g)).toHaveLength(1);
     expect(source).not.toMatch(/service_role|SERVICE_ROLE|createProjectReadRequest|postgresProjectReads|readCloudProject\(|fetch\(|<form|<button/);
   });
 });
@@ -139,7 +139,8 @@ describe("T283 허용 관리자 개요의 내 프로젝트 상태 4가지", () =
     expect(markup).toContain('href="/cloud/projects"');
     expect(markup).not.toMatch(/should-not-render|INPUT-SECRET-283|shopping-shorts|ownerId|삭제|전체 사용자|회원 수|정상 작동/);
     // Search and status filtering apply to the already owned rows.
-    const section = markup.slice(markup.indexOf('aria-labelledby="admin-projects"'), markup.indexOf('aria-labelledby="admin-menu"'));
+    const start = markup.indexOf('aria-labelledby="admin-projects"');
+    const section = markup.slice(start, markup.indexOf("</section>", start));
     expect(section.length).toBeGreaterThan(100);
     expect(section).toContain('type="search"');
     expect(section).toContain("<select");

@@ -4,7 +4,6 @@ import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { flattenLibraryLinks } from "./reference-media-libs.mjs";
 
 if (process.env.VERCEL) {
   if (process.platform !== "linux" || process.arch !== "x64") throw new Error("Reference analysis requires the Linux x64 build environment.");
@@ -27,8 +26,6 @@ if (process.env.VERCEL) {
     await mkdir(root, { recursive: true });
     execFileSync("tar", ["-xJf", downloaded, "-C", root, "--strip-components=1", `${base}/bin/ffmpeg`, `${base}/bin/ffprobe`, `${base}/lib`]);
     await rm(join(root, "lib", "pkgconfig"), { recursive: true, force: true });
-    // 운영 함수에 실릴 때 깨질 수 있는 lib 바로가기를 없애고, 도구가 찾는 이름의 실제 파일만 남긴다(아래 -version으로 확인).
-    await flattenLibraryLinks(join(root, "lib"));
     for (const name of ["ffmpeg", "ffprobe"]) {
       const bin = join(root, "bin", name);
       await rename(bin, `${bin}.bin`);

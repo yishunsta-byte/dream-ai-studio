@@ -1,3 +1,4 @@
+import { localProjectFormEnabled } from "@/lib/cloud/local-project-form-enabled";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -8,8 +9,6 @@ import { getRenderAuth } from "@/lib/auth/render";
 
 export const metadata: Metadata = { title: "새 프로젝트 · Dream AI Studio" };
 
-// 클라우드 새 프로젝트 준비 안내(T-219). 만들기는 아직 열지 않았다: 입력 폼·제출·저장 요청이 없다.
-// 인증 판정만 하고(DB·업무 파일 접근 0), 거절은 목록과 같은 로그인 이동 정책을 따른다.
 export default async function CloudProjectCreatePendingPage() {
   const auth = await getRenderAuth();
   if (auth.kind === "denied") {
@@ -17,6 +16,10 @@ export default async function CloudProjectCreatePendingPage() {
     redirect(loginPath({ error: auth.status === 403 ? "forbidden" : "unavailable" }));
   }
   if (auth.kind === "local") return <CloudReadLocal title="새 프로젝트" />;
+  if (localProjectFormEnabled()) {
+    const { PrivatePngProjectPage } = await import("@/components/cloud/private-png-project-page");
+    return <PrivatePngProjectPage />;
+  }
   return <>
     <p><Link href="/cloud/projects">← 내 프로젝트</Link></p>
     <PageHeader title="새 프로젝트" description="클라우드에서 새 프로젝트를 만드는 기능을 준비하고 있어요." />

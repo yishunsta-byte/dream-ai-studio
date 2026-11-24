@@ -1,5 +1,5 @@
 import "server-only";
-import { execFile, fork, type ChildProcess } from "node:child_process";
+import { execFile, type ChildProcess } from "node:child_process";
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -57,7 +57,8 @@ export async function killTree(pid:number){if(process.platform!=="win32"){try{pr
 export async function runRenderAttempt(options:AttemptOptions):Promise<AttemptResult>{
   const script=join(options.appRoot,"render","child.ts");if(!existsSync(/*turbopackIgnore: true*/script))return {ok:false,code:"RENDER_FAILED",detail:"render child missing",signal:null,exitCode:null};
   const started=Date.now();
-  const child:ChildProcess=fork(script,[],{cwd:options.appRoot,execArgv:["--import","tsx"],stdio:["ignore","pipe","pipe","ipc"],windowsHide:true,serialization:"json",
+  // Launch the checkout script with Node at runtime, outside the web module graph.
+  const child:ChildProcess=process.getBuiltinModule("node:child_process").fork(script,[],{cwd:options.appRoot,execArgv:["--import","tsx"],stdio:["ignore","pipe","pipe","ipc"],windowsHide:true,serialization:"json",
     env:{...process.env,DREAM_RENDER_CHILD:"1",...(options.tempDir?{TEMP:options.tempDir,TMP:options.tempDir,TMPDIR:options.tempDir}:{})}});
   options.onChild?.(child.pid!);
   let tail="";const keep=(chunk:Buffer)=>{tail=(tail+chunk.toString("utf8")).slice(-4000);};child.stdout?.on("data",keep);child.stderr?.on("data",keep);

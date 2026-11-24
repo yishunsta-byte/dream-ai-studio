@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { BrandMark } from "@/components/ui/brand-logo";
-import { appConfig } from "@/lib/config/app";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { MenuConfig } from "@/lib/menus/schema";
@@ -20,7 +18,7 @@ export type NavigationData = {
 };
 
 export function StudioShell({ navigation, sampleMode, account = null, children }: { navigation: NavigationData; sampleMode: boolean; account?: string | null; children: ReactNode }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const session = useSessionBoundary();
   // 계정 확인 전·변경 뒤에는 작업 수(계정별 데이터)도 보이지 않는다(T-220).
   const confirmed = !session || session.view === "current";
@@ -62,7 +60,7 @@ export function StudioShell({ navigation, sampleMode, account = null, children }
   const title = !confirmed ? "작업실" : breadcrumb?.title ?? currentMenu?.label ?? currentWorkspace?.label ?? names[pathname] ?? "작업실";
   const hasHeaderStatus = sampleMode || !!account || !!(counts && counts.running + counts.queued > 0);
   const navLink = (href: string, label: string, extra?: ReactNode, dim = false, icon?: IconName) => <Link key={href} href={href} onClick={close} className={`${styles.navLink} ${dim ? styles.dim : ""}`} aria-current={pathname === href || (href.startsWith("/menus/") && pathname.startsWith(href + "/")) ? "page" : undefined}>{icon && <Icon name={icon} />}<span>{label}</span>{extra}</Link>;
-  const links = <><Link href="/studio" className={styles.brand} onClick={close}><BrandMark /><span><strong>{appConfig.name}</strong><small>나만의 콘텐츠 작업실</small></span></Link>
+  const links = <><Link href="/studio" className={styles.brand} onClick={close}><span className={styles.mark}>D</span><span><strong>Dream AI Studio</strong><small>나만의 콘텐츠 작업실</small></span></Link>
     <nav aria-label="주 메뉴" className={styles.nav}>
       {navLink("/studio", "작업실", undefined, false, "home")}{navLink("/jobs", "작업 대기열", counts&&(counts.running+counts.queued>0||counts.failed>0)?<span className={styles.queueNumbers}>{counts.running+counts.queued>0&&<span>{counts.running+counts.queued}</span>}{counts.failed>0&&<span className={styles.failedCount} aria-label={`실패 ${counts.failed}개`}>!{counts.failed}</span>}</span>:undefined, false, "clock")}{navLink("/library", "자료·캐릭터", undefined, false, "folder")}{navLink("/history", "생성·활동 기록", undefined, false, "clock")}
       <div className={styles.divider} />

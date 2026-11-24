@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { adminLoginPath, isAdminPath, loginPath } from "@/lib/auth/config";
 import { checkSession, decideSession, onSessionSignal, reloadOnce } from "@/lib/auth/session-sync";
 
 // 화면에 보이는 계정이 지금 로그인과 같은지 지켜본다(T-213, F209-1).
@@ -40,9 +39,8 @@ export function useSessionWatch(account: string, paused = false, enabled = true)
       if (decision.go === "reload") { setView(reloadOnce() ? "checking" : "stale"); return; }
       setView(decision.view);
       if (decision.go) {
-        const { pathname, search } = window.location;
-        const login = isAdminPath(pathname) ? adminLoginPath : loginPath;
-        window.location.assign(login(decision.go === "forbidden" ? { error: "forbidden" } : { next: `${pathname}${search}` }));
+        const here = `${window.location.pathname}${window.location.search}`;
+        window.location.assign(decision.go === "forbidden" ? "/login?error=forbidden" : `/login?next=${encodeURIComponent(here)}`);
       }
     } finally {
       running.current = false;

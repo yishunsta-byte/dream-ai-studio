@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { mkdtemp, readFile, readdir, realpath, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, rmdir, symlink } from "node:fs/promises";
 import { join, dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
@@ -10,7 +10,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { actorFromVerifiedUserId, type VerifiedActor } from "@/lib/db/postgres/types";
 import { privateStorageConfig, type PrivateStorageOptions } from "@/lib/storage/supabase/config";
 import { privateObjectKey, type OwnedStorageAsset } from "@/lib/storage/supabase/object-key";
-import { createPrivateObjectReader } from "@/lib/storage/supabase/reader";
+import { createPrivateObjectReader, type VerifiedStorageFile } from "@/lib/storage/supabase/reader";
 import { postgresAssetAvailability } from "@/lib/services/postgres/asset-availability";
 vi.mock("server-only", () => ({}));
 const A = actorFromVerifiedUserId("00000000-0000-4000-8000-000000000001"), B = "00000000-0000-4000-8000-000000000002";
@@ -154,5 +154,130 @@ describe("B14 real SDK / HTTP / streamed private-object verification", () => {
     const value = { ...asset(), get objectKey(): string { throw new Error(key); } };
     await expect(createPrivateObjectReader(options).verify(A, value)).rejects.toMatchObject({ code: "STORAGE_INPUT", message: "STORAGE_INPUT" });
     await expect(createPrivateObjectReader(options).verify(A, asset(), {} as AbortSignal)).rejects.toMatchObject({ code: "STORAGE_INPUT" });expect(requests).toEqual([]);await clean();
+  });
+});
+
+describe("T300 verified private copy handoff over real loopback storage", () => {
+  it("hands off the one verified download and returns only legacy metadata after cleanup", async () => {
+    const item = asset();
+    let retained: VerifiedStorageFile | undefined;
+    let path = "";
+    const consume = vi.fn(async (file: VerifiedStorageFile) => {
+      retained = file;
+      path = file.path;
+      expect(file.signal.aborted).toBe(false);
+      expect(file.metadata).toEqual({ kind: "image", mime: "image/png", sha256: item.sha256, sizeBytes: png.length });
+      expect(await readFile(path)).toEqual(png);
+      expect(Object.keys(file)).not.toContain("path");
+      expect(JSON.stringify(file)).not.toContain("dream-verify-");
+      // Deliberately bypass the callback's void return type to check the runtime response.
+      return path as unknown as void;
+    });
+    const result = await createPrivateObjectReader(options).useVerifiedFile(A, item, consume);
+    expect(consume).toHaveBeenCalledTimes(1);
+    expect(requests).toHaveLength(2); // Private bucket metadata plus exactly one object GET.
+    expect(result).toEqual({ kind: "image", mime: "image/png", sha256: item.sha256, sizeBytes: png.length });
+    expect(JSON.stringify(result)).not.toContain("dream-verify-");
+    expect(() => retained!.path).toThrow("STORAGE_UNAVAILABLE");
+    await expect(readFile(path)).rejects.toMatchObject({ code: "ENOENT" });
+    await clean();
+  });
+
+  it("hands off a verified video through the same download and native media probe", async () => {
+    payload = video;
+    const consume = vi.fn(async (file: VerifiedStorageFile) => {
+      expect(file.metadata.mime).toBe("video/mp4");
+      expect(await readFile(file.path)).toEqual(video);
+    });
+    await expect(createPrivateObjectReader(options).useVerifiedFile(A, asset("video/mp4"), consume))
+      .resolves.toMatchObject({ kind: "video", mime: "video/mp4" });
+    expect(consume).toHaveBeenCalledTimes(1);
+    expect(requests).toHaveLength(2);
+    await clean();
+  });
+
+  it("never invokes the consumer for wrong owner, partial or altered bodies, bad MIME, or a public bucket", async () => {
+    const reader = createPrivateObjectReader(options);
+    const consume = vi.fn();
+    await expect(reader.useVerifiedFile(A, { ...asset(), ownerId: B }, consume)).rejects.toMatchObject({ code: "STORAGE_OWNER" });
+    await expect(reader.useVerifiedFile(A, asset(), null as unknown as typeof consume)).rejects.toMatchObject({ code: "STORAGE_INPUT" });
+    expect(requests).toEqual([]);
+    for (const [badMode, code] of [["truncated", "STORAGE_INTEGRITY"], ["mutated", "STORAGE_INTEGRITY"], ["public", "STORAGE_PRIVATE"]]) {
+      mode = badMode;
+      await expect(reader.useVerifiedFile(A, asset(), consume)).rejects.toMatchObject({ code });
+    }
+    mode = "ok";
+    await expect(reader.useVerifiedFile(A, asset("image/jpeg"), consume)).rejects.toMatchObject({ code: "STORAGE_TYPE" });
+    expect(consume).not.toHaveBeenCalled();
+    await clean();
+  });
+
+  it("suppresses callback errors and removes the copy before returning the error", async () => {
+    let path = "";
+    const operation = createPrivateObjectReader(options).useVerifiedFile(A, asset(), file => {
+      path = file.path;
+      throw new Error(path, { cause: key });
+    });
+    await expect(operation).rejects.toMatchObject({ name: "StorageReadError", code: "STORAGE_UNAVAILABLE", message: "STORAGE_UNAVAILABLE" });
+    await expect(operation).rejects.not.toHaveProperty("cause");
+    expect(path).not.toBe("");
+    await expect(readFile(path)).rejects.toMatchObject({ code: "ENOENT" });
+    await clean();
+  });
+
+  it("rejects a handoff work root that resolves into a public directory before requesting bytes", async () => {
+    const target = join(root, "public");
+    const alias = join(root, "work-alias");
+    await mkdir(target);
+    await symlink(target, alias, process.platform === "win32" ? "junction" : "dir");
+    try {
+      const consume = vi.fn();
+      await expect(createPrivateObjectReader({ ...options, workRoot: alias }).useVerifiedFile(A, asset(), consume))
+        .rejects.toMatchObject({ code: "STORAGE_TEMP" });
+      expect(consume).not.toHaveBeenCalled();
+      expect(requests).toEqual([]);
+      expect(await readdir(target)).toEqual([]);
+    } finally { await rm(alias); await rmdir(target); }
+  });
+
+  it.each(["caller", "timeout"] as const)("cleans the file and releases capacity during a stalled callback on %s", async (kind) => {
+    const reader = createPrivateObjectReader({ ...options, timeoutMs: kind === "timeout" ? 650 : 3000, maxConcurrent: 1 });
+    const abort = new AbortController();
+    const entered = Promise.withResolvers<VerifiedStorageFile>();
+    const late = Promise.withResolvers<void>();
+    const consume = vi.fn((file: VerifiedStorageFile) => { entered.resolve(file); return late.promise; });
+    const operation = reader.useVerifiedFile(A, asset(), consume, abort.signal);
+    const rejected = expect(operation).rejects.toMatchObject({ code: kind === "caller" ? "STORAGE_ABORTED" : "STORAGE_TIMEOUT" });
+    const file = await entered.promise;
+    const path = file.path;
+    try {
+      expect(await readFile(path)).toEqual(png);
+      await expect(reader.verify(A, asset())).rejects.toMatchObject({ code: "STORAGE_UNAVAILABLE" });
+      if (kind === "caller") abort.abort();
+      await rejected;
+      expect(file.signal.aborted).toBe(true);
+      expect(() => file.path).toThrow("STORAGE_UNAVAILABLE");
+      await expect(readFile(path)).rejects.toMatchObject({ code: "ENOENT" });
+      await clean();
+      expect(await reader.verify(A, asset())).toMatchObject({ mime: "image/png" });
+      expect(consume).toHaveBeenCalledTimes(1);
+      expect(requests).toHaveLength(4);
+    } finally { late.reject(new Error("late callback failure must remain private")); }
+  });
+
+  it("does not hand off a partial download after caller cancellation", async () => {
+    mode = "slow-body";
+    const entered = Promise.withResolvers<void>();
+    bodyStarted = entered.resolve;
+    const abort = new AbortController();
+    const consume = vi.fn();
+    const rejected = expect(createPrivateObjectReader(options).useVerifiedFile(A, asset(), consume, abort.signal))
+      .rejects.toMatchObject({ code: "STORAGE_ABORTED" });
+    await entered.promise;
+    expect(consume).not.toHaveBeenCalled();
+    abort.abort();
+    await rejected;
+    expect(consume).not.toHaveBeenCalled();
+    await clean();
   });
 });

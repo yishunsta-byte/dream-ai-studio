@@ -95,14 +95,18 @@ function DraftEditor({ prompt, isEdited, onEdit, id }: { prompt: string; isEdite
   </>;
 }
 
-export function RegisteredAnalysisResults({ result, sourceUrl }: { result: Ready; sourceUrl?: string }) {
+export function RegisteredAnalysisResults({ result, sourceUrl, savedDrafts }: {
+  result: Ready;
+  sourceUrl?: string;
+  savedDrafts?: { values: Readonly<Record<number, string>>; onEdit: (index: number, prompt: string) => void };
+}) {
   const id = useId();
   const [index, setIndex] = useState(0);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const proposal = result.proposals[index];
   if (!proposal) return <p className={styles.muted}>표시할 분석 결과가 없어요.</p>;
   const { observations, inference, draft, sourceSeek } = proposal;
-  const edited = drafts[index] ?? draft.prompt;
+  const edited = (savedDrafts?.values ?? drafts)[index] ?? draft.prompt;
   const evidenceNumbers = inference?.evidenceIds.map((finding) => observations.findIndex(({ findingId }) => findingId === finding) + 1).filter(Boolean);
 
   return <>
@@ -140,7 +144,10 @@ export function RegisteredAnalysisResults({ result, sourceUrl }: { result: Ready
     <section className={styles.draft} aria-labelledby={`${id}-draft`}>
       <h4 id={`${id}-draft`}>창작 초안</h4>
       {draft.target === "cut" && draft.editGridApproximation && <p className={styles.muted}>편집 그리드 기준 약 {draft.editGridApproximation.frame}프레임 · {draft.editGridApproximation.fps} fps</p>}
-      <DraftEditor key={index} id={`${id}-prompt`} prompt={edited} isEdited={edited !== draft.prompt} onEdit={(prompt) => setDrafts((previous) => ({ ...previous, [index]: prompt }))} />
+      <DraftEditor key={index} id={`${id}-prompt`} prompt={edited} isEdited={edited !== draft.prompt} onEdit={(prompt) => {
+        if (savedDrafts) savedDrafts.onEdit(index, prompt);
+        else setDrafts((previous) => ({ ...previous, [index]: prompt }));
+      }} />
       <PromptComparison original={draft.prompt} edited={edited} />
     </section>
     </div>

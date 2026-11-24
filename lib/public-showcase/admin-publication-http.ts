@@ -51,9 +51,7 @@ export function currentRequestOrigin(request: Request, env: Readonly<Record<stri
  * 쓰기 요청 출처·형식 판정(머리글만). Origin은 현재 요청 출처와 정확히 같아야 한다. 별도로 등록된 다른 사이트 주소도 거절한다.
  * Fetch Metadata가 있으면 same-origin이어야 한다.
  */
-export function rejectForeignWrite(
-  request: Request, env: Readonly<Record<string, string | undefined>>, allowedTypes: readonly string[] = ["application/json"],
-): Response | null {
+export function rejectForeignWrite(request: Request, env: Readonly<Record<string, string | undefined>>): Response | null {
   const fetchSite = request.headers.get("sec-fetch-site");
   const origin = request.headers.get("origin");
   const current = currentRequestOrigin(request, env);
@@ -61,7 +59,7 @@ export function rejectForeignWrite(
     return error(403, "AUTH_ORIGIN_REJECTED", "이 사이트 화면에서 보낸 요청만 받을 수 있어요. 화면을 새로 고친 뒤 다시 시도해 주세요.");
   }
   const type = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
-  if (!allowedTypes.includes(type)) return error(415, "UNSUPPORTED_MEDIA_TYPE", "요청 형식이 올바르지 않아요.");
+  if (type !== "application/json") return error(415, "UNSUPPORTED_MEDIA_TYPE", "요청 형식이 올바르지 않아요.");
   return null;
 }
 

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>클라우드 콘텐츠 분석 · Dream AI Studio</title>
+  <link rel="icon" href="data:,">
+  <style>
+    @font-face{font-family:Pretendard;src:url('../../../public/fonts/PretendardVariable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    :root{color-scheme:light;--ink:#172a39;--sub:#506071;--bg:#f7f8f5;--card:#fff;--line:#d9e1df;--brand:#08756a;--brand-deep:#05594f;--mint:#e1f5ee;--sand:#fcf0df;--amber:#784612;font:16px/1.55 Pretendard,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+    *{box-sizing:border-box}body{margin:0;overflow-wrap:anywhere}p,h1,h2,h3{margin:0}button,select,textarea,input{font:inherit;color:inherit}a{color:var(--brand-deep)}button,a,select,textarea,input{outline-offset:4px}button:focus-visible,a:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid #8b5f17}
+    button{cursor:pointer}button:disabled{cursor:default}.wrap{width:min(1224px,calc(100% - 64px));margin-inline:auto}.brandbar{background:#132f34;color:#f2fffc}.brandbar .wrap{display:flex;align-items:center;min-height:66px;gap:13px}.sign{width:35px;height:35px;border-radius:9px;background:#a5ebd8;color:#103932;display:grid;place-items:center;font-weight:850}.brandbar p{font-weight:820;letter-spacing:-.015em}.brandbar small{margin-left:auto;color:#c3e4dc}
+    main{padding:28px 0 45px}.hero{position:relative;isolation:isolate;overflow:hidden;min-height:198px;background:#153538;color:#f1fffb;padding:26px 32px;border-radius:18px;display:flex;align-items:flex-end}.hero:before,.hero:after{position:absolute;inset:0;content:'';z-index:-1}.hero:before{background:url('../../../public/showcase/t240/wild-coast.png') center 58%/cover}.hero:after{background:linear-gradient(90deg,#112d31 0%,#123239e8 31%,#0c272575 66%,#0e252422 100%)}.path{color:#bbebdc;font-size:13px;font-weight:680}.hero h1{font-size:clamp(38px,5vw,62px);letter-spacing:-.065em;line-height:1.04;margin:8px 0 10px}.hero p:last-child{color:#ecf9f3;max-width:560px}
+    .scenario{margin:17px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--sub);font-size:13px}.scenario label{font-weight:740}.scenario select{margin-left:4px;padding:8px 11px;border:1px solid #bacac7;border-radius:8px;background:white;min-height:44px}.body{display:grid;grid-template-columns:minmax(300px,.92fr) minmax(0,1.55fr);gap:16px;align-items:start}.card{min-width:0;border:1px solid var(--line);border-radius:14px;background:var(--card);padding:22px}.title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px}h2{font-size:24px;letter-spacing:-.045em}h3{font-size:17px;letter-spacing:-.025em}.small{color:var(--sub);font-size:14px}.kinds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:13px 0 17px}.kind{min-height:52px;border-radius:8px;border:1px solid #cdd9d6;background:#f6f9f8;text-align:center;font-weight:720;padding:5px;color:#345259}.kind[aria-pressed=true]{border-color:#328c7b;background:var(--mint);color:var(--brand-deep)}
+    fieldset{border:0;padding:0;margin:0 0 14px;min-width:0}legend,.field-label{font-weight:740;font-size:14px;margin-bottom:6px}legend{padding:0}.radios{display:flex;gap:8px 14px;flex-wrap:wrap}.radios label,.rights{display:flex;align-items:center;gap:7px;min-height:44px;font-size:14px;cursor:pointer}.radios input,.rights input{accent-color:var(--brand);width:17px;height:17px;flex:none}.field-label{display:block}.input{width:100%;min-height:44px;border:1px solid #c1cecc;background:#fff;border-radius:8px;padding:8px 10px}.input:disabled{background:#f0f3f2;color:#586975}.source-note{margin:7px 0 0}.notice{padding:11px 12px;border-radius:8px;margin:10px 0;background:var(--sand);color:var(--amber);border-left:3px solid #c17a2f;font-size:14px}.notice.info{background:#edf4f2;border-color:#459483;color:#28554f}.rights{margin-top:7px}.action{min-height:44px;padding:8px 16px;background:var(--brand);color:#fff;border:1px solid transparent;border-radius:8px;font-weight:785}.action:disabled{background:#e9eeec;color:#566770;border-color:#d9e1df}.actions{margin-top:8px}.actions p{margin-top:6px}
+    .sample-label{font-size:12px;font-weight:760;color:var(--brand-deep);border:1px solid #bcded5;background:#edf8f4;border-radius:99px;padding:3px 8px}.result{scroll-margin:16px}.evidence{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:12px}.pane{border:1px solid #dbe6e3;padding:13px;border-radius:10px;background:#f7faf9;min-width:0}.pane p{margin-top:5px}.pane .tag{display:inline-block;margin-bottom:7px;font-size:12px;color:#215e53;font-weight:770}.pane.infer{background:#faf7ed;border-color:#ebe0bf}.pane.infer .tag{color:#79531a}.point{font-weight:730}.draft{margin-top:13px;padding-top:12px;border-top:1px solid var(--line)}textarea.input{resize:vertical;min-height:84px;display:block;margin:10px 0 7px}.status-empty{padding:32px 16px;text-align:center;border:1px dashed #b8c9c6;border-radius:10px;background:#f8fbfa}.status-empty p{margin-top:5px}.context{margin-bottom:11px}.context strong{display:block}.key{display:inline-block;font-size:13px;color:var(--sub);margin-top:4px}[hidden]{display:none!important}
+    .related{margin-top:16px}.related h2{margin-bottom:9px}.related ul{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0;padding:0;list-style:none}.related a{display:flex;min-height:44px;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border:1px solid #b5ccbf;border-radius:8px;background:#f0f7f3;font-weight:720;text-underline-offset:3px}.related a:hover{background:var(--mint)}.related a span{flex:none}
+    @media(max-width:900px){.body{grid-template-columns:minmax(250px,.9fr) minmax(0,1.3fr)}.wrap{width:calc(100% - 38px)}.card{padding:17px}}
+    @media(max-width:700px){.wrap{width:calc(100% - 28px)}main{padding-top:16px}.hero{min-height:166px;padding:18px}.body,.evidence,.related ul{grid-template-columns:minmax(0,1fr)}.scenario{margin:11px 0;gap:5px}.card{padding:15px}.hero:after{background:linear-gradient(90deg,#112d31f7,#0e2a29a6)}}
+  </style>
+</head>
+<body>
+  <header class="brandbar"><div class="wrap"><span class="sign" aria-hidden="true">✦</span><p>Dream AI Studio</p><small>클라우드 작업실</small></div></header>
+  <main class="wrap">
+    <section class="hero" aria-labelledby="headline">
+      <div><p class="path">작업실 / 콘텐츠 분석</p><h1 id="headline">콘텐츠 분석</h1><p>등록 자료에서 확인한 근거를 살펴보고, 새 작업에 쓸 초안을 다듬으세요.</p></div>
+    </section>
+    <div class="scenario">
+      <label for="scenario">시안 상태</label>
+      <select id="scenario">
+        <option value="ready">승인된 시험 자료 결과</option><option value="input">자료 선택부터 시작</option><option value="restricted">접근 제한</option><option value="offline">공급자 미연결</option><option value="empty">빈 분석 결과</option>
+      </select>
+      <span>예시 데이터 · 실제 파일 전송 없이 체험</span>
+    </div>
+    <div class="body">
+      <section class="card" aria-labelledby="input-title">
+        <div class="title"><h2 id="input-title">분석 자료</h2><span class="small">파일 한 개 선택</span></div>
+        <div class="kinds" role="group" aria-label="분석 자료 종류">
+          <button type="button" class="kind" data-kind="image" aria-pressed="true">이미지</button>
+          <button type="button" class="kind" data-kind="music" aria-pressed="false">음악</button>
+          <button type="button" class="kind" data-kind="video" aria-pressed="false">영상·쇼츠</button>
+        </div>
+        <form id="form">
+          <fieldset><legend>입력 출처</legend>
+            <div class="radios"><label><input type="radio" name="source" value="registered" checked> 등록 자료</label><label><input type="radio" name="source" value="post"> 게시물 URL</label></div>
+          </fieldset>
+          <div id="registered">
+            <label class="field-label" for="material">분석할 파일</label>
+            <select id="material" class="input" aria-describedby="limits"></select>
+            <p id="limits" class="small source-note"></p>
+          </div>
+          <div id="unsupported" class="notice" hidden>게시물 URL은 현재 지원하지 않아요. YouTube·Instagram·TikTok 등의 게시물 주소 대신 사용 권한이 있는 등록 자료를 선택해 주세요.</div>
+          <div id="input-notice" class="notice info" role="status" hidden></div>
+          <label class="rights"><input type="checkbox" id="rights"> 이 자료를 분석할 권리가 있어요.</label>
+          <div class="actions"><button class="action" type="submit" id="run">분석 실행</button><p class="small" id="action-note"></p></div>
+        </form>
+      </section>
+      <section class="card result" aria-labelledby="result-title">
+        <div class="title"><h2 tabindex="-1" id="result-title">분석 결과</h2><span class="sample-label" id="sample-label" hidden>시험 자료 예시</span></div>
+        <div class="status-empty" id="blank" role="status"><h3 id="blank-title"></h3><p class="small" id="blank-copy"></p></div>
+        <div id="result" hidden>
+          <div class="context"><strong id="result-source"></strong><span class="key" id="result-pos"></span></div>
+          <div class="evidence">
+            <section class="pane"><span class="tag">직접 관찰</span><h3 id="observation"></h3><p class="small" id="evidence-note"></p></section>
+            <section class="pane infer"><span class="tag">분석 추정</span><h3 id="inference"></h3><p class="small" id="inference-note"></p></section>
+          </div>
+          <div class="draft">
+            <h3>분석으로 생성한 초안</h3><p class="small">원본 제작자가 공개한 프롬프트는 확인되지 않았어요.</p>
+            <label class="field-label key" for="draft">내 수정본</label><textarea id="draft" class="input" rows="3"></textarea>
+          </div>
+        </div>
+      </section>
+    </div>
+    <nav class="card related" aria-labelledby="related-title">
+      <h2 id="related-title">관련 시안</h2>
+      <ul>
+        <li><a href="registered-cases.html">등록 자료 선택과 접근 상태 <span aria-hidden="true">→</span></a></li>
+        <li><a href="result-comparison/index.html">PNG·WAV·MP4 결과 비교 <span aria-hidden="true">→</span></a></li>
+        <li><a href="session-guidance/compare.html">세션 확인·401·403 안내 비교 <span aria-hidden="true">→</span></a></li>
+      </ul>
+    </nav>
+  </main>
+  <script>
+    const samples = {
+      image: { format: "PNG", file: "색 분포 시험 이미지", point: "불투명 영역 전체", observation: "불투명 영역의 색·명도 구간을 측정했어요.", detail: "등록된 PNG의 투명 부분은 관찰 범위에서 제외했어요.", inference: "이 결과에 포함된 추정이 없어요.", basis: "색과 명도는 이미지에서 직접 관찰한 결과입니다.", draft: "관찰한 밝기 대비를 참고해 제품이 먼저 보이는 색 구성을 만든다." },
+      music: { format: "M4A", file: "피아노 펄스 시험 음원", point: "음량과 박자 변화 구간", observation: "음량이 반복해서 상승하는 구간을 확인했어요.", detail: "음원에서 측정한 RMS와 에너지 상승을 근거로 사용했어요.", inference: "템포 약 120 BPM", basis: "반복되는 음량 변화의 간격을 바탕으로 추정했어요.", draft: "반복되는 박자에 맞춰 제품의 세 가지 특징을 차례로 보여준다." },
+      video: { format: "MP4", file: "장면 전환 시험 영상", point: "원본 프레임 표시 시각 992ms", observation: "앞뒤 프레임의 색 분포가 크게 바뀌었어요.", detail: "원본 디코딩 시각과 편집 격자상의 프레임 번호를 각각 표시해요.", inference: "장면 전환 후보", basis: "앞뒤 프레임의 색 변화가 전환 후보의 근거예요.", draft: "장면 변화 지점에서 제품 전체 모습에서 사용 장면으로 컷을 바꾼다." }
+    };
+    const $=id=>document.getElementById(id);
+    const kindButtons=[...document.querySelectorAll("[data-kind]")];
+    const form=$("form"), rights=$("rights"), material=$("material"), scenario=$("scenario"), run=$("run");
+    let kind="image", mode="ready", ready=true;
+
+    function source(){return form.elements.source.value}
+    function resultState(){
+      if(mode==="offline")return ["분석 연결을 기다리고 있어요","등록 자료 분석이 연결되면 자료를 선택할 수 있어요."];
+      if(mode==="restricted")return ["자료에 접근할 수 없어요","프로젝트와 계정의 접근 권한을 확인해 주세요."];
+      if(source()==="post")return ["등록 자료를 선택해 주세요","현재 분석은 사용 권한이 있는 등록 자료에서 시작해요."];
+      if(mode==="empty")return ["표시할 관찰 근거가 없어요","다른 자료를 선택하거나 등록 파일의 형식을 확인해 주세요."];
+      return ["분석 결과가 아직 없어요","등록 자료를 선택하고 분석 권리를 확인해 주세요."];
+    }
+    function renderResults(){
+      const sample=samples[kind];
+      const show=ready && source()==="registered" && (mode==="ready"||mode==="input");
+      $("result").hidden=!show;
+      $("sample-label").hidden=!show;
+      $("blank").hidden=show;
+      if(!show){
+        const [title,copy]=resultState();
+        $("blank-title").textContent=title;$("blank-copy").textContent=copy;$("draft").value="";
+        return;
+      }
+      $("result-source").textContent=sample.format+" · "+sample.file;
+      $("result-pos").textContent=sample.point;
+      $("observation").textContent=sample.observation;$("evidence-note").textContent=sample.detail;
+      $("inference").textContent=sample.inference;$("inference-note").textContent=sample.basis;
+      $("draft").value=sample.draft;
+    }
+    function syncButton(){
+      run.disabled=source()==="post"||mode==="offline"||mode==="restricted"||!material.value||!rights.checked;
+      $("action-note").textContent=mode==="offline"||mode==="restricted"||source()==="post" ? "" :
+        !material.value?"등록 자료를 먼저 선택해 주세요.":!rights.checked?"분석 권리를 확인하면 실행할 수 있어요.":"";
+    }
+    function inputs(prefill){
+      const sample=samples[kind];
+      const unavailable=mode==="offline"||mode==="restricted";
+      const post=source()==="post";
+      kindButtons.forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.kind===kind)));
+      $("registered").hidden=post;$("unsupported").hidden=!post;
+      $("input-notice").hidden=!unavailable;
+      $("input-notice").textContent=mode==="offline"?"등록 자료 분석 공급자가 아직 연결되지 않았어요.":"이 계정에서 사용할 수 있는 자료인지 확인해 주세요.";
+      $("limits").textContent="등록 사본 검증 예시 · "+sample.format+" · 로컬 시험 기준";
+      material.replaceChildren(new Option("자료를 선택해 주세요",""));
+      if(!unavailable)material.add(new Option(sample.file+" · "+sample.format,"fixture"));
+      material.value=prefill&&!unavailable?"fixture":"";
+      material.disabled=unavailable;
+      rights.checked=prefill&&!unavailable&&!post;
+      rights.disabled=unavailable||post||!material.value;
+      syncButton();renderResults();
+    }
+    kindButtons.forEach(button=>button.addEventListener("click",()=>{
+      if(kind===button.dataset.kind)return;
+      kind=button.dataset.kind;ready=false;if(mode==="ready"||mode==="empty"){mode="input";scenario.value=mode}inputs(false);
+    }));
+    form.querySelectorAll("[name=source]").forEach(radio=>radio.addEventListener("change",()=>{
+      ready=false;if(mode==="ready"||mode==="empty"){mode="input";scenario.value=mode}inputs(false);
+    }));
+    material.addEventListener("change",()=>{ready=false;rights.checked=false;rights.disabled=!material.value;syncButton();renderResults()});
+    rights.addEventListener("change",()=>{if(!rights.checked&&ready){ready=false;renderResults()}syncButton()});
+    scenario.addEventListener("change",()=>{
+      mode=scenario.value;ready=mode==="ready";form.elements.source.value="registered";inputs(mode==="ready"||mode==="empty");
+    });
+    form.addEventListener("submit",event=>{
+      event.preventDefault();if(run.disabled)return;
+      ready=mode!=="empty";renderResults();
+      $("result-title").focus({preventScroll:true});$("result-title").scrollIntoView({block:"start"});
+    });
+    inputs(true);
+  </script>
+</body>
+</html>

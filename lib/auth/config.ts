@@ -1,5 +1,3 @@
-import { appConfig } from "@/lib/config/app";
-
 // 로그인 설정 판단. proxy와 서버 코드가 함께 쓰므로 Node 전용 모듈을 가져오지 않는다.
 type Env = Record<string, string | undefined>;
 
@@ -31,10 +29,10 @@ export function authReady(env: Env = process.env) {
   return !!supabasePublicConfig(env) && allowedEmails(env).size > 0;
 }
 
-// 공개 메인(T-241), 분석 결과와 그 화면에서 쓰는 고정 이미지·브랜드 심볼은 정확한 경로만 허용한다.
+// 공개 메인(T-241): 정확한 루트 "/"와 T-240 고정 이미지 6개만. 하위 폴더 전체(prefix)는 열지 않는다.
 // 로그인 설정이 빠져 있거나 익명이어도 보여야 하므로 proxy가 인증 확인보다 먼저 통과시킨다(세션 갱신 없음).
 export const PUBLIC_SHOWCASE_ASSETS: readonly string[] = Object.freeze(["neon-rooftop", "desert-motion", "wild-coast", "orchid", "celestial", "sunflower"].map((name) => `/showcase/t240/${name}.png`));
-const ANONYMOUS_PUBLIC_PATHS = new Set(["/", "/analysis-results", appConfig.brandMark, ...PUBLIC_SHOWCASE_ASSETS]);
+const ANONYMOUS_PUBLIC_PATHS = new Set(["/", "/analysis-results", ...PUBLIC_SHOWCASE_ASSETS]);
 export function isAnonymousPublicPath(pathname: string) {
   return ANONYMOUS_PUBLIC_PATHS.has(pathname);
 }
@@ -63,11 +61,6 @@ export function adminLoginPath(params: { next?: string; error?: "forbidden" | "u
   if (params.error) query.set("error", params.error);
   const text = query.toString();
   return text ? `${ADMIN_LOGIN}?${text}` : ADMIN_LOGIN;
-}
-
-export function logoutLoginPath(pathname: string, state: "ended" | "partial") {
-  const destination = isAdminPath(pathname) ? ADMIN_LOGIN : "/login";
-  return state === "partial" ? `${destination}?notice=logout-partial` : destination;
 }
 
 // 비밀번호 재설정의 돌아갈 곳(T-245). 요청·주소에서 받은 값은 정해 둔 이름("admin")일 때만 쓰고, 그 밖은 일반 흐름이다.

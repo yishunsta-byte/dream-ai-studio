@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
+import { addAbortListener } from "node:events";
 import { mkdtemp, open, realpath, rm, statfs } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { privateStorageConfig, type PrivateStorageOptions } from "./config";
@@ -18,23 +19,56 @@ async function smallBody(response: Response, limit = 65536) {
   } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
 }
 const httpFailure = (status: number) => new StorageReadError(status === 404 ? "STORAGE_NOT_FOUND" : status === 401 || status === 403 ? "STORAGE_AUTH" : "STORAGE_UNAVAILABLE");
-async function cleanupWork(root: string, work: string) {
+async function cleanupWork(root: string, work: string, handedOff: boolean) {
   let actual: string;
   try { actual = await realpath(work); } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
     throw new StorageReadError("STORAGE_TEMP");
   }
-  if (dirname(actual) !== root || !basename(actual).startsWith("dream-verify-")) throw new StorageReadError("STORAGE_TEMP");
-  await rm(actual, { recursive: true, force: false }).catch(() => { throw new StorageReadError("STORAGE_TEMP"); });
+  if ((handedOff && actual !== work) || dirname(actual) !== root || !basename(actual).startsWith("dream-verify-")) throw new StorageReadError("STORAGE_TEMP");
+  await rm(actual, { recursive: true, force: false, ...(handedOff ? { maxRetries: 3, retryDelay: 30 } : {}) })
+    .catch(() => { throw new StorageReadError("STORAGE_TEMP"); });
 }
 export type VerifiedStorageObject = Readonly<Pick<OwnedStorageAsset, "sizeBytes" | "sha256" | "mime" | "kind">>;
-export type PrivateObjectReader = Readonly<{ verify: (actor: Parameters<typeof ownedStorageAsset>[0], asset: unknown, signal?: AbortSignal) => Promise<VerifiedStorageObject> }>;
+type Actor = Parameters<typeof ownedStorageAsset>[0];
+export type PrivateObjectReader = Readonly<{ verify: (actor: Actor, asset: unknown, signal?: AbortSignal) => Promise<VerifiedStorageObject> }>;
 
-export function createPrivateObjectReader(options: PrivateStorageOptions): PrivateObjectReader {
+export type VerifiedStorageFile = Readonly<{ path: string; metadata: VerifiedStorageObject; signal: AbortSignal }>;
+type FileConsumer = (file: VerifiedStorageFile) => void | Promise<void>;
+export type PrivateObjectReaderWithFile = PrivateObjectReader & Readonly<{
+  /** Server-only read of the verified copy. Honor the signal and release any open file resources before returning. */
+  useVerifiedFile: (actor: Actor, asset: unknown, consume: FileConsumer, signal?: AbortSignal) => Promise<VerifiedStorageObject>;
+}>;
+
+async function consumeVerifiedCopy(path: string, metadata: VerifiedStorageObject, signal: AbortSignal, check: () => void, consume: FileConsumer) {
+  check();
+  let open = true;
+  const lease = Object.freeze(Object.defineProperty({ metadata, signal }, "path", {
+    get() {
+      if (!open) throw new StorageReadError("STORAGE_UNAVAILABLE");
+      check();
+      return path;
+    },
+  })) as VerifiedStorageFile;
+  const cancelled = Promise.withResolvers<void>();
+  const listener = addAbortListener(signal, () => cancelled.resolve());
+  try {
+    await Promise.race([cancelled.promise, Promise.resolve().then(() => { check(); return consume(lease); })]);
+    check();
+  } catch {
+    check();
+    // Callback errors may contain a private path or provider credentials.
+    throw new StorageReadError("STORAGE_UNAVAILABLE");
+  } finally {
+    open = false;
+    listener[Symbol.dispose]();
+  }
+}
+
+export function createPrivateObjectReader(options: PrivateStorageOptions): PrivateObjectReaderWithFile {
   const config = privateStorageConfig(options), fetchObject = globalThis.fetch;
   let active = 0;
-  return Object.freeze({
-    async verify(actor, input, signal) {
+  async function readAndVerify(actor: Actor, input: unknown, signal?: AbortSignal, consume?: FileConsumer) {
       const asset = ownedStorageAsset(actor, input, config.maxBytes); // Before network/SDK/temp work.
       if (signal !== undefined && !(signal instanceof AbortSignal)) throw new StorageReadError("STORAGE_INPUT");
       if (signal?.aborted) throw new StorageReadError("STORAGE_ABORTED");
@@ -42,13 +76,16 @@ export function createPrivateObjectReader(options: PrivateStorageOptions): Priva
       active++;
       const controller = new AbortController(), deadline = Date.now() + config.timeoutMs;
       let timedOut = false, work: string | undefined, root: string | undefined;
+      let handedOff = false;
       let stream: ReadableStreamDefaultReader<Uint8Array> | undefined;
       let file: Awaited<ReturnType<typeof open>> | undefined;
       const abort = () => controller.abort(); signal?.addEventListener("abort", abort, { once: true });
       const timer = setTimeout(() => { timedOut = true; controller.abort(); }, config.timeoutMs);
       const check = () => { if (controller.signal.aborted) throw new StorageReadError(timedOut ? "STORAGE_TIMEOUT" : "STORAGE_ABORTED"); };
       try {
-        check(); root = await realpath(config.workRoot); const space = await statfs(root);
+        check(); root = await realpath(config.workRoot);
+        if (consume && root.split(/[\\/]/).some(part => part.toLowerCase() === "public")) throw new StorageReadError("STORAGE_TEMP");
+        const space = await statfs(root);
         if (space.bavail * space.bsize < asset.sizeBytes + 1024 * 1024) throw new StorageReadError("STORAGE_TEMP");
         check(); work = await mkdtemp(join(root, "dream-verify-"));
         const bucketUrl = `${config.projectUrl}/storage/v1/bucket/${config.bucket}`;
@@ -93,7 +130,19 @@ export function createPrivateObjectReader(options: PrivateStorageOptions): Priva
         await file.close(); file = undefined; check();
         if (count !== asset.sizeBytes || hash.digest("hex") !== asset.sha256) throw new StorageReadError("STORAGE_INTEGRITY");
         await verifyStorageMedia(path, asset, config.ffprobePath, controller.signal, deadline); check();
-        return Object.freeze({ sizeBytes: count, sha256: asset.sha256, mime: asset.mime, kind: asset.kind });
+        const metadata = Object.freeze({ sizeBytes: count, sha256: asset.sha256, mime: asset.mime, kind: asset.kind });
+        if (consume) {
+          handedOff = true;
+          const checkHandoff = () => {
+            if (!controller.signal.aborted && Date.now() >= deadline) {
+              timedOut = true;
+              controller.abort();
+            }
+            check();
+          };
+          await consumeVerifiedCopy(path, metadata, controller.signal, checkHandoff, consume);
+        }
+        return metadata;
       } catch (error) {
         if (controller.signal.aborted) throw new StorageReadError(timedOut ? "STORAGE_TIMEOUT" : "STORAGE_ABORTED");
         if (error instanceof StorageReadError) throw error;
@@ -103,9 +152,16 @@ export function createPrivateObjectReader(options: PrivateStorageOptions): Priva
         try {
           await stream?.cancel().catch(() => {}); stream?.releaseLock(); await file?.close().catch(() => {});
           // The sole recursive cleanup target is this call's generated directory.
-          if (work && root) await cleanupWork(root, work);
+          if (work && root) await cleanupWork(root, work, handedOff);
         } finally { active--; }
       }
+  }
+
+  return Object.freeze<PrivateObjectReaderWithFile>({
+    verify: (actor, input, signal) => readAndVerify(actor, input, signal),
+    async useVerifiedFile(actor, input, consume, signal) {
+      if (typeof consume !== "function") throw new StorageReadError("STORAGE_INPUT");
+      return readAndVerify(actor, input, signal, consume);
     },
   });
 }

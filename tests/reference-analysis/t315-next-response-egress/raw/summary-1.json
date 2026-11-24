@@ -1,0 +1,805 @@
+{
+ "port": 43315,
+ "node": "v26.13.0",
+ "cases": {
+  "A-normal-html": {
+   "first": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 33,
+    "sha256": "092e645c7b9d45b30a73de0e50b1e9484cee42c96a79786e42db42169388e738",
+    "end": "end",
+    "protectedMarkers": 1
+   },
+   "reuse": {
+    "status": 409,
+    "headers": {
+     "content-type": null,
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "consumedOnce": 1
+  },
+  "A-normal-rsc": {
+   "first": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/x-component; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 24,
+    "sha256": "5c3f69cab4fdc51b7a0b2ab6bd1a465c4f25d7f8fb42c6b376fd8f0696326e63",
+    "end": "end",
+    "protectedMarkers": 1
+   },
+   "reuse": {
+    "status": 409,
+    "headers": {
+     "content-type": null,
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "consumedOnce": 1
+  },
+  "A-normal-post": {
+   "first": {
+    "status": 200,
+    "headers": {
+     "content-type": "application/json; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 42,
+    "sha256": "d9a5a3955c7424fe3d4b1d2afbf8721cedb45d227d9ca8a64ba3291338f2ab75",
+    "end": "end",
+    "protectedMarkers": 1
+   },
+   "reuse": {
+    "status": 409,
+    "headers": {
+     "content-type": null,
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "consumedOnce": 1
+  },
+  "B-before-return-html-revoke": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": 403,
+    "headers": {
+     "content-type": null,
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "ticketState": "revoked",
+   "consumed": false
+  },
+  "B-before-return-html-expire": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": 410,
+    "headers": {
+     "content-type": null,
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "ticketState": "expired",
+   "consumed": false
+  },
+  "B-before-return-rsc-revoke": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": 403,
+    "headers": {
+     "content-type": null,
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "ticketState": "revoked",
+   "consumed": false
+  },
+  "B-before-return-rsc-expire": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": 410,
+    "headers": {
+     "content-type": null,
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "ticketState": "expired",
+   "consumed": false
+  },
+  "B-before-return-post-revoke": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": 403,
+    "headers": {
+     "content-type": null,
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "ticketState": "revoked",
+   "consumed": false
+  },
+  "B-before-return-post-expire": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": 410,
+    "headers": {
+     "content-type": null,
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "ticketState": "expired",
+   "consumed": false
+  },
+  "C-first-pull-html-revoke": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": null,
+    "headers": null,
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "request-error:ECONNRESET",
+    "protectedMarkers": 0
+   },
+   "ticketState": "revoked",
+   "consumed": false
+  },
+  "C-first-pull-html-expire": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": null,
+    "headers": null,
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "request-error:ECONNRESET",
+    "protectedMarkers": 0
+   },
+   "ticketState": "expired",
+   "consumed": false
+  },
+  "C-first-pull-rsc-revoke": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": null,
+    "headers": null,
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "request-error:ECONNRESET",
+    "protectedMarkers": 0
+   },
+   "ticketState": "revoked",
+   "consumed": false
+  },
+  "C-first-pull-rsc-expire": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": null,
+    "headers": null,
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "request-error:ECONNRESET",
+    "protectedMarkers": 0
+   },
+   "ticketState": "expired",
+   "consumed": false
+  },
+  "C-first-pull-post-revoke": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": null,
+    "headers": null,
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "request-error:ECONNRESET",
+    "protectedMarkers": 0
+   },
+   "ticketState": "revoked",
+   "consumed": false
+  },
+  "C-first-pull-post-expire": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": null,
+    "headers": null,
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "end": "request-error:ECONNRESET",
+    "protectedMarkers": 0
+   },
+   "ticketState": "expired",
+   "consumed": false
+  },
+  "D-slow-html-512KB-revoke": {
+   "bodyBytes": 524288,
+   "atPause": {
+    "clientBytes": 65529,
+    "serverEnqueued": 524288,
+    "streamClosed": true,
+    "afterRun": true
+   },
+   "afterRevoke": {
+    "clientBytes": 65529,
+    "serverEnqueued": 524288,
+    "stopObserved": false
+   },
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 524288,
+    "sha256": "b4ad95b7686a8a31acbb4d626ac49c86780022521f29e132bb20476496ecdf7f",
+    "end": "end",
+    "protectedMarkers": 8
+   },
+   "observedAfterResume": 458759,
+   "serverEnqueuedFinal": 524288,
+   "serverStop": null
+  },
+  "D-slow-html-512KB-no-revoke": {
+   "bodyBytes": 524288,
+   "atPause": {
+    "clientBytes": 65529,
+    "serverEnqueued": 524288,
+    "streamClosed": true,
+    "afterRun": true
+   },
+   "afterRevoke": null,
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 524288,
+    "sha256": "a48ef35b7a39bd1e130fe28a172b4289a3822e30c16f9af37dd02bc8303d3a57",
+    "end": "end",
+    "protectedMarkers": 8
+   },
+   "observedAfterResume": 458759,
+   "serverEnqueuedFinal": 524288,
+   "serverStop": null
+  },
+  "D-slow-html-4MB-revoke": {
+   "bodyBytes": 4194304,
+   "atPause": {
+    "clientBytes": 65529,
+    "serverEnqueued": 655360,
+    "streamClosed": false,
+    "afterRun": false
+   },
+   "afterRevoke": {
+    "clientBytes": 65529,
+    "serverEnqueued": 655360,
+    "stopObserved": false
+   },
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 655360,
+    "sha256": "0d2ed2a6b06dda588f6d68adfa0cf60040eac933e7e70a50e0911ae27ca4c7aa",
+    "end": "aborted",
+    "protectedMarkers": 10
+   },
+   "observedAfterResume": 589831,
+   "serverEnqueuedFinal": 655360,
+   "serverStop": "stream:stop:revoked"
+  },
+  "D-slow-html-4MB-no-revoke": {
+   "bodyBytes": 4194304,
+   "atPause": {
+    "clientBytes": 65529,
+    "serverEnqueued": 655360,
+    "streamClosed": false,
+    "afterRun": false
+   },
+   "afterRevoke": null,
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 4194304,
+    "sha256": "8822e24c9fbde2c128d80d448b719969b412eb2a1a1cde3126cc61e7d63e412c",
+    "end": "end",
+    "protectedMarkers": 64
+   },
+   "observedAfterResume": 4128775,
+   "serverEnqueuedFinal": 4194304,
+   "serverStop": null
+  },
+  "D-slow-post-512KB-revoke": {
+   "bodyBytes": 524288,
+   "atPause": {
+    "clientBytes": 65529,
+    "serverEnqueued": 524288,
+    "streamClosed": true,
+    "afterRun": true
+   },
+   "afterRevoke": {
+    "clientBytes": 65529,
+    "serverEnqueued": 524288,
+    "stopObserved": false
+   },
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "application/json; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 524288,
+    "sha256": "cf563f90dd77170136d1bea9319258153046f3be0c8159aaa2c3fceb4c002235",
+    "end": "end",
+    "protectedMarkers": 8
+   },
+   "observedAfterResume": 458759,
+   "serverEnqueuedFinal": 524288,
+   "serverStop": null
+  },
+  "D-slow-post-512KB-no-revoke": {
+   "bodyBytes": 524288,
+   "atPause": {
+    "clientBytes": 65529,
+    "serverEnqueued": 524288,
+    "streamClosed": true,
+    "afterRun": true
+   },
+   "afterRevoke": null,
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "application/json; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 524288,
+    "sha256": "8d97192e65d56bf4d0084a0e9b1cdb4c34a90f6887f9ff273a1888661fb79521",
+    "end": "end",
+    "protectedMarkers": 8
+   },
+   "observedAfterResume": 458759,
+   "serverEnqueuedFinal": 524288,
+   "serverStop": null
+  },
+  "D-slow-post-4MB-revoke": {
+   "bodyBytes": 4194304,
+   "atPause": {
+    "clientBytes": 65529,
+    "serverEnqueued": 655360,
+    "streamClosed": false,
+    "afterRun": false
+   },
+   "afterRevoke": {
+    "clientBytes": 65529,
+    "serverEnqueued": 655360,
+    "stopObserved": false
+   },
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "application/json; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 655360,
+    "sha256": "f2dbbfd3cb62036b5cb0b6f888836b33f6cc77e1bce57d5010f05e13f4b68e3d",
+    "end": "aborted",
+    "protectedMarkers": 10
+   },
+   "observedAfterResume": 589831,
+   "serverEnqueuedFinal": 655360,
+   "serverStop": "stream:stop:revoked"
+  },
+  "D-slow-post-4MB-no-revoke": {
+   "bodyBytes": 4194304,
+   "atPause": {
+    "clientBytes": 65529,
+    "serverEnqueued": 655360,
+    "streamClosed": false,
+    "afterRun": false
+   },
+   "afterRevoke": null,
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "application/json; charset=utf-8",
+     "cache-control": "private, no-store",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 4194304,
+    "sha256": "b7cb6ff432f71832b56f0653f957910ca47fa83f7f0d4d7cbd61495f5c1bfcc0",
+    "end": "end",
+    "protectedMarkers": 64
+   },
+   "observedAfterResume": 4128775,
+   "serverEnqueuedFinal": 4194304,
+   "serverStop": null
+  },
+  "E-cancel-rsc": {
+   "clientBytes": 65529,
+   "end": "aborted",
+   "enqueuedAtDestroy": 655360,
+   "enqueuedFinal": 655360,
+   "observed": [
+    "request:abort",
+    "after:run",
+    "stream:cancel"
+   ]
+  },
+  "E-cancel-post": {
+   "clientBytes": 65529,
+   "end": "aborted",
+   "enqueuedAtDestroy": 655360,
+   "enqueuedFinal": 655360,
+   "observed": [
+    "request:abort",
+    "after:run",
+    "stream:cancel"
+   ]
+  },
+  "F-page-render-hold-revoke": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": 404,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 6109,
+    "sha256": "5889a5e09e4ab500409e170848bff74a0b15f8c1eec3ed93bb8d708f623d7e36",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "ticketState": "revoked"
+  },
+  "F-page-render-hold-expire": {
+   "waiting": {
+    "status": null,
+    "headersReceived": false,
+    "bytes": 0
+   },
+   "final": {
+    "status": 404,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 6109,
+    "sha256": "0f96dcb01fe0f49dae4a112a8458d9925d350c4b3901797fe9394c6690434099",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "ticketState": "expired"
+  },
+  "F-page-html": {
+   "first": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 6545,
+    "sha256": "7e7e014c10120c78840cbf981da3ee8f926144c4696bb992d777e73ddda82848",
+    "end": "end",
+    "protectedMarkers": 2
+   },
+   "reuse": {
+    "status": 404,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 6109,
+    "sha256": "52ba8f84b5412a7cef5ba988642800c643a308f68f50e6df3692847a0f71ee6d",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "consumed": 1
+  },
+  "F-page-rsc": {
+   "firstHop": {
+    "status": 307,
+    "location": "/t315/page?ticket=<id>&_rsc"
+   },
+   "followed": {
+    "location": "/t315/page?ticket=<id>&_rsc",
+    "status": 200,
+    "headers": {
+     "content-type": "text/x-component",
+     "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 3400,
+    "sha256": "367d70825880b2af8839b93f612b259e7c0716891bc0f7bc8acb06978c537234",
+    "end": "end",
+    "protectedMarkers": 1
+   },
+   "ticketState": "consumed",
+   "renderConsumed": 1
+  },
+  "F-page-prefetch-default": {
+   "firstHop": {
+    "status": 307,
+    "location": "/t315/page?ticket=<id>&_rsc=HEAvJdHAQJrUAe2K"
+   },
+   "followed": {
+    "location": "/t315/page?ticket=<id>&_rsc=HEAvJdHAQJrUAe2K",
+    "status": 200,
+    "headers": {
+     "content-type": "text/x-component",
+     "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 277,
+    "sha256": "474de4bd80c341f917fb3dfb7aae59deb68a8702779916560c7af9e872f368cf",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "ticketState": "issued",
+   "renderConsumed": 0
+  },
+  "F-page-revoke-after-render-3MB": {
+   "clientBytesAtRevoke": 65016,
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 6006691,
+    "sha256": "f3c3df32203d884c8244d3abd5d455a10560ca344918922106b5ba1ec3798afc",
+    "end": "end",
+    "protectedMarkers": 2
+   },
+   "yBlockOccurrences": 2,
+   "htmlOpenTags": 1,
+   "flightScripts": 7
+  },
+  "G-suspense-revoke": {
+   "waiting": {
+    "status": 200,
+    "headersReceived": true,
+    "bytes": 6780,
+    "shell": 2,
+    "loading": 2,
+    "protectedMarkers": 0
+   },
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 7802,
+    "sha256": "85ac74316b219d8957f19e6bc53ee59e8a458f10645af4552ca3029eb3235cd1",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "withheld": 2,
+   "shell": 2
+  },
+  "G-suspense-expire": {
+   "waiting": {
+    "status": 200,
+    "headersReceived": true,
+    "bytes": 6780,
+    "shell": 2,
+    "loading": 2,
+    "protectedMarkers": 0
+   },
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 7802,
+    "sha256": "8a377728cd232378cb78fe91b45ad19465ca78a90fc926b2da41bd162988a88d",
+    "end": "end",
+    "protectedMarkers": 0
+   },
+   "withheld": 2,
+   "shell": 2
+  },
+  "G-suspense-none": {
+   "waiting": null,
+   "final": {
+    "status": 200,
+    "headers": {
+     "content-type": "text/html; charset=utf-8",
+     "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+     "content-length": null,
+     "transfer-encoding": "chunked",
+     "location": null
+    },
+    "bytes": 6799,
+    "sha256": "906720b8bf696badae4e97c2384c92b852d0c425ee664527151bbb3c18ca8d1a",
+    "end": "end",
+    "protectedMarkers": 2
+   },
+   "withheld": 0,
+   "shell": 2
+  }
+ }
+}

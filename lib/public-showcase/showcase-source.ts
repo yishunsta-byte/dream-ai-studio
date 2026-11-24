@@ -5,6 +5,7 @@
 // 공급원 선택은 아래 SHOWCASE_SOURCE 하나뿐이다. 운영은 명시적 예시 모드다(공개 승인 저장소 미개통).
 // 환경변수·요청 값으로 고르는 경로와 시험용 공개 우회는 두지 않는다. 합성 시험은 격리 사본·시험 주입으로만 한다.
 import "server-only";
+import { isPlaybackExtension, playbackFormats } from "./playback-path";
 import { coverPath, isCoverGeneration, isCoverSlug } from "@/lib/public-showcase/cover-path";
 
 // DB는 정렬된 상위 최대 25행을 준다. 25번째는 "더 있음" 확인용이며 같은 계약으로 검증한 뒤 상위 24건만 쓴다.
@@ -69,7 +70,7 @@ export function readApprovedSnapshot(value: unknown): ApprovedSnapshot {
   const ids: string[] = [];
   let previous: { ms: number; slug: string } | null = null;
   for (const row of rows) {
-    if (!isPlainObject(row) || !exactKeys(row, ROW_KEYS)) return contract();
+    if (!isPlainObject(row) || !(exactKeys(row, ROW_KEYS) || exactKeys(row, ["approvedMs", "display", "generation", "media", "slug"]))) return contract();
     const { slug, generation, display } = row;
     if (!isCoverSlug(slug) || !isCoverGeneration(generation)) return contract();
     const approvedMs = epochMs(row.approvedMs);
@@ -78,11 +79,18 @@ export function readApprovedSnapshot(value: unknown): ApprovedSnapshot {
     if (previous && (approvedMs > previous.ms || (approvedMs === previous.ms && !(slug > previous.slug)))) return contract();
     previous = { ms: approvedMs, slug };
     if (!isPlainObject(display) || !exactKeys(display, DISPLAY_KEYS)) return contract();
+    let media = null;
+    if (row.media !== null && row.media !== undefined) {
+      if (!isPlainObject(row.media) || !exactKeys(row.media, ["ext", "kind"])) return contract();
+      const { ext, kind } = row.media;
+      if (!isPlaybackExtension(ext) || playbackFormats[ext].kind !== kind) continue;
+      media = Object.freeze({ kind, src: `/media/public/${slug}/${generation}/play.${ext}` });
+    }
     records.push(Object.freeze({
       id: slug,
       // 활성 행은 T-253 발행 명령이 동일 소유자·권리 근거·완료 사본을 확인한 뒤에만 생긴다.
       publication: Object.freeze({ state: "published", approvedAt: new Date(approvedMs).toISOString(), rightsConfirmed: true }),
-      artifact: Object.freeze({ state: "complete" }),
+      artifact: Object.freeze({ state: "complete", ...(media && { media }) }),
       display: Object.freeze({
         kind: display.kind, title: display.title, subtitle: display.subtitle, creator: display.creator,
         genre: display.genre, format: display.format, description: display.description,

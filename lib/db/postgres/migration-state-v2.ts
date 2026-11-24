@@ -1441,11 +1441,18 @@ const complete4: CatalogDescriptor = Object.fromEntries(Object.keys(complete3).m
 freezeDescriptor(complete3); freezeDescriptor(complete4);
 export const postgresCatalogDescriptorsV2 = Object.freeze({ 3: complete3, 4: complete4 });
 
+// PG17 records these table NOT NULL requirements in pg_attribute only.
+// Compare the complete column descriptor, including attnotnull, on both majors.
+export const postgresSchema3Pg17Catalog: CatalogDescriptor = Object.freeze({
+  ...complete3,
+  constraints: Object.freeze(complete3.constraints.filter(row => row.contype !== "n")),
+});
 
 export async function inspectPostgresMigrationStateV2(client: Reader, options: {
-  version: unknown; database: string; username: string; port: number;
+  version: unknown; targetVersion?: 3 | 4; database: string; username: string; port: number;
 }) {
   const version = requirePostgresSchemaVersionV2(options.version);
+  const targetVersion = options.targetVersion ?? version;
   const expected = Object.freeze({ database: options.database, username: options.username, port: options.port });
   if (typeof expected.database !== "string" || !expected.database || typeof expected.username !== "string" || !expected.username ||
     !Number.isInteger(expected.port) || expected.port < 1 || expected.port > 65535) throw new PostgresMigrationError("MIGRATION_TARGET");
@@ -1468,7 +1475,10 @@ export async function inspectPostgresMigrationStateV2(client: Reader, options: {
     // Inspect native catalog metadata before reading the journal as a table.
     // An unknown history view/policy/owner must not execute as trusted history.
     const observed = canonicalCatalog(await readPostgresCatalogV2(client));
-    const catalogVersion = observed === canonicalCatalog(postgresCatalogDescriptorsV2[3]) ? 3
+    // A schema 4 apply also inspects the schema 3 prefix. Keep its existing comparison.
+    const expectedSchema3 = version === 3 && targetVersion === 3 && Math.floor(identity.version / 10_000) === 17
+      ? postgresSchema3Pg17Catalog : postgresCatalogDescriptorsV2[3];
+    const catalogVersion = observed === canonicalCatalog(expectedSchema3) ? 3
       : observed === canonicalCatalog(postgresCatalogDescriptorsV2[4]) ? 4 : null;
     if (!catalogVersion) throw new PostgresMigrationError("MIGRATION_STATE");
     const history = (await client.query("SELECT ordinal,id,checksum FROM dream_migrations.history ORDER BY ordinal")).rows;

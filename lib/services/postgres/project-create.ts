@@ -1,7 +1,7 @@
 import "server-only";
 import type { Pool } from "pg";
 import { v7 } from "uuid";
-import { isVerifiedActor, type VerifiedActor } from "@/lib/db/postgres/types";
+import { isVerifiedActor, type ActorTransaction, type VerifiedActor } from "@/lib/db/postgres/types";
 import { withActorTransaction } from "@/lib/db/postgres/transaction";
 import { encodeJson, jsonObject } from "@/lib/db/json";
 import { stageOrder } from "@/lib/domain/stages";
@@ -9,11 +9,17 @@ import { validateProjectInputs, type ProjectInputErrors } from "@/lib/menus/inpu
 import { menuSnapshotSchema } from "@/lib/menus/snapshot";
 import { postgresProjectCreateRepository, type ProjectCreateAsset } from "@/lib/repo/postgres/project-create";
 
-type Code = "AUTH_REQUIRED" | "INVALID_INPUT" | "STAGE_LOCKED" | "PROJECT_CREATE_UNAVAILABLE";
+type Code = "AUTH_REQUIRED" | "INVALID_INPUT" | "STAGE_LOCKED" | "REQUEST_CONFLICT" | "PROJECT_CREATE_UNAVAILABLE";
+export type ProjectCreateHooks = Readonly<{
+  before: (tx: ActorTransaction, input: Readonly<{ menuId: string; inputsJson: string; snapshotJson: string }>) =>
+    Promise<{ kind: "create" } | { kind: "replay"; projectId: string } | { kind: "conflict" } | { kind: "asset-not-verified" }>;
+  after: (tx: ActorTransaction, projectId: string) => Promise<void>;
+}>;
 export type ProjectCreateError = Error & Readonly<{ code: Code; status: number; errors?: Readonly<ProjectInputErrors> }>;
 const issued = new WeakSet<object>();
 function failure(code: Code, errors?: ProjectInputErrors): ProjectCreateError {
-  const error = Object.assign(new Error(code), { code, status: code === "AUTH_REQUIRED" ? 401 : code === "INVALID_INPUT" ? 400 : code === "STAGE_LOCKED" ? 409 : 503,
+  const error = Object.assign(new Error(code), { code, status: code === "AUTH_REQUIRED" ? 401 : code === "INVALID_INPUT" ? 400 :
+    code === "STAGE_LOCKED" || code === "REQUEST_CONFLICT" ? 409 : 503,
     ...(errors ? { errors: Object.freeze({ ...errors }) } : {}) });
   issued.add(error); return Object.freeze(error);
 }
@@ -26,6 +32,8 @@ export function isProjectCreateError(error: unknown): error is ProjectCreateErro
 // SQLite, storage provider or Auth resolver is imported on this path.
 export function postgresProjectCreate(pool: Pick<Pool, "connect">, dependencies: Readonly<{
   assetAvailable: (asset: ProjectCreateAsset, actor: VerifiedActor) => Promise<boolean> | boolean;
+  // Server-only extension. Both callbacks run in the creation transaction.
+  hooks?: ProjectCreateHooks;
 }>) {
   return {
     async create(actor: VerifiedActor, menuId: string, input: unknown, serverSnapshot: unknown): Promise<string> {
@@ -42,6 +50,14 @@ export function postgresProjectCreate(pool: Pick<Pool, "connect">, dependencies:
       const snapshotJson = encodeJson(menuSnapshotSchema, snapshot), inputsJson = encodeJson(jsonObject, values);
       try {
         return await withActorTransaction(pool, actor, async tx => {
+          if (dependencies.hooks) {
+            const decision = await dependencies.hooks.before(tx, { menuId, inputsJson, snapshotJson });
+            if (decision.kind === "replay") return decision.projectId;
+            if (decision.kind === "conflict") throw failure("REQUEST_CONFLICT");
+            if (decision.kind === "asset-not-verified") {
+              throw failure("INVALID_INPUT", { productAssets: "현재 검증이 완료된 제품 이미지를 선택해 주세요." });
+            }
+          }
           const repo = postgresProjectCreateRepository(tx);
           const assets: { id: string; purpose: string }[] = [], characters: string[] = [];
           for (const field of [...snapshot.commonInputs, ...snapshot.menu.inputs]) {
@@ -67,6 +83,7 @@ export function postgresProjectCreate(pool: Pick<Pool, "connect">, dependencies:
           for (const link of assets) await repo.linkAsset(id, link.id, link.purpose);
           for (const character of characters) await repo.linkCharacter(id, character);
           await repo.log(v7(), id, encodeJson(jsonObject, { menuId, templateVersion: snapshot.templateVersion, contentRevision: 1 }), now);
+          await dependencies.hooks?.after(tx, id);
           return id;
         }, { preserveDomainError: isProjectCreateError });
       } catch (error) {

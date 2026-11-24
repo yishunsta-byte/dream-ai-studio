@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'unsafe-inline'; font-src 'self'; form-action 'none'; connect-src 'none'">
+  <title>스펙트럼 랩 의미 분석 검토 · DREAM SCREEN</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .prototype .topbar { position: static; }
+    .semantic-main { width: min(1180px, calc(100% - 36px)); margin: 0 auto; padding: 22px 0 48px; }
+    .semantic-hero {
+      margin-bottom: 14px;
+      min-height: 145px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: repeating-linear-gradient(90deg, transparent 0 51px, #80e8d01a 52px 53px), linear-gradient(120deg, #183334, #102433 72%, #10212a);
+    }
+    .semantic-hero h1 { margin: 7px 0; font-size: clamp(2rem, 4.6vw, 3.5rem); }
+    .semantic-hero p:last-child { color: var(--muted); }
+    .semantic-grid { display: grid; grid-template-columns: minmax(0, .72fr) minmax(0, 1.28fr); gap: 14px; align-items: start; }
+    .semantic-grid > .panel { min-width: 0; }
+    .semantic-main select { width: 100%; min-height: 44px; margin-top: 5px; padding: 7px; color: var(--ink); background: var(--inset); border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+    .example-art {
+      display: flex;
+      align-items: flex-end;
+      min-height: 105px;
+      margin-top: 12px;
+      padding: 11px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-size: .79rem;
+      background: radial-gradient(circle at 61% 42%, #ffb188 0 8%, transparent 9%), radial-gradient(ellipse at 29% 65%, #75cbb0b0 0 24%, transparent 25%), linear-gradient(130deg, #17232e, #2c4c52);
+    }
+    [data-sample="clip"] .example-art { background: repeating-linear-gradient(90deg, transparent 0 59px, #6a93a13b 60px 61px), linear-gradient(145deg, #284052, #18322f); }
+    .review-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 11px 0; }
+    .review-tabs .switch, .review-card summary { min-height: 44px; }
+    .review-pane { padding: 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--inset); }
+    .review-pane h3, .review-card h3 { margin-bottom: 6px; font-size: 1.03rem; }
+    .meaning-list { margin: 0; padding: 0; list-style: none; }
+    .meaning-list li { padding: 7px 0; border-bottom: 1px solid var(--line); }
+    .meaning-list li:last-child { border: 0; }
+    .meaning-list strong { color: var(--accent); font-size: .86rem; }
+    .meaning-list p { margin-top: 3px; font-size: .86rem; }
+    .meaning-list small { color: var(--muted); }
+    .semantic-publish { margin-top: 14px; }
+    .semantic-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .semantic-fields > label { min-width: 0; }
+    .semantic-fields input, .semantic-fields textarea { display: block; margin-top: 5px; font-weight: 500; }
+    .semantic-previews { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; margin-top: 13px; }
+    .review-card { min-width: 0; border: 1px solid var(--line); border-radius: 9px; background: var(--inset); }
+    .review-card summary { padding: 10px 12px; color: var(--accent); font-weight: 750; cursor: pointer; }
+    .review-card h4 { margin: 12px 0 5px; }
+    .review-card-body { padding: 4px 12px 12px; overflow-wrap: anywhere; }
+    .semantic-preview-text { white-space: pre-wrap; }
+    .semantic-consent { display: flex; align-items: center; gap: 9px; min-height: 44px; margin: 12px 0 5px; }
+    .semantic-consent input { flex: none; width: 19px; height: 19px; margin: 0; accent-color: var(--accent); }
+    .semantic-dialog { width: min(440px, calc(100% - 28px)); color: var(--ink); }
+    .semantic-dialog::backdrop { background: #071016d4; }
+    .semantic-dialog p { margin: 9px 0 15px; }
+    @media (max-width: 700px) {
+      .semantic-main { width: min(1180px, calc(100% - 26px)); padding-top: 14px; }
+      .semantic-hero { min-height: auto; padding: 14px; }
+      .semantic-grid, .semantic-fields, .semantic-previews { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+<body class="prototype" data-view="spectrum" data-sample="image">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span>DREAM <strong>SCREEN</strong><span class="brand-context">운영 관리자</span></div>
+    <span class="state">합성 UI 검토</span>
+  </header>
+
+  <main class="semantic-main">
+    <header class="semantic-hero">
+      <p class="overline">SPECTRUM LAB</p>
+      <h1>의미 분석 공개 검토</h1>
+      <p>합성 결과를 선택하고 근거와 웹 공개 문구를 확인해 보세요.</p>
+    </header>
+
+    <div class="semantic-grid">
+      <section class="panel" aria-labelledby="sample-heading">
+        <div class="panel-head"><div><p class="overline">SOURCE</p><h2 id="sample-heading">합성 소스</h2></div></div>
+        <label for="sample-choice">검토할 결과</label>
+        <select id="sample-choice">
+          <option value="image">합성 이미지 · 빨간 컵</option>
+          <option value="clip">합성 영상 · 컵을 내려놓는 장면</option>
+        </select>
+        <div class="example-art" id="sample-description">한 사람과 빨간 컵이 보이는 연출 이미지</div>
+      </section>
+
+      <section class="panel" aria-labelledby="analysis-heading">
+        <div class="panel-head"><div><p class="overline">ANALYSIS</p><h2 id="analysis-heading">분석 결과</h2></div></div>
+        <div class="review-tabs" role="group" aria-label="결과 보기">
+          <button type="button" class="switch" data-pane="observations" aria-controls="observations" aria-pressed="true">관찰 근거</button>
+          <button type="button" class="switch" data-pane="semantics" aria-controls="semantics" aria-pressed="false">의미 분석</button>
+          <button type="button" class="switch" data-pane="generated" aria-controls="generated" aria-pressed="false">생성 프롬프트</button>
+        </div>
+        <section class="review-pane" id="observations" aria-labelledby="observations-heading">
+          <h3 id="observations-heading">관찰 근거</h3><p id="measurement"></p>
+        </section>
+        <section class="review-pane" id="semantics" aria-labelledby="semantics-heading" hidden>
+          <h3 id="semantics-heading">의미 분석</h3><ul id="meaning-results" class="meaning-list"></ul>
+        </section>
+        <section class="review-pane" id="generated" aria-labelledby="generated-heading" hidden>
+          <h3 id="generated-heading">분석으로 생성한 창작 초안</h3><p id="original-prompt"></p>
+        </section>
+      </section>
+    </div>
+
+    <form id="review-form" class="panel semantic-publish" aria-labelledby="publish-heading">
+      <div class="panel-head"><div><p class="overline">PUBLICATION</p><h2 id="publish-heading">공개 준비</h2></div></div>
+      <div class="semantic-fields">
+        <label for="public-title">공개 제목<input id="public-title" required maxlength="80"></label>
+        <label for="public-summary">공개 요약<textarea id="public-summary" required maxlength="600" rows="3"></textarea></label>
+        <label for="public-prompt">공개 프롬프트<textarea id="public-prompt" required maxlength="2000" rows="3"></textarea></label>
+      </div>
+      <div class="semantic-previews">
+        <details id="web-preview" class="review-card">
+          <summary id="web-toggle">웹 공개 미리보기</summary>
+          <div class="review-card-body">
+            <p class="hint"><span id="web-media"></span> · 공개 시각은 공개 후 표시</p>
+            <h3 id="web-title"></h3>
+            <p class="semantic-preview-text" id="web-summary"></p>
+            <h4>생성 프롬프트</h4><p class="semantic-preview-text" id="web-prompt"></p>
+          </div>
+        </details>
+        <details id="admin-preview" class="review-card">
+          <summary id="admin-toggle">관리자용 근거 보기</summary>
+          <div class="review-card-body">
+            <p class="hint">관리자 화면에서만 표시</p>
+            <ul id="admin-evidence" class="meaning-list"></ul>
+          </div>
+        </details>
+      </div>
+      <label class="semantic-consent" for="public-review-consent"><input id="public-review-consent" type="checkbox"> 이 결과를 공개할 권리를 확인했고, 공개 결과 페이지에 표시하는 데 동의해요.</label>
+      <button class="button primary" id="review-publish" type="submit" disabled>공개하기</button>
+      <p class="hint" id="review-status" role="status"></p>
+    </form>
+  </main>
+
+  <dialog id="preview-dialog" class="panel semantic-dialog" aria-labelledby="dialog-title">
+    <h2 id="dialog-title">예시 공개 상태</h2>
+    <p>이 목업에서 공개 상태를 확인했어요.</p>
+    <button id="close-dialog" class="button primary" type="button" autofocus>닫기</button>
+  </dialog>
+
+  <script>
+    const samples = {
+      image: {
+        media: "이미지", description: "한 사람과 빨간 컵이 보이는 연출 이미지",
+        measurement: "중앙 영역의 주요 색과 밝기 분포를 기록한 합성 예시예요.",
+        title: "빨간 컵을 잡은 손", summary: "관찰 · 사람이 빨간 컵의 손잡이를 잡고 있어요.\n추정 · 식사 공간일 수 있어요.\n미확인 · 실제로 마시는지는 확인되지 않았어요.",
+        prompt: "목재 테이블 위 빨간 컵과 손을 가까이 담고 배경을 부드럽게 흐리게 연출한다.",
+        evidence: [
+          ["관찰 · 인물", "한 사람이 화면 왼쪽에 보여요.", "왼쪽 영역"],
+          ["관찰 · 사물과 행동", "손으로 빨간 컵의 손잡이를 잡고 있어요.", "중앙 영역"],
+          ["추정 · 맥락", "식사 공간일 수 있어요.", "컵과 목재 테이블"],
+          ["미확인 · 행동", "실제로 마시는지는 확인되지 않았어요.", "정지 화면"],
+        ],
+      },
+      clip: {
+        media: "영상", description: "컵을 테이블에 내려놓는 장면의 합성 타임코드",
+        measurement: "00:02.100 및 00:04.000의 디코딩 프레임을 비교한 합성 예시예요.",
+        title: "컵을 내려놓는 장면", summary: "관찰 · 사람이 컵을 들다가 테이블에 놓아요.\n미확인 · 동작의 목적은 확인되지 않았어요.",
+        prompt: "손과 컵을 따라가다 컵이 테이블에 닿는 순간에 컷을 전환한다.",
+        evidence: [
+          ["관찰 · 행동", "손에 컵을 들고 있어요.", "00:02.100"],
+          ["관찰 · 행동", "컵이 테이블 위에 놓여 있어요.", "00:04.000"],
+          ["추정 · 맥락", "테이블을 정리하는 중일 수 있어요.", "컵을 내려놓는 두 프레임"],
+          ["미확인 · 목적", "컵을 놓은 이유는 확인되지 않았어요.", "두 프레임"],
+        ],
+      },
+    };
+
+    const get = id => document.getElementById(id);
+    const picker = get("sample-choice");
+    const consent = get("public-review-consent");
+    const publish = get("review-publish");
+    const dialog = get("preview-dialog");
+    const fields = ["title", "summary", "prompt"];
+
+    function fillEvidence(list, evidence) {
+      list.replaceChildren(...evidence.map(([label, text, where]) => {
+        const row = document.createElement("li");
+        const heading = document.createElement("strong");
+        const copy = document.createElement("p");
+        const source = document.createElement("small");
+        heading.textContent = label;
+        copy.textContent = text;
+        source.textContent = where;
+        row.append(heading, copy, source);
+        return row;
+      }));
+    }
+
+    function previewEdits() {
+      let ready = true;
+      for (const field of fields) {
+        const value = get(`public-${field}`).value.trim();
+        get(`web-${field}`).textContent = value;
+        ready &&= Boolean(value);
+      }
+      publish.disabled = !consent.checked || !ready;
+    }
+
+    function resetConsent() {
+      consent.checked = false;
+      get("review-status").textContent = "";
+      previewEdits();
+    }
+
+    function changeSample() {
+      const sample = samples[picker.value];
+      document.body.dataset.sample = picker.value;
+      get("sample-description").textContent = sample.description;
+      get("measurement").textContent = sample.measurement;
+      get("original-prompt").textContent = sample.prompt;
+      get("web-media").textContent = sample.media;
+      fillEvidence(get("meaning-results"), sample.evidence);
+      fillEvidence(get("admin-evidence"), sample.evidence);
+      for (const field of fields) get(`public-${field}`).value = sample[field];
+      resetConsent();
+    }
+
+    const views = [...document.querySelectorAll(".review-tabs button")];
+    for (const button of views) {
+      button.addEventListener("click", () => {
+        for (const view of views) {
+          const selected = view === button;
+          view.setAttribute("aria-pressed", String(selected));
+          get(view.dataset.pane).hidden = !selected;
+        }
+      });
+    }
+    picker.addEventListener("change", changeSample);
+    consent.addEventListener("change", previewEdits);
+    for (const field of fields) get(`public-${field}`).addEventListener("input", resetConsent);
+    get("review-form").addEventListener("submit", event => {
+      event.preventDefault();
+      if (!publish.disabled) dialog.showModal();
+    });
+    get("close-dialog").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("close", () => {
+      resetConsent();
+      get("review-status").textContent = "예시 공개 확인을 마쳤어요.";
+      consent.focus();
+    });
+    changeSample();
+  </script>
+</body>
+</html>

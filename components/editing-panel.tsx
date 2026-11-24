@@ -1,4 +1,5 @@
 "use client";
+import { sceneIntervals } from "@/lib/edit/subtitle-scenes";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
@@ -39,7 +40,7 @@ export async function finishingRequest(projectId:string,revision:number,action:s
 // what was changed after sending is listed for the person, never laid over it (no silent rebase, no merge), and the
 // whole last state of the screen (draft, typed time fields, selection, versions) stays available as a recovery file
 // to copy or download until the person closes it (T-098). The app never saves or applies that file.
-type Handover={owner:symbol;projectId:string;sentFrom:{revision:number;timelineId:string|null;timelineRevision:number|null};sent:Timeline;sentSelectedId:string|null;sentAudioId:string|null;arrived:{revision:number;timelineId:string;timelineRevision:number|null}|null;draft:Timeline;times:TimeState;selectedId:string|null;audioRaw:AudioRawState;audioId:string|null};
+type Handover={previousSubtitle:string|null;owner:symbol;projectId:string;sentFrom:{revision:number;timelineId:string|null;timelineRevision:number|null};sent:Timeline;sentSelectedId:string|null;sentAudioId:string|null;arrived:{revision:number;timelineId:string;timelineRevision:number|null}|null;draft:Timeline;times:TimeState;selectedId:string|null;audioRaw:AudioRawState;audioId:string|null};
 type Recovery={changes:LaterChanges;times:TimeState;selectionChanged:boolean;texts:Timeline["text"];json:string;fromRevision:number|null;ownRevision:number|null;shownRevision:number|null;
  audio:AudioLaterChanges;audioRaw:AudioRawState;audioSelectionChanged:boolean;otherSettings:boolean;clipNames:Record<string,string>};
 let handover:Handover|null=null;
@@ -53,7 +54,11 @@ function Editor({data}:{data:EditingData}){
  const [me]=useState(()=>Symbol("editor"));
  // Taken over from the saving editor of the previous revision (read, not cleared: a thrown-away render may read again).
  const [took]=useState(()=>{const from=handover;if(!from||!from.arrived||from.owner===me||from.projectId!==data.projectId)return null;
-  if(from.arrived.revision===data.revision&&from.arrived.timelineId===data.timelineId)return {...afterSave(from.draft,from.sent,initial),times:from.times,selectedId:from.selectedId,audioRaw:from.audioRaw,audioId:from.audioId,missed:null};
+  if(from.arrived.revision===data.revision&&from.arrived.timelineId===data.timelineId){
+   const subtitle=initial.text.find(layer=>layer.id===from.sentSelectedId&&layer.kind==="subtitle");
+   const receipt=subtitle&&subtitle.content!==from.previousSubtitle&&from.arrived.timelineRevision===data.current?.revision
+    ?{id:subtitle.id,previous:from.previousSubtitle,content:subtitle.content,revision:data.current.revision}:null;
+   return {receipt,...afterSave(from.draft,from.sent,initial),times:from.times,selectedId:from.selectedId,audioRaw:from.audioRaw,audioId:from.audioId,missed:null};}
   // A newer version from elsewhere: shown as it is. Anything done after sending is kept as a recovery file, never applied.
   const changes=laterChanges(from.sent,from.draft),selectionChanged=from.selectedId!==from.sentSelectedId,audio=audioLaterChanges(from.sent,from.draft),audioSelectionChanged=from.audioId!==from.sentAudioId;
   if(!hasLaterChanges(changes)&&!Object.keys(from.times).length&&!selectionChanged&&!hasAudioLaterChanges(audio)&&!Object.keys(from.audioRaw).length&&!audioSelectionChanged)return null;
@@ -63,7 +68,7 @@ function Editor({data}:{data:EditingData}){
   for(const timeline of [from.sent,from.draft])if(timeline.schemaVersion===2)for(const clip of timeline.audio)clipNames[clip.id]=`${ROLE_LABEL[clip.role]} '${titles.get(clip.assetId)??"보관함에 없는 파일"}'`;
   const missed:Recovery={changes,times:from.times,selectionChanged,texts:[...from.draft.text,...from.sent.text],json,fromRevision:from.sentFrom.timelineRevision,ownRevision:from.arrived.timelineRevision,shownRevision:data.current?.revision??null,
    audio,audioRaw:from.audioRaw,audioSelectionChanged,otherSettings:otherThanSound(from.sent,from.draft),clipNames};
-  return {draft:initial,kept:false,times:{},selectedId:from.selectedId,audioRaw:{},audioId:null,missed};});
+  return {receipt:null,draft:initial,kept:false,times:{},selectedId:from.selectedId,audioRaw:{},audioId:null,missed};});
  const [draft,setDraft]=useState<Timeline>(took?.draft??initial),[frameStore]=useState(createFrameStore);
  const [selectedId,setSelectedId]=useState<string|null>(took?.selectedId&&(took.draft.text.some(layer=>layer.id===took.selectedId))?took.selectedId:initial.text[0]?.id??null);
  const [audioRaw,setAudioRaw]=useState<AudioRawState>(took?.audioRaw??{}),[audioId,setAudioId]=useState<string|null>(took?.audioId&&took.draft.schemaVersion===2&&took.draft.audio.some(clip=>clip.id===took.audioId)?took.audioId:null);
@@ -83,6 +88,7 @@ function Editor({data}:{data:EditingData}){
  const dirty=canonicalJson(draft)!==savedJson,timeInvalid=Object.keys(liveTimes).length>0,emptyText=draft.text.some(layer=>!layer.content.trim());
  // T-149: sound fields typed but not valid yet, and problems of the sound part (client-safe rules; the server checks again).
  const liveAudio=useMemo(()=>liveAudioFields(audioRaw,draft),[audioRaw,draft]),audioInvalid=Object.keys(liveAudio).length>0;
+ const unsavedInput=dirty||timeInvalid||audioInvalid;
  const problems=useMemo(()=>audioProblems(draft,data.audioSources),[draft,data.audioSources]),audioBlocked=problemCount(problems)>0;
  const stale=data.stale.length>0,empty=draft.video.filter(clip=>clip.sceneVersionId===null).length,videoFrames=totalFrames(draft.video),limitFrames=textEndLimit(draft.video,data.lengthSec);
  const ordered=draft.video.map(clip=>data.production.scenes.find(scene=>scene.id===clip.sceneId)!).filter(Boolean);
@@ -105,15 +111,15 @@ function Editor({data}:{data:EditingData}){
  const rowSets=useMemo(()=>({changed:new Set(draft.text.filter(layer=>savedText.get(layer.id)!==canonicalJson(layer)).map(layer=>layer.id)),
   unchecked:new Set(Object.entries(warnings).filter(([,warning])=>warning.font!=="ok").map(([id])=>id)),
   timeErrors:new Set(Object.keys(liveTimes).map(key=>key.split(":")[0]))}),[draft.text,savedText,warnings,liveTimes]);
- const scenes=useMemo(()=>draft.video.map((clip,index)=>({startFrame:totalFrames(draft.video.slice(0,index)),label:`장면 ${index+1}`})),[draft.video]);
+ const scenes=useMemo(()=>sceneIntervals(draft.video,new Map(data.production.scenes.map(scene=>[scene.id,scene.title]))),[draft.video,data.production.scenes]);
  const rowFrames=Math.max(limitFrames,videoFrames,30,...draft.text.map(layer=>layer.timing.endFrame));
  // Unsaved changes, or a recovery file not closed yet: the browser asks before a reload or closing the window.
- useEffect(()=>{if(!dirty&&!missed)return;const onLeave=(event:BeforeUnloadEvent)=>{event.preventDefault();};window.addEventListener("beforeunload",onLeave);return ()=>window.removeEventListener("beforeunload",onLeave);},[dirty,missed]);
+ useEffect(()=>{if(!unsavedInput&&!missed)return;const onLeave=(event:BeforeUnloadEvent)=>{event.preventDefault();};window.addEventListener("beforeunload",onLeave);return ()=>window.removeEventListener("beforeunload",onLeave);},[unsavedInput,missed]);
  // Typed text is trimmed when saved; a text whose words did not change keeps its saved bytes (outer spaces too).
  function forSave():Timeline{const saved=new Map(initial.text.map(layer=>[layer.id,layer.content]));return {...draft,text:draft.text.map(layer=>saved.get(layer.id)===layer.content?layer:{...layer,content:layer.content.trim()})};}
  async function save(event?:FormEvent){event?.preventDefault();// Clicks before the screen shows the busy button (double click, Enter + click) send one POST only.
   if(timeInvalid||emptyText||audioInvalid||audioBlocked||busy||posting.current)return;posting.current=true;const sent=draft;setSaving("post");setError("");
-  handover={owner:me,projectId:data.projectId,sentFrom:{revision:data.revision,timelineId:data.timelineId,timelineRevision:data.current?.revision??null},sent,sentSelectedId:selectedId,sentAudioId:audioId,arrived:null,draft,times,selectedId,audioRaw,audioId};
+  handover={previousSubtitle:data.current?initial.text.find(layer=>layer.id===selectedId)?.content??null:null,owner:me,projectId:data.projectId,sentFrom:{revision:data.revision,timelineId:data.timelineId,timelineRevision:data.current?.revision??null},sent,sentSelectedId:selectedId,sentAudioId:audioId,arrived:null,draft,times,selectedId,audioRaw,audioId};
   try{const response=await fetch(`/api/projects/${data.projectId}/timeline`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"save",revision:data.revision,timelineId:data.timelineId,timeline:forSave()})});const result=await response.json();
    // An editor that is gone (the page was left) does nothing with a late answer.
    if(!mounted.current)return;
@@ -134,9 +140,14 @@ function Editor({data}:{data:EditingData}){
   <Callout title="장면 순서·글자·소리 설정을 고치는 화면이에요. 완성 영상은 여기서 만들지 않아요.">문구·모양·순서·소리 설정만 고쳐도 생성 결과와 원본 소리 파일은 그대로 유지해요. 저장하면 새 타임라인 버전과 새 내용 버전이 생기고 검수를 다시 해야 해요. 시간은 1/30초 단위로 저장해요. 음성에 자동으로 맞추지 않아요.</Callout>
   <form ref={formRef} onSubmit={save} className={editorStyles.header}>
    <p ref={statusRef} tabIndex={-1} aria-live="polite">{data.current?<>저장됨 · 타임라인 r{data.current.revision} · <time dateTime={data.current.createdAt}>{new Date(data.current.createdAt).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"})}</time>{sourceLabel[data.current.source]}{kept&&dirty&&" · 저장하는 동안 고친 내용은 아직 저장하지 않았어요."}</>:"아직 저장하지 않은 초안이에요. 저장하면 타임라인 r1이 만들어져요."}</p>
-   {dirty&&<><Badge>저장하지 않은 변경</Badge><Button type="button" variant="ghost" size="sm" disabledReason={busy?"저장이 끝난 뒤 취소할 수 있어요.":undefined} onClick={cancel}>변경 취소</Button></>}
+   {took?.receipt&&took.receipt.id===selectedId&&!saving&&!error&&<section aria-label="방금 저장한 자막">
+    <h3>방금 저장한 자막 · r{took.receipt.revision}</h3>
+    <dl className={editorStyles.comparison}><div><dt>저장 전</dt><dd>{took.receipt.previous??"저장된 자막 없음"}</dd></div>
+     <div><dt>저장 후</dt><dd>{took.receipt.content}</dd></div></dl>
+   </section>}
+   {unsavedInput&&<><Badge>저장하지 않은 변경</Badge><Button type="button" variant="ghost" size="sm" disabledReason={busy?"저장이 끝난 뒤 취소할 수 있어요.":undefined} onClick={cancel}>변경 취소</Button></>}
    <Button type="submit" loading={savingNow} disabledReason={saveReason}>장면·글자·소리 설정 저장</Button>
-   <RenderEntry projectId={data.projectId} dirty={dirty||timeInvalid||audioInvalid||savingNow}/>
+   <RenderEntry projectId={data.projectId} dirty={unsavedInput||savingNow}/>
   </form>
   {data.fromP1&&dirty&&<p className="muted">저장하면 모든 글자 시간이 1/30초 단위로 맞춰져요. 차이는 0.017초 이하예요.</p>}
   {stale&&<Callout title="선택한 장면 결과가 바뀌었어요." tone="warning">저장한 타임라인과 지금 선택이 달라요. 이 화면은 지금 선택으로 보여 줘요. 저장해야 검수로 넘어갈 수 있어요.</Callout>}
@@ -149,7 +160,7 @@ function Editor({data}:{data:EditingData}){
     <div className={styles.mobileOnly}><Callout title="장면 순서·글자 모양·시간은 PC에서 바꿔요.">휴대폰에서는 미리보기를 보고 글자 문구를 고칠 수 있어요.</Callout></div>
    </div></Card>
    <Card><div className="stack"><h2>글자</h2>
-    <TextEditor draft={draft} initial={initial} setDraft={setDraft} selectedId={selectedId} setSelectedId={setSelectedId} fonts={data.fonts} required={data.requiredDisclosures} plannedFrames={data.plannedFrames} videoFrames={videoFrames} limitFrames={limitFrames} aspect={draft.aspect} warnings={warnings} measure={measure} placeCheck={placeCheck} setPlaceCheck={setPlaceCheck} times={times} setTimes={setTimes} controlRef={controlRef} p1Times={data.fromP1?data.p1Times:null}/>
+    <TextEditor frameStore={frameStore} savedRevision={data.current?.revision??null} scenes={scenes} draft={draft} initial={initial} setDraft={setDraft} selectedId={selectedId} setSelectedId={setSelectedId} fonts={data.fonts} required={data.requiredDisclosures} plannedFrames={data.plannedFrames} videoFrames={videoFrames} limitFrames={limitFrames} aspect={draft.aspect} warnings={warnings} measure={measure} placeCheck={placeCheck} setPlaceCheck={setPlaceCheck} times={times} setTimes={setTimes} controlRef={controlRef} p1Times={data.fromP1?data.p1Times:null}/>
    </div></Card>
   </div>
   <div className={styles.pcOnly}><Card><div className="stack"><h2>타임라인</h2>
@@ -159,7 +170,7 @@ function Editor({data}:{data:EditingData}){
   <Card><div className={`stack ${styles.pcOnly}`}><h2>장면 순서</h2>{ordered.map((scene,index)=><div className={styles.order} key={scene.id}><span>{index+1}. {scene.title}{draft.video[index]?.sceneVersionId===null&&<> <Badge>결과 선택 필요</Badge></>}</span><Button variant="ghost" size="sm" disabled={index===0} aria-label={`${scene.title} 위로`} onClick={()=>moveScene(index,-1)}>위로</Button><Button variant="ghost" size="sm" disabled={index===ordered.length-1} aria-label={`${scene.title} 아래로`} onClick={()=>moveScene(index,1)}>아래로</Button></div>)}</div>
    <h2>수동 자막 미리보기 (SRT)</h2><pre className={styles.srt} aria-label="읽기 전용 수동 자막">{(!dirty&&data.savedSrt!==null?data.savedSrt:timelineSrt(draft.text))||"직접 입력한 자막이 없어요."}</pre>{data.fromP1&&<p className="muted">지금 묶음은 P1에서 옮긴 시간 그대로예요. 한 번 저장하면 모든 시간이 1/30초 단위로 맞춰져요.</p>}
    {draft.text.some(layer=>beyondVideo(layer,videoFrames))&&<p className="muted">영상은 {framesToSeconds(videoFrames)}초예요. 영상보다 긴 글자는 자르지 않고 그대로 둬요.</p>}</Card>
-  {data.completed&&!dirty&&!stale?<Link className="action-link" href={`/projects/${data.projectId}/review`}>현재 내용 검수하기</Link>:<Button loading={completing} disabledReason={savingNow?"저장이 끝난 뒤 넘어갈 수 있어요.":dirty||!data.savedId?"글자 설정을 먼저 저장해 주세요.":stale?"지금 선택으로 다시 저장해 주세요.":undefined} onClick={()=>void complete()}>수정 확인 완료 · 검수로</Button>}<Link href={`/projects/${data.projectId}/export`}>이전 편집용 묶음 보기 →</Link>
+  {data.completed&&!unsavedInput&&!stale?<Link className="action-link" href={`/projects/${data.projectId}/review`}>현재 내용 검수하기</Link>:<Button loading={completing} disabledReason={savingNow?"저장이 끝난 뒤 넘어갈 수 있어요.":timeInvalid||audioInvalid?saveReason:dirty||!data.savedId?"편집 내용을 먼저 저장해 주세요.":stale?"지금 선택으로 다시 저장해 주세요.":undefined} onClick={()=>void complete()}>수정 확인 완료 · 검수로</Button>}<Link href={`/projects/${data.projectId}/export`}>이전 편집용 묶음 보기 →</Link>
   <TextMeasure texts={draft.text} aspect={draft.aspect} fonts={data.fonts} onResult={onMeasure}/>
  </div>;
 }

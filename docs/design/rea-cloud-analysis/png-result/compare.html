@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>등록 PNG 분석 결과 · 초안 표시 비교</title>
+  <link rel="icon" href="data:,">
+  <style>
+    @font-face{font-family:Pretendard;src:url('../../../../public/fonts/PretendardVariable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    :root{color-scheme:light;--base:#f2f7f4;--surface:#fff;--ink:#172d37;--muted:#465d63;--line:#bfd4cd;--accent:#086d62;--soft:#e4f2eb;font:16px/1.55 Pretendard,system-ui,sans-serif;color:var(--ink);background:var(--base)}
+    *,*::before,*::after{box-sizing:border-box}body{margin:0;word-break:keep-all;overflow-wrap:anywhere}h1,h2,h3,p,dl,dd,figure{margin:0}button,textarea{font:inherit;color:inherit}button{cursor:pointer}a{color:#075b51}a:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid #9f5e12;outline-offset:3px}
+    .wrap{width:min(1120px,calc(100% - 56px));margin-inline:auto}.brand{background:#193e3c;color:#f2fffb;border-bottom:1px solid #234f48}.brand .wrap{display:flex;align-items:center;gap:10px;min-height:57px}.brand small{margin-left:auto;color:#c8e9dc}.mark{display:grid;place-items:center;width:32px;height:32px;background:#a8ead7;color:#194234;border-radius:8px}.intro{border:1px solid var(--line);border-radius:13px;background:linear-gradient(110deg,#e1f2e9,#f8f6e9);padding:23px 25px;margin:24px 0 14px}.intro h1{font-size:clamp(33px,4.7vw,54px);line-height:1.12;letter-spacing:-.06em}.intro p{margin-top:8px;color:#335850}
+    .card{padding:17px 19px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0}h2{font-size:24px;letter-spacing:-.04em;line-height:1.23}h3{font-size:17px;letter-spacing:-.02em}.small{color:var(--muted);font-size:14px}.evidence{display:grid;grid-template-columns:minmax(106px,.65fr) minmax(0,2.4fr) minmax(0,1.25fr);gap:14px;margin-top:12px;align-items:start}.sample{width:100%;height:83px;border-radius:8px;border:1px solid #944037;background:#ff0000}.evidence figcaption{margin-top:5px}.measure{display:grid;gap:7px}.palette{display:flex;align-items:center;gap:7px;color:#3f5157;font-size:14px}.swatch{width:26px;height:14px;border:1px solid #852323;background:#e02020;border-radius:3px;flex:none}.no-inference{background:#eef6f1;border:1px solid #d5e4da;border-radius:8px;padding:10px 11px}.no-inference p{margin-top:4px}
+    .compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 26px;align-items:start}.proposed{border-color:#8cbea9;background:#f8fcf9}.card-lead{margin:6px 0 13px}.field-label{display:block;font-weight:760;margin-bottom:5px}.field{width:100%;min-height:84px;padding:9px 10px;border:1px solid #a6c3ba;background:#fff;border-radius:8px;resize:vertical}.field[readonly]{background:#edf5ef;color:#26443e}.origin{margin:4px 0 7px}.revision{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.action{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px}.button{min-height:44px;padding:6px 13px;font-weight:750;border:1px solid var(--accent);border-radius:7px;background:var(--accent);color:white}.button:hover:not(:disabled){background:#09594f}.button.secondary{background:#e5f3eb;color:#18584c;border-color:#9abcae}.button.secondary:hover:not(:disabled){background:#d2e8db}.button:disabled{background:#ecf1ee;color:#526661;border-color:#bacac4;cursor:default}.status{color:#275c51;margin-top:8px;font-size:14px}.status:empty{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+    @media(max-width:700px){.wrap{width:calc(100% - 28px)}.intro{margin-top:15px;padding:15px}.card{padding:14px}.evidence{grid-template-columns:minmax(82px,.7fr) minmax(0,1.6fr);gap:10px}.no-inference{grid-column:1/-1}.compare{grid-template-columns:minmax(0,1fr)}}
+  </style>
+</head>
+<body>
+  <header class="brand"><div class="wrap"><span class="mark" aria-hidden="true">✦</span><strong>Dream AI Studio</strong><small>클라우드 작업실</small></div></header>
+  <main class="wrap">
+    <header class="intro"><h1>PNG 분석 결과의 초안 표시</h1><p>같은 시험 PNG와 초안을 사용합니다. 편집한 뒤 각 복사 버튼이 어떤 문구를 복사하는지 확인하세요.</p></header>
+    <section class="card" aria-labelledby="observations-heading">
+      <h2 id="observations-heading">관찰 근거</h2>
+      <div class="evidence">
+        <figure><div class="sample" aria-hidden="true"></div><figcaption class="small">시험 PNG · 16×16</figcaption></figure>
+        <div class="measure">
+          <div><h3>이미지 전체 영역</h3><p class="small">시작 위치 가로 0%, 세로 0% · 너비 100%, 높이 100%</p></div>
+          <p class="palette"><span class="swatch" aria-hidden="true"></span><span>대표 색 범위 <strong>#e02020 · 100%</strong></span></p>
+          <p class="small">불투명도 반영 면적 100% · 상대 밝기 0–25% 구간 비중 100%</p>
+        </div>
+        <div class="no-inference"><h3>분석 추정</h3><p class="small">이 결과에 포함된 추정이 없어요.</p></div>
+      </div>
+    </section>
+
+    <div class="compare">
+      <section class="card" data-editor aria-labelledby="current-heading">
+        <h2 id="current-heading">현재 격리 화면</h2>
+        <p class="small card-lead">초안을 편집하고 입력칸의 현재 문구를 복사할 수 있어요.</p>
+        <h3>창작 초안</h3>
+        <label class="field-label" for="current-draft">프롬프트 편집</label>
+        <textarea class="field" id="current-draft" rows="3"></textarea>
+        <div class="action"><button class="button" type="button" id="copy-current" data-field="current-draft" data-feedback="창작 초안을 복사했어요.">초안 복사</button></div>
+        <p class="status" role="status" aria-atomic="true" id="current-status"></p>
+      </section>
+      <section class="card proposed" data-editor aria-labelledby="proposed-heading">
+        <h2 id="proposed-heading">제안 화면</h2>
+        <p class="small card-lead">생성 초안을 남겨 두고 내 수정본을 따로 다듬을 수 있어요.</p>
+        <label class="field-label" for="original-draft">분석으로 생성한 초안</label>
+        <textarea class="field" id="original-draft" rows="3" aria-describedby="origin-copy" readonly></textarea>
+        <p class="small origin" id="origin-copy">제작자가 공개한 프롬프트는 확인되지 않았어요.</p>
+        <div class="action"><button class="button secondary" type="button" id="copy-original" data-field="original-draft" data-feedback="분석으로 생성한 초안을 복사했어요.">생성 초안 복사</button></div>
+        <div class="revision">
+          <label class="field-label" for="edited-draft">내 수정본</label>
+          <textarea class="field" id="edited-draft" rows="3"></textarea>
+          <div class="action"><button class="button" type="button" id="copy-edited" data-field="edited-draft" data-feedback="내 수정본을 복사했어요.">수정본 복사</button></div>
+        </div>
+        <p class="status" role="status" aria-atomic="true" id="proposed-status"></p>
+      </section>
+    </div>
+  </main>
+  <script>
+    const sampleDraft = "붉은 단색 배경에 제목을 배치하고 글자 주변에 충분한 여백을 남긴다.";
+    for (const card of document.querySelectorAll("[data-editor]")) {
+      const status = card.querySelector("[role=status]");
+      let generation = 0;
+      for (const button of card.querySelectorAll("[data-field]")) {
+        const field = document.getElementById(button.dataset.field);
+        field.value = sampleDraft;
+        field.addEventListener("input", () => {
+          generation += 1;
+          button.disabled = !field.value.trim();
+          status.textContent = "";
+        });
+        button.addEventListener("click", async () => {
+          const attempt = ++generation;
+          const text = field.value;
+          status.textContent = "";
+          try {
+            await navigator.clipboard.writeText(text);
+            if (attempt === generation) status.textContent = button.dataset.feedback;
+          } catch {
+            if (attempt !== generation) return;
+            field.focus();
+            field.select();
+            status.textContent = "자동 복사를 사용할 수 없어요. 선택된 문구를 직접 복사해 주세요.";
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>

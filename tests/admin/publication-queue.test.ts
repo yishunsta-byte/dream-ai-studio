@@ -61,10 +61,24 @@ describe("T289 상태·명령 판정", () => {
     expect(isPublicationOutcome({ status: "published", version: 2, generation: "1" })).toBe(false);
   });
   it("결과 안내: 충돌·원본·잘못된 요청은 다시 불러오기, 처리 못 함만 같은 요청 재시도", () => {
-    expect(outcomeNotice("complete", { status: "conflict" })).toMatchObject({ reload: true, retry: false });
-    expect(outcomeNotice("prepare", { status: "source-unavailable" })).toMatchObject({ reload: true, retry: false });
-    expect(outcomeNotice("revoke", { status: "denied" })).toMatchObject({ tone: "danger", reload: false, retry: false });
-    expect(outcomeNotice("complete", { status: "unavailable" })).toMatchObject({ reload: false, retry: true });
+    const item: PublicationItem = { slug: "a", title: "t", kind: "image", version: "3", pendingGeneration: "3", activeGeneration: "2", approvedMs: "5", source: { revision: "1", finished: true }, rights: "confirmed" };
+    expect(outcomeNotice(item, "complete", { status: "conflict" })).toMatchObject({ reload: true, retry: false });
+    expect(outcomeNotice(item, "prepare", { status: "source-unavailable" })).toMatchObject({ reload: true, retry: false });
+    expect(outcomeNotice(item, "revoke", { status: "denied" })).toMatchObject({ tone: "danger", reload: false, retry: false });
+    expect(outcomeNotice(item, "complete", { status: "unavailable" })).toMatchObject({ reload: false, retry: true });
+    expect(outcomeNotice(item, "revoke", { status: "unavailable" })).toMatchObject({ text: expect.stringContaining("게시 준비 취소"), retry: true });
+  });
+
+  it("준비를 취소하면 기존 공개를 유지하고, 공개 세대를 철회하면 해당 세대를 내렸다고 안내한다", () => {
+    const live: PublicationItem = { slug: "a", title: "t", kind: "image", version: "3", pendingGeneration: null, activeGeneration: "2", approvedMs: "5", source: { revision: "1", finished: true }, rights: "confirmed" };
+    const pending = { ...live, pendingGeneration: "3" };
+    const cancelled = { status: "revoked", version: "4", generation: "3" } as const;
+    const withdrawn = { ...cancelled, generation: "2" };
+    expect(buildAction(pending, "revoke", "r", false)?.generation).toBe("3");
+    expect(applyOutcome(pending, buildAction(pending, "revoke", "r", false)!, cancelled, 10)).toMatchObject({ activeGeneration: "2", pendingGeneration: null });
+    expect(outcomeNotice(pending, "revoke", cancelled).text).toBe("세대 3의 게시 준비를 취소했어요. 게시 중인 2번 세대는 계속 공개돼요.");
+    expect(applyOutcome(live, buildAction(live, "revoke", "r", false)!, withdrawn, 10)).toMatchObject({ activeGeneration: null });
+    expect(outcomeNotice(live, "revoke", withdrawn).text).toBe("세대 2의 공개를 철회했어요. 공개 목록과 해당 세대의 표지 주소에서 내려갔어요.");
   });
 });
 
@@ -152,7 +166,7 @@ describe("T289 화면 첫 상태", () => {
     const t = text(html);
     for (const part of ["게시 중", "대상 리비전 v2", "게시 중 세대 1", "준비된 세대 없음", "원본 리비전 3 · 완성본", "권리 증빙 확인됨"]) expect(t).toContain(part);
     expect(html).toMatch(/type="checkbox"/);
-    expect(t).toContain("철회…");
+    expect(t).toContain("공개 철회…");
     expect(t).toContain("권리를 확인하면 새 세대를 게시 준비할 수 있어요");
     // 권리 체크 전에는 준비 버튼이 없다(체크박스 문구의 "게시 준비"는 버튼이 아님)
     expect(html).not.toMatch(/<button[^>]*>[^<]*게시 준비/);
@@ -164,7 +178,10 @@ describe("T289 화면 첫 상태", () => {
     expect(t).toContain("합성 네온 합성");
   });
   it("준비된 항목은 권리를 다시 확인해야 게시할 수 있다고 안내", () => {
-    expect(text(render({ kind: "ok", items: [{ ...item, version: "3", pendingGeneration: "3" }] }))).toContain("권리를 다시 확인하면 세대 3을 게시할 수 있어요");
+    const t = text(render({ kind: "ok", items: [{ ...item, version: "3", pendingGeneration: "3" }] }));
+    expect(t).toContain("권리를 다시 확인하면 세대 3을 게시할 수 있어요");
+    expect(t).toContain("게시 준비 취소…");
+    expect(t).not.toContain("공개 철회…");
   });
   it("권리 미확인 항목은 체크박스 없이 막힌 이유", () => {
     const html = render({ kind: "ok", items: [{ ...item, rights: "unconfirmed", activeGeneration: null, approvedMs: null, version: "0" }] });

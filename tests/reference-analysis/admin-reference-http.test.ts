@@ -1,11 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { isAnonymousPublicPath } from "../../lib/auth/config";
-import { createSupabaseServer } from "../../lib/auth/server";
 import { createAdminReferenceHttp } from "../../lib/reference-analysis/admin-reference-http";
 import { AnalysisStageError, MediaUrlError } from "../../lib/reference-analysis/media-url-error";
 
 vi.mock("server-only", () => ({}));
-vi.mock("../../lib/auth/server", () => ({ createSupabaseServer: vi.fn() }));
 
 const origin = "https://studio.example.com";
 const actor = { kind: "verified", userId: "10000000-0000-4000-8000-000000000011", email: "admin@example.com" } as const;
@@ -102,12 +100,7 @@ describe("관리자 콘텐츠 분석 및 결과 공개 경계", () => {
       id: entry.id, title: entry.title, summary: entry.summary, prompt: entry.prompt, media: entry.media,
       status: "published" as const, publishedAt: "2026-11-20T02:00:00.000Z",
     };
-    const legacy = {
-      ...published,
-      id: "10000000-0000-4000-8000-000000000033",
-      summary: "기존 공개 기록 https://example.invalid/previous",
-    };
-    const store = { list: vi.fn(async () => [published, legacy]), publish: vi.fn(async () => published), revoke: vi.fn(async () => true) };
+    const store = { list: vi.fn(async () => [published]), publish: vi.fn(async () => published), revoke: vi.fn(async () => true) };
     const openStore = vi.fn<(ownerId: string) => Promise<typeof store>>(async () => store);
     const admin = createAdminReferenceHttp({ authenticate: async () => actor, env: { DREAM_SITE_URL: origin }, openStore });
     expect((await admin.publications(request("POST", { ...entry, ownerId: "another account" }))).status).toBe(400);
@@ -117,67 +110,10 @@ describe("관리자 콘텐츠 분석 및 결과 공개 경계", () => {
     expect(created.headers.get("cache-control")).toBe("no-store");
     expect(openStore).toHaveBeenCalledWith(actor.userId);
     expect(store.publish).toHaveBeenCalledWith(entry);
-    expect(await (await admin.publications(request("GET"))).json()).toEqual({ items: [published, legacy] });
+    expect(await (await admin.publications(request("GET"))).json()).toEqual({ items: [published] });
     expect(store.list).toHaveBeenCalledOnce();
     expect(await (await admin.publications(request("DELETE", { id: entry.id }))).json()).toEqual({ ok: true });
     expect(store.revoke).toHaveBeenCalledWith(entry.id);
-    expect(await (await admin.publications(request("DELETE", { id: legacy.id }))).json()).toEqual({ ok: true });
-    expect(store.revoke).toHaveBeenLastCalledWith(legacy.id);
-  });
-
-  it("POST의 모든 공개 문구에서 원본 주소·계정·키 형태를 거부하고 본문을 노출하지 않는다", async () => {
-    const publish = vi.fn();
-    const store = { publish, list: vi.fn(), revoke: vi.fn() };
-    const admin = createAdminReferenceHttp({ authenticate: async () => actor, env: { DREAM_SITE_URL: origin }, openStore: async () => store });
-    const textCases = [
-      "https://example.invalid/analysis-source",
-      "file:///C:/private/source.jpg",
-      "operator@example.invalid",
-      "AIza" + "SyntheticFixture_Only_123456789",
-      "sk_" + "synthetic_fixture_only_123456789",
-    ];
-    for (const field of ["title", "summary", "prompt"] as const) {
-      for (const text of textCases) {
-        const result = await admin.publications(request("POST", { ...entry, [field]: `공개 입력 ${text}` }));
-        expect(result.status, field).toBe(400);
-        expect(await result.json()).toEqual({ error: "invalid_publication" });
-      }
-    }
-    expect(publish).not.toHaveBeenCalled();
-  });
-
-  it("정상 문구를 같은 ID로 재제출하면 실제 저장 어댑터가 기존 공개 결과를 돌려준다", async () => {
-    const { authorized, ...fields } = entry;
-    const stored = { ...fields, status: "published", published_at: "2026-11-20T02:00:00.000Z" };
-    const legacy = {
-      ...stored,
-      id: "10000000-0000-4000-8000-000000000033",
-      summary: "기존 기록 https://example.invalid/prior",
-    };
-    const single = vi.fn().mockResolvedValueOnce({ error: null, data: stored }).mockResolvedValueOnce({ error: { code: "23505" } });
-    const read = vi.fn(async () => ({ error: null, data: stored }));
-    const byId = vi.fn(() => ({ maybeSingle: read }));
-    const limit = vi.fn(async () => ({ error: null, data: [stored, legacy] }));
-    const insert = vi.fn(() => ({ select: () => ({ single }) }));
-    const from = vi.fn(() => ({ insert, select: () => ({ eq: byId, order: () => ({ limit }) }) }));
-    const session = { auth: { getUser: async () => ({ data: { user: { id: actor.userId } }, error: null }) }, from };
-    const supabase = vi.mocked(createSupabaseServer);
-    const client = session as unknown as Awaited<ReturnType<typeof createSupabaseServer>>;
-    supabase.mockResolvedValueOnce(client).mockResolvedValueOnce(client).mockResolvedValueOnce(client);
-    const admin = createAdminReferenceHttp({ authenticate: async () => actor, env: { DREAM_SITE_URL: origin } });
-
-    const initial = await admin.publications(request("POST", { ...fields, authorized }));
-    const retry = await admin.publications(request("POST", { ...fields, authorized }));
-    expect(initial.status).toBe(200);
-    expect(retry.status).toBe(200);
-    expect(await retry.json()).toEqual(await initial.json());
-    expect(insert.mock.calls).toEqual([[fields], [fields]]);
-    expect(byId).toHaveBeenCalledOnce();
-    expect(byId).toHaveBeenCalledWith("id", entry.id);
-    expect(from).toHaveBeenCalledWith("reference_analysis_publications");
-    const list = await admin.publications(request("GET"));
-    expect(list.status).toBe(200);
-    expect(await list.json()).toMatchObject({ items: [{ id: entry.id }, { id: legacy.id, summary: legacy.summary }] });
   });
 
   it("웹에서 읽기 공개되는 경로를 결과 목록 하나로 제한한다", () => {

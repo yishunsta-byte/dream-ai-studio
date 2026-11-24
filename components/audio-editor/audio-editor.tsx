@@ -199,14 +199,14 @@ function RightsView({timeline,sources}:{timeline:TimelineV2;sources:readonly Aud
 function Upload({busy,onUploaded,announce}:{busy:boolean;onUploaded:()=>void;announce:(text:string)=>void}){
   const [progress,setProgress]=useState(""),[error,setError]=useState(""),request=useRef<XMLHttpRequest|null>(null),input=useRef<HTMLInputElement>(null),id=useId();
   useEffect(()=>()=>request.current?.abort(),[]);
-  function upload(file:File){setError("");const xhr=new XMLHttpRequest();request.current=xhr;
+  function upload(file:File){if(request.current)return;setError("");setProgress(`${file.name} · 올리는 중`);const xhr=new XMLHttpRequest();request.current=xhr;
     xhr.open("POST",`/api/assets/upload?filename=${encodeURIComponent(file.name)}&rightsNote=`);
     xhr.upload.onprogress=event=>setProgress(`${file.name} · 올리는 중${event.lengthComputable?` ${Math.round(event.loaded/event.total*100)}%`:""}`);
     xhr.upload.onload=()=>setProgress(`${file.name} · 실제 형식 확인 중`);
     xhr.onload=()=>{request.current=null;setProgress("");if(input.current)input.current.value="";
       if(xhr.status===201){announce(`'${file.name}'를 자료 보관함에 올렸어요. 타임라인에는 아직 넣지 않았어요. 위 목록에서 골라 넣어 주세요.`);onUploaded();return;}
       let message="올리지 못했어요.";try{message=JSON.parse(xhr.responseText).error??message;}catch{/* keep the plain message */}setError(message);};
-    xhr.onerror=()=>{request.current=null;setProgress("");setError("올리지 못했어요. 연결을 확인해 주세요.");};
+    xhr.onerror=()=>{request.current=null;setProgress("");if(input.current)input.current.value="";setError("올리지 못했어요. 연결을 확인해 주세요.");};
     xhr.onabort=()=>{request.current=null;setProgress("");if(input.current)input.current.value="";announce("올리기를 취소했어요. 편집 중인 내용은 그대로예요.");};
     xhr.send(file);}
   return <div className={styles.box}><h3>소리 파일 올리기</h3>

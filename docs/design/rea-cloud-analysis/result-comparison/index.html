@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>등록 자료 분석 시안 비교 · Dream AI Studio</title>
+  <link rel="icon" href="data:,">
+  <style>
+    @font-face {
+      font-family: Pretendard;
+      src: url('../../../../public/fonts/PretendardVariable.woff2') format('woff2');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+    :root {
+      --bg: #eaf1ec;
+      --paper: #fff;
+      --ink: #17332e;
+      --faint: #455f56;
+      --line: #c1d3c9;
+      --link: #135a49;
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.5 Pretendard, system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; word-break: keep-all; overflow-wrap: anywhere; }
+    h1, h2, p, ul { margin: 0; }
+    .wrap { width: min(1180px, calc(100% - 56px)); margin-inline: auto; }
+    .masthead {
+      padding-block-end: 34px;
+      color: #f4fff8;
+      background: radial-gradient(ellipse at 100% 5%, #326450 0, transparent 60%), #143b34;
+    }
+    .brand { min-height: 64px; display: flex; gap: 10px; align-items: center; border-block-end: 1px solid #74988b66; }
+    .mark {
+      width: 34px; height: 34px; flex: none; display: grid; place-items: center;
+      background: #b0e0cc; color: #173e32; border-radius: 8px;
+    }
+    .brand small { margin-inline-start: auto; color: #daece2; }
+    .title { margin-block-start: 26px; }
+    .title h1 { font-size: clamp(2rem, 4.5vw, 3.85rem); line-height: 1.12; letter-spacing: -.057em; }
+    .title p { max-width: 46ch; margin-block-start: 10px; color: #e0f0e7; }
+    .comparison { padding-block: 24px 44px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .card {
+      min-width: 0; min-height: 100%; display: flex; flex-direction: column;
+      padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper);
+      box-shadow: 0 3px 10px #153b2e08;
+    }
+    .card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; justify-content: space-between; }
+    .card h2 { font-size: 1.25rem; line-height: 1.3; letter-spacing: -.025em; }
+    .review {
+      padding: 3px 8px; border-radius: 5px; font-size: .78rem; font-weight: 690;
+      color: #24563d; background: #e4f1e8;
+    }
+    .observation {
+      margin-block: 13px 10px; min-height: 132px; display: flex; flex-direction: column; justify-content: center;
+      gap: 6px; border: 1px solid #d0dfd5; border-radius: 9px; background: #f2f7f2; padding: 12px;
+    }
+    .observation strong { font-size: 1.02rem; font-variant-numeric: tabular-nums; }
+    .details { color: var(--faint); font-size: .875rem; }
+    .swatch-line { display: flex; align-items: center; gap: 11px; }
+    .swatch { flex: none; width: 35px; height: 35px; border-radius: 6px; background: #e02020; border: 1px solid #a21818; }
+    .rms { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 3px 8px; align-items: center; }
+    .rms-track { height: 7px; border-radius: 3px; background: #d9e7de; }
+    .rms-track::before { content: ""; display: block; height: 100%; width: var(--fill); border-radius: inherit; background: #26715a; }
+    .rms strong { text-align: end; }
+    .video-track { height: 9px; border-radius: 4px; background: linear-gradient(to right, #b5463b 50%, #338b84 50%); }
+    .actions { margin-block-end: 15px; padding-inline-start: 1.1rem; }
+    .actions li + li { margin-block-start: 4px; }
+    .card-footer { margin-block-start: auto; }
+    .availability { font-size: .875rem; color: var(--faint); padding-block: 9px; border-block-start: 1px solid var(--line); }
+    .open {
+      min-height: 44px; min-width: 0; padding: 8px 11px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      border: 1px solid #a3c6b5; border-radius: 8px; color: var(--link); background: #eff7f1;
+      font-weight: 730; text-decoration-thickness: 1px; text-underline-offset: 3px;
+    }
+    .open:hover { background: #e0efe4; }
+    .open:focus-visible { outline: 2px solid #94601b; outline-offset: 3px; }
+    .open span[aria-hidden] { flex: none; }
+    .return { margin-block-start: 16px; }
+    .return .open { display: inline-flex; }
+    @media (max-width: 800px) {
+      .wrap { width: calc(100% - 28px); }
+      .grid { grid-template-columns: minmax(0, 1fr); }
+      .masthead { padding-block-end: 24px; }
+      .brand { min-height: 57px; }
+      .title { margin-block-start: 17px; }
+      .comparison { padding-block-start: 14px; }
+      .card { padding: 14px; }
+      .observation { min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap">
+      <div class="brand"><span class="mark" aria-hidden="true">✦</span><strong>Dream AI Studio</strong><small>클라우드 작업실</small></div>
+      <div class="title">
+        <h1>등록 자료 분석 시안 비교</h1>
+        <p>격리 시험 자료로 확인한 관찰값과 화면 동작을 형식별로 비교합니다.</p>
+      </div>
+    </div>
+  </header>
+  <main class="wrap comparison">
+    <div class="grid">
+      <article class="card" aria-labelledby="png-heading">
+        <header class="card-head"><h2 id="png-heading">이미지 · PNG</h2><p class="review">독립 검수 완료</p></header>
+        <div class="observation">
+          <p class="swatch-line"><span class="swatch" aria-hidden="true"></span><strong>대표색 구간 #e02020 · 100%</strong></p>
+          <p class="details">16×16 시험 이미지 · 전체 영역</p>
+        </div>
+        <ul class="actions">
+          <li>생성 초안과 내 수정본을 따로 확인하고 복사</li>
+          <li>자동 복사가 실패하면 텍스트 선택 후 직접 복사</li>
+        </ul>
+        <footer class="card-footer">
+          <p class="availability">운영 분석 공급원 미연결</p>
+          <a class="open" id="png-link" href="../png-result/compare.html">PNG 초안 비교 열기 <span aria-hidden="true">→</span></a>
+        </footer>
+      </article>
+      <article class="card" aria-labelledby="wav-heading">
+        <header class="card-head"><h2 id="wav-heading">음악 · PCM WAV</h2><p class="review">독립 검수 완료</p></header>
+        <div class="observation">
+          <p class="details">최대 정규화 RMS · 두 시험 WAV</p>
+          <div class="rms">
+            <span class="rms-track" style="--fill:25%" aria-hidden="true"></span><strong>25%</strong>
+            <span class="rms-track" style="--fill:12.5%" aria-hidden="true"></span><strong>12.5%</strong>
+          </div>
+          <p class="details">각각 0–125 ms · 모노 1채널</p>
+        </div>
+        <ul class="actions">
+          <li>두 관찰값과 자료별 수정본 확인</li>
+          <li>접근 철회 후 새 자료 선택, 빈 목록 복구, 미연결 확인</li>
+        </ul>
+        <footer class="card-footer">
+          <p class="availability">운영 분석 공급원 미연결</p>
+          <a class="open" id="wav-link" href="../pcm-wav-result/compare.html">PCM WAV 결과 비교 열기 <span aria-hidden="true">→</span></a>
+        </footer>
+      </article>
+      <article class="card" aria-labelledby="mp4-heading">
+        <header class="card-head"><h2 id="mp4-heading">영상 · MP4</h2><p class="review">독립 검수 완료</p></header>
+        <div class="observation">
+          <p><strong>0 ms · 1000 ms 디코딩 프레임</strong></p>
+          <div class="video-track" aria-hidden="true"></div>
+          <p class="details">967–1000 ms · 인접 프레임 평균 RGB 차이 74.51%</p>
+        </div>
+        <ul class="actions">
+          <li>1000 ms의 프레임과 장면 전환 후보 구분</li>
+          <li>30 fps 편집 근사치와 결과별 수정본 확인</li>
+        </ul>
+        <footer class="card-footer">
+          <p class="availability">운영 분석 공급원 미연결</p>
+          <a class="open" id="mp4-link" href="../mp4-result/compare.html">MP4 시간 비교 열기 <span aria-hidden="true">→</span></a>
+        </footer>
+      </article>
+    </div>
+    <nav class="return" aria-label="분석 시안 이동">
+      <a class="open" href="../index.html"><span aria-hidden="true">←</span> 콘텐츠 분석 전체 시안</a>
+    </nav>
+  </main>
+</body>
+</html>

@@ -98,6 +98,20 @@ export function revokeTarget(item: PublicationItem): string | null {
   return item.pendingGeneration ?? item.activeGeneration;
 }
 
+export function describeRevocation(item: PublicationItem) {
+  const generation = revokeTarget(item);
+  if (!generation) return null;
+  if (item.pendingGeneration !== generation) return {
+    generation, label: "공개 철회", target: "게시 중 세대",
+    impact: "공개 목록과 해당 세대의 표지 주소에서 내려가요.",
+    completed: `세대 ${generation}의 공개를 철회했어요. 공개 목록과 해당 세대의 표지 주소에서 내려갔어요.`,
+  };
+  const retained = item.activeGeneration !== generation ? item.activeGeneration : null;
+  const impact = retained ? `게시 중인 ${retained}번 세대는 계속 공개돼요.` : "공개 중인 세대가 없어요.";
+  return { generation, label: "게시 준비 취소", target: "준비 세대", impact,
+    completed: `세대 ${generation}의 게시 준비를 취소했어요. ${impact}` };
+}
+
 export function buildAction(item: PublicationItem, command: PublicationCommand, requestId: string, rightsChecked: boolean): PublicationAction | null {
   if (!allowedCommands(item, rightsChecked).includes(command)) return null;
   const generation = command === "prepare" ? null : command === "complete" ? item.pendingGeneration : revokeTarget(item);
@@ -140,15 +154,19 @@ export function applyOutcome(item: PublicationItem, action: PublicationAction, o
 
 export type Notice = Readonly<{ tone: "success" | "warning" | "danger"; text: string; reload: boolean; retry: boolean }>;
 
-export function outcomeNotice(command: PublicationCommand, outcome: PublicationOutcome): Notice {
+export function outcomeNotice(item: PublicationItem, command: PublicationCommand, outcome: PublicationOutcome): Notice {
   switch (outcome.status) {
     case "prepared": return { tone: "success", text: `게시 준비를 마쳤어요(세대 ${outcome.generation}). 확인 뒤 게시해 주세요.`, reload: false, retry: false };
     case "published": return { tone: "success", text: `공개 목록에 게시했어요(세대 ${outcome.generation}).`, reload: false, retry: false };
-    case "revoked": return { tone: "success", text: `세대 ${outcome.generation}을 철회했어요. 공개 목록과 표지 주소에서 내려가요.`, reload: false, retry: false };
+    case "revoked": {
+      const target = describeRevocation(item);
+      const text = target?.generation === outcome.generation ? target.completed : `세대 ${outcome.generation}의 요청을 처리했어요.`;
+      return { tone: "success", text, reload: false, retry: false };
+    }
     case "conflict": return { tone: "warning", text: "그사이 다른 곳에서 상태가 바뀌었어요. 목록을 다시 불러온 뒤 확인해 주세요.", reload: true, retry: false };
     case "source-unavailable": return { tone: "warning", text: "원본 완성본이 바뀌었거나 아직 완성되지 않았어요. 원본을 확인해 주세요.", reload: true, retry: false };
     case "denied": return { tone: "danger", text: "이 작품을 게시하거나 철회할 권한이 없어요.", reload: false, retry: false };
     case "invalid": return { tone: "danger", text: "요청이 올바르지 않아 처리하지 않았어요. 목록을 다시 불러와 주세요.", reload: true, retry: false };
-    case "unavailable": return { tone: "warning", text: `${command === "revoke" ? "철회" : "게시"} 요청을 처리하지 못했어요. 같은 요청으로 다시 시도할 수 있어요.`, reload: false, retry: true };
+    case "unavailable": return { tone: "warning", text: `${command === "revoke" ? describeRevocation(item)?.label ?? "철회" : "게시"} 요청을 처리하지 못했어요. 같은 요청으로 다시 시도할 수 있어요.`, reload: false, retry: true };
   }
 }

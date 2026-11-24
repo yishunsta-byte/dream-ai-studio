@@ -19,7 +19,7 @@ const state = vi.hoisted(() => ({
   notFound: vi.fn(() => { throw Object.assign(new Error("NEXT_NOT_FOUND"), { notFound: true }); }),
 }));
 vi.mock("server-only", () => ({}));
-vi.mock("next/navigation", () => ({ redirect: state.redirect, notFound: state.notFound }));
+vi.mock("next/navigation", () => ({ redirect: state.redirect, notFound: state.notFound, usePathname: () => "/cloud/projects" }));
 vi.mock("@/lib/auth/server", () => ({
   createSupabaseServer: async () => ({ auth: { getUser: async () => {
     state.getUser();
@@ -232,6 +232,42 @@ describe("레이아웃", () => {
 
 describe("새 프로젝트 준비 안내 /cloud/projects/new(T-219): 만들기 미개통, 인증 판정만", () => {
   async function pendingPage() { return (await import("@/app/(cloud)/cloud/projects/new/page")).default(); }
+  describe("비공개 PNG 생성 폼의 로컬 PG17 활성 조건", () => {
+    beforeEach(() => {
+      signedIn();
+      vi.stubEnv("NODE_ENV", "development");
+      vi.stubEnv("VERCEL", undefined);
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
+      vi.stubEnv("DREAM_PRIVATE_UPLOAD_BACKEND", "owned-pg17");
+      vi.stubEnv("DREAM_PROJECT_CREATE_BACKEND", "owned-pg17");
+    });
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("승인된 사용자는 로컬 PNG 폼으로 연결된다", async () => {
+      const { PrivatePngProjectPage } = await import("@/components/cloud/private-png-project-page");
+      expect((await pendingPage()).type).toBe(PrivatePngProjectPage);
+    });
+
+    it.each([
+      ["NODE_ENV", "production"],
+      ["VERCEL", "1"],
+      ["NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co"],
+      ["DREAM_PRIVATE_UPLOAD_BACKEND", undefined],
+      ["DREAM_PROJECT_CREATE_BACKEND", undefined],
+    ] as const)("%s=%s이면 준비 안내만 표시한다", async (key, value) => {
+      vi.stubEnv(key, value);
+      const markup = html(await pendingPage());
+      expect(markup).toContain("아직 클라우드에서는 새 프로젝트를 만들 수 없어요");
+      expect(markup).not.toContain("<form");
+      legacyUntouched();
+    });
+
+    it("로컬 PG17 조건이 맞아도 세션이 없으면 로그인으로 이동한다", async () => {
+      state.user = null;
+      expect((await settle(pendingPage)).error?.to).toBe("/login?next=%2Fcloud%2Fprojects%2Fnew");
+      legacyUntouched();
+    });
+  });
   it.each([
     ["no session", "/login?next=%2Fcloud%2Fprojects%2Fnew"],
     ["forbidden", "/login?error=forbidden"],
