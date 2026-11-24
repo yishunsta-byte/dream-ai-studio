@@ -12,7 +12,7 @@ import { analyzeLocalMediaUpload, analyzeLocalMediaUrl } from "./local-media-url
 import { MediaUrlError } from "./media-url-error";
 import { requestGeminiJson } from "./gemini-json";
 import { studioAnalysisResultSchema } from "./studio-analysis-result-dto";
-import { styleDnaImageModels, type StyleDnaMedia, type StyleDnaOptions, type StyleDnaRevision, type StyleDnaTestOptions } from "./style-dna-contract";
+import { styleDnaImageModels, styleDnaPromptOnlyTargets, type StyleDnaMedia, type StyleDnaPromptTarget, type StyleDnaOptions, type StyleDnaRevision, type StyleDnaTestOptions } from "./style-dna-contract";
 import { parseStyleDnaSections, styleDnaSectionsJson, type StyleDnaAnalysisReport, type StyleDnaReportSections } from "./style-dna-report";
 import { requestStyleDnaEngine, type ExternalStyleDnaSettings, type StyleDnaEngineFailure } from "./style-dna-engine-provider";
 
@@ -67,12 +67,24 @@ export function styleDnaTestPrompt(input: Pick<StyleDnaTestOptions, "subject" | 
     .filter(Boolean).join("\n");
 }
 
+// 대상 모델별 프롬프트 문법 안내. 프롬프트만 맞추고, 대상 모델 자체를 호출하지 않는다.
+const promptSyntax: Record<StyleDnaPromptTarget, string> = {
+  "gemini-nano-banana-2.1": "한 문단에서 구도, 재질, 세부 조명과 시각적 요소의 관계를 구체적으로 묘사하세요.",
+  "gemini-3.1-flash-lite-image": "짧고 직접적인 한 문단에 피사체, 구도, 조명과 스타일의 우선순위를 분명히 하세요.",
+  "gpt-image-2.6": "완전한 문장으로 된 한두 문단에 장면, 피사체 배치, 조명, 질감과 색을 차례로 설명하고, 이미지 안에 넣을 글자가 있으면 따옴표로 그대로 적으세요.",
+  "flux-3": "중요한 요소를 앞에 두고 주제, 스타일·매체, 구도, 조명·색, 카메라 느낌 순서의 자연어 문장으로 쓰세요. 부정 프롬프트나 가중치 문법은 쓰지 마세요.",
+  "mai-image-2.7": "피사체, 환경, 빛의 방향과 질감을 구체적인 자연어 문장으로 사실적으로 묘사하세요.",
+  "seedream-5.5": "피사체와 동작, 배경, 스타일, 조명, 구도를 분명한 구절로 나눠 적고, 이미지 안에 넣을 글자가 있으면 따옴표로 그대로 적으세요.",
+  "kling-image-4.0": "피사체, 장면, 스타일, 조명, 구도를 한 문단 자연어로 적고, 영상 움직임이나 카메라 이동 지시는 넣지 마세요.",
+};
+
 function syntaxInstructions(options: StyleDnaOptions) {
-  const model = options.targetModel === "gemini-3.1-flash-lite-image"
-    ? "짧고 직접적인 한 문단에 피사체, 구도, 조명과 스타일의 우선순위를 분명히 하세요."
-    : "한 문단에서 구도, 재질, 세부 조명과 시각적 요소의 관계를 구체적으로 묘사하세요.";
+  const model = promptSyntax[options.targetModel];
+  const promptOnly = options.targetModel in styleDnaPromptOnlyTargets
+    ? styleDnaPromptOnlyTargets[options.targetModel as keyof typeof styleDnaPromptOnlyTargets] : undefined;
+  const name = promptOnly ? `${promptOnly.label}(${options.targetModel})` : options.targetModel;
   return [
-    `${options.targetModel}용 자연어 프롬프트입니다. ${model} 다른 플랫폼 명령행 옵션을 붙이지 마세요.`,
+    `${name}용 자연어 프롬프트입니다. ${model} 다른 플랫폼 명령행 옵션을 붙이지 마세요.`,
     options.includeImageTag ? `두 언어 프롬프트에 ${attachedImageTag}를 넣어 참고 이미지의 스타일과 구도를 나타내세요.`
       : "첨부 이미지 태그 없이 독립적으로 사용할 프롬프트를 작성하세요.",
   ].join("\n");

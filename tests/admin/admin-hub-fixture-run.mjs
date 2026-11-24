@@ -273,7 +273,21 @@ window.fetch=async(raw,init)=>{
     if (fault&&"status" in fault) return response(fault.body,fault.status);
     const summary=(record:SdRecord)=>({id:record.id,title:record.title,revision:record.revision,mode:record.mode,original:record.original,createdAt:record.createdAt,updatedAt:record.updatedAt});
     if (op==="list") return response({items:styleDna.records.map(summary),settings:{storage:"ready",credentialVersion:styleDna.model?styleDna.version:0,analysisModel:styleDna.model,
-      testModels:[{id:"gemini-nano-banana-2.1",size:"2K",label:"Nano Banana 2.1"},{id:"gemini-3.1-flash-lite-image",size:"1K",label:"Nano Banana 2 Lite"}]}});
+      testModels:[{id:"gemini-nano-banana-2.1",size:"2K",label:"Nano Banana 2.1"},{id:"gemini-3.1-flash-lite-image",size:"1K",label:"Nano Banana 2 Lite"}],
+      // 대상 모델(Backend 066c554 promptTargets): ?styleDnaTargets=new면 새 5개를 더한 7개(testable은 Gemini 두 개만), =bad면 중복 id(화면은 예전 목록으로), 없으면 예전 서버(칸 없음).
+      ...(sdQuery.get("styleDnaTargets")==="new"?{promptTargets:[{id:"gemini-nano-banana-2.1",label:"Nano Banana 2.1",vendor:"Google",testable:true},
+        {id:"gemini-3.1-flash-lite-image",label:"Nano Banana 2 Lite",vendor:"Google",testable:true},{id:"gpt-image-2.6",label:"GPT Image 2.6",vendor:"OpenAI",testable:false},
+        {id:"flux-3",label:"FLUX 3",vendor:"Black Forest Labs",testable:false},{id:"mai-image-2.7",label:"MAI-Image-2.7",vendor:"Microsoft",testable:false},
+        {id:"seedream-5.5",label:"Seedream 5.5",vendor:"ByteDance",testable:false},{id:"kling-image-4.0",label:"Kling Image 4.0",vendor:"Kuaishou",testable:false}]}
+        :sdQuery.get("styleDnaTargets")==="bad"?{promptTargets:[{id:"flux-3",label:"FLUX 3",vendor:"Black Forest Labs",testable:false},{id:"flux-3",label:"FLUX 3 중복",vendor:"Black Forest Labs",testable:false}]}:{}),
+      // 엔진 상태(Backend 066c554): ?styleDnaEngineList=ready|unavailable|not_configured|bad면 목록 응답에 analysisEngines·engineStorage를 싣는다(화면은 따로 조회하지 않음).
+      // ready는 styleDna.engines(=?styleDnaEngines) 그대로, bad는 openai 행이 빠진 모양. 없으면 예전 서버(칸 없음 → 화면이 /engine-credentials를 따로 조회).
+      ...(()=>{ const mode=sdQuery.get("styleDnaEngineList"); if (!mode) return {};
+        const row=(provider:"openai"|"anthropic")=>({provider,configured:styleDna.engines[provider].configured,modelId:styleDna.engines[provider].modelId,version:styleDna.engines[provider].version});
+        const gemini={provider:"gemini",configured:!!styleDna.model,modelId:styleDna.model,version:styleDna.model?styleDna.version:0};
+        if (mode==="ready") return {analysisEngines:[gemini,row("openai"),row("anthropic")],engineStorage:"ready"};
+        if (mode==="bad") return {analysisEngines:[gemini,row("anthropic")],engineStorage:"ready"};
+        return {analysisEngines:[gemini,{provider:"openai",configured:false,modelId:null,version:0},{provider:"anthropic",configured:false,modelId:null,version:0}],engineStorage:mode}; })()}});
     // 보관함 삭제(Backend 0727932 계약 대역): UUID 아님 400, 없음·다시 삭제 404, 성공은 본문 없는 204. faults.delete {lost:true}는 서버가 지운 뒤 응답만 끊기고, {lost:"before"}는 지우기 전에 끊긴다(삭제 안 됨).
     if (op==="delete") {
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) return response({code:"invalid_input"},400);
