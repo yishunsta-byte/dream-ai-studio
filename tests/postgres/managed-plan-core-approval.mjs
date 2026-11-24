@@ -314,9 +314,9 @@ export async function verifyTopicPlan(context, approvalRun, {sceneRead=false}={}
     briefLocked:true,menuSteps:["hook","message","support","close"],cas:[201,409],lostSaveRecovered:true,staleVersion:409,
     lostApprovalReplayed:true,concurrentReplays:[200,200],scenes:3,snapshotMatches:true,lengthMismatchBlocked:true,
     ownerIsolation:true,lockedMenuHidden:true}));
-  // --scene-flow(장면 읽기 0001 설치) 뒤면 같은 승인 프로젝트로 장면 읽기 0002를 확인한다.
+  // --scene-flow(장면 SQL 설치) 뒤면 같은 승인 프로젝트로 결과 등록·장면 읽기·선택을 확인한다.
   if (sceneRead) {
-    const {verifyTopicSceneRead}=await import("./managed-scene-flow-http.mjs");
-    await verifyTopicSceneRead(context,approvalConfig.env,{approved:audited,waiting:waitingId,draft:draftId,locked});
+    const {verifyTopicScenes}=await import("./managed-scene-flow-http.mjs");
+    await verifyTopicScenes(context,approvalConfig.env,{approved:audited,waiting:waitingId,draft:draftId,locked});
   }
 }

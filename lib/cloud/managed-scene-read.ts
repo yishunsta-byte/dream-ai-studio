@@ -55,6 +55,11 @@ const installation = `SELECT EXISTS (SELECT FROM dream_scene_read.installation W
     AND (p.polrelid,p.polname) IN (('dream.projects'::regclass,'scene_read'),('dream.stage_states'::regclass,'scene_read'),
       ('dream.plans'::regclass,'scene_read'),('dream.scenes'::regclass,'scene_read'),('dream.scene_versions'::regclass,'scene_read')))
   AND NOT EXISTS (SELECT FROM pg_policy p WHERE current_user::regrole::oid=ANY(p.polroles) AND p.polcmd<>'r')
+  -- Project policy in one of the two known install states: 0001 only (shopping-shorts) or 0001+0002 (both menus,
+  -- sceneReadMenus). Without 0002 a topic-shorts project stays invisible (404) and shopping-shorts reads are unchanged.
+  AND EXISTS (SELECT FROM pg_policy p WHERE p.polrelid='dream.projects'::regclass AND p.polname='scene_read'
+    AND ((pg_get_expr(p.polqual,p.polrelid) LIKE '%menu_id = ANY (ARRAY[''shopping-shorts''::text, ''topic-shorts''::text])%' AND pg_get_expr(p.polqual,p.polrelid) NOT LIKE '%(menu_id = ''shopping-shorts''::text)%')
+      OR (pg_get_expr(p.polqual,p.polrelid) LIKE '%(menu_id = ''shopping-shorts''::text)%' AND pg_get_expr(p.polqual,p.polrelid) NOT LIKE '%topic-shorts%')))
   AND NOT EXISTS (SELECT FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
     WHERE n.nspname IN ('dream','dream_scene_read','dream_project_core','managed_project_plan','local_plan_materials') AND c.relkind IN ('r','v','m','p','f','S')
       AND (has_table_privilege(c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')

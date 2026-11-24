@@ -35,6 +35,14 @@ const installation = `SELECT EXISTS (SELECT FROM dream_scene_result.installation
   AND EXISTS (SELECT FROM pg_proc f WHERE f.oid=to_regprocedure('dream_scene_result.register(uuid,uuid,uuid,uuid,text,bigint,uuid,uuid)')
     AND f.prosecdef AND f.proowner=to_regrole('dream_scene_result_writer') AND f.proconfig=ARRAY['search_path=pg_catalog']
     AND has_function_privilege(f.oid,'EXECUTE'))
+  -- The writer's two project policies share one known install state: 0002 (shopping-shorts) or 0003 (both menus).
+  -- Without 0003 a topic-shorts project is NOT_FOUND inside register(); shopping-shorts is unchanged.
+  AND 2 IN ((SELECT count(*) FROM pg_policy p WHERE p.polrelid=(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='dream' AND c.relname='projects')
+      AND p.polname IN ('scene_result_read','scene_result_lock') AND p.polroles=ARRAY[to_regrole('dream_scene_result_writer')::oid]
+      AND pg_get_expr(p.polqual,p.polrelid) LIKE '%menu_id = ANY (ARRAY[''shopping-shorts''::text, ''topic-shorts''::text])%' AND pg_get_expr(p.polqual,p.polrelid) NOT LIKE '%(menu_id = ''shopping-shorts''::text)%'),
+    (SELECT count(*) FROM pg_policy p WHERE p.polrelid=(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='dream' AND c.relname='projects')
+      AND p.polname IN ('scene_result_read','scene_result_lock') AND p.polroles=ARRAY[to_regrole('dream_scene_result_writer')::oid]
+      AND pg_get_expr(p.polqual,p.polrelid) LIKE '%(menu_id = ''shopping-shorts''::text)%' AND pg_get_expr(p.polqual,p.polrelid) NOT LIKE '%topic-shorts%'))
   AND NOT EXISTS (SELECT FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
     WHERE n.nspname IN ('dream','dream_scene_result') AND c.relkind IN ('r','v','m','p') AND c.oid<>'dream_scene_result.installation'::regclass
       AND (has_table_privilege(c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
