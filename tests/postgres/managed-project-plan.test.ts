@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { managedPlanApprovalConfiguration, managedPlanConfiguration } from "@/lib/cloud/managed-project-plan";
+import { readFileSync } from "node:fs";
+import { managedPlanApprovalConfiguration, managedPlanConfiguration, managedPlanMenus } from "@/lib/cloud/managed-project-plan";
 
 vi.mock("server-only", () => ({}));
 
@@ -67,5 +68,19 @@ describe("managed project plan approval connection", () => {
     { DREAM_PROJECT_PLAN_APPROVAL_DB_URL: `postgresql://${approver}:synthetic@db.zzzzzzzzzzzzzzzzzzzz.supabase.co:5432/postgres` },
   ])("closes out-of-contract approval configuration %j", overrides => {
     expect(managedPlanApprovalConfiguration({ ...approvedEnv, ...overrides })).toBeNull();
+  });
+});
+
+describe("managed project plan menus", () => {
+  it("opens planning for exactly the two active managed menus, matching the 0003 policy list", () => {
+    const menus = JSON.parse(readFileSync(new URL("../../docs/spec/menus.json", import.meta.url), "utf8")).menus as { id: string; availability: string }[];
+    expect(managedPlanMenus).toEqual(menus.filter(menu => menu.availability === "active").map(menu => menu.id));
+    expect(managedPlanMenus).toEqual(["shopping-shorts", "topic-shorts"]);
+    expect(Object.isFrozen(managedPlanMenus)).toBe(true);
+    const sql = readFileSync(new URL("../../lib/db/postgres/managed-project-plan/0003_topic_shorts.sql", import.meta.url), "utf8");
+    expect(sql.match(/menu_id IN \('shopping-shorts','topic-shorts'\)/g)).toHaveLength(6);
+    const route = readFileSync(new URL("../../app/api/projects/[id]/plan/route.ts", import.meta.url), "utf8");
+    expect(route).toContain("menu_id=ANY($3::text[])");
+    expect(route).not.toContain("menu_id='shopping-shorts'");
   });
 });

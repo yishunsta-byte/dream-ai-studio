@@ -1,6 +1,6 @@
 /* global console, URL */
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import { v7 } from "uuid";
@@ -163,4 +163,153 @@ export async function verifyPlanApproval(context, draftConfig) {
   console.log(JSON.stringify({stage:"approval",separateRoles:true,runtimeTlsRoles:3,browserGrants:0,wrongCredentialClosed:true,ownerIsolation:true,
     lostReplyReplay:true,atomicSceneCounts:[3,45],lateFailureRollback:true,approveThenSave:[200,409],saveThenApprove:[201,409],
     warmRepeatApprovals:6,planCacheMode:"force_generic_plan",hostedProductionAvailable:false}));
+  return {env,secret,draftSecret:draftConfig.secret};
+}
+
+// P2-MANAGED-TOPIC-SHORTS-PLAN: 주제별 쇼츠 같은 프로젝트로 생성 → 브리프 승인 → 메뉴별 기획 초안 저장·조회 → 명시 승인.
+// managed-project-core 0003(verifyTopicShorts)이 설치된 뒤에 부르고, 여기서 기획 0003을 더한다.
+export async function verifyTopicPlan(context, approvalRun) {
+  const {admin,rootPath,projectRef,startProfile,body,connect,users,loseResponse}=context;
+  // --scene-flow가 앞에서 승인 역할 비밀번호를 바꾸므로, 이 확인에 쓸 두 로그인 비밀번호를 새로 정한다(출력하지 않는다).
+  const draftSecret=randomBytes(25).toString("hex"), secret=randomBytes(25).toString("hex");
+  await admin.query("ALTER ROLE "+draftRole+" PASSWORD '"+draftSecret+"'; ALTER ROLE "+approvalRole+" PASSWORD '"+secret+"'");
+  const login=(name,value)=>"postgresql://"+name+":"+value+"@"+new URL(approvalRun.env.DREAM_PROJECT_PLAN_DB_URL).host+"/postgres";
+  const approvalConfig={draftSecret,secret,env:{...approvalRun.env,DREAM_PROJECT_PLAN_DB_URL:login(draftRole,draftSecret),
+    DREAM_PROJECT_PLAN_APPROVAL_DB_URL:login(approvalRole,secret)}};
+  const sql=(await readFile(new URL("lib/db/postgres/managed-project-plan/0003_topic_shorts.sql",rootPath),"utf8")).replaceAll("\r\n","\n");
+  assert.equal(createHash("sha256").update(sql).digest("hex"),"6664e5eb6b3f499842ffa339bd33d70624eacffca6cf3ac90cc72f1655a6f086");
+  const topicCommand=inputs=>({menuId:"topic-shorts",inputs:{title:"Topic plan",goal:"Goal",target:"Audience",aspect:"9:16",lengthSec:20,
+    topic:"겨울철 실내 습도",keyMessage:"습도를 지키면 도움이 된다.",...inputs}});
+  const topicBrief=async (call,inputs={},approve=true)=>{
+    const {id}=await body(call("/api/projects",{input:topicCommand(inputs)}),201,"topic project");
+    const brief="/api/projects/"+id+"/brief";
+    const {revision}=await body(call(brief),200);
+    if(approve) await body(call(brief,{input:{acknowledged:true,revision}}),200,"topic brief");
+    return {id,revision};
+  };
+  const scenesFor=(lengths,steps=["hook","message","close"])=>lengths.map((durationSec,index)=>({stepId:steps[index]??"custom",
+    title:"Topic scene "+(index+1),description:"Synthetic topic shot",dialogue:"Synthetic topic voice",durationSec,characterIds:[],assetIds:[]}));
+  const draftOf=(project,version=0,lengths=[5,7,8],steps)=>({revision:project.revision,version,
+    draft:{script:"Topic storyboard",scenes:scenesFor(lengths,steps)}});
+
+  // 기획 0003 전: 기획 역할 정책이 주제별 쇼츠 프로젝트를 보지 않아 404이고 아무것도 쓰지 않는다.
+  let early;
+  await startProfile(approvalConfig.env,async call=>{
+    early=await topicBrief(call);
+    await body(call(route(early.id)),404,"topic plan before 0003");
+    await body(call(route(early.id),{input:draftOf(early)}),404,"topic save before 0003");
+  });
+  assert.deepEqual(await state(admin,early.id),{drafts:0,materials:0,approvals:0,scene_ids:[],approved_id:null,produce:"locked"});
+  await admin.query("SET ROLE p102_migrate");
+  try {
+    await admin.query("SELECT set_config('dream.managed_plan.install_ref',$1,false),set_config('dream.managed_plan.install_database','postgres',false)",[projectRef]);
+    assert.equal((await admin.query(sql)).at(-1).command,"COMMIT");
+    await assert.rejects(admin.query(sql),{message:"MANAGED_PLAN_TOPIC_SHORTS_TARGET"});
+    await admin.query("ROLLBACK");
+  } finally { await admin.query("RESET ROLE"); }
+  const {rows:policies}=await admin.query(`SELECT polname,pg_get_expr(polqual,polrelid) AS qual,pg_get_expr(polwithcheck,polrelid) AS check
+    FROM pg_policy WHERE polrelid='dream.projects'::regclass AND polname LIKE 'managed_%' ORDER BY polname`);
+  assert.deepEqual(policies.map(policy=>policy.polname),["managed_approval_project_link","managed_approval_project_lock",
+    "managed_approval_project_read","managed_plan_lock","managed_plan_read"]);
+  for (const policy of policies) {
+    assert.match(policy.qual,/menu_id = ANY \(ARRAY\['shopping-shorts'::text, 'topic-shorts'::text\]\)/);
+    assert.match(policy.qual,/owner_id = dream\.actor_id\(\)/);
+    assert.match(policy.qual,/archived_at IS NULL/);
+  }
+  assert.match(policies[0].qual,/approved_plan_id IS NULL/);
+  assert.match(policies[0].check,/reviewed_plan_id/);
+  assert.deepEqual([policies[1].check,policies[3].check],["false","false"]);
+
+  let audited, locked;
+  await startProfile(approvalConfig.env,async (call,origin)=>{
+    // 0003 전에 만든 같은 프로젝트를 그대로 이어 간다.
+    const opened=await body(call(route(early.id)),200);
+    assert.deepEqual(opened.steps,[{id:"hook",label:"첫 장면 훅"},{id:"message",label:"핵심 메시지"},{id:"support",label:"근거·예시"},
+      {id:"close",label:"마무리·행동 유도"}]);
+    assert.deepEqual([opened.version,opened.lengthSec,opened.draft,opened.planId,opened.canApprove],[0,20,null,null,false]);
+    assert.deepEqual(opened.capabilities,{saveDraft:true,importShortsDraft:true,approvePlan:false});
+
+    const waiting=await topicBrief(call,{},false);
+    assert.equal((await body(call(route(waiting.id)),409)).error,"브리프를 먼저 승인해 주세요.");
+    await body(call(route(waiting.id),{input:draftOf(waiting)}),409);
+
+    const project=early, input=draftOf(project);
+    await body(call(route(project.id),{actor:null}),401);
+    await body(call(route(project.id),{actor:1}),404);
+    await body(call(route(project.id),{actor:1,input}),404);
+    await body(call(route(project.id),{input,originOverride:"https://foreign.invalid"}),403);
+    await body(call(route(project.id),{input:{...input,revision:99}}),409);
+    await body(call(route(project.id),{input:draftOf(project,0,[5,7,8],["hook","proof","close"])}),400,"shopping step");
+    assert.deepEqual(await state(admin,project.id),{drafts:0,materials:0,approvals:0,scene_ids:[],approved_id:null,produce:"locked"});
+
+    const race=await Promise.all([call(route(project.id),{input}),call(route(project.id),{input})]);
+    assert.deepEqual(race.map(response=>response.status).sort(),[201,409]);
+    const saved=await race.find(response=>response.status===201).json();
+    await race.find(response=>response.status===409).body?.cancel();
+    assert.deepEqual(saved.draft,input.draft);
+    const read=await body(call(route(project.id)),200);
+    assert.deepEqual([read.version,read.planId,read.draft,read.canApprove,read.capabilities.approvePlan],[1,saved.planId,input.draft,true,true]);
+
+    // 응답을 잃은 저장은 다시 읽으면 반영돼 있고, 같은 내용 재전송은 낡은 버전으로 거부된다.
+    const next=draftOf(project,1,[4,8,8]);
+    await loseResponse(origin,route(project.id),v7(),next);
+    const reopened=await body(call(route(project.id)),200);
+    assert.deepEqual([reopened.version,reopened.draft],[2,next.draft]);
+    await body(call(route(project.id),{input:next}),409);
+    assert.deepEqual(await state(admin,project.id),{drafts:2,materials:0,approvals:0,scene_ids:[],approved_id:null,produce:"locked"});
+
+    const approve=approvalCommand({revision:reopened.revision,version:reopened.version,planId:reopened.planId});
+    await body(call(route(project.id),{input:approvalCommand(saved)}),409,"old version approval");
+    await body(call(route(project.id),{actor:1,input:approve}),404);
+    await body(call(route(project.id),{actor:null,input:approve}),401);
+    await loseResponse(origin,route(project.id),v7(),approve);
+    const committed=await state(admin,project.id);
+    assert.deepEqual([committed.approved_id,committed.approvals,committed.produce,committed.scene_ids.length],[reopened.planId,1,"todo",3]);
+    const replies=await Promise.all([body(call(route(project.id),{input:approve}),200),body(call(route(project.id),{input:approve}),200)]);
+    for (const replay of replies) assert.deepEqual(replay,{planId:reopened.planId,version:2,approved:true,produceOpen:true,hostedProductionAvailable:false});
+    assert.deepEqual(await state(admin,project.id),committed);
+    const {rows:[plan]}=await admin.query("SELECT approved_scene_snapshot_json::jsonb AS scenes,steps_json::jsonb AS steps FROM dream.plans WHERE id=$1 AND status='approved'",[reopened.planId]);
+    assert.deepEqual(plan.scenes.map(scene=>scene.id),committed.scene_ids);
+    assert.deepEqual(plan.scenes.map(scene=>[scene.position,scene.durationSec,scene.projectId]),[[1,4,project.id],[2,8,project.id],[3,8,project.id]]);
+    assert.deepEqual(plan.steps.map(scene=>scene.stepId),["hook","message","close"]);
+    const after=await body(call(route(project.id)),200);
+    assert.deepEqual([after.approved,after.produceOpen,after.writable,after.canApprove],[true,true,false,false]);
+    await body(call(route(project.id),{input:draftOf(project,2)}),409);
+    assert.equal((await body(call("/api/projects/"+project.id),200)).project.approvedPlanId,reopened.planId);
+    audited=project.id;
+
+    // 길이가 다른 초안은 저장되지만 승인할 수 없다(프로젝트 길이 30초, 초안 20초).
+    const longer=await topicBrief(call,{lengthSec:30,keyMessageLength:"50"});
+    const short=await body(call(route(longer.id),{input:draftOf(longer)}),201);
+    assert.equal((await body(call(route(longer.id)),200)).canApprove,false);
+    await body(call(route(longer.id),{input:approvalCommand(short)}),409);
+    assert.deepEqual((await state(admin,longer.id)).approvals,0);
+
+    // 잠긴 분야 프로젝트(관리자가 직접 넣은 travel-shorts)는 기획 경로에서 보이지 않는다.
+    locked=v7();
+    await admin.query(`INSERT INTO dream.projects(owner_id,id,menu_id,template_version,template_snapshot_json,inputs_json,title,goal,target,
+      aspect,length_sec,content_revision,created_at,updated_at) SELECT owner_id,$2,'travel-shorts',template_version,template_snapshot_json,
+      inputs_json,title,goal,target,aspect,length_sec,1,created_at,updated_at FROM dream.projects WHERE id=$1`,[longer.id,locked]);
+    await admin.query(`INSERT INTO dream.stage_states(owner_id,project_id,stage,status,approved_at)
+      SELECT owner_id,$2,stage,status,approved_at FROM dream.stage_states WHERE project_id=$1`,[longer.id,locked]);
+    await body(call(route(locked)),404,"locked menu plan");
+    await body(call(route(locked),{input:draftOf({revision:1})}),404,"locked menu save");
+  });
+
+  for (const [name,secret] of [[draftRole,approvalConfig.draftSecret],[approvalRole,approvalConfig.secret]]) {
+    const client=await connect(name,secret);
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT set_config('dream.actor_id',$1,true)",[users[0].id]);
+      assert.equal((await client.query("SELECT id FROM dream.projects WHERE id=$1",[audited])).rowCount,1,name);
+      assert.equal((await client.query("SELECT id FROM dream.projects WHERE id=$1",[locked])).rowCount,0,name);
+      await client.query("SELECT set_config('dream.actor_id',$1,true)",[users[1].id]);
+      assert.equal((await client.query("SELECT id FROM dream.projects WHERE id=$1",[audited])).rowCount,0,name);
+      await client.query("ROLLBACK");
+    } finally { await client.end(); }
+  }
+  console.log(JSON.stringify({stage:"topic-plan",before0003:"404-no-state",install:"0003",rerunRejected:true,policies:5,
+    briefLocked:true,menuSteps:["hook","message","support","close"],cas:[201,409],lostSaveRecovered:true,staleVersion:409,
+    lostApprovalReplayed:true,concurrentReplays:[200,200],scenes:3,snapshotMatches:true,lengthMismatchBlocked:true,
+    ownerIsolation:true,lockedMenuHidden:true}));
 }

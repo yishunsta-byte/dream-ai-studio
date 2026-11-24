@@ -10,6 +10,8 @@ const guard = "dream_plan_guard";
 const approvalRole = "dream_plan_approver";
 export const managedPlanMaxBytes = 4 * 1024 * 1024;
 export const managedPlanBackend = "supabase-postgres";
+// 기획을 여는 두 분야. 관리형 기획 설치 0001·0002(쇼핑숏츠)와 0003(주제별 쇼츠)의 프로젝트 정책과 같은 목록이다.
+export const managedPlanMenus: readonly string[] = Object.freeze(["shopping-shorts", "topic-shorts"]);
 
 export function managedPlanUnavailable() {
   return Response.json({ code: "MANAGED_PLAN_UNAVAILABLE", error: "기획 저장소 연결을 확인해 주세요." },
