@@ -277,9 +277,9 @@ window.fetch=async(raw,init)=>{
       // 대상 모델(Backend 066c554 promptTargets): ?styleDnaTargets=new면 새 5개를 더한 7개(testable은 Gemini 두 개만), =bad면 중복 id(화면은 예전 목록으로), 없으면 예전 서버(칸 없음).
       ...(sdQuery.get("styleDnaTargets")==="new"?{promptTargets:[{id:"gemini-nano-banana-2.1",label:"Nano Banana 2.1",vendor:"Google",testable:true},
         {id:"gemini-3.1-flash-lite-image",label:"Nano Banana 2 Lite",vendor:"Google",testable:true},{id:"gpt-image-2.6",label:"GPT Image 2.6",vendor:"OpenAI",testable:false},
-        {id:"flux-3",label:"FLUX 3",vendor:"Black Forest Labs",testable:false},{id:"mai-image-2.7",label:"MAI-Image-2.7",vendor:"Microsoft",testable:false},
+        {id:"flux-2",label:"FLUX.2",vendor:"Black Forest Labs",testable:false},{id:"mai-image-2.7",label:"MAI-Image-2.7",vendor:"Microsoft",testable:false},
         {id:"seedream-5.5",label:"Seedream 5.5",vendor:"ByteDance",testable:false},{id:"kling-image-4.0",label:"Kling Image 4.0",vendor:"Kuaishou",testable:false}]}
-        :sdQuery.get("styleDnaTargets")==="bad"?{promptTargets:[{id:"flux-3",label:"FLUX 3",vendor:"Black Forest Labs",testable:false},{id:"flux-3",label:"FLUX 3 중복",vendor:"Black Forest Labs",testable:false}]}:{}),
+        :sdQuery.get("styleDnaTargets")==="bad"?{promptTargets:[{id:"flux-2",label:"FLUX.2",vendor:"Black Forest Labs",testable:false},{id:"flux-2",label:"FLUX.2 중복",vendor:"Black Forest Labs",testable:false}]}:{}),
       // 엔진 상태(Backend 066c554): ?styleDnaEngineList=ready|unavailable|not_configured|bad면 목록 응답에 analysisEngines·engineStorage를 싣는다(화면은 따로 조회하지 않음).
       // ready는 styleDna.engines(=?styleDnaEngines) 그대로, bad는 openai 행이 빠진 모양. 없으면 예전 서버(칸 없음 → 화면이 /engine-credentials를 따로 조회).
       ...(()=>{ const mode=sdQuery.get("styleDnaEngineList"); if (!mode) return {};

@@ -63,7 +63,7 @@ describe("P1-06 Style DNA 엔진 선택(화면 쪽)", () => {
 
 // P1-06-STYLE-DNA-MODEL-OPTIONS-BACKEND(CMD-20261125-011): 분석 프롬프트 대상 목록과 시험 생성(Gemini) 목록 분리.
 describe("P1-06 Style DNA 분석 대상 모델 선택지(서버 계약)", () => {
-  const promptOnly = ["gpt-image-2.6", "flux-3", "mai-image-2.7", "seedream-5.5", "kling-image-4.0"] as const;
+  const promptOnly = ["gpt-image-2.6", "flux-2", "mai-image-2.7", "seedream-5.5", "kling-image-4.0"] as const;
   const testable = ["gemini-nano-banana-2.1", "gemini-3.1-flash-lite-image"] as const;
   const origin = "https://studio.example.com";
   const owner = "10000000-0000-4000-8000-000000000011";
@@ -73,7 +73,7 @@ describe("P1-06 Style DNA 분석 대상 모델 선택지(서버 계약)", () => 
   it("일곱 개 대상을 한 목록으로 고정하고, 시험 생성 목록은 기존 Gemini 두 개 그대로다", () => {
     expect(styleDnaPromptTargets.map(item => [item.id, item.label, item.vendor, item.testable])).toEqual([
       ["gemini-nano-banana-2.1", "Nano Banana 2.1", "Google", true], ["gemini-3.1-flash-lite-image", "Nano Banana 2 Lite", "Google", true],
-      ["gpt-image-2.6", "GPT Image 2.6", "OpenAI", false], ["flux-3", "FLUX 3", "Black Forest Labs", false],
+      ["gpt-image-2.6", "GPT Image 2.6", "OpenAI", false], ["flux-2", "FLUX.2", "Black Forest Labs", false],
       ["mai-image-2.7", "MAI-Image-2.7", "Microsoft", false], ["seedream-5.5", "Seedream 5.5", "ByteDance", false],
       ["kling-image-4.0", "Kling Image 4.0", "Kuaishou", false],
     ]);
@@ -92,7 +92,8 @@ describe("P1-06 Style DNA 분석 대상 모델 선택지(서버 계약)", () => 
         engine: { provider: "openai", modelId: "gpt-4.1-mini" } }).targetModel).toBe(targetModel);
     }
     expect(styleDnaAnalyze.parse(base).targetModel).toBe("gemini-nano-banana-2.1");
-    for (const targetModel of ["midjourney-7", "FLUX 3", "flux-3 ", "gemini-3-pro-image", ""]) {
+    // FLUX 3(동영상 모델)은 대상에서 빠졌다(주인님 2026-11-25 FLUX.2로 교체).
+    for (const targetModel of ["midjourney-7", "flux-3", "FLUX 3", "FLUX.2", "flux-2 ", "gemini-3-pro-image", ""]) {
       expect(styleDnaAnalyze.safeParse({ ...base, targetModel }).success).toBe(false);
     }
   });

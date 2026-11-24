@@ -105,7 +105,7 @@ describe("P1-06 Style DNA 작업실(화면 쪽 통신)", () => {
 
   it("보관함 설정: 새 대상 목록·엔진 상태 칸을 그대로 받고, 그 칸이 없는 이전 응답도 그대로 읽는다(CMD-20261125-011)", async () => {
     const settings = { storage: "ready", credentialVersion: 3, analysisModel: "m", testModels: [{ id: "gemini-nano-banana-2.1", size: "2K", label: "Nano Banana 2.1" }],
-      promptTargets: [{ id: "flux-3", label: "FLUX 3", vendor: "Black Forest Labs", testable: false }],
+      promptTargets: [{ id: "flux-2", label: "FLUX.2", vendor: "Black Forest Labs", testable: false }],
       analysisEngines: [{ provider: "gemini", configured: true, modelId: "m", version: 3 }, { provider: "openai", configured: false, modelId: null, version: 0 },
         { provider: "anthropic", configured: false, modelId: null, version: 0 }], engineStorage: "ready" };
     const old = { storage: "ready", credentialVersion: 2, analysisModel: null, testModels: [] };

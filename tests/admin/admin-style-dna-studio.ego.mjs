@@ -264,8 +264,8 @@ try {
       await page.screenshot({ path: `${out}/studio-estimate-${width}.png` }); }
     // 새로 만든 기록이 '마지막에 연 기록'으로 남으면 다음 시험 첫 화면이 바뀐다.
     await page.evaluate(() => sessionStorage.clear());
-    // 9. 대상 모델(Backend 066c554 promptTargets): 예전 서버는 두 개 그대로, ?styleDnaTargets=new면 서버 목록 7개(새 5개, testable=false). 키보드로 FLUX 3을 고르면
-    //    안내가 붙고 고르기만으로는 POST 0. 분석 POST 본문 targetModel=flux-3. 3단계 '이미지 생성 모델'은 그대로 Gemini 두 개. =bad(중복 id)는 예전 목록.
+    // 9. 대상 모델(Backend 066c554 promptTargets): 예전 서버는 두 개 그대로, ?styleDnaTargets=new면 서버 목록 7개(새 5개, testable=false). 키보드로 FLUX.2를 고르면
+    //    안내가 붙고 고르기만으로는 POST 0. 분석 POST 본문 targetModel=flux-2. 3단계 '이미지 생성 모델'은 그대로 Gemini 두 개. =bad(중복 id)는 예전 목록.
     //    엔진(analysisEngines·engineStorage, 1574): 새 서버는 /engine-credentials 따로 조회 0, ready는 등록대로, unavailable·모양 어긋남은 '확인 실패', not_configured는
     //    '준비 안 됨'(어느 경우도 '키 미등록' 아님). 예전 서버는 따로 조회 1건.
     const TARGET = `[...(${ST}).querySelectorAll("label")].find((label) => label.firstChild?.textContent.trim() === "타겟 이미지 모델").querySelector("select")`;
@@ -302,11 +302,11 @@ try {
     }
     await open(`styleDnaReport=1&styleDnaTargets=new&w=${width}`);
     v = await targetState();
-    assert.deepEqual(v, { value: "gemini-nano-banana-2.1", options: ["Nano Banana 2.1", "Nano Banana 2 Lite", "GPT Image 2.6", "FLUX 3", "MAI-Image-2.7", "Seedream 5.5", "Kling Image 4.0"], note: null });
+    assert.deepEqual(v, { value: "gemini-nano-banana-2.1", options: ["Nano Banana 2.1", "Nano Banana 2 Lite", "GPT Image 2.6", "FLUX.2", "MAI-Image-2.7", "Seedream 5.5", "Kling Image 4.0"], note: null });
     const before = (await posts()).length;
     for (let i = 0; i < 3; i++) await mark(TARGET, "ArrowDown");
     v = await targetState();
-    assert.deepEqual(v, { value: "flux-3", options: v.options, note: "FLUX 3 문법에 맞춘 프롬프트만 만들어요. 3단계 시험 이미지는 Gemini로 만들어요." });
+    assert.deepEqual(v, { value: "flux-2", options: v.options, note: "FLUX.2 문법에 맞춘 프롬프트만 만들어요. 3단계 시험 이미지는 Gemini로 만들어요." });
     assert.equal((await posts()).length, before, "고르기만으로 POST 0");
     assert.ok(await overflow() <= 0, "target overflow");
     if (width === 390 || width === 1574) { await page.evaluate((TARGET) => eval(TARGET).scrollIntoView({ block: "center" }), TARGET); await settle(250);
@@ -317,7 +317,7 @@ try {
     await until((ST) => /Dusk City Portrait/.test(eval(ST).querySelector("[aria-label='분석 리포트']")?.textContent ?? ""), "target report", ST);
     const sent = await posts();
     assert.equal(sent.length, before + 1);
-    assert.equal(sent.at(-1).body.targetModel, "flux-3");
+    assert.equal(sent.at(-1).body.targetModel, "flux-2");
     await page.evaluate((R) => document.querySelectorAll(`${R} [aria-label='Style DNA 단계'] button`)[2].click(), R);
     await until((R) => !!document.querySelector(`${R} [aria-label='결과 테스트']`), "test step", R);
     const testModels = await page.evaluate((R) => { const label = [...document.querySelectorAll(`${R} [aria-label='결과 테스트'] label`)].find((item) => item.querySelector("span")?.textContent.trim() === "이미지 생성 모델");

@@ -13,7 +13,8 @@ export const styleDnaImageModels = {
 // 프롬프트 문법만 맞추는 분석 대상(CMD-20261125-011). 이 이름으로 모델을 호출하거나 공급자·요금 경로를 만들지 않는다.
 export const styleDnaPromptOnlyTargets = {
   "gpt-image-2.6": { label: "GPT Image 2.6", vendor: "OpenAI" },
-  "flux-3": { label: "FLUX 3", vendor: "Black Forest Labs" },
+  // FLUX 3은 공식 안내상 동영상 모델이라(help.bfl.ai what-is-flux-3) 주인님 결정(2026-11-25)으로 이미지 모델 FLUX.2를 넣는다.
+  "flux-2": { label: "FLUX.2", vendor: "Black Forest Labs" },
   "mai-image-2.7": { label: "MAI-Image-2.7", vendor: "Microsoft" },
   "seedream-5.5": { label: "Seedream 5.5", vendor: "ByteDance" },
   "kling-image-4.0": { label: "Kling Image 4.0", vendor: "Kuaishou" },
