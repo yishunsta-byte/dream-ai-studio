@@ -7,7 +7,8 @@ import {
 } from "@/lib/reference-analysis/admin-audio-details-contract";
 import { createAdminAudioAnalysisPost } from "@/lib/reference-analysis/admin-audio-analysis-server";
 import { audioUploadCommand } from "@/lib/reference-analysis/admin-audio-upload-contract";
-import { MUSIC_EXTERNAL_CONSENT_HEADER } from "@/lib/reference-analysis/music-semantic-contract";
+import { audioUploadDto, type AudioUploadRow } from "@/lib/reference-analysis/admin-audio-upload-store";
+import { MUSIC_EXTERNAL_CONSENT_HEADER, MUSIC_MODEL_VERSION_HEADER } from "@/lib/reference-analysis/music-semantic-contract";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/media/tools", () => ({ mediaBinary: (name: string) => name, runMedia: vi.fn() }));
@@ -40,7 +41,7 @@ const music = { ...coreMusic, mood: "Quiet",
   lyrics: { status: "instrumental", text: null }, stems: { vocals: null, bass: "Sustained tone", drums: null, others: "Piano" },
   qualityEstimates: { suspectedUpscale: null, compression: "Possible artifacts", editTraces: null, basis: "Ringing around stronger notes" },
 };
-const pack = (value: unknown) => JSON.stringify({ candidates: [{ finishReason: "STOP", content: { parts: [{ text: JSON.stringify(value) }] } }] });
+const pack = (value: unknown, modelVersion?: string) => JSON.stringify({ modelVersion, candidates: [{ finishReason: "STOP", content: { parts: [{ text: JSON.stringify(value) }] } }] });
 const provider = (value: unknown) => new Response(pack(value));
 const expanded = { [ADMIN_AUDIO_REPORT_PROFILE_HEADER]: "expanded" };
 
@@ -99,6 +100,24 @@ describe("administrator audio detailed report v2", () => {
       schemaVersion: 1, requestedMode: "music", kind: "music", status: "ready", provider: "gemini", report: coreMusic,
     });
     expect(runMedia).toHaveBeenCalledTimes(2);
+  });
+
+  it("preserves v2 music model metadata on opted-in upload readback", async () => {
+    const modelVersion = "gemini-detailed-resolved";
+    const modelReply = () => new Response(pack(music, modelVersion));
+    const { post } = fixture(modelReply(), modelReply());
+    const report = await result(post(request("music", "2", { [MUSIC_MODEL_VERSION_HEADER]: "1" })));
+    expect(report).toMatchObject({ kind: "music", modelVersion });
+    expect(await result(post(request("music")))).not.toHaveProperty("modelVersion");
+
+    const row: AudioUploadRow = {
+      id: owner.userId, filename: "fixture.wav", status: "completed", request_hash: "fixture",
+      size_bytes: 12, received_bytes: 12, expires_at: new Date("2026-11-25T00:00:00Z"), credential_version: 1,
+      analysis_id: null, analysis_hash: null, report, code: null, provider_file: null, cleanup: "done",
+    };
+    expect(audioUploadDto(row, false, true).report).toMatchObject({ modelVersion });
+    expect(audioUploadDto(row).report).not.toHaveProperty("modelVersion");
+    expect(row.report).toMatchObject({ modelVersion });
   });
 
   it("opts into bounded music findings and keeps ready when individual optional values are invalid", async () => {

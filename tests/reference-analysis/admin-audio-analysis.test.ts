@@ -4,7 +4,7 @@ import {
 } from "@/lib/reference-analysis/admin-audio-contract";
 import { createAdminAudioAnalysisPost } from "@/lib/reference-analysis/admin-audio-analysis-server";
 import { audioUploadStart, adminAudioUploadLimit } from "@/lib/reference-analysis/admin-audio-upload-contract";
-import { MUSIC_EXTERNAL_CONSENT_HEADER } from "@/lib/reference-analysis/music-semantic-contract";
+import { MUSIC_EXTERNAL_CONSENT_HEADER, MUSIC_MODEL_VERSION_HEADER } from "@/lib/reference-analysis/music-semantic-contract";
 
 vi.mock("server-only", () => ({}));
 
@@ -25,7 +25,8 @@ function request(mode: string, override: Record<string, string> = {}, body: Body
   } });
 }
 
-const providerReply = (value: unknown) => Response.json({
+const providerReply = (value: unknown, modelVersion?: unknown) => Response.json({
+  modelVersion,
   candidates: [{ finishReason: "STOP", content: { parts: [
     { text: "omit this thought", thought: true }, { text: JSON.stringify(value) },
   ] } }],
@@ -77,6 +78,25 @@ describe("versioned administrator audio analysis", () => {
       schemaVersion: 1, requestedMode: "auto", kind: "undetermined", status: "unavailable", reason,
     });
     expect(send).toHaveBeenCalledOnce();
+  });
+
+  it("records only the music report model for opted-in auto analysis", async () => {
+    const { post, send } = fixture(providerReply({ kind: "music" }, "gemini-classifier"),
+      providerReply({ ...music }, "gemini-audio-resolved"));
+    const reply = await result(await post(request("auto", { [MUSIC_MODEL_VERSION_HEADER]: "1" })));
+    expect(reply).toMatchObject({ kind: "music", modelVersion: "gemini-audio-resolved", report: music });
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["gemini-audio-resolved", {}],
+    ["synthetic", { [MUSIC_MODEL_VERSION_HEADER]: "1" }],
+    [{ id: "unexpected" }, { [MUSIC_MODEL_VERSION_HEADER]: "1" }],
+  ] as const)("preserves the v1 report when metadata is unrequested or unusable (%j)", async (modelVersion, headers) => {
+    const { post } = fixture(providerReply(music, modelVersion));
+    const reply = await result(await post(request("music", headers)));
+    expect(reply).toMatchObject({ kind: "music", status: "partial", report: music });
+    expect(reply).not.toHaveProperty("modelVersion");
   });
 
   it("does not start a report when the request is aborted during classification", async () => {

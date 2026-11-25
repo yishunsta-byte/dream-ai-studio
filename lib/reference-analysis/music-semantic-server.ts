@@ -27,7 +27,8 @@ export async function analyzeAdminMusic(
   const report = result.data;
   const filled = Object.values(report).filter(value => value !== null).length;
   if (!filled) return unavailable("invalid_response");
-  return { status: filled === Object.keys(report).length ? "ready" : "partial", provider: "gemini", report };
+  return { status: filled === Object.keys(report).length ? "ready" : "partial", provider: "gemini",
+    ...(result.modelVersion && { modelVersion: result.modelVersion }), report };
 }
 
 export function musicProviderFromSettings(settings: GeminiSettings, send: typeof fetch = fetch): MusicProvider {

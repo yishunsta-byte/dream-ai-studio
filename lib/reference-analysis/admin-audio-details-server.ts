@@ -103,5 +103,6 @@ export async function analyzeDetailedAudio(input: { requestedMode: AdminAudioMod
     report.harmony?.chordProgression, report.stems?.vocals, report.stems?.bass, report.stems?.drums, report.stems?.others,
     report.qualityEstimates?.suspectedUpscale, report.qualityEstimates?.compression, report.qualityEstimates?.editTraces];
   return { ...base, kind, status: lyrics.status !== "undetermined" && fields.every(value => value != null) ? "ready" : "partial",
+    ...(reply.modelVersion && { modelVersion: reply.modelVersion }),
     report: { ...report, ...safeAdditionalFindings(additionalFindings, settings.key) } };
 }
