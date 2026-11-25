@@ -1,5 +1,5 @@
 ﻿import { z } from "zod";
-import { musicReportSchema } from "./music-semantic-contract";
+import { musicModelVersionSchema, musicReportSchema } from "./music-semantic-contract";
 
 export const ADMIN_AUDIO_ANALYSIS_URI = "/api/admin/audio-analysis";
 export const ADMIN_AUDIO_MODE_HEADER = "x-dream-audio-mode";
@@ -30,7 +30,7 @@ export type SpeechReport = z.infer<typeof speechReportSchema>;
 const version = { schemaVersion: z.literal(1), requestedMode: adminAudioModeSchema };
 const available = { ...version, status: z.enum(["ready", "partial"]), provider: z.literal("gemini") };
 export const adminAudioResponseSchema = z.union([
-  z.strictObject({ ...available, kind: z.literal("music"), report: musicReportSchema }),
+  z.strictObject({ ...available, kind: z.literal("music"), modelVersion: musicModelVersionSchema.optional(), report: musicReportSchema }),
   z.strictObject({ ...available, kind: z.literal("speech"), report: speechReportSchema }),
   z.strictObject({
     ...version, status: z.literal("unavailable"), kind: audioKindSchema,

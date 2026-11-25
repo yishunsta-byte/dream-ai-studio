@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { adminAudioModeSchema, adminAudioResponseSchema, audioKindSchema, speechReportSchema } from "./admin-audio-contract";
-import { musicReportSchema } from "./music-semantic-contract";
+import { musicModelVersionSchema, musicReportSchema } from "./music-semantic-contract";
 
 export const ADMIN_AUDIO_REPORT_VERSION_HEADER = "x-dream-audio-report-version";
 export const ADMIN_AUDIO_REPORT_PROFILE_HEADER = "x-dream-audio-report-profile";
@@ -72,7 +72,7 @@ const report = { ...version, status: z.enum(["ready", "partial"]), provider: z.l
 const v2Failure = z.enum(["undetermined", "not_configured", "provider_error", "invalid_response", "timed_out"]);
 export const detailedAudioResponseSchema = z.union([
   z.strictObject({ ...report, kind: z.literal("speech"), report: detailedSpeechReportSchema }),
-  z.strictObject({ ...report, kind: z.literal("music"), report: expandedMusicModelSchema }),
+  z.strictObject({ ...report, kind: z.literal("music"), modelVersion: musicModelVersionSchema.optional(), report: expandedMusicModelSchema }),
   z.strictObject({ ...version, kind: audioKindSchema, status: z.literal("unavailable"), reason: v2Failure }),
 ]);
 export type DetailedAudioResponse = z.infer<typeof detailedAudioResponseSchema>;

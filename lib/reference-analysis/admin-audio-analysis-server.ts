@@ -13,6 +13,7 @@ import { type AdminAudioAccessOptions, audioJson, createAdminAudioAccess } from 
 import { withAudioInstructions, type AudioInstructions } from "./admin-audio-upload-contract";
 import { AudioUploadError, inlineAudioProbeDeadlineMs, measureInlineAudio } from "./admin-audio-media";
 import type { GeminiSettings } from "./analysis-gemini-settings";
+import { MUSIC_MODEL_VERSION_HEADER, projectMusicModelVersion } from "./music-semantic-contract";
 import { analyzeAdminMusic } from "./music-semantic-server";
 
 const detectionSchema = z.strictObject({ kind: audioKindSchema });
@@ -87,7 +88,8 @@ export function createAdminAudioAnalysisPost({ authenticate, env, settings, send
         }
       }
       const signal = AbortSignal.any([clientSignal, AbortSignal.timeout(detailed ? detailedAudioDeadlineMs : audioProviderDeadlineMs)]);
-      return audioJson(await analyzeAdminAudio(mode.data, audio, configured, signal, send, undefined, measurement, profile !== null));
+      const result = await analyzeAdminAudio(mode.data, audio, configured, signal, send, undefined, measurement, profile !== null);
+      return audioJson(projectMusicModelVersion(result, request.headers.get(MUSIC_MODEL_VERSION_HEADER) === "1"));
     };
   }, "audio_analysis_failed");
 }

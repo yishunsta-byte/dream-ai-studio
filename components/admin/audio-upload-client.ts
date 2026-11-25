@@ -6,6 +6,7 @@ import {
 import {
   adminAudioChunkBytes, adminAudioUploadLimit, adminAudioUploadsPath, audioFormatFromFilename,
 } from "@/lib/reference-analysis/admin-audio-upload-contract";
+import { MUSIC_MODEL_VERSION_HEADER } from "@/lib/reference-analysis/music-semantic-contract";
 import { readCredentialSettings } from "./gemini-credentials-client";
 
 // P1-07 원본 v1.15 100 MiB 오디오 업로드의 화면 쪽 통신(Backend 298cc8f 계약, d35eea5 기준).
@@ -89,12 +90,12 @@ export function createAudioUploadClient(send: typeof fetch = (...args) => fetch(
       call(adminAudioUploadsPath, { method: "POST", signal, headers: json, body: JSON.stringify({ ...input, authorized: true }) }),
     chunk: (id: string, offset: number, bytes: Blob, signal: AbortSignal, expanded?: boolean) => call(`${at(id)}/chunks`, { method: "PUT", signal, body: bytes,
       headers: profiled({ "content-type": "application/octet-stream", "x-dream-upload-offset": String(offset) }, expanded) }),
-    read: (id: string, signal: AbortSignal, expanded?: boolean) => call(at(id), { method: "GET", signal, headers: profiled({}, expanded) }),
+    read: (id: string, signal: AbortSignal, expanded?: boolean) => call(at(id), { method: "GET", signal, headers: profiled({ [MUSIC_MODEL_VERSION_HEADER]: "1" }, expanded) }),
     analyze: (id: string, input: { requestId: string; credentialVersion: number; mode: AdminAudioMode; context?: string; specialRequest?: string; reportVersion?: 2 },
-      signal: AbortSignal, expanded?: boolean) => call(at(id), { method: "POST", signal, headers: profiled(json, expanded),
+      signal: AbortSignal, expanded?: boolean) => call(at(id), { method: "POST", signal, headers: profiled({ ...json, [MUSIC_MODEL_VERSION_HEADER]: "1" }, expanded),
       body: JSON.stringify({ action: "analyze", authorized: true, ...input }) }),
-    cancel: (id: string, signal: AbortSignal, expanded?: boolean) => call(at(id), { method: "POST", signal, headers: profiled(json, expanded), body: JSON.stringify({ action: "cancel" }) }),
-    cleanup: (id: string, signal: AbortSignal, expanded?: boolean) => call(at(id), { method: "POST", signal, headers: profiled(json, expanded), body: JSON.stringify({ action: "cleanup" }) }),
+    cancel: (id: string, signal: AbortSignal, expanded?: boolean) => call(at(id), { method: "POST", signal, headers: profiled({ ...json, [MUSIC_MODEL_VERSION_HEADER]: "1" }, expanded), body: JSON.stringify({ action: "cancel" }) }),
+    cleanup: (id: string, signal: AbortSignal, expanded?: boolean) => call(at(id), { method: "POST", signal, headers: profiled({ ...json, [MUSIC_MODEL_VERSION_HEADER]: "1" }, expanded), body: JSON.stringify({ action: "cleanup" }) }),
   };
 }
 export type AudioUploadClient = ReturnType<typeof createAudioUploadClient>;

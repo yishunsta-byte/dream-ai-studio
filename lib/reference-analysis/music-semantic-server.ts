@@ -4,7 +4,7 @@ import { audioProviderDeadlineMs, requestAudioReport, type AdminAudioSource } fr
 import { withAudioInstructions, type AudioInstructions } from "./admin-audio-upload-contract";
 import { type AdminAudioAccessOptions, type AudioPayload, audioJson, createAdminAudioAccess } from "./admin-audio-http";
 import type { GeminiSettings } from "./analysis-gemini-settings";
-import { musicReportSchema, type MusicSemanticResult } from "./music-semantic-contract";
+import { MUSIC_MODEL_VERSION_HEADER, musicReportSchema, projectMusicModelVersion, type MusicSemanticResult } from "./music-semantic-contract";
 
 type MusicProvider = (audio: AudioPayload) => Promise<MusicSemanticResult>;
 const unavailable = (reason: Extract<MusicSemanticResult, { status: "unavailable" }>["reason"]): MusicSemanticResult => ({ status: "unavailable", reason });
@@ -47,7 +47,7 @@ export function createMusicSemanticHttp({ authenticate, env = process.env,
     post: (request: Request) => access.post(request, async owner => {
       const run = await provider(owner);
       if (!run) return audioJson({ semantic: unavailable("not_configured") });
-      return async audio => audioJson({ semantic: await run(audio) });
+      return async audio => audioJson({ semantic: projectMusicModelVersion(await run(audio), request.headers.get(MUSIC_MODEL_VERSION_HEADER) === "1") });
     }, "music_analysis_failed"),
   };
 }

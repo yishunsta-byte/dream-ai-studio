@@ -4,6 +4,7 @@ import { z } from "zod";
 import { supabasePublicConfig } from "../auth/config";
 import { projectAudioReport, type AudioAnalysisResponse } from "./admin-audio-details-contract";
 import { adminAudioChunkBytes, type AudioCleanupStatus, type AudioUpload, type AudioUploadStart, type AudioUploadStatus } from "./admin-audio-upload-contract";
+import { projectMusicModelVersion } from "./music-semantic-contract";
 
 export type AudioUploadRow = {
   id: string; filename: string; status: AudioUploadStatus; request_hash: string; size_bytes: number; received_bytes: number;
@@ -14,10 +15,10 @@ type Result = { status: number; row?: AudioUploadRow; code?: string; claimed?: t
 const role = "dream_audio_upload_app";
 const maxActiveUploads = 2;
 
-export function audioUploadDto(row: AudioUploadRow, expanded = false): AudioUpload {
+export function audioUploadDto(row: AudioUploadRow, expanded = false, includeModelVersion = false): AudioUpload {
   return { id: row.id, status: row.status, sizeBytes: row.size_bytes, receivedBytes: row.received_bytes,
     chunkBytes: adminAudioChunkBytes, expiresAt: row.expires_at.toISOString(), cleanup: row.cleanup,
-    ...(row.report && { report: projectAudioReport(row.report, expanded) }), ...(row.code && { code: row.code }) };
+    ...(row.report && { report: projectMusicModelVersion(projectAudioReport(row.report, expanded), includeModelVersion) }), ...(row.code && { code: row.code }) };
 }
 
 async function expire(client: PoolClient, owner: string, id?: string) {

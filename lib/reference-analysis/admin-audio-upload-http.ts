@@ -12,16 +12,17 @@ import { AudioUploadError, withVerifiedAudio } from "./admin-audio-media";
 import { createAdminAudioUploadProvider } from "./admin-audio-upload-provider";
 import { audioUploadDto, openAdminAudioUploadStore, type AdminAudioUploadStore, type AudioUploadRow } from "./admin-audio-upload-store";
 import { openRuntimeGeminiCredentialStore, type GeminiCredentialStore } from "./analysis-credential-store";
+import { MUSIC_MODEL_VERSION_HEADER } from "./music-semantic-contract";
 
 type Route = { params: Promise<{ id: string }> };
 type Options = AdminAudioAccessOptions & { store?: () => AdminAudioUploadStore | null;
   credentials?: () => GeminiCredentialStore | null; send?: typeof fetch };
 const problem = (code: string, status: number) => audioJson({ code }, status);
 type Result = Awaited<ReturnType<AdminAudioUploadStore["claim"]>>;
-function uploadResponses(expanded: boolean) {
+function uploadResponses(expanded: boolean, includeModelVersion: boolean) {
   const problem = (code: string, status: number, row?: AudioUploadRow) =>
-    audioJson({ code, ...(row && { upload: audioUploadDto(row, expanded) }) }, status);
-  const state = (row: AudioUploadRow, status = 200) => audioJson({ upload: audioUploadDto(row, expanded) }, status);
+    audioJson({ code, ...(row && { upload: audioUploadDto(row, expanded, includeModelVersion) }) }, status);
+  const state = (row: AudioUploadRow, status = 200) => audioJson({ upload: audioUploadDto(row, expanded, includeModelVersion) }, status);
   const reply = ({ status, row, code }: Result) =>
     code ? problem(code, status, row) : row ? state(row, status) : problem("not_found", 404);
   return { expanded, problem, state, reply };
@@ -51,7 +52,8 @@ export function createAdminAudioUploadHttp({ authenticate, env = process.env, st
     const profile = request?.headers.get(ADMIN_AUDIO_REPORT_PROFILE_HEADER) ?? null;
     if (profile !== null && profile !== EXPANDED_AUDIO_REPORT_PROFILE) return problem("invalid_report_profile", 400);
     const store = openStore();
-    return store ? action(owner, store, uploadResponses(profile !== null)) : problem("storage_unavailable", 503);
+    const includeModelVersion = request?.headers.get(MUSIC_MODEL_VERSION_HEADER) === "1";
+    return store ? action(owner, store, uploadResponses(profile !== null, includeModelVersion)) : problem("storage_unavailable", 503);
   });
 
   async function currentSettings(owner: string) {

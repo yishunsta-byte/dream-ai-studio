@@ -6,7 +6,7 @@ import {
   type DetailedAudioResponse,
 } from "@/lib/reference-analysis/admin-audio-details-contract";
 import {
-  MUSIC_EXTERNAL_CONSENT_HEADER, MUSIC_SEMANTIC_URI, musicSemanticAvailabilitySchema, musicSemanticResultSchema,
+  MUSIC_EXTERNAL_CONSENT_HEADER, MUSIC_MODEL_VERSION_HEADER, MUSIC_SEMANTIC_URI, musicSemanticAvailabilitySchema, musicSemanticResultSchema,
   type MusicSemanticResult,
 } from "@/lib/reference-analysis/music-semantic-contract";
 
@@ -52,7 +52,7 @@ export function createAdminMusicSemanticClient(send: typeof fetch = (...args) =>
       try {
         const response = await request({ method: "POST", signal, body: file, headers: {
           "content-type": "application/octet-stream", "x-dream-filename": encodeURIComponent(file.name),
-          [MUSIC_EXTERNAL_CONSENT_HEADER]: "true",
+          [MUSIC_EXTERNAL_CONSENT_HEADER]: "true", [MUSIC_MODEL_VERSION_HEADER]: "1",
         } });
         if (!response.ok) return rejected(response);
         const body: unknown = await response.json();
@@ -66,7 +66,7 @@ export function createAdminMusicSemanticClient(send: typeof fetch = (...args) =>
       try {
         const response = await send(ADMIN_AUDIO_ANALYSIS_URI, { method: "POST", signal, body: file, credentials: "same-origin", cache: "no-store", redirect: "error",
           headers: { "content-type": "application/octet-stream", "x-dream-filename": encodeURIComponent(file.name),
-            [MUSIC_EXTERNAL_CONSENT_HEADER]: "true", [ADMIN_AUDIO_MODE_HEADER]: mode } });
+            [MUSIC_EXTERNAL_CONSENT_HEADER]: "true", [MUSIC_MODEL_VERSION_HEADER]: "1", [ADMIN_AUDIO_MODE_HEADER]: mode } });
         if (!response.ok) return rejected(response);
         const result = adminAudioResponseSchema.parse(await response.json());
         // 다른 모드의 응답은 받지 않는다(늦은 응답·잘못된 응답 방지).
@@ -81,7 +81,7 @@ export function createAdminMusicSemanticClient(send: typeof fetch = (...args) =>
       try {
         const response = await send(ADMIN_AUDIO_ANALYSIS_URI, { method: "POST", signal, body: file, credentials: "same-origin", cache: "no-store", redirect: "error",
           headers: { "content-type": "application/octet-stream", "x-dream-filename": encodeURIComponent(file.name),
-            [MUSIC_EXTERNAL_CONSENT_HEADER]: "true", [ADMIN_AUDIO_MODE_HEADER]: mode, [ADMIN_AUDIO_REPORT_VERSION_HEADER]: "2",
+            [MUSIC_EXTERNAL_CONSENT_HEADER]: "true", [MUSIC_MODEL_VERSION_HEADER]: "1", [ADMIN_AUDIO_MODE_HEADER]: mode, [ADMIN_AUDIO_REPORT_VERSION_HEADER]: "2",
             [ADMIN_AUDIO_REPORT_PROFILE_HEADER]: EXPANDED_AUDIO_REPORT_PROFILE } });
         if (!response.ok) return rejected(response);
         const result = detailedAudioResponseSchema.parse(await response.json());
