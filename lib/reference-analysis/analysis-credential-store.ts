@@ -8,6 +8,7 @@ import { credentialGroup, credentialKey, credentialModels, credentialTestMap, cr
   type CredentialGroup, type CredentialModels, type CredentialTest, type GeminiProgram } from "./analysis-credential-contract";
 import { isStyleDnaEngineModel, styleDnaEngine, type StyleDnaEngine, type StyleDnaEngineBasis, type StyleDnaEngineCredentialMetadata,
   type StyleDnaEngineCredentialWrite } from "./style-dna-engine-credential-contract";
+import { styleDnaGenerationKey, styleDnaGenerationProvider, type StyleDnaGenerationProvider } from "./style-dna-generation-credential-contract";
 
 type PoolLike = Pick<Pool, "connect">;
 type KeyRing = { primary: string; keys: Readonly<Record<string, Buffer>> };
@@ -35,10 +36,20 @@ export type StyleDnaEngineCredentialStore = {
   write(owner: string, input: StyleDnaEngineCredentialWrite): Promise<RegisteredEngine | "stale" | "invalid_input">;
 };
 
+type RegisteredGeneration = { version: number; updatedAt: string };
+// 생성 공급자 키: 분석 엔진 키와 다른 표·버전·AAD. 목록(metadata)은 복호화하지 않는다.
+export type StyleDnaGenerationCredentialStore = {
+  metadata(owner: string): Promise<Partial<Record<StyleDnaGenerationProvider, RegisteredGeneration>>>;
+  open(owner: string, provider: StyleDnaGenerationProvider): Promise<(RegisteredGeneration & { apiKey: string }) | undefined>;
+  whileCurrent<T>(owner: string, provider: StyleDnaGenerationProvider, version: number, run: () => Promise<T>): Promise<T | undefined>;
+  write(owner: string, provider: StyleDnaGenerationProvider, apiKey: string, expectedVersion: number): Promise<RegisteredGeneration | "stale">;
+};
+
 const role = "dream_gemini_app";
 const table = "dream_gemini_credentials.credentials";
 const youtubeTable = "dream_gemini_credentials.youtube_credentials";
 const engineTable = "dream_gemini_credentials.style_dna_engine_credentials";
+const generationTable = "dream_gemini_credentials.style_dna_generation_credentials";
 const unavailable = () => new Error("Analysis credential store unavailable");
 const metadataColumns = "provider_group,models,version,updated_at,key_id,last_test";
 const keyName = z.string().regex(/^[A-Za-z0-9_-]{1,32}$/);
@@ -53,6 +64,8 @@ type Row = z.infer<typeof rowShape>;
 const engineColumns = "provider,model_id,version,updated_at,key_id";
 const engineRow = keyRow.extend({ provider: styleDnaEngine, model_id: modelId })
   .refine(row => isStyleDnaEngineModel(row.provider, row.model_id));
+const generationColumns = "provider,version,updated_at,key_id";
+const generationRow = keyRow.extend({ provider: styleDnaGenerationProvider });
 
 export function readGeminiCredentialKeyRing(value: string): KeyRing {
   if (value.length > 4096) throw unavailable();
@@ -84,6 +97,9 @@ const youtubeAad = (owner: string, version: number, keyId: string) =>
 
 const engineAad = (owner: string, provider: StyleDnaEngine, version: number, model: string, keyId: string) =>
   Buffer.from(JSON.stringify(["dream-style-dna-engine-credential-v1", owner.toLowerCase(), provider, version, model, keyId]));
+
+const generationAad = (owner: string, provider: StyleDnaGenerationProvider, version: number, keyId: string) =>
+  Buffer.from(JSON.stringify(["dream-style-dna-generation-credential-v1", owner.toLowerCase(), provider, version, keyId]));
 
 function sealKey(apiKey: string, ring: KeyRing, associatedData: Buffer, keyFormat = credentialKey) {
   const nonce = randomBytes(12);
@@ -127,9 +143,13 @@ export function createAnalysisCredentialStores(pool: PoolLike, ring: KeyRing) {
   async function transaction<T>(owner: string, readOnly: boolean, run: (client: PoolClient) => Promise<T>) {
     let client: PoolClient | undefined;
     let broken = false;
+    // 빌린 연결이 거래 중(예: whileCurrent가 결과 저장을 기다리는 동안) 끊기면 pg가 연결 객체에 error 이벤트를 낸다.
+    // 듣는 곳이 없으면 프로세스 예외가 되므로 받아서 그 연결을 버리고, 거래는 아래 catch에서 저장소 오류로 끝난다.
+    const dropped = () => { broken = true; };
     try {
       const id = z.guid().parse(owner).toLowerCase();
       client = await pool.connect();
+      client.on("error", dropped);
       await client.query(readOnly ? "BEGIN READ ONLY" : "BEGIN");
       await client.query("SET LOCAL search_path = pg_catalog; SET LOCAL statement_timeout = '3s'; SET LOCAL lock_timeout = '2s'");
       const identity = await client.query(`SELECT current_user = session_user AND current_user = $1
@@ -147,7 +167,10 @@ export function createAnalysisCredentialStores(pool: PoolLike, ring: KeyRing) {
         catch { broken = true; }
       }
       throw unavailable();
-    } finally { client?.release(broken); }
+    } finally {
+      client?.removeListener("error", dropped);
+      client?.release(broken);
+    }
   }
 
   const gemini: GeminiCredentialStore = {
@@ -250,7 +273,41 @@ export function createAnalysisCredentialStores(pool: PoolLike, ring: KeyRing) {
       return result.rows[0] ? engineMetadata(engineRow.parse(result.rows[0]), ring) : "stale";
     }),
   };
-  return { gemini, youtube, engines };
+  const generators: StyleDnaGenerationCredentialStore = {
+    metadata: owner => transaction(owner, true, async client => {
+      const { rows } = await client.query(`SELECT ${generationColumns} FROM ${generationTable} WHERE owner_id=$1`, [owner]);
+      return Object.fromEntries(rows.map(raw => {
+        const row = generationRow.parse(raw);
+        return [row.provider, keyVersionMetadata(row, ring)];
+      }));
+    }),
+    open: (owner, provider) => transaction(owner, true, async client => {
+      const { rows: [raw] } = await client.query(`SELECT ${generationColumns},nonce,ciphertext,tag FROM ${generationTable}
+        WHERE owner_id=$1 AND provider=$2`, [owner, provider]);
+      if (!raw) return;
+      const row = generationRow.parse(raw);
+      return { ...keyVersionMetadata(row, ring),
+        apiKey: openKey(raw, keyFor(ring, row.key_id), generationAad(owner, row.provider, row.version, row.key_id), styleDnaGenerationKey) };
+    }),
+    // 결과 저장 거래가 커밋될 때까지 키 행을 잡아 두어, 그 사이 회전(버전 증가)이 끼어들지 못하게 한다.
+    whileCurrent: (owner, provider, version, run) => transaction(owner, false, async client => {
+      const held = await client.query(`SELECT 1 FROM ${generationTable} WHERE owner_id=$1 AND provider=$2 AND version=$3 FOR SHARE`,
+        [owner, provider, version]);
+      if (held.rowCount === 1) return run();
+    }),
+    write: (owner, provider, apiKey, expectedVersion) => transaction(owner, false, async client => {
+      const version = expectedVersion + 1;
+      const args = [owner, provider, version,
+        ...sealKey(apiKey, ring, generationAad(owner, provider, version, ring.primary), styleDnaGenerationKey)];
+      const result = expectedVersion === 0
+        ? await client.query(`INSERT INTO ${generationTable}(owner_id,provider,version,key_id,nonce,ciphertext,tag)
+            VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (owner_id,provider) DO NOTHING RETURNING ${generationColumns}`, args)
+        : await client.query(`UPDATE ${generationTable} SET version=$3,key_id=$4,nonce=$5,ciphertext=$6,tag=$7,
+            updated_at=clock_timestamp() WHERE owner_id=$1 AND provider=$2 AND version=$8 RETURNING ${generationColumns}`, [...args, expectedVersion]);
+      return result.rows[0] ? keyVersionMetadata(generationRow.parse(result.rows[0]), ring) : "stale";
+    }),
+  };
+  return { gemini, youtube, engines, generators };
 }
 
 export function createGeminiCredentialStore(pool: PoolLike, ring: KeyRing): GeminiCredentialStore {
@@ -297,4 +354,8 @@ export function openRuntimeYouTubeCredentialStore(): YouTubeCredentialStore | nu
 
 export function openRuntimeStyleDnaEngineCredentialStore(): StyleDnaEngineCredentialStore | null {
   return openRuntimeAnalysisCredentialStores()?.engines ?? null;
+}
+
+export function openRuntimeStyleDnaGenerationCredentialStore(): StyleDnaGenerationCredentialStore | null {
+  return openRuntimeAnalysisCredentialStores()?.generators ?? null;
 }

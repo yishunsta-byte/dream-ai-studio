@@ -4,12 +4,16 @@ import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type
 import { Button } from "@/components/ui/primitives";
 import { adminLoginPath } from "@/lib/auth/config";
 import { imageAnalysisSection } from "./admin-paths";
-import { styleDnaImageModels, styleDnaRatio, styleDnaTestPromptLimit, type StyleDnaOptions, type StyleDnaRecord, type StyleDnaTestResult } from "@/lib/reference-analysis/style-dna-contract";
+import {
+  styleDnaGenerationRequestModel, styleDnaImageModels, styleDnaRatio, styleDnaRequestId, styleDnaResultModelLabel, styleDnaTestPromptLimit, type StyleDnaGenerationRequestModel, type StyleDnaOptions, type StyleDnaRecord, type StyleDnaResultModel,
+  type StyleDnaTestModel, type StyleDnaTestResult,
+} from "@/lib/reference-analysis/style-dna-contract";
 import type { ReadyResult } from "./admin-reference-analysis-model";
 import { nearestAspectRatio, StyleDnaReport } from "./admin-style-dna-report";
 import {
   analyzeRequest, analyzeStyleDna, compareStyleDna, engineBasisText, engineLabel, fileSha256, fillSubject, needsSubject, newRequestId, paletteProximity, readEngineCredentials,
-  deleteStyleDna, readStyleDnaLibrary, readStyleDnaRecord, referenceImage, refineRequest, refineStyleDna, styleDnaListEngines, styleDnaTargetChoices, testRequest, testStyleDna, testUploadRequest,
+  deleteStyleDna, generationText, readGeneration, readStyleDnaGeneration, readStyleDnaLibrary, readStyleDnaRecord, referenceImage, refineRequest, refineStyleDna, styleDnaGenerationChoices,
+  styleDnaListEngines, styleDnaTargetChoices, testRequest, testStyleDna, testUploadRequest, usdText, usageBased, generationCostText, generationModelLabel,
   type AnalyzeSource, type EngineChoice, type EngineState, type LibraryOutcome, type OpOutcome, type StyleDnaCode,
 } from "./style-dna-client";
 import { FlaskConical, HelpCircle, Loader2, Microscope, Moon, Sliders, Sparkles, Sun, Upload, Wand2 } from "./style-dna-original/icons";
@@ -30,8 +34,8 @@ import styles from "./admin-style-dna-workflow.module.css";
 // (픽셀 측정·비율·구도·조명 근거·한영 프롬프트)를 그대로 쓰고, 서버 실측 5색 팔레트를 함께 보여 준다. 보정은 최신 버전에만 피드백을 보내 새 버전을 쌓고,
 // 시험은 고른 버전의 프롬프트로 이미지 1장을 만들어 원본과 슬라이더로 비교한다(색 근접도는 서버 실측 5색으로 화면에서 계산).
 // 원본 Style DNA v1.01처럼 분석·보정·시험 모두 따로 전송 동의 체크를 받지 않는다(CMD-044): 관리자가 실행 단추를 누르는 것이 실행 의사이고(서버에는 authorized: true),
-// 무엇을 어디로 보내는지는 단추 옆 안내 문구로만 보여 준다. 엔진(Gemini·OpenAI·Anthropic)·모델·등록 버전은 누른 순간의 값을 보낸다(시험 생성은 언제나 Gemini). 진행 중 다른 기록을 열거나 메뉴를 떠나면 요청을 끊고 늦은 응답을 버린다.
-// 연결이 끊기면 같은 요청 ID·같은 내용으로만 다시 확인한다(서버가 새 호출 없이 저장된 결과를 돌려준다).
+// 무엇을 어디로 보내는지는 단추 옆 안내 문구로만 보여 준다. 엔진(Gemini·OpenAI·Anthropic)·모델·등록 버전은 누른 순간의 값을 보낸다. 시험 생성은 고른 모델의 등록 자격을 사용한다. 진행 중 다른 기록을 열거나 메뉴를 떠나면 요청을 끊고 늦은 응답을 버린다.
+// 유료 시험 생성은 원래 요청 ID로 저장된 결과를 조회하고, 기존 분석·보정·Gemini는 같은 ID와 본문으로 다시 확인한다.
 // P1-06 원본 전체 화면(/admin/style-dna, layout="original")은 원본 사이드바 껍데기 안에서 그리고 로그인 뒤 같은 화면으로 돌아온다.
 const panelLogin = adminLoginPath({ next: "/admin#admin-style-dna" });
 const originalLogin = adminLoginPath({ next: "/admin/style-dna" });
@@ -40,8 +44,8 @@ const UPLOAD_LIMIT = 4 * 1024 * 1024;
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
 const LIMITS = { guidance: 800, feedback: 600, subject: 500, url: 4096 };
 type Step = "library" | "analyze" | "refine" | "test";
-type Model = StyleDnaTestResult["model"];
-const modelIds = Object.keys(styleDnaImageModels) as Model[];
+type Model = StyleDnaResultModel;
+const modelIds = Object.keys(styleDnaImageModels) as StyleDnaTestModel[];
 export const mutationStage = (level: number) => level <= 30 ? { label: "안정", full: "안정 (원본 스타일 충실)", desc: "원본 스타일 엄격 보존, 미세 질감 개선만" }
   : level <= 70 ? { label: "조화", full: "조화 (스타일 변형·응용)", desc: "구도 유지, 아트스타일·조명 적극 변형" }
   : { label: "파격", full: "파격 (과감한 재해석)", desc: "핵심 축만 유지, 대담하고 새로운 재해석" };
@@ -50,6 +54,29 @@ export const modeText = (record: Pick<StyleDnaRecord, "mode" | "options">) =>
 const when = (value: string) => new Date(value).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" });
 const day = (value: string) => new Date(value).toLocaleDateString("ko-KR");
 const LIBRARY_LIMIT = 100;
+/** P2-02 생성 공급자 시험의 오류 안내({name}은 모델 이름). 공급자에 갔을 수 있는 실패는 청구 가능성과 '자동으로 다시 보내지 않음', 이전 결과 보존을 함께 말한다. */
+const generationMessages: Partial<Record<StyleDnaCode, string>> = {
+  generation_not_sent: "공급자에 보내기 전에 멈췄어요. 요청이 나가지 않아 요금도 없어요. 키 설정을 확인한 뒤 '공정 시작'을 다시 눌러 주세요.",
+  generation_submission_unknown: "요청이 {name}에 전달됐는지 확인하지 못했어요. 이미 만들어져 요금이 청구됐을 수 있어요(청구 확인 필요). 자동으로 다시 보내지 않았고 이전 결과는 그대로예요. 새로 만들려면 '공정 시작'을 다시 눌러 주세요(새 요청).",
+  generation_result_lost: "{name}이 요청을 받았지만 결과를 받지 못했어요. 요금이 청구됐을 수 있어요(청구 확인 필요). 자동으로 다시 보내지 않았고 이전 결과는 그대로예요. 새로 만들려면 '공정 시작'을 다시 눌러 주세요(새 요청).",
+  result_unconfirmed: "{name}에서 이미 만들어져 요금이 청구됐을 수 있지만 서버가 결과 저장을 확인하지 못했어요(청구 확인 필요). 자동으로 다시 보내지 않았고 이전 결과는 그대로예요. '결과 다시 확인'은 같은 요청을 다시 물어봐요(새로 만들지 않아요).",
+  content_rejected: "{name}이 프롬프트나 결과를 콘텐츠 정책으로 거절했어요. 프롬프트를 바꿔 새로 실행해 주세요. 이전 결과는 그대로예요.",
+  provider_busy: "{name} 요청이 많아 거절됐어요. 잠시 뒤 '공정 시작'을 다시 눌러 주세요. 이전 결과는 그대로예요.",
+  provider_rejected: "{name}이 요청을 거절했어요. 키 상태와 계정을 확인해 주세요. 이전 결과는 그대로예요.",
+  invalid_model_response: "{name} 응답이 규격과 달라 저장하지 않았어요. 요금이 청구됐을 수 있어요(청구 확인 필요). 이전 결과는 그대로예요.",
+  not_configured: "{name} 생성 키가 준비되지 않았어요. 설정을 다시 읽었어요.",
+  stale_credential: "{name} 키 등록 버전이 바뀌었어요. 최신 설정을 다시 읽었으니 다시 실행해 주세요.",
+  storage_unavailable: "결과를 저장하지 못했어요. 이전 결과는 그대로예요. 공급자에 요금이 청구됐을 수 있어요(청구 확인 필요).",
+  model_error: "{name} 결과를 처리하지 못했어요. 이전 결과는 그대로예요. 요금이 청구됐을 수 있어요(청구 확인 필요).",
+};
+/** 서버가 예약을 유지하는 504(FLUX·GPT Image): 새 요청 안내 대신 같은 요청 확인만 안내한다. */
+const generationHeldMessages: Partial<Record<StyleDnaCode, string>> = {
+  generation_submission_unknown: "요청이 {name}에 전달됐는지 확인하지 못했어요. 이미 만들어져 요금이 청구됐을 수 있어요(청구 확인 필요). 자동으로 다시 보내지 않았고 이전 결과는 그대로예요. 같은 요청이 끝날 때까지 새 생성은 잠가 두었어요. '결과 다시 확인'은 같은 요청을 다시 물어봐요(새로 만들지 않아요).",
+  generation_result_lost: "{name}이 요청을 받았지만 결과를 받지 못했어요. 요금이 청구됐을 수 있어요(청구 확인 필요). 자동으로 다시 보내지 않았고 이전 결과는 그대로예요. 같은 요청이 끝날 때까지 새 생성은 잠가 두었어요. '결과 다시 확인'은 같은 요청을 다시 물어봐요(새로 만들지 않아요).",
+};
+/** execute의 안내 바꾸기: 끊김 문구와 오류 문구(없으면 기본 안내). */
+/** paid: 유료 생성 공급자 요청을 보낸 기록 ID. 결과를 확인하기 전(유실·202·503 미확정)에는 그 기록의 새 생성 요청을 받지 않는다. */
+type ExecuteNotes<T> = { lost?: string; paid?: { recordId: string; request: PaidPending & { model: StyleDnaGenerationRequestModel } }; error?: (outcome: Extract<OpOutcome<T>, { kind: "error" }>) => string | null };
 const noSubscribe = () => () => {};
 const messages: Record<StyleDnaCode, string> = {
   invalid_input: "입력을 확인해 주세요. 주소는 직접 열리는 HTTPS 이미지여야 해요.",
@@ -65,6 +92,8 @@ const messages: Record<StyleDnaCode, string> = {
   timed_out: "Gemini 응답 시간이 지났어요. 잠시 뒤 다시 시도해 주세요.",
   subject_required: "이 프롬프트에는 피사체 자리가 있어요. 피사체를 입력해 주세요.",
   in_progress: "아직 처리 중이에요. 잠시 뒤 '결과 다시 확인'을 눌러 주세요.",
+  generation_in_progress: "이 기록에서 앞선 이미지 생성 요청을 처리 중이에요. '결과 다시 확인'을 눌러 주세요.",
+  result_unconfirmed: "이미 처리됐을 수 있지만 서버가 결과 저장을 확인하지 못했어요. 자동으로 다시 보내지 않았어요. '결과 다시 확인'은 같은 요청을 다시 물어봐요(새로 만들지 않아요).",
   invalid_reference: "참조 이미지를 읽지 못했어요. PNG·JPG·WebP 이미지를 다시 골라 주세요.",
   reference_mismatch: "참조 이미지가 보내는 중에 바뀌었어요. 다시 골라 주세요.",
   unsupported_format: "참조 이미지는 PNG·JPG·WebP만 쓸 수 있어요.",
@@ -72,15 +101,64 @@ const messages: Record<StyleDnaCode, string> = {
   comparison_media_mismatch: "원본이나 결과 이미지가 기록과 달라요. 기록을 다시 열어 주세요.",
   comparison_unmeasured: "저장된 점검 지점이 없어 추세를 남길 수 없어요.",
   failed: "결과를 확인하지 못했어요. 다시 시도해 주세요.",
+  // 생성 공급자 코드의 기본 문구(모델 이름은 generationMessages가 넣는다).
+  estimate_changed: "예상 금액이 바뀌었어요. 요청은 보내지 않았어요. 금액을 확인하고 다시 눌러 주세요.",
+  generation_not_sent: "공급자에 보내기 전에 멈췄어요. 요청이 나가지 않아 요금도 없어요.",
+  generation_submission_unknown: "요청이 공급자에 전달됐는지 확인하지 못했어요. 요금이 청구됐을 수 있어요(청구 확인 필요). 자동으로 다시 보내지 않았어요.",
+  generation_result_lost: "공급자가 요청을 받았지만 결과를 받지 못했어요. 요금이 청구됐을 수 있어요(청구 확인 필요). 자동으로 다시 보내지 않았어요.",
+  content_rejected: "공급자가 콘텐츠 정책으로 거절했어요. 프롬프트를 바꿔 새로 실행해 주세요.",
+  provider_busy: "공급자 요청이 많아 거절됐어요. 잠시 뒤 다시 실행해 주세요.",
+  provider_rejected: "공급자가 요청을 거절했어요. 키 상태와 계정을 확인해 주세요.",
+  invalid_model_response: "공급자 응답이 규격과 달라 저장하지 않았어요. 요금이 청구됐을 수 있어요(청구 확인 필요).",
 };
 type Notice = { tone: "status" | "alert"; text: string; login?: boolean; retry?: boolean };
 type Pending = { label: string; run: (signal: AbortSignal) => Promise<void> };
+type PaidIdentity = { requestId: string; model: StyleDnaGenerationRequestModel | null };
+/** 같은 요청의 결과를 GET으로만 확인하는 실행 이름(새 생성 '시험 이미지 생성'과 구분: 진행 문구·시뮬레이션 표시가 다르다). */
+const PAID_CHECK = "생성 결과 확인";
+/** 원 요청 모델을 대조하지 못한 이유별 안내(결과·잠금은 그대로, 같은 UUID 확인만 남김). */
+const modelIssueText = {
+  missing: "처음 요청한 모델을 확인할 수 없어요. 결과와 잠금은 그대로예요. '결과 다시 확인'은 같은 요청을 다시 물어봐요(새로 만들지 않아요).",
+  mismatch: "기존 요청과 결과의 모델이 일치하지 않아요. 결과와 잠금은 그대로예요. '결과 다시 확인'은 같은 요청을 다시 물어봐요(새로 만들지 않아요).",
+} as const;
+type PaidPending = PaidIdentity & { kind: "pending"; onResult?: (test: StyleDnaTestResult) => void };
+
+function readPaidIdentity(key: string): PaidIdentity | undefined {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(key) ?? "null");
+    if (styleDnaRequestId.safeParse(value?.requestId).success && (value.model === null || styleDnaGenerationRequestModel.safeParse(value.model).success)) {
+      return { requestId: value.requestId, model: value.model };
+    }
+  } catch { /* storage may be unavailable */ }
+}
+
+function writePaidIdentity(key: string, identity: PaidIdentity | null) {
+  try {
+    if (identity) sessionStorage.setItem(key, JSON.stringify({ requestId: identity.requestId, model: identity.model }));
+    else sessionStorage.removeItem(key);
+  } catch { /* keep the in-memory binding when storage is unavailable */ }
+}
+type PaidStatus = { kind: "checking" | "idle" | "unavailable" } | PaidPending;
+/** 같은 요청 번호로 다시 물어볼 결과: 처리 중(202)과 공급자가 처리했을 수 있는데 기록을 확인하지 못한 503 result_unconfirmed. */
+const recheckable = (code: StyleDnaCode) => code === "in_progress" || code === "result_unconfirmed";
+/** 서버가 504 접수 미확인·결과 유실에서 예약을 유지하는 생성 모델(c608b8c1: FLUX·GPT Image의 keepPending). Seedream은 예약을 풀어 새 요청을 받는다. */
+const heldModels: ReadonlySet<string> = new Set(["flux-2-pro", "gpt-image-2.6"]);
+/** 예약 유지 모델의 504 두 코드: 응답의 요청 번호·모델이 같든 다르든 잘못됐든 빠졌든, 이미 보낸 이 탭의 요청 번호·모델로 보류를 유지한다.
+ *  응답 번호는 채택하지 않고(다른 번호 조회 없음), 새 생성 대신 같은 요청의 GET 확인만 남긴다(Tester gpt-504-independent 반례). */
+const heldPaid = (outcome: { kind: string; code?: StyleDnaCode; status?: number }, model: string | null | undefined) => outcome.kind === "error"
+  && outcome.status === 504 && (outcome.code === "generation_submission_unknown" || outcome.code === "generation_result_lost") && !!model && heldModels.has(model);
 const store = { get: () => { try { return sessionStorage.getItem(LAST); } catch { return null; } },
   set: (id: string | null) => { try { if (id) sessionStorage.setItem(LAST, id); else sessionStorage.removeItem(LAST); } catch { /* 저장 불가면 다시 열기만 빠짐 */ } } };
 
 type Props = { layout?: "panel" | "original" | "embedded"; account?: string };
 
-export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props = {}) {
+export function AdminStyleDnaWorkflow(props: Props = {}) {
+  return <StyleDnaWorkflow key={props.account} {...props} />;
+}
+
+function StyleDnaWorkflow({ layout = "panel", account = "" }: Props) {
+  // Embedded records are scoped by the owner-authorized record ID before any receipt can be read.
+  const paidKey = (id: string) => `dream:style-dna:paid:${encodeURIComponent(account)}:${id}`;
   const id = useId();
   const original = layout !== "panel";
   const embedded = layout === "embedded";
@@ -102,6 +180,9 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const [running, setRunning] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
+  const [paidRequests, setPaidRequests] = useState(() => new Map<string, PaidStatus>());
+  const paidStatus = record ? paidRequests.get(record.id) : undefined;
+  const paidPending = paidStatus?.kind === "pending" ? paidStatus : undefined;
   const [copied, setCopied] = useState("");
   // ① 분석
   const [sourceKind, setSourceKind] = useState<"file" | "url" | "record">("file");
@@ -124,6 +205,8 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const [feedback, setFeedback] = useState("");
   const [testRevision, setTestRevision] = useState<number | null>(null);
   const [testModel, setTestModel] = useState<Model>("gemini-nano-banana-2.1");
+  // 409 estimate_changed로 서버가 돌려준 새 견적. 사용자가 이 금액을 보고 다시 누를 때만 이 금액으로 보낸다(자동 재요청 없음).
+  const [estimateOverride, setEstimateOverride] = useState<{ model: string; referenceCount: 0 | 1; totalMicros: number } | null>(null);
   const [subject, setSubject] = useState("");
   const [attach, setAttach] = useState(true);
   const [ratio, setRatio] = useState("");
@@ -140,7 +223,16 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const [engines, setEngines] = useState<EngineState | null | undefined>(undefined);
   const [engine, setEngine] = useState<EngineChoice>("gemini");
   const active = useRef<AbortController | null>(null);
+  // 결과 확인이 끝나 복구 단추가 사라지면 초점이 문서 처음으로 빠지지 않게 현재 단계 제목으로 옮긴다.
+  const refocusAfterCheck = useRef(false);
+  useEffect(() => {
+    if (!refocusAfterCheck.current || running) return;
+    refocusAfterCheck.current = false;
+    const focused = document.activeElement;
+    if (!focused || focused === document.body) document.getElementById(`${id}-title`)?.focus();
+  });
   const reading = useRef<AbortController | null>(null);
+  const generationReading = useRef<AbortController | null>(null);
   const reopened = useRef(false);
 
   useEffect(() => {
@@ -156,6 +248,8 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
       const last = store.get();
       if (last && outcome.items.some(item => item.id === last)) {
         setStep(current => current ?? "analyze");
+        // open은 아래에 선언된 일회성 기록 열기다(아래 exhaustive-deps 주석과 같은 이유로 attempt에만 묶는다). 앱 빌드는 React 컴파일러를 쓰지 않는다.
+        // eslint-disable-next-line react-hooks/immutability
         void open(last, true);
       }
     }, () => { if (!controller.signal.aborted) { setLibrary({ kind: "failed" }); setEngines(null); } });
@@ -163,7 +257,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
     // open은 기록을 여는 일회성 동작이라 다시 읽기 기준(attempt)에만 묶는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
-  useEffect(() => () => { active.current?.abort(); reading.current?.abort(); }, []);
+  useEffect(() => () => { active.current?.abort(); reading.current?.abort(); generationReading.current?.abort(); }, []);
   useEffect(() => { openId.current = record?.id; }, [record]);
   const previewUrl = useRef<string | null>(null);
   useEffect(() => () => { if (previewUrl.current) URL.revokeObjectURL(previewUrl.current); }, []);
@@ -230,6 +324,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   }
   /** 열린 기록을 닫는다(새 이미지 분석·열린 기록 삭제). */
   function closeRecord() {
+    generationReading.current?.abort();
     setRecord(undefined); store.set(null); setPicked(false); setShown(null); setTestRevision(null);
     setEditing(false); setCustomPrompt(""); setLoadedFrom(null); pickReference(null);
   }
@@ -273,6 +368,8 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   function forget(recordId: string, text: string) {
     setLibrary(current => current.kind === "ok" ? { ...current, items: current.items.filter(item => item.id !== recordId) } : current);
     if (openId.current === recordId) { changed(); closeRecord(); setNotice(null); setPending(null); }
+    writePaidIdentity(paidKey(recordId), null);
+    setPaidRequest(recordId, null);
     if (store.get() === recordId) store.set(null);
     setLibraryNote({ tone: "status", text });
     void refreshLibrary();
@@ -294,41 +391,176 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
     setTestRevision(value.revisions.at(-1)?.revision ?? 1);
     setShown(value.tests.at(-1)?.id ?? null);
     setEditing(false); setCustomPrompt(""); setLoadedFrom(null); pickReference(null);
+    void discoverPaidRequest(value.id);
+  }
+
+  function setPaidRequest(recordId: string, request: PaidStatus | null, keepPending = false) {
+    setPaidRequests(previous => {
+      if (keepPending && previous.get(recordId)?.kind === "pending") return previous;
+      const next = new Map(previous);
+      if (request) next.set(recordId, request);
+      else next.delete(recordId);
+      return next;
+    });
+  }
+
+  async function discoverPaidRequest(recordId: string) {
+    generationReading.current?.abort();
+    const controller = new AbortController();
+    generationReading.current = controller;
+    setPaidRequest(recordId, { kind: "checking" }, true);
+    const outcome = await readStyleDnaGeneration(recordId, undefined, controller.signal);
+    if (controller.signal.aborted) return;
+    generationReading.current = null;
+    if (outcome.kind === "login" || outcome.kind === "forbidden") {
+      stop();
+      setPaidRequests(new Map());
+      setPending(null);
+      setNotice({ tone: "alert", login: outcome.kind === "login", text: outcome.kind === "login" ? "로그인이 끝났어요." : "이 계정에는 Style DNA 권한이 없어요." });
+      return;
+    }
+    const key = paidKey(recordId);
+    const saved = readPaidIdentity(key);
+    if (outcome.kind === "pending") {
+      // 서버 원장 모델(인증된 같은 소유자·기록·UUID)을 이 요청의 모델로 묶는다. 이 탭에 이미 묶은 모델이 있으면 그 값을 지키고,
+      // 둘이 다르면 덮어쓰지 않고 잠금을 유지한 채 알린다(확정은 checkPaidRequest가 같은 대조를 다시 한다).
+      const same = saved?.requestId === outcome.requestId;
+      const model = same && saved.model ? saved.model : outcome.model;
+      const found: PaidPending = { kind: "pending", requestId: outcome.requestId, model };
+      if (!saved || (same && !saved.model && outcome.model)) writePaidIdentity(key, found);
+      setPaidRequest(recordId, found, !(same && !saved.model && outcome.model));
+      if (same && saved.model && outcome.model && saved.model !== outcome.model) setNotice({ tone: "alert", retry: true, text: modelIssueText.mismatch });
+      return;
+    }
+    if (saved && (outcome.kind === "idle" || outcome.kind === "unavailable")) {
+      // A request may finish while the page is closed. An idle discovery cannot verify its result.
+      setPaidRequest(recordId, { kind: "pending", ...saved }, true);
+      return;
+    }
+    setPaidRequest(recordId, { kind: outcome.kind === "idle" ? "idle" : "unavailable" }, true);
+  }
+
+  function clearPaidIdentity(recordId: string, requestId: string) {
+    const key = paidKey(recordId);
+    if (readPaidIdentity(key)?.requestId === requestId) writePaidIdentity(key, null);
+  }
+
+  function checkPaidRequest(record: StyleDnaRecord, request: PaidPending) {
+    start({
+      label: PAID_CHECK,
+      run: async signal => {
+        const outcome = await readStyleDnaGeneration(record.id, request.requestId, signal, request.model);
+        // 다른 탭에서 보정한 리비전이면 기록을 먼저 다시 읽어 해당 리비전을 확인한다.
+        const latest = outcome.kind === "settled" && !record.revisions.some(item => item.revision === outcome.test.revision)
+          ? await readStyleDnaRecord(record.id, signal).catch(() => null) : null;
+        if (signal.aborted) return;
+        active.current = null; setRunning("");
+        refocusAfterCheck.current = true;
+        if (outcome.kind === "model_unverified") {
+          setNotice({ tone: "alert", text: modelIssueText[outcome.reason] });
+          return;
+        }
+        if (outcome.kind === "deleted") {
+          // 같은 UUID에 묶인 확정 삭제: 요청 잠금을 끝내고 기록을 닫은 뒤 보관함을 다시 읽는다.
+          clearPaidIdentity(record.id, request.requestId);
+          forget(record.id, "삭제된 기록이에요. 보관함을 다시 읽었어요.");
+          setStep("library");
+          return;
+        }
+        if (outcome.kind === "settled") {
+          const revisions = latest?.kind === "ok" ? latest.value.revisions : record.revisions;
+          if (!revisions.some(item => item.revision === outcome.test.revision)) {
+            setNotice({ tone: "alert", text: "시험 결과의 버전을 확인하지 못했어요. 잠시 뒤 다시 확인해 주세요." });
+            return;
+          }
+          clearPaidIdentity(record.id, request.requestId);
+          setPaidRequest(record.id, { kind: "idle" });
+          if (latest?.kind === "ok") setRecord(latest.value);
+          if (request.onResult) request.onResult(outcome.test);
+          else applyTest(record.id, outcome.test);
+          return;
+        }
+        if (outcome.kind === "settled_error") {
+          clearPaidIdentity(record.id, request.requestId);
+          setPaidRequest(record.id, { kind: "idle" });
+          setNotice({ tone: "alert", text: (generationMessages[outcome.code] ?? messages[outcome.code]).replaceAll("{name}", styleDnaResultModelLabel(outcome.model)) });
+          if (outcome.code === "stale_credential" || outcome.code === "not_configured") reloadLibrary();
+          return;
+        }
+        if (outcome.kind === "login" || outcome.kind === "forbidden") {
+          setPaidRequests(new Map());
+          setPending(null);
+          setNotice({ tone: "alert", login: outcome.kind === "login", text: outcome.kind === "login" ? "로그인이 끝났어요." : "이 계정에는 Style DNA 권한이 없어요." });
+          return;
+        }
+        if (outcome.kind === "missing") {
+          setNotice({ tone: "alert", text: "그 생성 요청을 찾지 못했어요. 잠시 뒤 '결과 다시 확인'을 눌러 주세요." });
+          return;
+        }
+        setNotice({ tone: "alert", text: outcome.kind === "pending" ? messages.in_progress : "생성 상태를 확인하지 못했어요. 잠시 뒤 '결과 다시 확인'을 눌러 주세요." });
+      },
+    });
   }
 
   /** 쓰기 한 건을 실행한다. 끊긴 연결은 같은 요청으로만 다시 확인할 수 있게 남긴다. */
-  async function execute<T>(label: string, call: (signal: AbortSignal) => Promise<OpOutcome<T>>, done: (value: T) => void, provider: EngineChoice = "gemini") {
+  function execute<T>(label: string, call: (signal: AbortSignal) => Promise<OpOutcome<T>>, done: (value: T) => void, provider: EngineChoice = "gemini",
+    notes?: ExecuteNotes<T>) {
     if (active.current) return;
-    const run = async (signal: AbortSignal) => {
-      const outcome = await call(signal);
+    const paid = notes?.paid;
+    const request: Pending = { label, run: async signal => {
+      const outcome = await call(signal).catch(() => ({ kind: "lost" as const }));
       if (signal.aborted) return;
       active.current = null; setRunning("");
-      if (outcome.kind === "ok") { setPending(null); done(outcome.value); return; }
+      const checkAgain = outcome.kind === "lost" || (outcome.kind === "error" && (
+        recheckable(outcome.code) || (!!paid &&
+          (outcome.code === "generation_in_progress" || heldPaid(outcome, paid.request.model) ||
+            (outcome.code === "failed" && (outcome.status >= 500 || [200, 201, 429].includes(outcome.status)))))
+      ));
+      if (paid) {
+        if (outcome.kind === "error" && outcome.code === "generation_in_progress") {
+          if (outcome.requestId !== paid.request.requestId) {
+            // 다른 보류 요청: 서버 원장 모델만 묶는다(방금 보낸 모델을 그 요청의 모델로 쓰지 않음).
+            const other: PaidPending | null = outcome.requestId ? { kind: "pending", requestId: outcome.requestId, model: outcome.model ?? null } : null;
+            writePaidIdentity(paidKey(paid.recordId), other);
+            setPaidRequest(paid.recordId, other ?? { kind: "unavailable" });
+          }
+        } else if (!checkAgain && outcome.kind !== "login" && outcome.kind !== "forbidden") {
+          clearPaidIdentity(paid.recordId, paid.request.requestId);
+          setPaidRequest(paid.recordId, { kind: "idle" });
+        }
+      } else setPending(checkAgain ? request : null);
+      // 같은 UUID를 다시 보낸 POST의 202가 원장 모델을 주면 이 요청에 묶은 모델과 대조한다(다르면 잠금 유지·불일치 안내).
+      const modelMismatch = !!paid && outcome.kind === "error" && outcome.status === 202 && !!outcome.model && !!paid.request.model && outcome.model !== paid.request.model;
+      if (outcome.kind === "ok") { done(outcome.value); return; }
       if (outcome.kind === "lost") {
-        setPending({ label, run });
-        setNotice({ tone: "alert", retry: true, text: "응답을 받지 못했어요. 이미 저장됐을 수 있어요. '결과 다시 확인'은 같은 요청을 다시 물어봐요(새로 만들지 않아요)." });
+        setNotice({ tone: "alert", retry: true, text: notes?.lost ?? "응답을 받지 못했어요. 이미 저장됐을 수 있어요. '결과 다시 확인'은 같은 요청을 다시 물어봐요(새로 만들지 않아요)." });
         return;
       }
-      setPending(outcome.kind === "error" && outcome.code === "in_progress" ? { label, run } : null);
       if (outcome.kind === "login" || outcome.kind === "forbidden") {
+        if (outcome.kind === "login") {
+          setPaidRequests(new Map());
+          setPending(null);
+        }
         setNotice({ tone: "alert", text: outcome.kind === "login" ? "로그인이 끝났어요." : "이 계정에는 Style DNA 권한이 없어요.", login: outcome.kind === "login" });
         return;
       }
-      setNotice({ tone: "alert", text: say(outcome.code, provider), retry: outcome.code === "in_progress" });
+      setNotice({ tone: "alert", text: modelMismatch ? modelIssueText.mismatch : notes?.error?.(outcome) ?? say(outcome.code, provider), retry: checkAgain });
       if (outcome.code === "stale_credential" || outcome.code === "not_configured") reloadLibrary();
       if ((outcome.code === "stale_revision" || outcome.code === "not_found") && record) void open(record.id, true);
-    };
-    const controller = new AbortController();
-    active.current = controller;
-    setRunning(label); setNotice(null);
-    try { await run(controller.signal); } catch { /* 끊긴 요청은 결과를 버린다 */ }
+    } };
+    // 화면에서 중단해도 서버는 계속 처리할 수 있어 첫 전송 전에 같은 요청을 보관한다.
+    if (paid) {
+      writePaidIdentity(paidKey(paid.recordId), paid.request);
+      setPaidRequest(paid.recordId, paid.request);
+    }
+    start(request);
   }
-  async function retry() {
-    if (!pending || active.current) return;
+  function start(request: Pending) {
+    if (active.current) return;
     const controller = new AbortController();
     active.current = controller;
-    setRunning(pending.label); setNotice(null);
-    try { await pending.run(controller.signal); } catch { /* 끊김 */ }
+    setRunning(request.label); setNotice(null);
+    void request.run(controller.signal);
   }
 
   const source: AnalyzeSource | null = sourceKind === "file" ? (file ? { kind: "file", file } : null)
@@ -363,6 +595,20 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
     }, engine);
   }
 
+  // 3단계 시험 모델: Gemini 시험 모델 + 키가 준비된 생성 공급자 모델(서버 settings.generationModels). 고른 생성 모델이 목록에서 빠지면 첫 모델로 돌아간다.
+  const generationChoices = useMemo(() => styleDnaGenerationChoices(settings), [settings]);
+  const geminiModels = settings?.testModels ?? modelIds.map(model => ({ id: model, ...styleDnaImageModels[model] }));
+  const testModels: { id: string; label: string; size: string }[] = [...geminiModels,
+    ...generationChoices.map(item => ({ id: item.id, label: `${generationModelLabel(item.id, item.label)}(${item.vendor})`, size: item.size.replace("x", "×") }))];
+  const activeModel = (testModels.some(item => item.id === testModel) ? testModel : testModels[0]?.id ?? "gemini-nano-banana-2.1") as Model;
+  const generation = generationChoices.find(item => item.id === activeModel) ?? null;
+  const referenceCount: 0 | 1 = attach ? 1 : 0;
+  // usage 기반(GPT Image 2.6, 주인님 결정 msg_eecb6bc80f10): 누르기 전 금액이 없어도 생성을 허용하고 billing: "usage_based"를 보낸다.
+  const usage = usageBased(generation);
+  const expectedMicros = !generation || usageBased(generation) ? undefined
+    : estimateOverride && estimateOverride.model === generation.id && estimateOverride.referenceCount === referenceCount ? estimateOverride.totalMicros
+    : referenceCount ? generation.estimate.withReference : generation.estimate.withoutReference;
+  const generationName = generation ? generationModelLabel(generation.id, generation.label) : "";
   const chosen = record?.revisions.find(item => item.revision === testRevision);
   const subjectNeeded = needsSubject(chosen?.prompts.en) || needsSubject(chosen?.prompts.ko);
   const autoRatio = record ? nearestAspectRatio(record.original.width, record.original.height) : null;
@@ -370,6 +616,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
   const testReady = !!record && !!chosen && (editing
     ? !!customPrompt.trim() && [...customPrompt].length <= styleDnaTestPromptLimit && !needsSubject(customPrompt)
     : (!subjectNeeded || !!subject.trim()) && [...subject].length <= LIMITS.subject);
+  const canStartTest = !running && testReady && (generation ? (usage || expectedMicros !== undefined) && paidStatus?.kind === "idle" : ready);
   /** 바꾼 참조 이미지(미리보기 주소는 바꾸거나 닫을 때 돌려준다). 형식·크기가 맞지 않으면 고르지 않는다. */
   function pickReference(file: File | null | undefined) {
     if (file && !referenceImage.ok(file)) {
@@ -379,27 +626,54 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
     setReference(previous => { if (previous) URL.revokeObjectURL(previous.href); return file ? { file, href: URL.createObjectURL(file) } : null; });
   }
   useEffect(() => () => { setReference(previous => { if (previous) URL.revokeObjectURL(previous.href); return null; }); }, []);
-  async function submitTest(event: FormEvent) {
+  function submitTest(event: FormEvent) {
     event.preventDefault();
-    if (!record || !chosen || !testReady || !ready) return;
-    const input = { revision: chosen.revision, model: testModel, subject, attachImage: attach, ...(ratio && { aspectRatio: ratio }),
-      ...(editing && { customPrompt }) };
-    const op = { requestId: newRequestId(), credentialVersion: version };
-    // 같은 본문으로만 다시 확인하므로(유실·202) 참조 파일의 해시는 보내기 전에 한 번만 잰다.
+    if (active.current || !record || !chosen || !canStartTest) return;
+    // 생성 공급자: 크기 고정이라 화면비를 보내지 않고(서버가 1:1로 기록), 화면에 보여 준 예상 금액과 그 공급자 키 버전을 보낸다.
+    const input = { revision: chosen.revision, model: activeModel, subject, attachImage: attach, ...(!generation && ratio && { aspectRatio: ratio }),
+      ...(editing && { customPrompt }), ...(generation && (usage ? { billing: "usage_based" as const } : { expectedCostMicros: expectedMicros })) };
+    const op = { requestId: newRequestId(), credentialVersion: generation ? generation.credentialVersion : version };
+    const sent = generation ? { model: generation.id, name: generation.label, referenceCount, micros: expectedMicros ?? 0 } : null;
     const upload = attach && reference ? reference.file : null;
-    const sha = upload ? await fileSha256(upload).catch(() => null) : null;
-    if (upload && !sha) { setNotice({ tone: "alert", text: messages.invalid_reference }); return; }
-    const body = upload && sha ? testUploadRequest(input, op, upload, sha) : testRequest(input, op);
+    const body = upload ? fileSha256(upload).then(sha => testUploadRequest(input, op, upload, sha), () => null)
+      : testRequest(input, op);
     // 추세에 남길 프롬프트: 편집 칸으로 다시 불러올 수 있는 글(직접 편집이면 편집한 글, 아니면 피사체를 넣은 버전 프롬프트)
     const trendPrompt = editing ? customPrompt.trim() : basePrompt;
     const comparison = record.comparison;
-    void execute("시험 이미지 생성", signal => testStyleDna(record.id, body, chosen.revision, { signal }), value => {
-      setRecord(previous => previous && previous.id === record.id ? { ...previous, tests: [...previous.tests.filter(item => item.id !== value.id), value] } : previous);
-      setShown(value.id);
-      setNotice({ tone: "status", text: `버전 ${value.revision} 프롬프트로 시험 이미지를 만들었어요.` });
-      // 원본 v1.34(Master 결정): 새 결과(201·이 실행의 유실 복구)에서만, 측정된 저장 지점이 있으면 추세를 한 번 남긴다. 공급자 호출 없음, 실패는 화면을 막지 않는다.
+    const onResult = (value: StyleDnaTestResult) => {
+      applyTest(record.id, value);
+      if (sent) setEstimateOverride(null);
       if (comparison?.spots.some(spot => spot.diff !== null)) void recordTrend(record.id, value, comparison.spotVersion, trendPrompt);
-    });
+    };
+    // 유료 시험 생성은 자동 재전송 없이 원래 요청 번호의 영수증을 GET으로 확인한다.
+    const notes: ExecuteNotes<StyleDnaTestResult> | undefined = sent ? {
+      paid: { recordId: record.id, request: { kind: "pending", requestId: op.requestId, model: sent.model, onResult } },
+      lost: `응답을 받지 못했어요. ${sent.name}에서 이미 만들어져 저장되고 요금이 청구됐을 수 있어요. '결과 다시 확인'은 같은 요청을 다시 물어봐요(새로 만들지 않아요).`,
+      error: outcome => {
+        if (outcome.code === "estimate_changed") {
+          if (!outcome.estimate) { reloadLibrary(); return "예상 금액이 바뀌었어요. 요청은 보내지 않았어요. 설정을 다시 읽은 뒤 금액을 확인하고 다시 눌러 주세요."; }
+          setEstimateOverride({ model: sent.model, referenceCount: sent.referenceCount, totalMicros: outcome.estimate.totalMicros });
+          return `예상 금액이 ${usdText(sent.micros)}에서 ${usdText(outcome.estimate.totalMicros)}로 바뀌었어요(가격표 ${outcome.estimate.priceTable}). 요청은 보내지 않았어요. 새 금액을 확인했으면 '공정 시작'을 다시 눌러 주세요.`;
+        }
+        const text = heldPaid(outcome, sent.model) ? generationHeldMessages[outcome.code] : generationMessages[outcome.code];
+        return text ? text.replaceAll("{name}", sent.name) : null;
+      },
+    } : undefined;
+    void execute("시험 이미지 생성", async signal => {
+      const request = await body;
+      if (!request) return { kind: "error", code: "invalid_reference", status: 0 };
+      if (signal.aborted) return { kind: "lost" };
+      return testStyleDna(record.id, request, chosen.revision, { signal, ...(sent && { polls: 0 }) });
+    }, onResult, "gemini", notes);
+  }
+  function applyTest(recordId: string, value: StyleDnaTestResult) {
+    setRecord(previous => previous && previous.id === recordId && !previous.tests.some(item => item.id === value.id)
+      ? { ...previous, tests: [...previous.tests, value] } : previous);
+    setShown(value.id);
+    const made = readGeneration(value.generation, value.model);
+    setNotice({ tone: "status", text: made
+      ? `버전 ${value.revision} 프롬프트로 ${styleDnaResultModelLabel(value.model)} 시험 이미지를 만들었어요. ${"kind" in made.estimate ? generationCostText(made) : `예상 금액 ${usdText(made.estimate.totalMicros)}`}, 실제 청구는 공급자 정산 뒤 확정돼요.`
+      : `버전 ${value.revision} 프롬프트로 시험 이미지를 만들었어요.` });
   }
   async function recordTrend(recordId: string, value: StyleDnaTestResult, spotVersion: number, prompt: string) {
     const outcome = await compareStyleDna(recordId, { action: "record-trend", testId: value.id, originalSha256: value.original.sha256,
@@ -463,23 +737,42 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
       {library.kind === "login" ? <> <a className={panel.link} href={loginLink}>관리자 로그인</a></> : <> <button type="button" className={panel.link} onClick={reloadLibrary}>다시 확인</button></>}
     </p> : null;
   const analyzeHint = step === "analyze" ? engineWarn : null;
+  const generationBlock = generation && paidStatus?.kind !== "idle"
+    ? paidPending ? `확인할 요청 · ${paidPending.model ? styleDnaResultModelLabel(paidPending.model) : "모델 확인 전"}. 앞선 이미지 생성 결과를 확인한 뒤 새로 시작할 수 있어요. 위 모델 선택과 예상 금액은 다음 생성 설정이에요.`
+      : paidStatus?.kind === "unavailable" ? "이미지 생성 상태를 확인하지 못했어요. 상태를 다시 확인해 주세요."
+        : "이미지 생성 상태를 확인하는 중이에요."
+    : null;
+  const checkingPaid = running === PAID_CHECK;
+  // 확인 중에도 단추를 남겨 초점을 지키고(눌림 무시), 끝나면 같은 단추로 다시 확인할 수 있다.
+  const canRecoverPaid = (!running || checkingPaid) && !!record && !!paidPending;
+  const canRetryPaidStatus = !running && !!record && paidStatus?.kind === "unavailable";
+  const recoverPaid = () => { if (record && paidPending && !active.current) checkPaidRequest(record, paidPending); };
+  const retryPaidStatus = () => { if (record) void discoverPaidRequest(record.id); };
+  const startRecovery = canRecoverPaid
+    ? <Button type="button" variant="secondary" onClick={recoverPaid} aria-disabled={checkingPaid || undefined}>
+      {checkingPaid ? "결과를 확인하고 있어요…" : "결과 다시 확인"}</Button>
+    : canRetryPaidStatus
+      ? <Button type="button" variant="secondary" onClick={retryPaidStatus}>이미지 생성 상태 다시 확인</Button>
+      : null;
   const operationFeedback = <>
     <p id={`${id}-operation-status`} className={panel.status} role={notice?.tone === "alert" ? "alert" : "status"}>
-      {running ? `${running} 중이에요.` : notice?.text ?? analyzeHint ?? ""}
+      {checkingPaid ? "결과를 확인하고 있어요." : running ? `${running} 중이에요.` : notice?.text ?? analyzeHint ?? ""}
       {!running && notice?.login && <> <a className={panel.link} href={loginLink}>관리자 로그인</a></>}
-      {!running && pending && <> <button type="button" className={panel.link} onClick={() => void retry()}>결과 다시 확인</button></>}
+      {!running && pending && <> <button type="button" className={panel.link} onClick={() => start(pending)}>{paidPending ? `${pending.label} 결과 다시 확인` : "결과 다시 확인"}</button></>}
+      {(step !== "test" || !generation) && canRecoverPaid && <> <button type="button" className={panel.link} title="앞선 이미지 생성 결과" onClick={recoverPaid}>결과 다시 확인</button></>}
+      {step !== "test" && generation && canRetryPaidStatus && <> <button type="button" className={panel.link} onClick={retryPaidStatus}>이미지 생성 상태 다시 확인</button></>}
     </p>
     {running && <div className={panel.actions}><Button type="button" variant="secondary" onClick={() => { stop(); setPending(null); setNotice({ tone: "status", text: "요청을 멈췄어요. 이미 저장됐는지는 보관함에서 확인할 수 있어요." }); }}>멈추기</Button></div>}
   </>;
 
   const body = <section className={`${panel.panel} ${styles.workflow}`} data-layout={layout} aria-labelledby={`${id}-title`}>
-    {original ? <h1 id={`${id}-title`} className={styles.srOnly}>{{ library: "보관함", analyze: "1단계 이미지 분석", refine: "2단계 프롬프트 보정", test: "3단계 결과 테스트" }[step]}</h1>
-      : <div className={panel.head}><h3 id={`${id}-title`}>Style DNA 작업실 · 분석 → 보정 → 결과 테스트</h3></div>}
+    {original ? <h1 id={`${id}-title`} tabIndex={-1} className={styles.srOnly}>{{ library: "보관함", analyze: "1단계 이미지 분석", refine: "2단계 프롬프트 보정", test: "3단계 결과 테스트" }[step]}</h1>
+      : <div className={panel.head}><h3 id={`${id}-title`} tabIndex={-1}>Style DNA 작업실 · 분석 → 보정 → 결과 테스트</h3></div>}
     {!original && <p className={panel.note}>원본 Style DNA v1.39의 세 단계를 이어서 써요. 분석·보정·시험 결과는 내 보관함에 저장되고 다시 열 수 있어요. 실행 단추를 누를 때만 Gemini(또는 고른 AI)를 불러요.</p>}
     {step !== "library" && step !== "analyze" && libraryFeedback}
     {/* 원본 전체 화면에는 이 설정 줄이 없다(엔진·모델은 분석 화면에서 고른다). 미등록일 때만 안내로 남긴다. */}
     {settings && (!original || !ready) && <p className={panel.note} aria-label="Style DNA 설정">{ready ? `분석 모델 ${settings.analysisModel} · Gemini 등록 버전 ${version}` : "이미지 분석 모델이 등록되지 않아 실행할 수 없어요. API키등록·플랫폼연동에서 등록해 주세요."}
-      {` · 시험 생성 모델 ${settings.testModels.map(model => model.label).join(", ")}`}</p>}
+      {` · 시험 생성 모델 ${[...settings.testModels.map(model => model.label), ...generationChoices.map(item => item.label)].join(", ")}`}</p>}
 
 
     {!original && <div className={styles.nav}>
@@ -578,7 +871,8 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
                 onChange={event => { changed(); setTargetModel(event.target.value); }}>
                 {targets.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select>
               {!testable && <span className={studio.count} id={`${id}-target-note`}>
-                {targetLabel} 문법에 맞춘 프롬프트만 만들어요. 3단계 시험 이미지는 Gemini로 만들어요.</span>}</label>
+                {targetLabel} 문법에 맞춘 프롬프트만 만들어요. {generationChoices.some(item => item.id === target)
+                  ? `3단계에서 ${targetLabel}(키 준비됨) 또는 Gemini로 시험 이미지를 만들 수 있어요.` : "3단계 시험 이미지는 Gemini로 만들어요."}</span>}</label>
             <label className={studio.field}>추가 분석 지침 (선택)
               <textarea maxLength={LIMITS.guidance} value={guidance} placeholder=">> 예: '조명과 표면 질감을 집중 분석', '따뜻한 감성 톤으로 추출' 등 자유 입력"
                 onChange={event => { changed(); setGuidance(event.target.value); }} />
@@ -590,7 +884,7 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
                 {engineChoices.map(choice => <button key={choice.value} type="button" aria-pressed={engine === choice.value} disabled={busy || choice.disabled}
                   value={choice.value} title={choice.label} onClick={event => pickEngine(event.currentTarget.value as EngineChoice)}>{choice.short}{choice.tag && <small> {choice.tag}</small>}</button>)}
               </div>
-              <p className={studio.engineNote} id={`${id}-engine`}>API키등록·플랫폼연동에 등록한 {engineShort} 키{engineModel ? `(${engineModel})` : ""}로 호출되며 요금은 그 계정에 청구돼요. 시험 이미지 생성은 언제나 Gemini로 해요.</p>
+              <p className={studio.engineNote} id={`${id}-engine`}>API키등록·플랫폼연동에 등록한 {engineShort} 키{engineModel ? `(${engineModel})` : ""}로 호출되며 요금은 그 계정에 청구돼요. {generationChoices.length ? "시험 이미지는 3단계에서 고른 생성 모델로 만들어요." : "시험 이미지 생성은 언제나 Gemini로 해요."}</p>
             </div>
           </section>
         </form>
@@ -660,12 +954,25 @@ export function AdminStyleDnaWorkflow({ layout = "panel", account = "" }: Props 
       attach={attach} onAttach={value => { changed(); setAttach(value); }}
       reference={reference && { href: reference.href, name: reference.file.name }} referenceAccept={referenceImage.accept}
       onReference={file => { changed(); pickReference(file); }} onReferenceClear={() => { changed(); pickReference(null); }}
-      models={settings?.testModels ?? modelIds.map(model => ({ id: model, ...styleDnaImageModels[model] }))} model={testModel}
+      models={testModels} model={activeModel}
       onModel={value => { changed(); setTestModel(value as Model); }} ratio={ratio} ratios={styleDnaRatio.options} onRatio={value => { changed(); setRatio(value); }}
-      ready={ready}
-      sendNote={`'공정 시작'을 누르면 버전 ${chosen?.revision ?? "-"}의 ${editing ? "직접 편집한 프롬프트" : "프롬프트"}${attach ? reference ? "와 고른 참조 이미지" : "와 원본 이미지" : ""}를 Gemini 이미지 모델에 보내 시험 이미지 1장을 만들고 보관해요(호출 1건).`}
-      busy={busy} running={running === "시험 이미지 생성"} canRun={testReady} onSubmit={event => void submitTest(event)} missing={!!settings && !ready}
-      tests={record.tests} shown={shown} onShow={setShown} modelLabel={model => styleDnaImageModels[model as Model]?.label ?? model}
+      ratioFixed={generation ? `${generation.aspectRatio} (${generation.size.replace("x", "×")} 고정)` : undefined}
+      estimate={generation && usageBased(generation)
+        ? `실제 사용량으로 계산(누르기 전 금액 없음) · 출력 ${generation.size.replace("x", "×")} 1장${referenceCount ? " + 참조 1장" : ""}, 가격표 ${generation.estimate.priceTable}. 생성 뒤 공급자가 알려 준 사용량으로 금액을 기록하고, 실제 청구는 공급자 정산 뒤 확정돼요.`
+        : generation && expectedMicros !== undefined
+        ? `예상 금액 ${usdText(expectedMicros)} (출력 ${generation.size.replace("x", "×")} 1장${referenceCount ? " + 참조 1장" : ""}, 가격표 ${generation.estimate.priceTable}) · 실제 청구는 공급자 정산 뒤 확정돼요.`
+        : undefined}
+      sendNote={generation
+        ? `'공정 시작'을 누르면 버전 ${chosen?.revision ?? "-"}의 ${editing ? "직접 편집한 프롬프트" : "프롬프트"}${attach ? reference ? "와 고른 참조 이미지" : "와 원본 이미지" : ""}를 ${generation.vendor} ${generationName}(${generation.modelId}, 키 등록 버전 ${generation.credentialVersion})에 보내 시험 이미지 1장을 만들고 보관해요(호출 1건).`
+        : `'공정 시작'을 누르면 버전 ${chosen?.revision ?? "-"}의 ${editing ? "직접 편집한 프롬프트" : "프롬프트"}${attach ? reference ? "와 고른 참조 이미지" : "와 원본 이미지" : ""}를 Gemini 이미지 모델에 보내 시험 이미지 1장을 만들고 보관해요(호출 1건).`}
+      paidNote={generation ? `생성 1회마다 ${generationName} 호출 1건(유료)이 발생해요. 장당 금액 상한은 없고, ${usage ? "금액은 생성 뒤 실제 사용량으로 정해져요." : "위 금액은 예상가예요."}`
+        : "생성 1회마다 등록한 Gemini 이미지 호출 1건(유료)이 발생합니다."}
+      missingNote="이미지 생성에는 Google Gemini API 키가 필요합니다. API키등록·플랫폼연동에서 등록해 주세요."
+      busy={busy} running={running === "시험 이미지 생성"} canRun={canStartTest} onSubmit={submitTest} missing={!generation && !!settings && !ready}
+      startBlock={generationBlock} startRecovery={startRecovery}
+      tests={record.tests} shown={shown} onShow={setShown} modelLabel={styleDnaResultModelLabel}
+      sourceText={item => generationText({ model: item.model as Model, generation: item.generation })}
+      recordNote={item => readGeneration(item.generation, item.model) ? " · 실제 청구 미확정" : ""}
       proximity={proximity} when={when}
       compare={test && <StudioCompare before={test.original.href} after={test.image.href} label={`원본과 시험 결과 비교(버전 ${test.revision})`} maxHeight={640}
         comparison={record.comparison} when={when} onSaveSpots={(spots, frame) => saveSpots(test, spots, frame)}

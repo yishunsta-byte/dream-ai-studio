@@ -132,7 +132,7 @@ const guardedRoutes = [
   "admin/shorts-vault/prompts", "admin/shorts-vault/prompts/[id]", "admin/shorts-vault/prompts/search",
   "admin/shorts-vault/projects", "admin/shorts-vault/projects/[id]",
   "admin/style-dna", "admin/style-dna/[id]", "admin/style-dna/[id]/media/[media]", "admin/style-dna/[id]/refine",
-  "admin/style-dna/[id]/test-image", "admin/style-dna/engine-credentials",
+  "admin/style-dna/[id]/test-image", "admin/style-dna/engine-credentials", "admin/style-dna/generation-credentials",
   "assets/[id]", "assets/link", "assets/upload", "auth/logout", "auth/session",
   "backups/configuration", "backups", "characters", "exports/[id]", "jobs",
   "library/archive", "projects/[id]/finishing", "projects/[id]/production",

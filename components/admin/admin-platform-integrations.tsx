@@ -4,7 +4,7 @@ import { ProtectedContent, SessionBoundary } from "@/components/auth/session-bou
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { Card, StatusPill } from "@/components/ui/primitives";
-import { AdminIntegrationCredentials } from "./admin-integration-credentials";
+import { AdminGenerationCredentials, AdminIntegrationCredentials } from "./admin-integration-credentials";
 import { apiPlatformLabel } from "./admin-paths";
 import { AdminPlatformGuides, AdminSettingsShortcuts, BackToAnalysisKeys } from "./admin-platform-guides";
 import { YouTubeSettingsCard } from "./admin-youtube-settings";
@@ -13,7 +13,7 @@ import styles from "./admin-platform-integrations.module.css";
 
 const analyzers = [
   { id: "admin-style-dna", name: "이미지 분석", icon: "flask", services: "Gemini · OpenAI · Claude",
-    usage: "선택한 엔진으로 스타일을 분석하고 보정해요. 분석기 안의 시험 이미지는 Gemini로 생성해요." },
+    usage: "선택한 엔진으로 스타일을 분석하고 보정해요. 분석기 안의 시험 이미지는 Gemini 또는 생성 키를 등록한 Seedream 5.5, FLUX.2 pro, GPT Image 2.6으로 만들 수 있어요." },
   { id: "admin-music-analysis", name: "음악 분석", icon: "clock", services: "Gemini",
     usage: "음악·음성 분석과 Suno용 프롬프트 작성에 사용해요. 음악 전용 키를 등록하세요." },
   { id: "admin-shorts-analysis", name: "쇼츠 분석", icon: "play", services: "Gemini · YouTube Data API",
@@ -22,7 +22,7 @@ const analyzers = [
 
 const platformGroups = [
   { name: "이미지 생성", status: "done", label: "시험 이미지 생성",
-    use: "Gemini 키를 등록하고 이미지 분석기의 결과 테스트에서 Nano Banana 모델을 선택하세요. OpenAI GPT Image는 제작 연결 후보예요." },
+    use: "이미지 분석기의 결과 테스트에서 Gemini 키로 Nano Banana를 선택할 수 있어요. 위에서 생성 키를 등록하면 BytePlus는 Seedream 5.5, Black Forest Labs는 FLUX.2 pro, OpenAI는 GPT Image 2.6을 사용할 수 있어요." },
   { name: "음악 생성", status: "approval", label: "제작 연결 준비 중",
     use: "Google Lyria로 음원 파일을 생성하는 연결을 준비 중이에요. 현재는 원본 오디오 분석기가 만든 Suno용 프롬프트를 사용할 수 있어요." },
   { name: "영상 생성", status: "approval", label: "제작 연결 준비 중",
@@ -58,6 +58,7 @@ export function AdminIntegrationSettings() {
       <div className={styles.sectionHeader}>
         <div><h3 id="production-platforms-title">이미지·음악·영상 생성 API</h3><p>제작 도구와 현재 사용할 수 있는 동작을 확인하세요.</p></div>
       </div>
+      <AdminGenerationCredentials />
       <ul className={styles.platforms}>
         {platformGroups.map(({ name, status, label, use }) => <li key={name}>
           <div><h4>{name}</h4><p>{use}</p></div>

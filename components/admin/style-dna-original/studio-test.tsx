@@ -12,7 +12,7 @@ import t from "./studio-test.module.css";
 // 일치율은 서버가 저장된 원본·결과에서 잰 5색 비교(원본은 브라우저 히스토그램), 참조 이미지는 PNG·JPG·WebP 4MB까지.
 type Model = { id: string; label: string; size: string };
 type TestItem = { id: string; revision: number; model: string; createdAt: string; image: { href: string; width: number; height: number };
-  basis?: { promptMode: "revision" | "edited"; reference: { kind: "none" | "original" | "upload" } } };
+  basis?: { promptMode: "revision" | "edited"; reference: { kind: "none" | "original" | "upload" } }; generation?: unknown };
 type Props = {
   id: string; original: { href: string; width: number; height: number }; aspect: string | null;
   revisions: { revision: number; feedback?: string | null }[]; revision: number | null; onRevision: (revision: number) => void;
@@ -22,9 +22,14 @@ type Props = {
   attach: boolean; onAttach: (attach: boolean) => void; reference: { href: string; name: string } | null;
   referenceAccept: string; onReference: (file: File | undefined) => void; onReferenceClear: () => void;
   models: Model[]; model: string; onModel: (model: string) => void; ratio: string; ratios: readonly string[]; onRatio: (ratio: string) => void;
-  /** ready: Gemini 등록 준비. sendNote: 단추 옆 전송 안내(CMD-044, 따로 동의 체크 없음). */
-  ready: boolean; sendNote: string;
+  /** sendNote: 단추 옆 전송 안내(CMD-044, 따로 동의 체크 없음). */
+  sendNote: string;
+  /** P2-02 생성 공급자 모델: ratioFixed면 화면비를 그 값으로 고정, estimate는 단추 앞 예상 금액 줄, paidNote는 유료 안내, missingNote는 키 없음 안내. */
+  ratioFixed?: string; estimate?: ReactNode; paidNote: string; missingNote: string;
+  /** 결과 카드의 생성 출처(공급자·모델·견적·과금 미확정)와 시험 기록 줄 뒤 짧은 표시. */
+  sourceText: (item: TestItem) => string; recordNote: (item: TestItem) => string;
   busy: boolean; running: boolean; canRun: boolean; onSubmit: (event: FormEvent) => void; missing: boolean;
+  startBlock?: string | null; startRecovery?: ReactNode;
   tests: TestItem[]; shown: string | null; onShow: (id: string) => void; modelLabel: (model: string) => string;
   proximity: number | null; when: (iso: string) => string; compare: ReactNode;
 };
@@ -116,17 +121,24 @@ export function StudioTest(p: Props) {
             <select value={p.model} disabled={p.busy} onChange={event => p.onModel(event.target.value)}>
               {p.models.map(model => <option key={model.id} value={model.id}>{model.label} · {model.size}</option>)}</select></label>
           <label className={t.field}><span>화면 비율</span>
-            <select value={p.ratio} disabled={p.busy} onChange={event => p.onRatio(event.target.value)}>
-              <option value="">자동(원본에 가까운 {p.aspect ?? "비율"})</option>
-              {p.ratios.map(value => <option key={value} value={value}>{value}</option>)}</select></label>
+            {p.ratioFixed ? <select value="fixed" disabled aria-describedby={`${p.id}-ratio-fixed`}><option value="fixed">{p.ratioFixed}</option></select>
+              : <select value={p.ratio} disabled={p.busy} onChange={event => p.onRatio(event.target.value)}>
+                <option value="">자동(원본에 가까운 {p.aspect ?? "비율"})</option>
+                {p.ratios.map(value => <option key={value} value={value}>{value}</option>)}</select>}
+            {p.ratioFixed && <small id={`${p.id}-ratio-fixed`}>이 모델은 크기가 고정이라 화면 비율을 고를 수 없어요.</small>}</label>
         </div>
 
+        {p.estimate && <p className={t.paid} aria-label="예상 금액">{p.estimate}</p>}
         <p className={r.consent}>{p.sendNote}</p>
-        <button type="submit" className={r.primary} disabled={!p.canRun || !p.ready || p.busy}>
+        <button type="submit" className={r.primary} disabled={!p.canRun} aria-describedby={p.startBlock ? `${p.id}-start-block` : undefined}>
           {p.running ? <Loader2 size={16} className={r.spin} aria-hidden /> : <FlaskConical size={16} aria-hidden />}
           {p.running ? "DNA 합성 시뮬레이션 중…" : "공정 시작 (이미지 1장 합성)"}</button>
-        {p.missing && <p className={t.error} role="note">이미지 생성에는 Google Gemini API 키가 필요합니다. API키등록·플랫폼연동에서 등록해 주세요.</p>}
-        <p className={t.paid}>생성 1회마다 등록한 Gemini 이미지 호출 1건(유료)이 발생합니다.</p>
+        {p.startBlock && <>
+          <p id={`${p.id}-start-block`} className={r.consent} role="status">{p.startBlock}</p>
+          {p.startRecovery}
+        </>}
+        {p.missing && <p className={t.error} role="note">{p.missingNote}</p>}
+        <p className={t.paid}>{p.paidNote}</p>
       </form>
 
       <div className={t.results}>
@@ -159,6 +171,7 @@ export function StudioTest(p: Props) {
             <p className={t.matchLabel}>색감 일치율 (서버 실측 5색 비교)</p>
             <p className={t.matchValue}>{p.proximity === null ? "—" : `${p.proximity}%`}</p>
             <p className={t.matchNote}>원본과 결과 이미지에서 서버가 잰 주요 5색 분포를 비교한 값이에요(모델의 스타일 일치 추정 아님).</p>
+            <p className={t.matchNote} aria-label="생성 출처">{p.sourceText(test)}</p>
           </div>
           <div className={t.matchActions}>
             <button type="button" className={r.ghost} onClick={openZoom}><Maximize2 size={14} aria-hidden />확대 보기</button>
@@ -171,7 +184,7 @@ export function StudioTest(p: Props) {
           <ul className={t.tests}>
             {p.tests.map((item, n) => <li key={item.id}><label>
               <input type="radio" name={`${p.id}-test`} checked={p.shown === item.id} onChange={() => p.onShow(item.id)} />
-              <span>{n + 1}번 · 버전 {item.revision} · {p.modelLabel(item.model)}{referenceText(item) && ` · ${referenceText(item)}`}</span>
+              <span>{n + 1}번 · 버전 {item.revision} · {p.modelLabel(item.model)}{referenceText(item) && ` · ${referenceText(item)}`}{p.recordNote(item)}</span>
               <time dateTime={item.createdAt}>{p.when(item.createdAt)}</time></label></li>)}
           </ul>
         </section>}

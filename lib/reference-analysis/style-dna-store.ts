@@ -4,14 +4,18 @@ import { Pool, type PoolClient } from "pg";
 import { z } from "zod";
 import { supabasePublicConfig } from "../auth/config";
 import { measureComparisonSpots, summarizeComparisonSpots } from "./style-dna-comparison";
-import { styleDnaTrendLimit, type StyleDnaComparison, type StyleDnaComparisonCommand,
+import { styleDnaGenerationRequestModel, styleDnaTrendLimit, type StyleDnaGenerationRequestModel, type StyleDnaComparison, type StyleDnaComparisonCommand,
   type StyleDnaComparisonTrend, type StyleDnaRecord, type StyleDnaRevision, type StyleDnaSummary,
   type StyleDnaTestResult } from "./style-dna-contract";
 
 type StoredTrend = Omit<StyleDnaComparisonTrend, "prompt">;
 type StoredComparison = Omit<StyleDnaComparison, "trends"> & { trends: StoredTrend[] };
 type StoredRecord = Omit<StyleDnaRecord, "comparison"> & { comparison?: StoredComparison; trendPrompts?: Record<string, string> };
-type Outcome = { status: number; body: { code?: string; record?: StyleDnaRecord; test?: StyleDnaTestResult; comparison?: StyleDnaComparison } };
+type Outcome = { status: number; body: { code?: string; requestId?: string; model?: StyleDnaGenerationRequestModel; record?: StyleDnaRecord;
+  test?: StyleDnaTestResult; comparison?: StyleDnaComparison } };
+type RequestReceipt = { input_hash: string; outcome: Outcome | null; generation_record_id: string | null; generation_model: string | null };
+// Row-to-JSON keeps reads and ordinary non-paid writes compatible with the pre-0004 table.
+const requestModelColumn = "to_jsonb(q)->>'generation_model' AS generation_model";
 type Change = { kind: "analysis"; record: StyleDnaRecord; original: Buffer } |
   { kind: "refine"; recordId: string; baseRevision: number; revision: StyleDnaRevision } |
   { kind: "test"; recordId: string; test: StyleDnaTestResult; image: Buffer } |
@@ -48,16 +52,38 @@ function responseRecord(record: StoredRecord, includeTrendPrompts = false): Styl
   return { ...detail, comparison: { ...comparison, trends } };
 }
 
-async function reserveRequest(client: PoolClient, owner: string, id: string, inputHash: string, recordAvailable = true) {
-  const result = await client.query("INSERT INTO dream_style_dna.requests(owner_id,id,input_hash) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
-    [owner, id, inputHash]);
+function withRequestModel(outcome: Outcome, stored: unknown): Outcome {
+  const model = styleDnaGenerationRequestModel.safeParse(stored).data;
+  const body = { ...outcome.body };
+  delete body.model;
+  return { status: outcome.status, body: model ? { ...body, model } : body };
+}
+
+function replayRequest(row: RequestReceipt, inputHash: string, recordAvailable: boolean, record?: string) {
+  const result = row.input_hash !== inputHash ? fail("request_conflict", 409)
+    : !recordAvailable ? fail("not_found", 404)
+    : !row.outcome ? fail("in_progress", 202)
+    : { ...row.outcome, status: row.outcome.status === 201 ? 200 : row.outcome.status };
+  return withRequestModel(result, record?.toLowerCase() === row.generation_record_id ? row.generation_model : null);
+}
+
+async function requestFor(client: PoolClient, owner: string, id: string) {
+  const { rows: [row] } = await client.query<RequestReceipt>(
+    `SELECT q.input_hash,q.outcome,to_jsonb(q)->>'generation_record_id' AS generation_record_id,${requestModelColumn}
+      FROM dream_style_dna.requests q WHERE q.owner_id=$1 AND q.id=$2`, [owner, id]);
+  return row;
+}
+
+async function reserveRequest(client: PoolClient, owner: string, id: string, inputHash: string, recordAvailable = true,
+  generation?: { record: string; model: StyleDnaGenerationRequestModel }) {
+  const result = generation
+    ? await client.query(
+      `INSERT INTO dream_style_dna.requests(owner_id,id,input_hash,generation_record_id,generation_model) VALUES($1,$2,$3,$4,$5)
+      ON CONFLICT (owner_id,id) DO NOTHING`, [owner, id, inputHash, generation.record, generation.model])
+    : await client.query("INSERT INTO dream_style_dna.requests(owner_id,id,input_hash) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
+      [owner, id, inputHash]);
   if (result.rowCount) return recordAvailable ? undefined : completeRequest(client, owner, id, fail("not_found", 404));
-  const { rows: [row] } = await client.query<{ input_hash: string; outcome: Outcome | null }>(
-    "SELECT input_hash,outcome FROM dream_style_dna.requests WHERE owner_id=$1 AND id=$2", [owner, id]);
-  if (row.input_hash !== inputHash) return fail("request_conflict", 409);
-  if (!recordAvailable) return fail("not_found", 404);
-  if (!row.outcome) return fail("in_progress", 202);
-  return { ...row.outcome, status: row.outcome.status === 201 ? 200 : row.outcome.status };
+  return replayRequest(await requestFor(client, owner, id), inputHash, recordAvailable, generation?.record);
 }
 
 async function completeRequest(client: PoolClient, owner: string, id: string, outcome: Outcome) {
@@ -191,10 +217,11 @@ export function createStyleDnaStore(pool: Pick<Pool, "connect">) {
       if (!record) return false;
       // Keep request fingerprints for replay and discard results that describe the deleted record.
       // Old receipts have no separate record reference. Test and comparison receipts identify a test in this record.
-      await client.query(`UPDATE dream_style_dna.requests SET outcome=$3::jsonb
-        WHERE owner_id=$1 AND outcome IS NOT NULL AND
-          COALESCE(outcome#>>'{body,record,id}', outcome#>>'{body,test,id}', outcome#>>'{body,comparison,baseline,testId}')=ANY($2::text[])`,
-        [owner, [record.id, ...record.tests.map(test => test.id)], JSON.stringify(fail("not_found", 404))]);
+      await client.query(`UPDATE dream_style_dna.requests q SET outcome=$3::jsonb
+        WHERE q.owner_id=$1 AND ((to_jsonb(q)->>'generation_record_id'=$4::uuid::text AND to_jsonb(q)->>'generation_model' IS NOT NULL)
+          OR (q.outcome IS NOT NULL AND
+          COALESCE(q.outcome#>>'{body,record,id}', q.outcome#>>'{body,test,id}', q.outcome#>>'{body,comparison,baseline,testId}')=ANY($2::text[])))`,
+        [owner, [record.id, ...record.tests.map(test => test.id)], JSON.stringify(fail("not_found", 404)), id]);
       await client.query("DELETE FROM dream_style_dna.media WHERE owner_id=$1 AND record_id=$2", [owner, id]);
       await client.query("DELETE FROM dream_style_dna.records WHERE owner_id=$1 AND id=$2", [owner, id]);
       return true;
@@ -212,23 +239,66 @@ export function createStyleDnaStore(pool: Pick<Pool, "connect">) {
       const outcome = await saveComparison(client, owner, record, command);
       return completeRequest(client, owner, requestId, outcome);
     }),
-    reserve: (owner: string, id: string, inputHash: string, requiredRecord?: string) => transaction(owner, true, async client => {
+    reserve: (owner: string, id: string, inputHash: string, requiredRecord?: string, generationModel?: StyleDnaGenerationRequestModel) => transaction(owner, true, async client => {
+      if (generationModel !== undefined) {
+        if (!requiredRecord) throw new Error("Missing Style DNA generation record");
+        const model = styleDnaGenerationRequestModel.parse(generationModel);
+        // Serialize paid reservations with finalization and removal. Replay the same request before checking a different pending one.
+        const recordAvailable = await lockRecord(client, owner, requiredRecord, "UPDATE");
+        const prior = await requestFor(client, owner, id);
+        if (prior) return replayRequest(prior, inputHash, recordAvailable, requiredRecord);
+        if (!recordAvailable) return fail("not_found", 404);
+        const { rows: [pending] } = await client.query<{ id: string; generation_model: string | null }>(
+          `SELECT q.id,${requestModelColumn} FROM dream_style_dna.requests q
+          WHERE q.owner_id=$1 AND q.generation_record_id=$2 AND q.outcome IS NULL`, [owner, requiredRecord]);
+        if (pending) return withRequestModel({ status: 409, body: { code: "generation_in_progress", requestId: pending.id } }, pending.generation_model);
+        return reserveRequest(client, owner, id, inputHash, true, { record: requiredRecord, model });
+      }
       const recordAvailable = !requiredRecord || await lockRecord(client, owner, requiredRecord, "KEY SHARE");
       return reserveRequest(client, owner, id, inputHash, recordAvailable);
+    }),
+    generationStatus: (owner: string, recordId: string, requestId?: string) => transaction(owner, false, async client => {
+      const fields = `q.id,q.outcome,${requestModelColumn}`;
+      const { rows: [row] } = await client.query<{ id: string | null; outcome: Outcome | null; generation_model: string | null; record_exists: boolean }>(
+        requestId ? `SELECT ${fields},r.id IS NOT NULL AS record_exists
+          FROM dream_style_dna.requests q LEFT JOIN dream_style_dna.records r ON r.owner_id=q.owner_id AND r.id=q.generation_record_id
+          WHERE q.owner_id=$1 AND q.generation_record_id=$2 AND q.id=$3`
+          : `SELECT ${fields},true AS record_exists FROM dream_style_dna.records r LEFT JOIN dream_style_dna.requests q
+            ON q.owner_id=r.owner_id AND q.generation_record_id=r.id AND q.outcome IS NULL WHERE r.owner_id=$1 AND r.id=$2`,
+        requestId ? [owner, recordId, requestId] : [owner, recordId]);
+      const model = styleDnaGenerationRequestModel.safeParse(row?.generation_model).data;
+      if (!row || (!row.record_exists && !model)) return { kind: "missing" as const };
+      if (!row.id) return { kind: "idle" as const };
+      const outcome = row.record_exists ? row.outcome : fail("not_found", 404);
+      return { kind: "request" as const, requestId: row.id, ...(model && { model }),
+        outcome: outcome && withRequestModel(outcome, model) };
+    }),
+    // 같은 요청 번호의 영수증만 다시 읽는다(쓰기 없음). 결과 저장 뒤 다른 거래가 실패했을 때 이미 확정됐는지 확인한다.
+    receipt: (owner: string, id: string) => transaction(owner, false, async client => {
+      const row = await requestFor(client, owner, id);
+      if (!row) return undefined;
+      const model = styleDnaGenerationRequestModel.safeParse(row.generation_model).data;
+      return { outcome: row.outcome && withRequestModel(row.outcome, model), ...(model && { model }) };
     }),
     finish: (owner: string, id: string, change: Change, requiredRecord?: string) => transaction(owner, true, async client => {
       // Lock the record before the receipt, in the same order as deletion.
       const recordAvailable = !requiredRecord || await lockRecord(client, owner, requiredRecord, "UPDATE");
-      const { rows: [row] } = await client.query<{ outcome: Outcome | null }>(
-        "SELECT outcome FROM dream_style_dna.requests WHERE owner_id=$1 AND id=$2 FOR UPDATE", [owner, id]);
-      if (!row || row.outcome) throw new Error("Invalid Style DNA request state");
+      const { rows: [row] } = await client.query<RequestReceipt>(
+        `SELECT q.outcome,to_jsonb(q)->>'generation_record_id' AS generation_record_id,${requestModelColumn}
+          FROM dream_style_dna.requests q WHERE q.owner_id=$1 AND q.id=$2 FOR UPDATE`, [owner, id]);
+      if (!row || row.outcome || (row.generation_record_id && row.generation_record_id !== requiredRecord?.toLowerCase())) {
+        throw new Error("Invalid Style DNA request state");
+      }
       const outcome = recordAvailable ? await saveChange(client, owner, change) : fail("not_found", 404);
-      return completeRequest(client, owner, id, outcome);
+      return withRequestModel(await completeRequest(client, owner, id, outcome), row.generation_model);
     }),
   };
 }
 
-export type StyleDnaStore = ReturnType<typeof createStyleDnaStore>;
+// 영수증 조회(receipt)는 생성 확정 경계에서만 쓰는 선택 메서드다. 주입 저장소에 없으면 '확인하지 못함'으로 본다.
+type FullStyleDnaStore = ReturnType<typeof createStyleDnaStore>;
+type GenerationRead = "receipt" | "generationStatus";
+export type StyleDnaStore = Omit<FullStyleDnaStore, GenerationRead> & Partial<Pick<FullStyleDnaStore, GenerationRead>>;
 let runtimeStore: StyleDnaStore | undefined;
 export function openStyleDnaStore(): StyleDnaStore | null {
   if (runtimeStore) return runtimeStore;

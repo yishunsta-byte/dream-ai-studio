@@ -136,8 +136,9 @@ const CLOUD_ONLY: Record<string, string[]> = {
   "../app/api/admin/style-dna/[id]/route.ts": ["GET", "PATCH", "DELETE"],
   "../app/api/admin/style-dna/[id]/media/[media]/route.ts": ["GET"],
   "../app/api/admin/style-dna/[id]/refine/route.ts": ["POST"],
-  "../app/api/admin/style-dna/[id]/test-image/route.ts": ["POST"],
+  "../app/api/admin/style-dna/[id]/test-image/route.ts": ["GET", "POST"],
   "../app/api/admin/style-dna/engine-credentials/route.ts": ["GET", "PUT"],
+  "../app/api/admin/style-dna/generation-credentials/route.ts": ["GET", "PUT"],
   "../app/api/studio/reference-analysis/route.ts": ["POST"],
 };
 const legacyMethods = (path: string, loaded: Record<string, unknown>) => methods.filter((m) => typeof loaded[m] === "function" && !(CLOUD_ONLY[path] ?? []).includes(m));
